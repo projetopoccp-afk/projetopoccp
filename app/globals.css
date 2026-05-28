@@ -35,3 +35,17 @@ body {
   width: 0;
   height: 0;
 }
+
+@keyframes floatParticle {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(18px, -24px, 0) scale(1.45);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
