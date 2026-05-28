@@ -1,18 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import { User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LogOut, User } from "lucide-react";
 
 import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
+import { supabase } from "@/lib/supabase/client";
 
 type SiteHeaderProps = {
   search: string;
   onSearchChange: (value: string) => void;
 };
 
+type AuthUser = {
+  name: string;
+  email: string;
+};
+
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setUser(null);
+        return;
+      }
+
+      setUser({
+        name:
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          "Creator",
+        email: user.email || "",
+      });
+    }
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      getUser();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setUser(null);
+  }
 
   return (
     <>
@@ -27,26 +72,55 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               </h1>
             </div>
 
-            <button
-              onClick={() => setLoginOpen(true)}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:hidden"
-            >
-              <User size={16} />
-              Entrar
-            </button>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10 md:hidden"
+              >
+                <LogOut size={16} />
+                Sair
+              </button>
+            ) : (
+              <button
+                onClick={() => setLoginOpen(true)}
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:hidden"
+              >
+                <User size={16} />
+                Entrar
+              </button>
+            )}
           </div>
 
           <div className="w-full md:max-w-md">
             <CreatorSearch value={search} onChange={onSearchChange} />
           </div>
 
-          <button
-            onClick={() => setLoginOpen(true)}
-            className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:flex"
-          >
-            <User size={18} />
-            Entrar
-          </button>
+          {user ? (
+            <div className="hidden items-center gap-3 md:flex">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-white">
+                  {user.name}
+                </p>
+                <p className="text-xs text-white/40">{user.email}</p>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
+              >
+                <LogOut size={18} />
+                Sair
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:flex"
+            >
+              <User size={18} />
+              Entrar
+            </button>
+          )}
         </div>
       </header>
 
