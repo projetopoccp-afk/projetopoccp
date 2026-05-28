@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 
+import { SupabaseTest } from "@/components/debug/SupabaseTest";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { CreatorGrid } from "@/components/home/CreatorGrid";
@@ -23,12 +24,17 @@ export default function HomePage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <AnimatePresence>{loading && <LoadingScreen />}</AnimatePresence>
+      <AnimatePresence>
+        {loading && <LoadingScreen />}
+      </AnimatePresence>
 
       <GlowBackground />
       <ParticleBackground />
 
-      <SiteHeader search={search} onSearchChange={setSearch} />
+      <SiteHeader
+        search={search}
+        onSearchChange={setSearch}
+      />
 
       <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
         <div className="mx-auto flex flex-col items-center text-center">
@@ -43,6 +49,8 @@ export default function HomePage() {
       </section>
 
       <CreatorGrid search={search} />
+
+      <SupabaseTest />
     </main>
   );
 }

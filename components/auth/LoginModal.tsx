@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 type LoginModalProps = {
   open: boolean;
@@ -67,14 +68,25 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                   </p>
                 </button>
 
-                <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:bg-white/[0.08]">
-                  <p className="font-bold text-white">
-                    Continuar com Google
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Acesso rápido para criar ou gerenciar seu perfil.
-                  </p>
-                </button>
+                <button
+  onClick={async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  }}
+  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:bg-white/[0.08]"
+>
+  <p className="font-bold text-white">
+    Continuar com Google
+  </p>
+
+  <p className="mt-1 text-xs text-white/45">
+    Acesso rápido para criar ou gerenciar seu perfil.
+  </p>
+</button>
               </div>
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
