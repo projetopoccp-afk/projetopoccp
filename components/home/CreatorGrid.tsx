@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
-import { mockCreators } from "@/data/mock-creators";
 import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
 
@@ -14,7 +13,7 @@ type CreatorGridProps = {
 
 export function CreatorGrid({ search }: CreatorGridProps) {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-  const [creators, setCreators] = useState<Creator[]>(mockCreators);
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,11 +47,11 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         .eq("is_public", true)
         .order("created_at", { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        setCreators(mockCreators);
-        setLoading(false);
-        return;
-      }
+      if (error || !data) {
+  setCreators([]);
+  setLoading(false);
+  return;
+}
 
       const mappedCreators: Creator[] = data.map((item: any) => {
         const card = item.creator_cards?.[0];
