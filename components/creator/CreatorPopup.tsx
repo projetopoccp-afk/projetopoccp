@@ -305,7 +305,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     }, 2000);
   }
 
-  function shareTo(platform: string) {
+  async function shareTo(platform: string) {
     if (!creator) return;
 
     const url = getCreatorShareUrl();
