@@ -28,6 +28,7 @@ export async function ensureProfile(user: User) {
     .upsert(
       {
         id: user.id,
+        email: user.email,
         display_name: displayName,
         username,
         avatar_url: avatarUrl,
