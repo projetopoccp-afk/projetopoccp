@@ -769,14 +769,70 @@ function EditPanel({
   handleSave: () => void;
 }) {
   const [clipsExpanded, setClipsExpanded] = useState(false);
+  const [autoResolvingClips, setAutoResolvingClips] = useState<
+    Record<number, boolean>
+  >({});
 
   function updateClip(index: number, field: keyof ClipForm, value: string) {
     setClips((current) =>
-      current.map((clip, clipIndex) =>
-        clipIndex === index ? { ...clip, [field]: value } : clip
-      )
+      current.map((clip, clipIndex) => {
+        if (clipIndex !== index) return clip;
+
+        if (field === "url") {
+          return {
+            ...clip,
+            url: value,
+            thumbnailUrl: "",
+          };
+        }
+
+        return { ...clip, [field]: value };
+      })
     );
   }
+
+  useEffect(() => {
+    const timers = clips.map((clip, index) => {
+      const clipUrl = clip.url.trim();
+
+      if (!clipUrl || clip.thumbnailUrl) return null;
+
+      return window.setTimeout(async () => {
+        setAutoResolvingClips((current) => ({
+          ...current,
+          [index]: true,
+        }));
+
+        const thumbnailUrl = await resolveClipThumbnail(clipUrl);
+
+        if (thumbnailUrl) {
+          setClips((current) =>
+            current.map((currentClip, currentIndex) => {
+              if (currentIndex !== index) return currentClip;
+
+              if (currentClip.url.trim() !== clipUrl) return currentClip;
+
+              return {
+                ...currentClip,
+                thumbnailUrl,
+              };
+            })
+          );
+        }
+
+        setAutoResolvingClips((current) => ({
+          ...current,
+          [index]: false,
+        }));
+      }, 900);
+    });
+
+    return () => {
+      timers.forEach((timer) => {
+        if (timer) window.clearTimeout(timer);
+      });
+    };
+  }, [clips, setClips]);
 
   return (
     <div className="pb-10 pr-16">
@@ -884,7 +940,7 @@ function EditPanel({
 
             <p className="mt-2 text-sm text-white/45">
               Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
-              será buscada automaticamente ao salvar; você também pode buscar antes para pré-visualizar.
+              será buscada automaticamente depois que você colar o link.
             </p>
           </div>
 
@@ -948,22 +1004,34 @@ function EditPanel({
                         placeholder="https://..."
                       />
 
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const thumbnailUrl = await resolveClipThumbnail(clip.url);
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const thumbnailUrl = await resolveClipThumbnail(
+                              clip.url
+                            );
 
-                          if (!thumbnailUrl) {
-                            alert("Não consegui encontrar a capa automaticamente para este link.");
-                            return;
-                          }
+                            if (!thumbnailUrl) {
+                              alert(
+                                "Não consegui encontrar a capa automaticamente para este link."
+                              );
+                              return;
+                            }
 
-                          updateClip(index, "thumbnailUrl", thumbnailUrl);
-                        }}
-                        className="mt-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
-                      >
-                        Buscar capa automaticamente
-                      </button>
+                            updateClip(index, "thumbnailUrl", thumbnailUrl);
+                          }}
+                          className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+                        >
+                          Buscar capa novamente
+                        </button>
+
+                        {autoResolvingClips[index] && (
+                          <span className="text-xs text-cyan-200">
+                            Buscando capa automaticamente...
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {previewThumbnail && (
