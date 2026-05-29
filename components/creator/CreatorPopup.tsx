@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Pencil, Save } from "lucide-react";
+import { ImagePlus, Pencil, Save, Send } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
@@ -36,6 +36,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [claimMode, setClaimMode] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [nickname, setNickname] = useState("");
@@ -50,8 +51,21 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
+  const [claimPlatform, setClaimPlatform] = useState("youtube");
+  const [claimUrl, setClaimUrl] = useState("");
+  const [claimSending, setClaimSending] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+
+  const claimCode = useMemo(() => {
+    return `CNX-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  }, [creator?.id]);
+
   const isOwner = Boolean(
     creator?.ownerId && currentUserId && creator.ownerId === currentUserId
+  );
+
+  const canClaim = Boolean(
+    creator && currentUserId && !creator.ownerId && !isOwner
   );
 
   useEffect(() => {
@@ -70,6 +84,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     if (!creator) return;
 
     setEditMode(false);
+    setClaimMode(false);
+    setClaimSuccess(false);
+    setClaimUrl("");
 
     setNickname(creator.nickname);
     setTitle(creator.title || "");
@@ -81,25 +98,25 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setTagsText((creator.tags || []).join(", "));
 
     async function loadSocialLinks() {
-  if (!creator) return;
+      if (!creator) return;
 
-  const { data } = await supabase
-    .from("creator_social_links")
-    .select("platform, url")
-    .eq("creator_id", creator.id);
+      const { data } = await supabase
+        .from("creator_social_links")
+        .select("platform, url")
+        .eq("creator_id", creator.id);
 
-  const nextSocials: SocialForm = {};
+      const nextSocials: SocialForm = {};
 
-  socialPlatforms.forEach((platform) => {
-    nextSocials[platform] = "";
-  });
+      socialPlatforms.forEach((platform) => {
+        nextSocials[platform] = "";
+      });
 
-  data?.forEach((item: any) => {
-    nextSocials[item.platform] = item.url;
-  });
+      data?.forEach((item: any) => {
+        nextSocials[item.platform] = item.url;
+      });
 
-  setSocials(nextSocials);
-}
+      setSocials(nextSocials);
+    }
 
     loadSocialLinks();
   }, [creator]);
@@ -118,48 +135,44 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     }, 1800);
   }
 
-  async function uploadImage(
-  file: File,
-  type: "avatar" | "banner"
-) {
-  try {
-    if (type === "avatar") {
-      setUploadingAvatar(true);
-    } else {
-      setUploadingBanner(true);
+  async function uploadImage(file: File, type: "avatar" | "banner") {
+    try {
+      if (type === "avatar") {
+        setUploadingAvatar(true);
+      } else {
+        setUploadingBanner(true);
+      }
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${type}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("creator-profiles")
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from("creator-profiles")
+        .getPublicUrl(filePath);
+
+      if (type === "avatar") {
+        setAvatarUrl(data.publicUrl);
+      } else {
+        setBannerUrl(data.publicUrl);
+      }
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setUploadingAvatar(false);
+      setUploadingBanner(false);
     }
-
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-    const filePath = `${type}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("creator-profiles")
-      .upload(filePath, file, {
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from("creator-profiles")
-      .getPublicUrl(filePath);
-
-    if (type === "avatar") {
-      setAvatarUrl(data.publicUrl);
-    } else {
-      setBannerUrl(data.publicUrl);
-    }
-  } catch (error: any) {
-    alert(error.message);
-  } finally {
-    setUploadingAvatar(false);
-    setUploadingBanner(false);
   }
-}
 
   async function handleSave() {
     if (!creator || !isOwner) return;
@@ -192,10 +205,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    await supabase
-      .from("creator_social_links")
-      .delete()
-      .eq("creator_id", creator.id);
+    await supabase.from("creator_social_links").delete().eq("creator_id", creator.id);
 
     const socialRows = Object.entries(socials)
       .filter(([, url]) => url.trim().length > 0)
@@ -220,6 +230,38 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setSaving(false);
     setEditMode(false);
     alert("Perfil atualizado com sucesso!");
+  }
+
+  async function handleClaimProfile() {
+    if (!creator || !currentUserId) {
+      alert("Faça login para reivindicar este perfil.");
+      return;
+    }
+
+    if (!claimUrl) {
+      alert("Informe o link do canal ou perfil usado para verificação.");
+      return;
+    }
+
+    setClaimSending(true);
+
+    const { error } = await supabase.from("creator_claims").insert({
+      creator_id: creator.id,
+      user_id: currentUserId,
+      verification_platform: claimPlatform,
+      verification_url: claimUrl,
+      verification_code: claimCode,
+      status: "pending",
+    });
+
+    setClaimSending(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setClaimSuccess(true);
   }
 
   if (!creator) return null;
@@ -292,11 +334,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 {title || creator.title}
               </p>
 
-              <p className="mt-2 text-sm text-white/60">
-                @{creator.username}
-              </p>
+              <p className="mt-2 text-sm text-white/60">@{creator.username}</p>
 
-              <div className="mt-5 flex gap-3">
+              <div className="mt-5 flex flex-wrap gap-3">
                 <button className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105">
                   Seguir
                 </button>
@@ -307,6 +347,15 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 >
                   {copied ? "Copiado!" : "Compartilhar"}
                 </button>
+
+                {canClaim && (
+                  <button
+                    onClick={() => setClaimMode(true)}
+                    className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-semibold text-yellow-100 transition hover:bg-yellow-300/20"
+                  >
+                    Este perfil é meu
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -338,105 +387,99 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 marginRight: "18px",
               }}
             >
-              {editMode ? (
+              {claimMode ? (
+                <ClaimPanel
+                  claimPlatform={claimPlatform}
+                  setClaimPlatform={setClaimPlatform}
+                  claimUrl={claimUrl}
+                  setClaimUrl={setClaimUrl}
+                  claimCode={claimCode}
+                  claimSending={claimSending}
+                  claimSuccess={claimSuccess}
+                  onSubmit={handleClaimProfile}
+                  onBack={() => setClaimMode(false)}
+                />
+              ) : editMode ? (
                 <div className="pb-10 pr-16">
                   <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
                     Edit Mode
                   </p>
 
-                  <h3 className="mt-3 text-3xl font-bold">
-                    Editar perfil
-                  </h3>
+                  <h3 className="mt-3 text-3xl font-bold">Editar perfil</h3>
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                    <EditInput
-                      label="Nickname"
-                      value={nickname}
-                      onChange={setNickname}
-                    />
+                    <EditInput label="Nickname" value={nickname} onChange={setNickname} />
+                    <EditInput label="Title" value={title} onChange={setTitle} />
+                    <EditInput label="Categoria" value={category} onChange={setCategory} />
 
-                    <EditInput
-                      label="Title"
-                      value={title}
-                      onChange={setTitle}
-                    />
-
-                    <EditInput
-                      label="Categoria"
-                      value={category}
-                      onChange={setCategory}
-                    />
-
-                    <EditInput
-                      label="Avatar URL"
-                      value={avatarUrl}
-                      onChange={setAvatarUrl}
-                    />
+                    <EditInput label="Avatar URL" value={avatarUrl} onChange={setAvatarUrl} />
 
                     <label className="block">
-  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-    Upload Avatar
-  </span>
+                      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+                        Upload Avatar
+                      </span>
 
-  <input
-    type="file"
-    accept="image/*"
-    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
-    onChange={(event) => {
-      const file = event.target.files?.[0];
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) uploadImage(file, "avatar");
+                        }}
+                      />
 
-      if (file) {
-        uploadImage(file, "avatar");
-      }
-    }}
-  />
+                      {uploadingAvatar && (
+                        <p className="mt-2 text-xs text-cyan-300">Enviando avatar...</p>
+                      )}
+                    </label>
 
-  {uploadingAvatar && (
-    <p className="mt-2 text-xs text-cyan-300">
-      Enviando avatar...
-    </p>
-  )}
-</label>
+                    {avatarUrl && (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar preview"
+                        className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
+                      />
+                    )}
 
                     <div className="sm:col-span-2">
-                      <EditInput
-                        label="Banner URL"
-                        value={bannerUrl}
-                        onChange={setBannerUrl}
-                      />
+                      <EditInput label="Banner URL" value={bannerUrl} onChange={setBannerUrl} />
                     </div>
 
-                    <label className="block">
-  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-    Upload Banner
-  </span>
+                    <div className="sm:col-span-2">
+                      <label className="block">
+                        <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+                          Upload Banner
+                        </span>
 
-  <input
-    type="file"
-    accept="image/*"
-    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
-    onChange={(event) => {
-      const file = event.target.files?.[0];
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) uploadImage(file, "banner");
+                          }}
+                        />
 
-      if (file) {
-        uploadImage(file, "banner");
-      }
-    }}
-  />
+                        {uploadingBanner && (
+                          <p className="mt-2 text-xs text-cyan-300">Enviando banner...</p>
+                        )}
+                      </label>
+                    </div>
 
-  {uploadingBanner && (
-    <p className="mt-2 text-xs text-cyan-300">
-      Enviando banner...
-    </p>
-  )}
-</label>
+                    {bannerUrl && (
+                      <div className="sm:col-span-2">
+                        <img
+                          src={bannerUrl}
+                          alt="Banner preview"
+                          className="h-32 w-full rounded-2xl border border-white/10 object-cover"
+                        />
+                      </div>
+                    )}
 
                     <div className="sm:col-span-2">
-                      <EditTextarea
-                        label="Bio curta"
-                        value={bio}
-                        onChange={setBio}
-                      />
+                      <EditTextarea label="Bio curta" value={bio} onChange={setBio} />
                     </div>
 
                     <div className="sm:col-span-2">
@@ -492,136 +535,209 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   </button>
                 </div>
               ) : (
-                <>
-                  <div className="pr-16">
-                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-                      Creator Profile
-                    </p>
-
-                    <h3 className="mt-3 text-3xl font-bold leading-tight">
-                      {bio || creator.bio}
-                    </h3>
-
-                    <p className="mt-3 text-sm font-semibold text-cyan-100">
-                      {title || creator.title}
-                    </p>
-
-                    <p className="mt-4 text-white/65">
-                      {description || creator.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <InfoCard
-                      label="Power Score"
-                      value={creator.powerScore.toLocaleString("pt-BR")}
-                      color="text-cyan-200"
-                    />
-                    <InfoCard
-                      label="Collected by"
-                      value={creator.collectedBy.toLocaleString("pt-BR")}
-                      color="text-purple-200"
-                    />
-                    <InfoCard
-                      label="Status"
-                      value={statusLabel[creator.status]}
-                      color="text-emerald-200"
-                    />
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-                      Evolution Stage
-                    </p>
-
-                    <p className="mt-2 font-bold text-white">
-                      {creator.evolutionStage}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <InfoCard
-                      label="Rank"
-                      value={creator.rank}
-                      color="text-yellow-200"
-                    />
-                    <InfoCard
-                      label="Level"
-                      value={String(creator.level)}
-                      color="text-cyan-200"
-                    />
-                    <InfoCard
-                      label="Aura"
-                      value={creator.aura}
-                      color="text-purple-200"
-                    />
-                  </div>
-
-                  <div className="mt-8">
-                    <h4 className="font-bold">Tags</h4>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {tagsText
-                        .split(",")
-                        .map((tag) => tag.trim())
-                        .filter(Boolean)
-                        .map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-8">
-                    <h4 className="font-bold">Social Links</h4>
-
-                    <div className="mt-3 flex flex-wrap gap-3">
-                      {Object.entries(socials)
-                        .filter(([, url]) => url.trim().length > 0)
-                        .map(([platform, url]) => (
-                          <a
-                            key={platform}
-                            href={url}
-                            target="_blank"
-                            className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
-                          >
-                            {platform}
-                          </a>
-                        ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pb-10">
-                    <h4 className="font-bold">Achievements</h4>
-
-                    <div className="mt-3 space-y-3">
-                      {creator.achievements.map((achievement) => (
-                        <div
-                          key={achievement.id}
-                          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
-                        >
-                          <p className="font-semibold text-white">
-                            {achievement.title}
-                          </p>
-
-                          <p className="mt-1 text-sm text-white/50">
-                            {achievement.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                <ViewPanel
+                  creator={creator}
+                  bio={bio}
+                  title={title}
+                  description={description}
+                  tagsText={tagsText}
+                  socials={socials}
+                />
               )}
             </div>
           </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function ClaimPanel({
+  claimPlatform,
+  setClaimPlatform,
+  claimUrl,
+  setClaimUrl,
+  claimCode,
+  claimSending,
+  claimSuccess,
+  onSubmit,
+  onBack,
+}: {
+  claimPlatform: string;
+  setClaimPlatform: (value: string) => void;
+  claimUrl: string;
+  setClaimUrl: (value: string) => void;
+  claimCode: string;
+  claimSending: boolean;
+  claimSuccess: boolean;
+  onSubmit: () => void;
+  onBack: () => void;
+}) {
+  if (claimSuccess) {
+    return (
+      <div className="pb-10 pr-16">
+        <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
+          Claim Sent
+        </p>
+
+        <h3 className="mt-3 text-3xl font-bold">Solicitação enviada</h3>
+
+        <p className="mt-4 text-white/60">
+          Agora coloque o código abaixo na bio, descrição ou sobre da plataforma
+          informada. Um administrador irá revisar sua solicitação.
+        </p>
+
+        <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
+          {claimCode}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-10 pr-16">
+      <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
+        Claim Profile
+      </p>
+
+      <h3 className="mt-3 text-3xl font-bold">Este perfil é meu</h3>
+
+      <p className="mt-4 text-white/60">
+        Para provar que este perfil pertence a você, informe uma plataforma oficial
+        e coloque temporariamente o código abaixo na bio/descrição do canal.
+      </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-[180px_1fr]">
+        <select
+          value={claimPlatform}
+          onChange={(event) => setClaimPlatform(event.target.value)}
+          className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+        >
+          {socialPlatforms.map((platform) => (
+            <option key={platform} value={platform}>
+              {platform}
+            </option>
+          ))}
+        </select>
+
+        <input
+          value={claimUrl}
+          onChange={(event) => setClaimUrl(event.target.value)}
+          placeholder="Link do canal ou perfil oficial"
+          className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+        />
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+        <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
+          Código de verificação
+        </p>
+
+        <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
+          {claimCode}
+        </p>
+      </div>
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <button
+          onClick={onSubmit}
+          disabled={claimSending}
+          className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
+        >
+          <Send size={16} />
+          {claimSending ? "Enviando..." : "Enviar reivindicação"}
+        </button>
+
+        <button
+          onClick={onBack}
+          className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm text-white/70 hover:bg-white/[0.08]"
+        >
+          Voltar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ViewPanel({
+  creator,
+  bio,
+  title,
+  description,
+  tagsText,
+  socials,
+}: {
+  creator: Creator;
+  bio: string;
+  title: string;
+  description: string;
+  tagsText: string;
+  socials: SocialForm;
+}) {
+  return (
+    <>
+      <div className="pr-16">
+        <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+          Creator Profile
+        </p>
+
+        <h3 className="mt-3 text-3xl font-bold leading-tight">
+          {bio || creator.bio}
+        </h3>
+
+        <p className="mt-3 text-sm font-semibold text-cyan-100">
+          {title || creator.title}
+        </p>
+
+        <p className="mt-4 text-white/65">
+          {description || creator.description}
+        </p>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <InfoCard label="Power Score" value={creator.powerScore.toLocaleString("pt-BR")} color="text-cyan-200" />
+        <InfoCard label="Collected by" value={creator.collectedBy.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label="Status" value={statusLabel[creator.status]} color="text-emerald-200" />
+      </div>
+
+      <div className="mt-8">
+        <h4 className="font-bold">Tags</h4>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {tagsText
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+            .map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
+              >
+                {tag}
+              </span>
+            ))}
+        </div>
+      </div>
+
+      <div className="mt-8 pb-10">
+        <h4 className="font-bold">Social Links</h4>
+
+        <div className="mt-3 flex flex-wrap gap-3">
+          {Object.entries(socials)
+            .filter(([, url]) => url.trim().length > 0)
+            .map(([platform, url]) => (
+              <a
+                key={platform}
+                href={url}
+                target="_blank"
+                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
+              >
+                {platform}
+              </a>
+            ))}
+        </div>
+      </div>
+    </>
   );
 }
 
