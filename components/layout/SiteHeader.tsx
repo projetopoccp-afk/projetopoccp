@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LogOut, User } from "lucide-react";
-
+import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { supabase } from "@/lib/supabase/client";
@@ -23,23 +23,25 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
   useEffect(() => {
     async function getUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-      if (!user) {
-        setUser(null);
-        return;
-      }
+  if (!user) {
+    setUser(null);
+    return;
+  }
 
-      setUser({
-        name:
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          "Creator",
-        email: user.email || "",
-      });
-    }
+  await ensureProfile(user);
+
+  setUser({
+    name:
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      "Creator",
+    email: user.email || "",
+  });
+}
 
     getUser();
 
