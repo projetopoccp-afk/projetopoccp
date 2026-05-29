@@ -63,6 +63,9 @@ type CreatorProfile = {
   is_verified: boolean | null;
   owner_status: string | null;
   created_at: string;
+  share_count: number | null;
+  views_count?: number;
+  followers_count?: number;
 };
 
 type CreatorClaim = {
@@ -170,11 +173,33 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const { data } = await supabase
       .from("creator_profiles")
       .select(
-        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at"
+        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at, share_count"
       )
       .order("created_at", { ascending: false });
 
-    setCreators((data || []) as CreatorProfile[]);
+    const creatorsWithStats = await Promise.all(
+      ((data || []) as CreatorProfile[]).map(async (creator) => {
+        const [{ count: views }, { count: followers }] = await Promise.all([
+          supabase
+            .from("creator_views")
+            .select("id", { count: "exact", head: true })
+            .eq("creator_id", creator.id),
+          supabase
+            .from("creator_followers")
+            .select("id", { count: "exact", head: true })
+            .eq("creator_id", creator.id),
+        ]);
+
+        return {
+          ...creator,
+          views_count: views || 0,
+          followers_count: followers || 0,
+          share_count: creator.share_count || 0,
+        };
+      })
+    );
+
+    setCreators(creatorsWithStats);
   }
 
   async function loadClaims() {
@@ -947,6 +972,28 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                   ? owner.email || owner.display_name || "Sem email"
                                   : "Sem dono"}
                               </p>
+
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <StatusPill
+                                  label={`👁 ${Number(
+                                    creator.views_count || 0
+                                  ).toLocaleString("pt-BR")}`}
+                                  tone="cyan"
+                                />
+
+                                <StatusPill
+                                  label={`👥 ${Number(
+                                    creator.followers_count || 0
+                                  ).toLocaleString("pt-BR")}`}
+                                />
+
+                                <StatusPill
+                                  label={`🔗 ${Number(
+                                    creator.share_count || 0
+                                  ).toLocaleString("pt-BR")}`}
+                                  tone="yellow"
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -1095,7 +1142,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               </div>
                             </div>
 
-                            <div className="grid gap-3 border-t border-white/10 bg-black/20 p-5 text-sm text-white/45 sm:grid-cols-3">
+                            <div className="grid gap-3 border-t border-white/10 bg-black/20 p-5 text-sm text-white/45 sm:grid-cols-3 lg:grid-cols-6">
                               <SmallInfo label="ID" value={creator.id} />
                               <SmallInfo
                                 label="Criado em"
@@ -1106,6 +1153,24 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               <SmallInfo
                                 label="Categoria"
                                 value={creator.category || "Creator"}
+                              />
+                              <SmallInfo
+                                label="Views"
+                                value={Number(
+                                  creator.views_count || 0
+                                ).toLocaleString("pt-BR")}
+                              />
+                              <SmallInfo
+                                label="Seguidores"
+                                value={Number(
+                                  creator.followers_count || 0
+                                ).toLocaleString("pt-BR")}
+                              />
+                              <SmallInfo
+                                label="Compartilhamentos"
+                                value={Number(
+                                  creator.share_count || 0
+                                ).toLocaleString("pt-BR")}
                               />
                             </div>
                           </>
