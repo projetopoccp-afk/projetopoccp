@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Compass, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { AccountModal } from "@/components/account/AccountModal";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
@@ -139,9 +139,6 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     Discover
   </a>
 
-  <div className="flex-1">
-    <CreatorSearch value={search} onChange={onSearchChange} />
-  </div>
 </div>
 
           {user ? (
