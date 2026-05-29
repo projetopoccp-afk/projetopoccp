@@ -59,14 +59,25 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               </p>
 
               <div className="mt-8 space-y-3">
-                <button className="w-full rounded-2xl border border-indigo-300/20 bg-indigo-400/10 px-5 py-4 text-left transition hover:bg-indigo-400/20">
-                  <p className="font-bold text-white">
-                    Continuar com Discord
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Ideal para creators, comunidades e servidores.
-                  </p>
-                </button>
+                <button
+  onClick={async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "discord",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  }}
+  className="w-full rounded-2xl border border-indigo-300/20 bg-indigo-400/10 px-5 py-4 text-left transition hover:bg-indigo-400/20"
+>
+  <p className="font-bold text-white">
+    Continuar com Discord
+  </p>
+
+  <p className="mt-1 text-xs text-white/45">
+    Ideal para creators, comunidades e servidores.
+  </p>
+</button>
 
                 <button
   onClick={async () => {
