@@ -91,8 +91,6 @@ function getClipPreviewThumbnail(url: string) {
 }
 
 async function resolveClipThumbnail(url: string) {
-  if (!url.trim()) return "";
-
   const youtubeThumbnail = getClipPreviewThumbnail(url);
 
   if (youtubeThumbnail) {
@@ -101,7 +99,7 @@ async function resolveClipThumbnail(url: string) {
 
   try {
     const response = await fetch(
-      `/api/clip-preview?url=${encodeURIComponent(url)}`
+      `https://noembed.com/embed?url=${encodeURIComponent(url)}`
     );
 
     if (!response.ok) {
@@ -110,7 +108,7 @@ async function resolveClipThumbnail(url: string) {
 
     const data = await response.json();
 
-    return data?.thumbnail || "";
+    return data?.thumbnail_url || "";
   } catch {
     return "";
   }
@@ -119,11 +117,11 @@ async function resolveClipThumbnail(url: string) {
 
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [claimMode, setClaimMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadedCreatorId, setLoadedCreatorId] = useState<string | null>(null);
 
   const [nickname, setNickname] = useState("");
   const [title, setTitle] = useState("");
@@ -178,24 +176,13 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }, []);
 
   useEffect(() => {
-    if (!creator) {
-      setLoadedCreatorId(null);
-      return;
-    }
+    if (!creator) return;
 
-    setLoadedCreatorId(null);
     setEditMode(false);
     setClaimMode(false);
     setClaimSuccess(false);
     setClaimUrl("");
-    setCopied(false);
-    setSaving(false);
-    setFollowLoading(false);
-    setUploadingAvatar(false);
-    setUploadingBanner(false);
-    setViewCount(0);
-    setFollowerCount(0);
-    setIsFollowing(false);
+    setShareOpen(false);
 
     setNickname(creator.nickname);
     setTitle(creator.title || "");
@@ -205,15 +192,6 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setAvatarUrl(creator.avatarUrl || "");
     setBannerUrl(creator.bannerUrl || "");
     setTagsText((creator.tags || []).join(", "));
-
-    const emptySocials: SocialForm = {};
-    socialPlatforms.forEach((platform) => {
-      emptySocials[platform] = "";
-    });
-
-    setSocials(emptySocials);
-    setClips([emptyClip(), emptyClip(), emptyClip()]);
-    setLoadedCreatorId(creator.id);
 
     async function loadCreatorData() {
       if (!creator) return;
@@ -307,18 +285,69 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     loadCreatorData();
   }, [creator]);
 
-  async function handleShare() {
-    if (!creator) return;
+  function getCreatorShareUrl() {
+    if (!creator) return "";
 
-    const shareText = `Confira o creator ${creator.nickname} no Creator Nexus ✦`;
+    return `${window.location.origin}/creator/${creator.username}`;
+  }
 
-    await navigator.clipboard.writeText(shareText);
+  async function copyCreatorLink() {
+    const url = getCreatorShareUrl();
+
+    if (!url) return;
+
+    await navigator.clipboard.writeText(url);
 
     setCopied(true);
 
     setTimeout(() => {
       setCopied(false);
-    }, 1800);
+    }, 2000);
+  }
+
+  function shareTo(platform: string) {
+    if (!creator) return;
+
+    const url = getCreatorShareUrl();
+    const encodedUrl = encodeURIComponent(url);
+    const encodedText = encodeURIComponent(
+      `Confira ${creator.nickname} no Creator Nexus ✦`
+    );
+
+    const shareLinks: Record<string, string> = {
+      whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+      x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    };
+
+    if (platform === "copy") {
+      copyCreatorLink();
+      return;
+    }
+
+    if (platform === "discord") {
+      copyCreatorLink();
+      window.open("https://discord.com/channels/@me", "_blank");
+      return;
+    }
+
+    if (platform === "instagram") {
+      copyCreatorLink();
+      window.open("https://www.instagram.com/", "_blank");
+      return;
+    }
+
+    const shareUrl = shareLinks[platform];
+
+    if (shareUrl) {
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  function handleShare() {
+    setShareOpen(true);
   }
 
   async function handleFollow() {
@@ -494,21 +523,6 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         alert(clipError.message);
         return;
       }
-
-      setClips((current) => {
-        const updatedClips = [emptyClip(), emptyClip(), emptyClip()];
-
-        current.slice(0, 3).forEach((clip, index) => {
-          const savedClip = clipRows[index];
-
-          updatedClips[index] = {
-            ...clip,
-            thumbnailUrl: savedClip?.thumbnail_url || clip.thumbnailUrl || "",
-          };
-        });
-
-        return updatedClips;
-      });
     }
 
     setSaving(false);
@@ -550,49 +564,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   if (!creator) return null;
 
-  const isCreatorReady = loadedCreatorId === creator.id;
-
-  if (!isCreatorReady) {
-    return (
-      <AnimatePresence>
-        <motion.div
-          key={`loading-${creator.id}`}
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-        >
-          <button
-            onClick={onClose}
-            className="absolute inset-0"
-            aria-label="Fechar popup"
-          />
-
-          <div className="relative w-full max-w-md rounded-[32px] border border-white/15 bg-zinc-950 p-8 text-center text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]">
-            <div className="mx-auto h-16 w-16 rounded-full bg-cyan-300/20 blur-xl" />
-
-            <p className="mt-4 text-xs uppercase tracking-[0.3em] text-cyan-200">
-              Loading creator
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black">
-              {creator.nickname}
-            </h2>
-
-            <p className="mt-2 text-sm text-white/45">
-              Preparando perfil...
-            </p>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    );
-  }
-
   return (
     <AnimatePresence>
       <motion.div
-        key={creator.id}
         initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
         animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
@@ -606,7 +580,6 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         />
 
         <motion.div
-          key={`popup-card-${creator.id}`}
           initial={{ opacity: 0, scale: 0.92, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 30 }}
@@ -675,7 +648,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   onClick={handleShare}
                   className="rounded-full border border-white/15 bg-white/[0.05] px-5 py-2 text-sm text-white transition hover:bg-white/[0.08]"
                 >
-                  {copied ? "Copiado!" : "Compartilhar"}
+                  Compartilhar
                 </button>
 
                 {canClaim && (
@@ -774,7 +747,95 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           </div>
         </motion.div>
       </motion.div>
+
+      {shareOpen && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(10px)" }}
+          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
+        >
+          <button
+            onClick={() => setShareOpen(false)}
+            className="absolute inset-0"
+            aria-label="Fechar compartilhamento"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 18, scale: 0.96 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]"
+          >
+            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
+            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-purple-500/20 blur-[70px]" />
+
+            <div className="relative z-10">
+              <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
+                Share Profile
+              </div>
+
+              <h3 className="mt-5 text-2xl font-black">
+                Compartilhar perfil
+              </h3>
+
+              <p className="mt-2 text-sm text-white/50">
+                Compartilhe o perfil de {creator.nickname} usando o link com preview do Creator Nexus.
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/45">
+                {getCreatorShareUrl()}
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <ShareButton label="WhatsApp" onClick={() => shareTo("whatsapp")} />
+                <ShareButton label="X / Twitter" onClick={() => shareTo("x")} />
+                <ShareButton label="Telegram" onClick={() => shareTo("telegram")} />
+                <ShareButton label="Facebook" onClick={() => shareTo("facebook")} />
+                <ShareButton label="LinkedIn" onClick={() => shareTo("linkedin")} />
+                <ShareButton label="Discord" onClick={() => shareTo("discord")} />
+                <ShareButton label="Instagram" onClick={() => shareTo("instagram")} />
+                <ShareButton
+                  label={copied ? "Link copiado!" : "Copiar link"}
+                  onClick={() => shareTo("copy")}
+                  full
+                />
+              </div>
+
+              <button
+                onClick={() => setShareOpen(false)}
+                className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
+              >
+                Fechar
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
+  );
+}
+
+function ShareButton({
+  label,
+  onClick,
+  full = false,
+}: {
+  label: string;
+  onClick: () => void;
+  full?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
+        full ? "col-span-2" : ""
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -832,70 +893,14 @@ function EditPanel({
   handleSave: () => void;
 }) {
   const [clipsExpanded, setClipsExpanded] = useState(false);
-  const [autoResolvingClips, setAutoResolvingClips] = useState<
-    Record<number, boolean>
-  >({});
 
   function updateClip(index: number, field: keyof ClipForm, value: string) {
     setClips((current) =>
-      current.map((clip, clipIndex) => {
-        if (clipIndex !== index) return clip;
-
-        if (field === "url") {
-          return {
-            ...clip,
-            url: value,
-            thumbnailUrl: "",
-          };
-        }
-
-        return { ...clip, [field]: value };
-      })
+      current.map((clip, clipIndex) =>
+        clipIndex === index ? { ...clip, [field]: value } : clip
+      )
     );
   }
-
-  useEffect(() => {
-    const timers = clips.map((clip, index) => {
-      const clipUrl = clip.url.trim();
-
-      if (!clipUrl || clip.thumbnailUrl) return null;
-
-      return window.setTimeout(async () => {
-        setAutoResolvingClips((current) => ({
-          ...current,
-          [index]: true,
-        }));
-
-        const thumbnailUrl = await resolveClipThumbnail(clipUrl);
-
-        if (thumbnailUrl) {
-          setClips((current) =>
-            current.map((currentClip, currentIndex) => {
-              if (currentIndex !== index) return currentClip;
-
-              if (currentClip.url.trim() !== clipUrl) return currentClip;
-
-              return {
-                ...currentClip,
-                thumbnailUrl,
-              };
-            })
-          );
-        }
-
-        setAutoResolvingClips((current) => ({
-          ...current,
-          [index]: false,
-        }));
-      }, 900);
-    });
-
-    return () => {
-      timers.forEach((timer) => {
-        if (timer) window.clearTimeout(timer);
-      });
-    };
-  }, [clips, setClips]);
 
   return (
     <div className="pb-10 pr-16">
@@ -1003,7 +1008,7 @@ function EditPanel({
 
             <p className="mt-2 text-sm text-white/45">
               Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
-              será buscada automaticamente depois que você colar o link.
+              será buscada automaticamente pelo link quando possível.
             </p>
           </div>
 
@@ -1066,35 +1071,6 @@ function EditPanel({
                         onChange={(value) => updateClip(index, "url", value)}
                         placeholder="https://..."
                       />
-
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const thumbnailUrl = await resolveClipThumbnail(
-                              clip.url
-                            );
-
-                            if (!thumbnailUrl) {
-                              alert(
-                                "Não consegui encontrar a capa automaticamente para este link."
-                              );
-                              return;
-                            }
-
-                            updateClip(index, "thumbnailUrl", thumbnailUrl);
-                          }}
-                          className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
-                        >
-                          Buscar capa novamente
-                        </button>
-
-                        {autoResolvingClips[index] && (
-                          <span className="text-xs text-cyan-200">
-                            Buscando capa automaticamente...
-                          </span>
-                        )}
-                      </div>
                     </div>
 
                     {previewThumbnail && (
