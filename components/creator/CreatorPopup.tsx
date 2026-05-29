@@ -79,23 +79,25 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setTagsText((creator.tags || []).join(", "));
 
     async function loadSocialLinks() {
-      const { data } = await supabase
-        .from("creator_social_links")
-        .select("platform, url")
-        .eq("creator_id", creator.id);
+  if (!creator) return;
 
-      const nextSocials: SocialForm = {};
+  const { data } = await supabase
+    .from("creator_social_links")
+    .select("platform, url")
+    .eq("creator_id", creator.id);
 
-      socialPlatforms.forEach((platform) => {
-        nextSocials[platform] = "";
-      });
+  const nextSocials: SocialForm = {};
 
-      data?.forEach((item: any) => {
-        nextSocials[item.platform] = item.url;
-      });
+  socialPlatforms.forEach((platform) => {
+    nextSocials[platform] = "";
+  });
 
-      setSocials(nextSocials);
-    }
+  data?.forEach((item: any) => {
+    nextSocials[item.platform] = item.url;
+  });
+
+  setSocials(nextSocials);
+}
 
     loadSocialLinks();
   }, [creator]);
