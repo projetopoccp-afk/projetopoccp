@@ -86,6 +86,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [userSearch, setUserSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
+  const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>({});
 
   async function getCurrentUserId() {
     const {
@@ -710,141 +711,148 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             )}
 
             {!loading && activeTab === "creators" && (
-              <div className="mt-8">
-                <SearchInput
-                  value={creatorSearch}
-                  onChange={setCreatorSearch}
-                  placeholder="Buscar por creator, dono, email ou username..."
+  <div className="mt-8">
+    <SearchInput
+      value={creatorSearch}
+      onChange={setCreatorSearch}
+      placeholder="Buscar por creator, dono, email ou username..."
+    />
+
+    <div className="mt-5 grid gap-4">
+      {filteredCreators.map((creator) => {
+        const owner = getOwner(creator.user_id);
+        const selectedOwnerId =
+          selectedOwners[creator.id] ?? creator.user_id ?? "";
+
+        return (
+          <div
+            key={creator.id}
+            className="grid gap-5 rounded-3xl border border-white/10 bg-white/[0.04] p-5 md:grid-cols-[120px_1fr]"
+          >
+            <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
+              {creator.avatar_url ? (
+                <img
+                  src={creator.avatar_url}
+                  alt={creator.nickname}
+                  className="h-40 w-full object-cover"
                 />
+              ) : (
+                <div className="flex h-40 items-center justify-center text-white/30">
+                  Sem imagem
+                </div>
+              )}
+            </div>
 
-                <div className="mt-5 grid gap-4">
-                  {filteredCreators.map((creator) => {
-                    const owner = getOwner(creator.user_id);
+            <div>
+              <div className="flex flex-wrap justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-black">{creator.nickname}</h3>
+                  <p className="text-white/45">@{creator.username}</p>
 
-                    return (
-                      <div
-                        key={creator.id}
-                        className="grid gap-5 rounded-3xl border border-white/10 bg-white/[0.04] p-5 md:grid-cols-[120px_1fr]"
-                      >
-                        <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
-                          {creator.avatar_url ? (
-                            <img
-                              src={creator.avatar_url}
-                              alt={creator.nickname}
-                              className="h-40 w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-40 items-center justify-center text-white/30">
-                              Sem imagem
-                            </div>
-                          )}
-                        </div>
+                  <p className="mt-2 text-sm text-white/45">
+                    Dono:{" "}
+                    {owner
+                      ? `${owner.display_name || "Sem nome"} • ${
+                          owner.email || "sem email"
+                        }`
+                      : "Sem dono"}
+                  </p>
+                </div>
 
-                        <div>
-                          <div className="flex flex-wrap justify-between gap-4">
-                            <div>
-                              <h3 className="text-2xl font-black">
-                                {creator.nickname}
-                              </h3>
+                <div className="flex flex-wrap gap-2">
+                  <StatusPill
+                    label={creator.user_id ? "👤 Reivindicado" : "👤 Sem dono"}
+                  />
 
-                              <p className="text-white/45">
-                                @{creator.username}
-                              </p>
+                  <StatusPill
+                    label={creator.is_verified ? "✓ Verificado" : "○ Não verificado"}
+                  />
 
-                              <p className="mt-2 text-sm text-white/45">
-                                Dono:{" "}
-                                {owner
-                                  ? `${owner.display_name || "Sem nome"} • ${
-                                      owner.email || "sem email"
-                                    }`
-                                  : "Sem dono"}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              <StatusPill
-                                label={creator.owner_status || "unclaimed"}
-                              />
-
-                              {creator.is_verified && (
-                                <StatusPill label="verified" />
-                              )}
-
-                              {creator.is_public ? (
-                                <StatusPill label="public" />
-                              ) : (
-                                <StatusPill label="hidden" />
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                            <select
-                              value={creator.user_id || ""}
-                              onChange={(event) =>
-                                changeCreatorOwner(
-                                  creator,
-                                  event.target.value
-                                )
-                              }
-                              className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
-                            >
-                              <option value="">Sem dono</option>
-
-                              {users.map((user) => (
-                                <option key={user.id} value={user.id}>
-                                  {user.email || user.display_name || user.id}
-                                </option>
-                              ))}
-                            </select>
-
-                            <button
-                              onClick={() => removeCreatorOwner(creator)}
-                              disabled={
-                                actionLoading === creator.id || !creator.user_id
-                              }
-                              className="rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
-                            >
-                              Remover Dono
-                            </button>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap gap-3">
-                            <button
-                              onClick={() => toggleCreatorVerified(creator)}
-                              disabled={actionLoading === creator.id}
-                              className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-2 text-sm font-bold text-yellow-100"
-                            >
-                              {creator.is_verified
-                                ? "Remover verificação"
-                                : "Verificar perfil"}
-                            </button>
-
-                            <button
-                              onClick={() => toggleCreatorPublic(creator)}
-                              disabled={actionLoading === creator.id}
-                              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100"
-                            >
-                              {creator.is_public ? (
-                                <>
-                                  <EyeOff size={16} />
-                                  Ocultar
-                                </>
-                              ) : (
-                                <>
-                                  <Eye size={16} />
-                                  Publicar
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <StatusPill
+                    label={creator.is_public ? "🌐 Público" : "🔒 Oculto"}
+                  />
                 </div>
               </div>
-            )}
+
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
+                  Dono do perfil
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+                  <select
+                    value={selectedOwnerId}
+                    onChange={(event) =>
+                      setSelectedOwners((current) => ({
+                        ...current,
+                        [creator.id]: event.target.value,
+                      }))
+                    }
+                    className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                  >
+                    <option value="">Sem dono</option>
+
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.email || user.display_name || user.id}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => changeCreatorOwner(creator, selectedOwnerId)}
+                    disabled={actionLoading === creator.id}
+                    className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                  >
+                    Atribuir
+                  </button>
+
+                  <button
+                    onClick={() => removeCreatorOwner(creator)}
+                    disabled={actionLoading === creator.id || !creator.user_id}
+                    className="rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                  >
+                    Remover Dono
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={() => toggleCreatorVerified(creator)}
+                  disabled={actionLoading === creator.id}
+                  className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-2 text-sm font-bold text-yellow-100"
+                >
+                  {creator.is_verified
+                    ? "Remover verificação"
+                    : "Verificar perfil"}
+                </button>
+
+                <button
+                  onClick={() => toggleCreatorPublic(creator)}
+                  disabled={actionLoading === creator.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100"
+                >
+                  {creator.is_public ? (
+                    <>
+                      <EyeOff size={16} />
+                      Ocultar
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={16} />
+                      Publicar
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
 
             {!loading && activeTab === "logs" && (
               <div className="mt-8">
