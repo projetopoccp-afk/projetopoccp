@@ -1255,6 +1255,7 @@ function ViewPanel({
   clips,
   viewCount,
   followerCount,
+  shareCount,
 }: {
   creator: Creator;
   bio: string;
