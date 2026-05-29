@@ -72,7 +72,7 @@ export async function GET(
           >
             {data?.avatar_url ? (
               <img
-                src={avatarProxyUrl}
+                src="https://projetopoccp.vercel.app/api/og/avatar/teste5"
                 width="300"
                 height="420"
                 style={{
