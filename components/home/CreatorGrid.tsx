@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
@@ -11,17 +11,24 @@ type CreatorGridProps = {
   search: string;
 };
 
+type CreatorWithMeta = Creator & {
+  createdAt: string;
+  trendingScore: number;
+};
+
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
 
   const match = window.location.pathname.match(/^\/creator\/([^/]+)$/);
 
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
+  if (!match?.[1]) return null;
+
+  return decodeURIComponent(match[1]);
 }
 
 export function CreatorGrid({ search }: CreatorGridProps) {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-  const [creators, setCreators] = useState<Creator[]>([]);
+  const [creators, setCreators] = useState<CreatorWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +50,8 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           bio,
           description,
           tags,
+          created_at,
+          trending_score,
           creator_cards (
             rarity,
             rank,
@@ -62,7 +71,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         return;
       }
 
-      const mappedCreators: Creator[] = data.map((item: any) => {
+      const mappedCreators: CreatorWithMeta[] = data.map((item: any) => {
         const card = item.creator_cards?.[0];
 
         return {
@@ -119,6 +128,8 @@ export function CreatorGrid({ search }: CreatorGridProps) {
               description: "Perfil aprovado pela moderação.",
             },
           ],
+          createdAt: item.created_at || new Date().toISOString(),
+          trendingScore: item.trending_score || 0,
         };
       });
 
@@ -130,19 +141,17 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   }, []);
 
   useEffect(() => {
-    if (loading || creators.length === 0) return;
-
     function syncPopupWithUrl() {
-      const usernameFromPath = getCreatorUsernameFromPath();
+      const usernameFromUrl = getCreatorUsernameFromPath();
 
-      if (!usernameFromPath) {
+      if (!usernameFromUrl) {
         setSelectedCreator(null);
         return;
       }
 
       const creatorFromUrl = creators.find(
         (creator) =>
-          creator.username.toLowerCase() === usernameFromPath.toLowerCase()
+          creator.username.toLowerCase() === usernameFromUrl.toLowerCase()
       );
 
       if (creatorFromUrl) {
@@ -157,19 +166,25 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     return () => {
       window.removeEventListener("popstate", syncPopupWithUrl);
     };
-  }, [creators, loading]);
+  }, [creators]);
 
-  function openCreator(creator: Creator) {
+  function handleOpenCreator(creator: Creator) {
     setSelectedCreator(creator);
 
     const nextUrl = `/creator/${encodeURIComponent(creator.username)}`;
 
     if (window.location.pathname !== nextUrl) {
-      window.history.pushState({ creatorId: creator.id }, "", nextUrl);
+      window.history.pushState(
+        {
+          creatorId: creator.id,
+        },
+        "",
+        nextUrl
+      );
     }
   }
 
-  function closeCreator() {
+  function handleCloseCreator() {
     setSelectedCreator(null);
 
     if (window.location.pathname.startsWith("/creator/")) {
@@ -178,6 +193,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   }
 
   const normalizedSearch = search.toLowerCase().trim();
+  const hasSearch = normalizedSearch.length > 0;
 
   const filteredCreators = creators.filter((creator) => {
     const searchableText = [
@@ -189,6 +205,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       creator.aura,
       creator.mainPlatform,
       creator.title,
+      creator.faction,
       creator.status,
       ...creator.tags,
     ]
@@ -198,44 +215,133 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     return searchableText.includes(normalizedSearch);
   });
 
+  const featuredCreators = useMemo(() => {
+    return [...creators]
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, 6);
+  }, [creators]);
+
+  const newestCreators = useMemo(() => {
+    return [...creators]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 6);
+  }, [creators]);
+
   return (
     <>
-      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 justify-items-center gap-8 px-6 pb-20 pt-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-10">
         {loading && (
-          <div className="col-span-full rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
             Carregando creators...
           </div>
         )}
 
-        {!loading &&
-          filteredCreators.map((creator) => (
-            <CreatorCard
-              key={creator.id}
-              creator={creator}
-              onClick={openCreator}
+        {!loading && hasSearch && (
+          <CreatorSection
+            title="Resultado da busca"
+            description="Creators encontrados com base no termo pesquisado."
+            creators={filteredCreators}
+            onOpenCreator={handleOpenCreator}
+          />
+        )}
+
+        {!loading && !hasSearch && (
+          <div className="space-y-16">
+            <CreatorSection
+              eyebrow="⭐ Destaques"
+              title="Creators em Destaque"
+              description="Perfis com maior impacto dentro do Creator Nexus, considerando views, seguidores e compartilhamentos."
+              creators={featuredCreators}
+              onOpenCreator={handleOpenCreator}
             />
-          ))}
 
-        {!loading && filteredCreators.length === 0 && (
-          <div className="col-span-full flex w-full max-w-2xl flex-col items-center rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center backdrop-blur-xl">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400/20 to-purple-500/20 blur-2xl" />
-
-            <div className="relative -mt-12 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black/40 text-3xl">
-              ✦
-            </div>
-
-            <h3 className="mt-6 text-2xl font-bold text-white">
-              No digital identities detected
-            </h3>
-
-            <p className="mt-3 max-w-md text-sm text-white/50">
-              Try searching by creator name, category, rarity, platform or tags.
-            </p>
+            <CreatorSection
+              eyebrow="🆕 Novos"
+              title="Novos no Nexus"
+              description="Creators recém-aprovados que acabaram de entrar na plataforma."
+              creators={newestCreators}
+              onOpenCreator={handleOpenCreator}
+            />
           </div>
         )}
+
+        {!loading && hasSearch && filteredCreators.length === 0 && <EmptyState />}
       </section>
 
-      <CreatorPopup creator={selectedCreator} onClose={closeCreator} />
+      <CreatorPopup creator={selectedCreator} onClose={handleCloseCreator} />
     </>
+  );
+}
+
+function CreatorSection({
+  eyebrow,
+  title,
+  description,
+  creators,
+  onOpenCreator,
+}: {
+  eyebrow?: string;
+  title: string;
+  description: string;
+  creators: CreatorWithMeta[];
+  onOpenCreator: (creator: Creator) => void;
+}) {
+  if (creators.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-8 flex flex-col gap-3 text-center sm:text-left">
+        {eyebrow && (
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-200/80">
+            {eyebrow}
+          </p>
+        )}
+
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="text-3xl font-black text-white md:text-4xl">
+              {title}
+            </h2>
+
+            <p className="mt-3 max-w-2xl text-sm text-white/45">
+              {description}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {creators.map((creator) => (
+          <CreatorCard
+            key={`${title}-${creator.id}`}
+            creator={creator}
+            onClick={onOpenCreator}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex w-full flex-col items-center rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center backdrop-blur-xl">
+      <div className="h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400/20 to-purple-500/20 blur-2xl" />
+
+      <div className="relative -mt-12 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black/40 text-3xl">
+        ✦
+      </div>
+
+      <h3 className="mt-6 text-2xl font-bold text-white">
+        No digital identities detected
+      </h3>
+
+      <p className="mt-3 max-w-md text-sm text-white/50">
+        Try searching by creator name, category, rarity, platform or tags.
+      </p>
+    </div>
   );
 }
