@@ -64,9 +64,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           title: item.title || "Rising Creator",
           faction: item.faction || "Nexus Origin",
           category: item.category || "Creator",
-          mainPlatform:
-          request?.verification_platform ||
-          "youtube",
+          mainPlatform: "youtube",
           status: item.status || "offline",
           avatarUrl: item.avatar_url || "",
           bannerUrl: item.banner_url || "",
