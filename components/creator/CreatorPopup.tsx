@@ -91,6 +91,8 @@ function getClipPreviewThumbnail(url: string) {
 }
 
 async function resolveClipThumbnail(url: string) {
+  if (!url.trim()) return "";
+
   const youtubeThumbnail = getClipPreviewThumbnail(url);
 
   if (youtubeThumbnail) {
@@ -99,7 +101,7 @@ async function resolveClipThumbnail(url: string) {
 
   try {
     const response = await fetch(
-      `https://noembed.com/embed?url=${encodeURIComponent(url)}`
+      `/api/clip-preview?url=${encodeURIComponent(url)}`
     );
 
     if (!response.ok) {
@@ -108,7 +110,7 @@ async function resolveClipThumbnail(url: string) {
 
     const data = await response.json();
 
-    return data?.thumbnail_url || "";
+    return data?.thumbnail || "";
   } catch {
     return "";
   }
@@ -470,6 +472,21 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         alert(clipError.message);
         return;
       }
+
+      setClips((current) => {
+        const updatedClips = [emptyClip(), emptyClip(), emptyClip()];
+
+        current.slice(0, 3).forEach((clip, index) => {
+          const savedClip = clipRows[index];
+
+          updatedClips[index] = {
+            ...clip,
+            thumbnailUrl: savedClip?.thumbnail_url || clip.thumbnailUrl || "",
+          };
+        });
+
+        return updatedClips;
+      });
     }
 
     setSaving(false);
@@ -867,7 +884,7 @@ function EditPanel({
 
             <p className="mt-2 text-sm text-white/45">
               Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
-              será buscada automaticamente pelo link quando possível.
+              será buscada automaticamente ao salvar; você também pode buscar antes para pré-visualizar.
             </p>
           </div>
 
@@ -930,6 +947,23 @@ function EditPanel({
                         onChange={(value) => updateClip(index, "url", value)}
                         placeholder="https://..."
                       />
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const thumbnailUrl = await resolveClipThumbnail(clip.url);
+
+                          if (!thumbnailUrl) {
+                            alert("Não consegui encontrar a capa automaticamente para este link.");
+                            return;
+                          }
+
+                          updateClip(index, "thumbnailUrl", thumbnailUrl);
+                        }}
+                        className="mt-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+                      >
+                        Buscar capa automaticamente
+                      </button>
                     </div>
 
                     {previewThumbnail && (
