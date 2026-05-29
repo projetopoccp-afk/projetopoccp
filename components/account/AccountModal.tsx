@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LogOut, ShieldCheck, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 
 type AccountProfile = {
@@ -29,6 +30,7 @@ export function AccountModal({
   onLogout,
 }: AccountModalProps) {
   const [requestOpen, setRequestOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   return (
     <>
@@ -106,13 +108,13 @@ export function AccountModal({
                 </div>
 
                 {profile?.is_admin && (
-                  <a
-                    href="/admin"
+                  <button
+                    onClick={() => setAdminOpen(true)}
                     className="mt-6 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20"
                   >
                     <ShieldCheck size={18} />
                     Painel Admin
-                  </a>
+                  </button>
                 )}
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -163,6 +165,11 @@ export function AccountModal({
         open={requestOpen}
         email={email}
         onClose={() => setRequestOpen(false)}
+      />
+
+      <AdminPanelModal
+        open={adminOpen}
+        onClose={() => setAdminOpen(false)}
       />
     </>
   );
