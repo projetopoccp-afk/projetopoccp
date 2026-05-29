@@ -23,7 +23,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
       <TiltCard>
         <button
           onClick={() => onClick(creator)}
-          className={`group relative h-[420px] w-[280px] overflow-hidden rounded-[28px] border bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:shadow-[0_0_80px_rgba(34,211,238,0.25)] ${rarity.border}`}
+          className={`group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:shadow-[0_0_80px_rgba(34,211,238,0.25)] ${rarity.border}`}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
 
@@ -58,12 +58,12 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             Lv. {creator.level}
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-5">
+          <div className="absolute bottom-0 left-0 right-0 p-4">
             <p className={`text-xs uppercase tracking-[0.3em] ${rarity.text}`}>
               {creator.category}
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold text-white">
+            <h2 className="mt-2 text-xl font-bold text-white">
               {creator.nickname}
             </h2>
 

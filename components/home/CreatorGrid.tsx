@@ -249,19 +249,17 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         )}
 
         {!loading && !hasSearch && (
-          <div className="space-y-16">
+          <div className="space-y-13">
             <CreatorSection
-              eyebrow="⭐ Destaques"
-              title="Creators em Destaque"
-              description="Perfis com maior impacto dentro do Creator Nexus, considerando views, seguidores e compartilhamentos."
+              title="Cartas em Destaque"
+              description=""
               creators={featuredCreators}
               onOpenCreator={handleOpenCreator}
             />
 
             <CreatorSection
-              eyebrow="🆕 Novos"
-              title="Novos no Nexus"
-              description="Creators recém-aprovados que acabaram de entrar na plataforma."
+              title="Cartas Novas"
+              description=""
               creators={newestCreators}
               onOpenCreator={handleOpenCreator}
             />
@@ -293,22 +291,19 @@ function CreatorSection({
 
   return (
     <div>
-      <div className="mb-8 flex flex-col gap-3 text-center sm:text-left">
-        {eyebrow && (
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-200/80">
-            {eyebrow}
-          </p>
-        )}
+      <div className="mb-5 flex flex-col gap-2 text-center sm:text-left">
 
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-3xl font-black text-white md:text-4xl">
+            <h2 className="text-2xl font-black text-white md:text-3xl">
               {title}
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm text-white/45">
-              {description}
-            </p>
+            {description && (
+  <p className="mt-3 max-w-2xl text-sm text-white/45">
+    {description}
+  </p>
+)}
           </div>
         </div>
       </div>
