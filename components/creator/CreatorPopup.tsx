@@ -143,6 +143,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   const [viewCount, setViewCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -227,8 +228,15 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         .select("id", { count: "exact", head: true })
         .eq("creator_id", creator.id);
 
+      const { data: creatorStats } = await supabase
+        .from("creator_profiles")
+        .select("share_count")
+        .eq("id", creator.id)
+        .maybeSingle();
+
       setViewCount(views || 0);
       setFollowerCount(followers || 0);
+      setShareCount(creatorStats?.share_count || 0);
 
       if (viewerId) {
         const { data: followData } = await supabase
@@ -357,6 +365,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     await supabase.rpc("increment_creator_share_count", {
       creator_id_input: creator.id,
     });
+    setShareCount((current) => current + 1);
     } catch (error) {
       console.error("Erro ao registrar compartilhamento:", error);
     }
@@ -748,16 +757,17 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 />
               ) : (
                 <ViewPanel
-                  creator={creator}
-                  bio={bio}
-                  title={title}
-                  description={description}
-                  tagsText={tagsText}
-                  socials={socials}
-                  clips={clips}
-                  viewCount={viewCount}
-                  followerCount={followerCount}
-                />
+  creator={creator}
+  bio={bio}
+  title={title}
+  description={description}
+  tagsText={tagsText}
+  socials={socials}
+  clips={clips}
+  viewCount={viewCount}
+  followerCount={followerCount}
+  shareCount={shareCount}
+/>
               )}
             </div>
           </div>
@@ -1255,6 +1265,7 @@ function ViewPanel({
   clips: ClipForm[];
   viewCount: number;
   followerCount: number;
+  shareCount: number;
 }) {
   const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
 
@@ -1281,7 +1292,7 @@ function ViewPanel({
       <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <InfoCard label="Views" value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
         <InfoCard label="Seguidores" value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
-        <InfoCard label="Status" value={statusLabel[creator.status]} color="text-emerald-200" />
+        <InfoCard label="Compartilhamentos" value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
       </div>
 
       <div className="mt-8">
