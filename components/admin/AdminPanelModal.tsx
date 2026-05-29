@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ExternalLink, ShieldCheck, X } from "lucide-react";
+import { Check, ExternalLink, Search, ShieldCheck, UserCog, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 
@@ -10,6 +10,8 @@ type AdminPanelModalProps = {
   open: boolean;
   onClose: () => void;
 };
+
+type Tab = "requests" | "users";
 
 type CreatorRequest = {
   id: string;
@@ -27,14 +29,26 @@ type CreatorRequest = {
   created_at: string;
 };
 
+type ProfileUser = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  is_admin: boolean | null;
+  created_at: string;
+};
+
 export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
+  const [activeTab, setActiveTab] = useState<Tab>("requests");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const [requests, setRequests] = useState<CreatorRequest[]>([]);
+  const [users, setUsers] = useState<ProfileUser[]>([]);
+  const [userSearch, setUserSearch] = useState("");
 
   async function loadRequests() {
-    setLoading(true);
-
     const { data } = await supabase
       .from("creator_requests")
       .select("*")
@@ -42,12 +56,26 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       .order("created_at", { ascending: false });
 
     setRequests((data || []) as CreatorRequest[]);
+  }
+
+  async function loadUsers() {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, display_name, username, avatar_url, is_admin, created_at")
+      .order("created_at", { ascending: false });
+
+    setUsers((data || []) as ProfileUser[]);
+  }
+
+  async function loadPanel() {
+    setLoading(true);
+    await Promise.all([loadRequests(), loadUsers()]);
     setLoading(false);
   }
 
   useEffect(() => {
     if (open) {
-      loadRequests();
+      loadPanel();
     }
   }, [open]);
 
@@ -82,6 +110,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         tags: [],
         is_public: true,
         is_verified: false,
+        owner_status: "claimed",
       })
       .select("id")
       .single();
@@ -110,7 +139,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       return;
     }
 
-    const { error: updateError } = await supabase
+    await supabase
       .from("creator_requests")
       .update({
         status: "approved",
@@ -118,12 +147,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         reviewed_by: user.id,
       })
       .eq("id", request.id);
-
-    if (updateError) {
-      setActionLoading(null);
-      alert(updateError.message);
-      return;
-    }
 
     await supabase.from("admin_logs").insert({
       admin_id: user.id,
@@ -154,7 +177,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       return;
     }
 
-    const { error } = await supabase
+    await supabase
       .from("creator_requests")
       .update({
         status: "rejected",
@@ -162,12 +185,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         reviewed_by: user.id,
       })
       .eq("id", request.id);
-
-    if (error) {
-      setActionLoading(null);
-      alert(error.message);
-      return;
-    }
 
     await supabase.from("admin_logs").insert({
       admin_id: user.id,
@@ -184,6 +201,63 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setActionLoading(null);
     await loadRequests();
   }
+
+  async function toggleAdmin(targetUser: ProfileUser) {
+    setActionLoading(targetUser.id);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setActionLoading(null);
+      return;
+    }
+
+    const newAdminValue = !targetUser.is_admin;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        is_admin: newAdminValue,
+      })
+      .eq("id", targetUser.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await supabase.from("admin_logs").insert({
+      admin_id: user.id,
+      action: newAdminValue ? "promote_user_admin" : "remove_user_admin",
+      target_type: "profile",
+      target_id: targetUser.id,
+      metadata: {
+        email: targetUser.email,
+        display_name: targetUser.display_name,
+        username: targetUser.username,
+      },
+    });
+
+    setActionLoading(null);
+    await loadUsers();
+  }
+
+  const filteredUsers = users.filter((user) => {
+    const search = userSearch.toLowerCase().trim();
+
+    const searchableText = [
+      user.email,
+      user.display_name,
+      user.username,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
 
   return (
     <AnimatePresence>
@@ -221,29 +295,51 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
               Admin Panel
             </div>
 
-            <h2 className="mt-6 text-3xl font-black">
-              Solicitações pendentes
-            </h2>
+            <h2 className="mt-6 text-3xl font-black">Painel Admin</h2>
 
             <p className="mt-2 text-sm text-white/50">
-              Aprove ou rejeite creators diretamente pelo popup.
+              Gerencie solicitações e usuários da plataforma.
             </p>
 
-            <div className="mt-8 grid gap-5">
-              {loading && (
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-                  Carregando solicitações...
-                </div>
-              )}
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveTab("requests")}
+                className={`rounded-full px-4 py-2 text-sm transition ${
+                  activeTab === "requests"
+                    ? "bg-cyan-300 text-black"
+                    : "border border-white/10 bg-white/[0.04] text-white/60"
+                }`}
+              >
+                Requests
+              </button>
 
-              {!loading && requests.length === 0 && (
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-                  Nenhuma solicitação pendente.
-                </div>
-              )}
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`rounded-full px-4 py-2 text-sm transition ${
+                  activeTab === "users"
+                    ? "bg-cyan-300 text-black"
+                    : "border border-white/10 bg-white/[0.04] text-white/60"
+                }`}
+              >
+                Users
+              </button>
+            </div>
 
-              {!loading &&
-                requests.map((request) => (
+            {loading && (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
+                Carregando painel...
+              </div>
+            )}
+
+            {!loading && activeTab === "requests" && (
+              <div className="mt-8 grid gap-5">
+                {requests.length === 0 && (
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
+                    Nenhuma solicitação pendente.
+                  </div>
+                )}
+
+                {requests.map((request) => (
                   <div
                     key={request.id}
                     className="grid gap-5 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:grid-cols-[180px_1fr]"
@@ -281,9 +377,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         </div>
 
                         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                          {new Date(request.created_at).toLocaleDateString(
-                            "pt-BR"
-                          )}
+                          {new Date(request.created_at).toLocaleDateString("pt-BR")}
                         </span>
                       </div>
 
@@ -342,7 +436,89 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                     </div>
                   </div>
                 ))}
-            </div>
+              </div>
+            )}
+
+            {!loading && activeTab === "users" && (
+              <div className="mt-8">
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35"
+                  />
+
+                  <input
+                    value={userSearch}
+                    onChange={(event) => setUserSearch(event.target.value)}
+                    placeholder="Buscar por nome, username ou email..."
+                    className="w-full rounded-full border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-white outline-none focus:border-cyan-300/40"
+                  />
+                </div>
+
+                <div className="mt-5 grid gap-4">
+                  {filteredUsers.length === 0 && (
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
+                      Nenhum usuário encontrado.
+                    </div>
+                  )}
+
+                  {filteredUsers.map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                          {profile.avatar_url ? (
+                            <img
+                              src={profile.avatar_url}
+                              alt={profile.display_name || "Avatar"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <UserCog className="text-white/35" />
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="font-bold text-white">
+                            {profile.display_name || "Sem nome"}
+                          </p>
+
+                          <p className="text-sm text-white/45">
+                            {profile.email || "sem email"}
+                          </p>
+
+                          <p className="text-xs text-white/35">
+                            @{profile.username || "sem_username"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        {profile.is_admin && (
+                          <span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-xs text-yellow-100">
+                            Admin
+                          </span>
+                        )}
+
+                        <button
+                          onClick={() => toggleAdmin(profile)}
+                          disabled={actionLoading === profile.id}
+                          className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
+                            profile.is_admin
+                              ? "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
+                              : "bg-cyan-300 text-black hover:scale-105"
+                          }`}
+                        >
+                          {profile.is_admin ? "Remover Admin" : "Tornar Admin"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
