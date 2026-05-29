@@ -50,6 +50,71 @@ const emptyClip = (): ClipForm => ({
   description: "",
 });
 
+const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+function getYouTubeVideoId(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+
+    if (parsedUrl.hostname.includes("youtu.be")) {
+      return parsedUrl.pathname.replace("/", "");
+    }
+
+    if (parsedUrl.searchParams.get("v")) {
+      return parsedUrl.searchParams.get("v");
+    }
+
+    const shortsMatch = parsedUrl.pathname.match(/\/shorts\/([^/?]+)/);
+    if (shortsMatch?.[1]) {
+      return shortsMatch[1];
+    }
+
+    const embedMatch = parsedUrl.pathname.match(/\/embed\/([^/?]+)/);
+    if (embedMatch?.[1]) {
+      return embedMatch[1];
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getClipPreviewThumbnail(url: string) {
+  const youtubeId = getYouTubeVideoId(url);
+
+  if (youtubeId) {
+    return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  }
+
+  return "";
+}
+
+async function resolveClipThumbnail(url: string) {
+  const youtubeThumbnail = getClipPreviewThumbnail(url);
+
+  if (youtubeThumbnail) {
+    return youtubeThumbnail;
+  }
+
+  try {
+    const response = await fetch(
+      `https://noembed.com/embed?url=${encodeURIComponent(url)}`
+    );
+
+    if (!response.ok) {
+      return "";
+    }
+
+    const data = await response.json();
+
+    return data?.thumbnail_url || "";
+  } catch {
+    return "";
+  }
+}
+
+
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -135,10 +200,20 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
       const viewerId = user?.id || null;
 
-      await supabase.from("creator_views").insert({
-        creator_id: creator.id,
-        viewer_id: viewerId,
-      });
+      const viewKey = `creator-view:${creator.id}:${viewerId || "guest"}`;
+      const lastViewAt = Number(localStorage.getItem(viewKey) || 0);
+      const now = Date.now();
+
+      if (!lastViewAt || now - lastViewAt > VIEW_INTERVAL_MS) {
+        const { error: viewError } = await supabase.from("creator_views").insert({
+          creator_id: creator.id,
+          viewer_id: viewerId,
+        });
+
+        if (!viewError) {
+          localStorage.setItem(viewKey, String(now));
+        }
+      }
 
       const { count: views } = await supabase
         .from("creator_views")
@@ -365,18 +440,25 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       .delete()
       .eq("creator_id", creator.id);
 
-    const clipRows = clips
-      .filter((clip) => clip.url.trim().length > 0)
-      .slice(0, 3)
-      .map((clip) => ({
-        creator_id: creator.id,
-        platform: clip.platform,
-        title: clip.title || "Featured clip",
-        description: clip.description || null,
-        url: clip.url,
-        thumbnail_url: clip.thumbnailUrl || null,
-        is_featured: true,
-      }));
+    const clipRows = await Promise.all(
+      clips
+        .filter((clip) => clip.url.trim().length > 0)
+        .slice(0, 3)
+        .map(async (clip) => {
+          const thumbnailUrl =
+            clip.thumbnailUrl || (await resolveClipThumbnail(clip.url));
+
+          return {
+            creator_id: creator.id,
+            platform: clip.platform,
+            title: clip.title || "Featured clip",
+            description: clip.description || null,
+            url: clip.url,
+            thumbnail_url: thumbnailUrl || null,
+            is_featured: true,
+          };
+        })
+    );
 
     if (clipRows.length > 0) {
       const { error: clipError } = await supabase
@@ -669,6 +751,8 @@ function EditPanel({
   saving: boolean;
   handleSave: () => void;
 }) {
+  const [clipsExpanded, setClipsExpanded] = useState(false);
+
   function updateClip(index: number, field: keyof ClipForm, value: string) {
     setClips((current) =>
       current.map((clip, clipIndex) =>
@@ -777,75 +861,102 @@ function EditPanel({
       </div>
 
       <div className="mt-8 rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-        <h4 className="font-bold text-white">Clips em destaque</h4>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h4 className="font-bold text-white">Clips em destaque</h4>
 
-        <p className="mt-2 text-sm text-white/45">
-          Adicione até 3 clips ou shorts para aparecerem no perfil.
-        </p>
+            <p className="mt-2 text-sm text-white/45">
+              Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
+              será buscada automaticamente pelo link quando possível.
+            </p>
+          </div>
 
-        <div className="mt-5 grid gap-4">
-          {clips.map((clip, index) => (
-            <div
-              key={index}
-              className="rounded-3xl border border-white/10 bg-black/20 p-4"
-            >
-              <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
-                Clip {index + 1}
-              </p>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <EditInput
-                  label="Título"
-                  value={clip.title}
-                  onChange={(value) => updateClip(index, "title", value)}
-                  placeholder="Melhor momento da live"
-                />
-
-                <label className="block">
-                  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-                    Plataforma
-                  </span>
-
-                  <select
-                    value={clip.platform}
-                    onChange={(event) =>
-                      updateClip(index, "platform", event.target.value)
-                    }
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-                  >
-                    {clipPlatforms.map((platform) => (
-                      <option key={platform} value={platform}>
-                        {platform}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <EditInput
-                  label="URL do clip"
-                  value={clip.url}
-                  onChange={(value) => updateClip(index, "url", value)}
-                  placeholder="https://..."
-                />
-
-                <EditInput
-                  label="Thumbnail URL"
-                  value={clip.thumbnailUrl}
-                  onChange={(value) => updateClip(index, "thumbnailUrl", value)}
-                  placeholder="Opcional"
-                />
-
-                <div className="sm:col-span-2">
-                  <EditTextarea
-                    label="Descrição"
-                    value={clip.description}
-                    onChange={(value) => updateClip(index, "description", value)}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+          <button
+            type="button"
+            onClick={() => setClipsExpanded((current) => !current)}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 transition hover:bg-white/[0.08]"
+          >
+            {clipsExpanded ? "Recolher clips" : "Expandir clips"}
+          </button>
         </div>
+
+        {clipsExpanded && (
+          <div className="mt-5 grid gap-4">
+            {clips.map((clip, index) => {
+              const previewThumbnail =
+                clip.thumbnailUrl || getClipPreviewThumbnail(clip.url);
+
+              return (
+                <div
+                  key={index}
+                  className="rounded-3xl border border-white/10 bg-black/20 p-4"
+                >
+                  <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
+                    Clip {index + 1}
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <EditInput
+                      label="Título"
+                      value={clip.title}
+                      onChange={(value) => updateClip(index, "title", value)}
+                      placeholder="Melhor momento da live"
+                    />
+
+                    <label className="block">
+                      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+                        Plataforma
+                      </span>
+
+                      <select
+                        value={clip.platform}
+                        onChange={(event) =>
+                          updateClip(index, "platform", event.target.value)
+                        }
+                        className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                      >
+                        {clipPlatforms.map((platform) => (
+                          <option key={platform} value={platform}>
+                            {platform}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="sm:col-span-2">
+                      <EditInput
+                        label="URL do clip"
+                        value={clip.url}
+                        onChange={(value) => updateClip(index, "url", value)}
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    {previewThumbnail && (
+                      <div className="sm:col-span-2 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+                        <img
+                          src={previewThumbnail}
+                          alt={clip.title || `Preview do clip ${index + 1}`}
+                          className="aspect-video w-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="sm:col-span-2">
+                      <EditTextarea
+                        label="Descrição"
+                        value={clip.description}
+                        onChange={(value) =>
+                          updateClip(index, "description", value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <button
@@ -1040,44 +1151,49 @@ function ViewPanel({
           <h4 className="font-bold">Clips em destaque</h4>
 
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {visibleClips.map((clip, index) => (
-              <a
-                key={`${clip.url}-${index}`}
-                href={clip.url}
-                target="_blank"
-                className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
-              >
-                <div className="aspect-video bg-black/40">
-                  {clip.thumbnailUrl ? (
-                    <img
-                      src={clip.thumbnailUrl}
-                      alt={clip.title || "Clip"}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
+            {visibleClips.map((clip, index) => {
+              const previewThumbnail =
+                clip.thumbnailUrl || getClipPreviewThumbnail(clip.url);
+
+              return (
+                <a
+                  key={`${clip.url}-${index}`}
+                  href={clip.url}
+                  target="_blank"
+                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
+                >
+                  <div className="aspect-video bg-black/40">
+                    {previewThumbnail ? (
+                      <img
+                        src={previewThumbnail}
+                        alt={clip.title || "Clip"}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
+                        {clip.platform}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
                       {clip.platform}
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                    {clip.platform}
-                  </p>
-
-                  <p className="mt-2 font-bold text-white">
-                    {clip.title || "Featured clip"}
-                  </p>
-
-                  {clip.description && (
-                    <p className="mt-2 line-clamp-3 text-xs text-white/45">
-                      {clip.description}
                     </p>
-                  )}
-                </div>
-              </a>
-            ))}
+
+                    <p className="mt-2 font-bold text-white">
+                      {clip.title || "Featured clip"}
+                    </p>
+
+                    {clip.description && (
+                      <p className="mt-2 line-clamp-3 text-xs text-white/45">
+                        {clip.description}
+                      </p>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}
