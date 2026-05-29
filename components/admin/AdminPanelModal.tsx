@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   Eye,
   EyeOff,
@@ -86,7 +88,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [userSearch, setUserSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
-  const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>({});
+  const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
+    {}
+  );
+  const [expandedCreators, setExpandedCreators] = useState<
+    Record<string, boolean>
+  >({});
 
   async function getCurrentUserId() {
     const {
@@ -133,7 +140,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   async function loadUsers() {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, display_name, username, avatar_url, is_admin, created_at")
+      .select(
+        "id, email, display_name, username, avatar_url, is_admin, created_at"
+      )
       .order("created_at", { ascending: false });
 
     setUsers((data || []) as ProfileUser[]);
@@ -163,12 +172,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   async function loadPanel() {
     setLoading(true);
 
-    await Promise.all([
-      loadRequests(),
-      loadUsers(),
-      loadCreators(),
-      loadLogs(),
-    ]);
+    await Promise.all([loadRequests(), loadUsers(), loadCreators(), loadLogs()]);
 
     setLoading(false);
   }
@@ -179,9 +183,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     }
   }, [open]);
 
-  function getOwner(profileId: string | null) {
-    if (!profileId) return null;
-    return users.find((user) => user.id === profileId) || null;
+  function getOwner(userId: string | null) {
+    if (!userId) return null;
+    return users.find((user) => user.id === userId) || null;
   }
 
   async function approveRequest(request: CreatorRequest) {
@@ -480,7 +484,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
   const filteredCreators = creators.filter((creator) => {
     const search = creatorSearch.toLowerCase().trim();
-
     const owner = getOwner(creator.user_id);
 
     const searchableText = [
@@ -501,7 +504,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
-
     const admin = getOwner(log.admin_id);
 
     const searchableText = [
@@ -622,19 +624,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       </p>
 
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                          <p className="text-xs text-white/40">Plataforma</p>
-                          <p className="mt-1 font-bold">
-                            {request.verification_platform || "Não informado"}
-                          </p>
-                        </div>
+                        <InfoBox
+                          label="Plataforma"
+                          value={request.verification_platform || "Não informado"}
+                        />
 
-                        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                          <p className="text-xs text-white/40">Código</p>
-                          <p className="mt-1 font-bold tracking-[0.2em] text-cyan-100">
-                            {request.verification_code}
-                          </p>
-                        </div>
+                        <InfoBox
+                          label="Código"
+                          value={request.verification_code}
+                          highlight
+                        />
                       </div>
 
                       {request.verification_url && (
@@ -686,6 +685,10 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 />
 
                 <div className="mt-5 grid gap-4">
+                  {filteredUsers.length === 0 && (
+                    <EmptyBox text="Nenhum usuário encontrado." />
+                  )}
+
                   {filteredUsers.map((profile) => (
                     <div
                       key={profile.id}
@@ -693,17 +696,23 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                     >
                       <UserInfo profile={profile} />
 
-                      <button
-                        onClick={() => toggleAdmin(profile)}
-                        disabled={actionLoading === profile.id}
-                        className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
-                          profile.is_admin
-                            ? "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
-                            : "bg-cyan-300 text-black hover:scale-105"
-                        }`}
-                      >
-                        {profile.is_admin ? "Remover Admin" : "Tornar Admin"}
-                      </button>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {profile.is_admin && (
+                          <StatusPill label="Admin" tone="yellow" />
+                        )}
+
+                        <button
+                          onClick={() => toggleAdmin(profile)}
+                          disabled={actionLoading === profile.id}
+                          className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
+                            profile.is_admin
+                              ? "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
+                              : "bg-cyan-300 text-black hover:scale-105"
+                          }`}
+                        >
+                          {profile.is_admin ? "Remover Admin" : "Tornar Admin"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -711,230 +720,235 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             )}
 
             {!loading && activeTab === "creators" && (
-  <div className="mt-8">
-    <SearchInput
-      value={creatorSearch}
-      onChange={setCreatorSearch}
-      placeholder="Buscar por creator, dono, email ou username..."
-    />
+              <div className="mt-8">
+                <SearchInput
+                  value={creatorSearch}
+                  onChange={setCreatorSearch}
+                  placeholder="Buscar por creator, dono, email ou username..."
+                />
 
-    <div className="mt-5 grid gap-5">
-      {filteredCreators.map((creator) => {
-        const owner = getOwner(creator.user_id);
-        const selectedOwnerId =
-          selectedOwners[creator.id] ?? creator.user_id ?? "";
-
-        return (
-          <div
-            key={creator.id}
-            className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
-          >
-            <div className="grid gap-6 p-5 md:grid-cols-[140px_1fr]">
-              <div className="aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 bg-black/40">
-                {creator.avatar_url ? (
-                  <img
-  src={creator.avatar_url}
-  alt={creator.nickname}
-  className="h-full w-full object-cover"
-/>
-                ) : (
-                  <div className="flex h-44 items-center justify-center text-white/30">
-                    Sem imagem
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex flex-wrap items-start justify-between gap-5">
-                  <div>
-                    <h3 className="text-3xl font-black text-white">
-                      {creator.nickname}
-                    </h3>
-
-                    {creator.title && (
-                      <p className="mt-1 text-sm font-semibold text-cyan-100">
-                        {creator.title}
-                      </p>
-                    )}
-
-                    <p className="mt-1 text-white/45">@{creator.username}</p>
-
-                    <p className="mt-3 text-sm text-white/45">
-                      Categoria:{" "}
-                      <span className="text-white/70">
-                        {creator.category || "Creator"}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="grid gap-2 text-right">
-                    <StatusPill
-                      label={creator.user_id ? "👤 Reivindicado" : "👤 Sem dono"}
-                    />
-
-                    <StatusPill
-                      label={creator.is_verified ? "✓ Verificado" : "○ Não verificado"}
-                    />
-
-                    <StatusPill
-                      label={creator.is_public ? "🌐 Público" : "🔒 Oculto"}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-white/10 bg-black/25 p-5">
-                  <p className="text-xs uppercase tracking-[0.25em] text-white/35">
-                    Dono atual
-                  </p>
-
-                  {owner ? (
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-                        {owner.avatar_url ? (
-                          <img
-                            src={owner.avatar_url}
-                            alt={owner.display_name || "Owner"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : null}
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-bold text-white">
-                          {owner.display_name || "Sem nome"}
-                        </p>
-
-                        <p className="text-xs text-white/45">
-                          {owner.email || "sem email"}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-white/45">
-                      Este perfil ainda não possui proprietário.
-                    </p>
+                <div className="mt-5 grid gap-4">
+                  {filteredCreators.length === 0 && (
+                    <EmptyBox text="Nenhum creator encontrado." />
                   )}
+
+                  {filteredCreators.map((creator) => {
+                    const owner = getOwner(creator.user_id);
+                    const selectedOwnerId =
+                      selectedOwners[creator.id] ?? creator.user_id ?? "";
+                    const isExpanded = expandedCreators[creator.id] ?? false;
+
+                    return (
+                      <div
+                        key={creator.id}
+                        className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
+                      >
+                        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                              {creator.avatar_url ? (
+                                <img
+                                  src={creator.avatar_url}
+                                  alt={creator.nickname}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
+                                  Sem imagem
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="text-xl font-black text-white">
+                                {creator.nickname}
+                              </h3>
+
+                              {creator.title && (
+                                <p className="mt-1 text-sm font-semibold text-cyan-100">
+                                  {creator.title}
+                                </p>
+                              )}
+
+                              <p className="text-sm text-white/45">
+                                @{creator.username}
+                              </p>
+
+                              <p className="mt-1 text-xs text-white/35">
+                                Dono:{" "}
+                                {owner
+                                  ? owner.email || owner.display_name || "Sem email"
+                                  : "Sem dono"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            <StatusPill
+                              label={
+                                creator.user_id ? "👤 Reivindicado" : "👤 Sem dono"
+                              }
+                            />
+
+                            <StatusPill
+                              label={
+                                creator.is_verified
+                                  ? "✓ Verificado"
+                                  : "○ Não verificado"
+                              }
+                              tone={creator.is_verified ? "yellow" : "default"}
+                            />
+
+                            <StatusPill
+                              label={creator.is_public ? "🌐 Público" : "🔒 Oculto"}
+                              tone={creator.is_public ? "cyan" : "default"}
+                            />
+
+                            <button
+                              onClick={() =>
+                                setExpandedCreators((current) => ({
+                                  ...current,
+                                  [creator.id]: !isExpanded,
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  Recolher
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  Expandir
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <>
+                            <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
+                              <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                                <h4 className="font-bold text-white">
+                                  Gerenciamento do proprietário
+                                </h4>
+
+                                <p className="mt-2 text-sm text-white/45">
+                                  Atribua este perfil a um usuário logado ou remova
+                                  o dono atual.
+                                </p>
+
+                                <select
+                                  value={selectedOwnerId}
+                                  onChange={(event) =>
+                                    setSelectedOwners((current) => ({
+                                      ...current,
+                                      [creator.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="mt-4 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                                >
+                                  <option value="">Sem dono</option>
+
+                                  {users.map((user) => (
+                                    <option key={user.id} value={user.id}>
+                                      {user.email || user.display_name || user.id}
+                                    </option>
+                                  ))}
+                                </select>
+
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                  <button
+                                    onClick={() =>
+                                      changeCreatorOwner(creator, selectedOwnerId)
+                                    }
+                                    disabled={actionLoading === creator.id}
+                                    className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                                  >
+                                    Atribuir proprietário
+                                  </button>
+
+                                  <button
+                                    onClick={() => removeCreatorOwner(creator)}
+                                    disabled={
+                                      actionLoading === creator.id ||
+                                      !creator.user_id
+                                    }
+                                    className="rounded-full border border-red-300/20 bg-red-300/10 px-5 py-2 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                                  >
+                                    Remover dono
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
+                                <h4 className="font-bold text-white">
+                                  Ações rápidas
+                                </h4>
+
+                                <p className="mt-2 text-sm text-white/45">
+                                  Controle visibilidade e validação pública do
+                                  creator.
+                                </p>
+
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                  <button
+                                    onClick={() =>
+                                      toggleCreatorVerified(creator)
+                                    }
+                                    disabled={actionLoading === creator.id}
+                                    className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 disabled:opacity-40"
+                                  >
+                                    {creator.is_verified
+                                      ? "Remover verificação"
+                                      : "Verificar perfil"}
+                                  </button>
+
+                                  <button
+                                    onClick={() => toggleCreatorPublic(creator)}
+                                    disabled={actionLoading === creator.id}
+                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-40"
+                                  >
+                                    {creator.is_public ? (
+                                      <>
+                                        <EyeOff size={16} />
+                                        Ocultar perfil
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Eye size={16} />
+                                        Publicar perfil
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid gap-3 border-t border-white/10 bg-black/20 p-5 text-sm text-white/45 sm:grid-cols-3">
+                              <SmallInfo label="ID" value={creator.id} />
+                              <SmallInfo
+                                label="Criado em"
+                                value={new Date(
+                                  creator.created_at
+                                ).toLocaleDateString("pt-BR")}
+                              />
+                              <SmallInfo
+                                label="Categoria"
+                                value={creator.category || "Creator"}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-
-            <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
-              <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-                <h4 className="font-bold text-white">
-                  Gerenciamento do proprietário
-                </h4>
-
-                <p className="mt-2 text-sm text-white/45">
-                  Atribua este perfil a um usuário logado ou remova o dono atual.
-                </p>
-
-                <select
-                  value={selectedOwnerId}
-                  onChange={(event) =>
-                    setSelectedOwners((current) => ({
-                      ...current,
-                      [creator.id]: event.target.value,
-                    }))
-                  }
-                  className="mt-4 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
-                >
-                  <option value="">Sem dono</option>
-
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.email || user.display_name || user.id}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => changeCreatorOwner(creator, selectedOwnerId)}
-                    disabled={actionLoading === creator.id}
-                    className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
-                  >
-                    Atribuir proprietário
-                  </button>
-
-                  <button
-                    onClick={() => removeCreatorOwner(creator)}
-                    disabled={actionLoading === creator.id || !creator.user_id}
-                    className="rounded-full border border-red-300/20 bg-red-300/10 px-5 py-2 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
-                  >
-                    Remover dono
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-                <h4 className="font-bold text-white">Ações rápidas</h4>
-
-                <p className="mt-2 text-sm text-white/45">
-                  Controle visibilidade e validação pública do creator.
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => toggleCreatorVerified(creator)}
-                    disabled={actionLoading === creator.id}
-                    className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 disabled:opacity-40"
-                  >
-                    {creator.is_verified
-                      ? "Remover verificação"
-                      : "Verificar perfil"}
-                  </button>
-
-                  <button
-                    onClick={() => toggleCreatorPublic(creator)}
-                    disabled={actionLoading === creator.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-40"
-                  >
-                    {creator.is_public ? (
-                      <>
-                        <EyeOff size={16} />
-                        Ocultar perfil
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={16} />
-                        Publicar perfil
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-3 border-t border-white/10 bg-black/20 p-5 text-sm text-white/45 sm:grid-cols-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/30">
-                  ID
-                </p>
-                <p className="mt-1 truncate">{creator.id}</p>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/30">
-                  Criado em
-                </p>
-                <p className="mt-1">
-                  {new Date(creator.created_at).toLocaleDateString("pt-BR")}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/30">
-                  Username
-                </p>
-                <p className="mt-1">@{creator.username}</p>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
+            )}
 
             {!loading && activeTab === "logs" && (
               <div className="mt-8">
@@ -945,6 +959,10 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 />
 
                 <div className="mt-5 grid gap-3">
+                  {filteredLogs.length === 0 && (
+                    <EmptyBox text="Nenhum log encontrado." />
+                  )}
+
                   {filteredLogs.map((log) => {
                     const admin = getOwner(log.admin_id);
 
@@ -1040,9 +1058,7 @@ function UserInfo({ profile }: { profile: ProfileUser }) {
           {profile.display_name || "Sem nome"}
         </p>
 
-        <p className="text-sm text-white/45">
-          {profile.email || "sem email"}
-        </p>
+        <p className="text-sm text-white/45">{profile.email || "sem email"}</p>
 
         <p className="text-xs text-white/35">
           @{profile.username || "sem_username"}
@@ -1052,10 +1068,65 @@ function UserInfo({ profile }: { profile: ProfileUser }) {
   );
 }
 
-function StatusPill({ label }: { label: string }) {
+function StatusPill({
+  label,
+  tone = "default",
+}: {
+  label: string;
+  tone?: "default" | "cyan" | "yellow";
+}) {
+  const toneClass =
+    tone === "cyan"
+      ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
+      : tone === "yellow"
+        ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-100"
+        : "border-white/10 bg-white/[0.04] text-white/60";
+
   return (
-    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/60">
+    <span className={`rounded-full border px-3 py-1 text-xs ${toneClass}`}>
       {label}
     </span>
+  );
+}
+
+function InfoBox({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <p className="text-xs text-white/40">{label}</p>
+      <p
+        className={`mt-1 font-bold ${
+          highlight ? "tracking-[0.2em] text-cyan-100" : "text-white"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SmallInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.2em] text-white/30">
+        {label}
+      </p>
+      <p className="mt-1 truncate">{value}</p>
+    </div>
+  );
+}
+
+function EmptyBox({ text }: { text: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
+      {text}
+    </div>
   );
 }
