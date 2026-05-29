@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function decode(value: string | null) {
+  if (!value) return null;
+
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/\\u002F/g, "/")
+    .replace(/\\/g, "");
+}
+
 function getMeta(content: string, key: string) {
   const patterns = [
     new RegExp(
@@ -14,7 +23,40 @@ function getMeta(content: string, key: string) {
 
   for (const pattern of patterns) {
     const match = content.match(pattern);
-    if (match?.[1]) return match[1].replace(/&amp;/g, "&");
+    if (match?.[1]) return decode(match[1]);
+  }
+
+  return null;
+}
+
+function getJsonImage(content: string) {
+  const patterns = [
+    /"thumbnailUrl"\s*:\s*"([^"]+)"/i,
+    /"thumbnail_url"\s*:\s*"([^"]+)"/i,
+    /"thumbnail"\s*:\s*"([^"]+)"/i,
+    /"poster"\s*:\s*"([^"]+)"/i,
+    /"image"\s*:\s*"([^"]+)"/i,
+    /"ogImage"\s*:\s*"([^"]+)"/i,
+    /"preview"\s*:\s*"([^"]+)"/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]) return decode(match[1]);
+  }
+
+  return null;
+}
+
+function getJsonTitle(content: string) {
+  const patterns = [
+    /"title"\s*:\s*"([^"]+)"/i,
+    /"ogTitle"\s*:\s*"([^"]+)"/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]) return decode(match[1]);
   }
 
   return null;
@@ -45,7 +87,6 @@ function getYoutubeId(url: string) {
 
 function getYoutubeThumbnail(url: string) {
   const youtubeId = getYoutubeId(url);
-
   if (!youtubeId) return null;
 
   return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
@@ -57,10 +98,9 @@ async function getTiktokOEmbed(url: string) {
       `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
       {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+          "User-Agent": "Mozilla/5.0",
         },
-        next: { revalidate: 60 * 60 },
+        cache: "no-store",
       }
     );
 
@@ -85,24 +125,29 @@ async function getHtmlPreview(url: string) {
       Accept:
         "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+      Referer: "https://www.google.com/",
     },
-    next: { revalidate: 60 * 60 },
+    cache: "no-store",
   });
 
   const html = await response.text();
 
+  const thumbnail =
+    getMeta(html, "og:image") ||
+    getMeta(html, "twitter:image") ||
+    getMeta(html, "twitter:image:src") ||
+    getMeta(html, "thumbnail") ||
+    getJsonImage(html);
+
+  const title =
+    getMeta(html, "og:title") ||
+    getMeta(html, "twitter:title") ||
+    getJsonTitle(html) ||
+    "Clip";
+
   return {
-    thumbnail:
-      getMeta(html, "og:image") ||
-      getMeta(html, "twitter:image") ||
-      getMeta(html, "twitter:image:src") ||
-      getMeta(html, "thumbnail") ||
-      null,
-    title:
-      getMeta(html, "og:title") ||
-      getMeta(html, "twitter:title") ||
-      getMeta(html, "title") ||
-      "Clip",
+    thumbnail,
+    title,
   };
 }
 
