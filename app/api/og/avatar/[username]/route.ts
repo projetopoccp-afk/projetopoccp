@@ -13,7 +13,10 @@ export async function GET(
   context: { params: Promise<{ username: string }> }
 ) {
   const { username } = await context.params;
-  const cleanUsername = decodeURIComponent(username).replace("@", "").trim();
+
+  const cleanUsername = decodeURIComponent(username)
+    .replace("@", "")
+    .trim();
 
   const { data } = await supabase
     .from("creator_profiles")
@@ -25,24 +28,39 @@ export async function GET(
     return new NextResponse(null, { status: 404 });
   }
 
-  const response = await fetch(data.avatar_url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-    },
-  });
+  let avatarUrl = data.avatar_url;
 
-  if (!response.ok) {
-    return new NextResponse(null, { status: 404 });
+  // Discord normalmente entrega webp
+  if (
+    avatarUrl.includes("discordapp") ||
+    avatarUrl.includes("discord")
+  ) {
+    avatarUrl = avatarUrl
+      .replace(/format=webp/g, "format=png")
+      .replace(/\.webp/g, ".png");
   }
 
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-  const buffer = await response.arrayBuffer();
+  try {
+    const response = await fetch(avatarUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+      },
+    });
 
-  return new NextResponse(buffer, {
-    status: 200,
-    headers: {
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=86400",
-    },
-  });
+    if (!response.ok) {
+      return new NextResponse(null, { status: 404 });
+    }
+
+    const buffer = await response.arrayBuffer();
+
+    return new NextResponse(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  } catch {
+    return new NextResponse(null, { status: 404 });
+  }
 }
