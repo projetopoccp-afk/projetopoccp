@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, User } from "lucide-react";
-
+import { Compass, LogOut, User } from "lucide-react";
 import { AccountModal } from "@/components/account/AccountModal";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
@@ -96,6 +95,13 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               </h1>
             </a>
 
+            <a
+  href="/discover"
+  className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100 md:hidden"
+>
+  Discover
+</a>
+
             {user ? (
               <div className="flex items-center gap-2 md:hidden">
                 <button
@@ -124,9 +130,19 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
             )}
           </div>
 
-          <div className="w-full md:max-w-md">
-            <CreatorSearch value={search} onChange={onSearchChange} />
-          </div>
+          <div className="flex w-full items-center gap-3 md:max-w-2xl">
+  <a
+    href="/discover"
+    className="hidden items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/20 md:flex"
+  >
+    <Compass size={16} />
+    Discover
+  </a>
+
+  <div className="flex-1">
+    <CreatorSearch value={search} onChange={onSearchChange} />
+  </div>
+</div>
 
           {user ? (
             <div className="hidden items-center gap-3 md:flex">
