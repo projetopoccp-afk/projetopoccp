@@ -105,6 +105,16 @@ export function AccountModal({
                   </div>
                 </div>
 
+                {profile?.is_admin && (
+                  <a
+                    href="/admin"
+                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20"
+                  >
+                    <ShieldCheck size={18} />
+                    Painel Admin
+                  </a>
+                )}
+
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
                     <h3 className="font-bold">Solicitar perfil de criador</h3>

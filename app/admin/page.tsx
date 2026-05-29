@@ -139,12 +139,25 @@ export default function AdminPage() {
       return;
     }
 
+    await supabase.from("admin_logs").insert({
+      admin_id: user.id,
+      action: "approve_creator_request",
+      target_type: "creator_request",
+      target_id: request.id,
+      metadata: {
+        nickname: request.nickname,
+        username: request.username,
+        category: request.category,
+        creator_profile_id: creatorProfile.id,
+      },
+    });
+
     setActionLoading(null);
     await loadAdmin();
   }
 
-  async function rejectRequest(requestId: string) {
-    setActionLoading(requestId);
+  async function rejectRequest(request: CreatorRequest) {
+    setActionLoading(request.id);
 
     const {
       data: { user },
@@ -162,13 +175,25 @@ export default function AdminPage() {
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id,
       })
-      .eq("id", requestId);
+      .eq("id", request.id);
 
     if (error) {
       setActionLoading(null);
       alert(error.message);
       return;
     }
+
+    await supabase.from("admin_logs").insert({
+      admin_id: user.id,
+      action: "reject_creator_request",
+      target_type: "creator_request",
+      target_id: request.id,
+      metadata: {
+        nickname: request.nickname,
+        username: request.username,
+        category: request.category,
+      },
+    });
 
     setActionLoading(null);
     await loadAdmin();
@@ -187,9 +212,11 @@ export default function AdminPage() {
       <main className="flex min-h-screen items-center justify-center bg-black px-6 text-white">
         <div className="max-w-md rounded-3xl border border-red-300/20 bg-red-300/10 p-8 text-center">
           <h1 className="text-2xl font-black">Acesso negado</h1>
+
           <p className="mt-3 text-white/60">
             Esta área é restrita para administradores.
           </p>
+
           <a
             href="/"
             className="mt-6 inline-block rounded-full bg-white px-5 py-2 text-sm font-bold text-black"
@@ -212,6 +239,7 @@ export default function AdminPage() {
 
         <div className="mt-8 flex items-center gap-3">
           <ShieldCheck className="text-cyan-200" />
+
           <h1 className="text-4xl font-black">Painel Admin</h1>
         </div>
 
@@ -257,6 +285,7 @@ export default function AdminPage() {
                     </h2>
 
                     <p className="text-white/45">@{request.username}</p>
+
                     <p className="mt-1 text-sm text-white/40">
                       {request.email}
                     </p>
@@ -270,6 +299,7 @@ export default function AdminPage() {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                     <p className="text-xs text-white/40">Plataforma</p>
+
                     <p className="mt-1 font-bold">
                       {request.verification_platform || "Não informado"}
                     </p>
@@ -277,6 +307,7 @@ export default function AdminPage() {
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                     <p className="text-xs text-white/40">Código</p>
+
                     <p className="mt-1 font-bold tracking-[0.2em] text-cyan-100">
                       {request.verification_code}
                     </p>
@@ -305,12 +336,14 @@ export default function AdminPage() {
                   </button>
 
                   <button
-                    onClick={() => rejectRequest(request.id)}
+                    onClick={() => rejectRequest(request)}
                     disabled={actionLoading === request.id}
                     className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <X size={16} />
-                    {actionLoading === request.id ? "Processando..." : "Rejeitar"}
+                    {actionLoading === request.id
+                      ? "Processando..."
+                      : "Rejeitar"}
                   </button>
                 </div>
               </div>
