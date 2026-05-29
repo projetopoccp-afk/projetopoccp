@@ -118,6 +118,7 @@ async function resolveClipThumbnail(url: string) {
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [claimMode, setClaimMode] = useState(false);
@@ -179,6 +180,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   useEffect(() => {
     if (!creator) return;
 
+    setPreparedCreatorId(null);
     setEditMode(false);
     setClaimMode(false);
     setClaimSuccess(false);
@@ -288,6 +290,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       });
 
       setClips(nextClips);
+      setPreparedCreatorId(creator.id);
     }
 
     loadCreatorData();
@@ -589,6 +592,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   if (!creator) return null;
 
+  const isPreparingCreator = preparedCreatorId !== creator.id;
+
   return (
     <AnimatePresence>
       <motion.div
@@ -715,7 +720,11 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 marginRight: "18px",
               }}
             >
-              {claimMode ? (
+              {isPreparingCreator ? (
+  <div className="flex h-full items-center justify-center text-white/50">
+    Carregando perfil...
+  </div>
+) : claimMode ? (
                 <ClaimPanel
                   claimPlatform={claimPlatform}
                   setClaimPlatform={setClaimPlatform}
