@@ -323,17 +323,20 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     };
 
     if (platform === "copy") {
+      await registerShare();
       copyCreatorLink();
       return;
     }
 
     if (platform === "discord") {
+      await registerShare();
       copyCreatorLink();
       window.open("https://discord.com/channels/@me", "_blank");
       return;
     }
 
     if (platform === "instagram") {
+      await registerShare();
       copyCreatorLink();
       window.open("https://www.instagram.com/", "_blank");
       return;
@@ -342,10 +345,23 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     const shareUrl = shareLinks[platform];
 
     if (shareUrl) {
+      await registerShare();
       window.open(shareUrl, "_blank", "noopener,noreferrer");
     }
   }
 
+  async function registerShare() {
+  if (!creator) return;
+
+  try {
+    await supabase.rpc("increment_creator_share_count", {
+      creator_id_input: creator.id,
+    });
+    } catch (error) {
+      console.error("Erro ao registrar compartilhamento:", error);
+    }
+  }
+  
   function handleShare() {
     setShareOpen(true);
   }
