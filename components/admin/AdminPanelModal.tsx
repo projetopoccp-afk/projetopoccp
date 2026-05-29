@@ -64,6 +64,7 @@ type CreatorProfile = {
   owner_status: string | null;
   created_at: string;
   share_count: number | null;
+  trending_score: number | null;
   views_count?: number;
   followers_count?: number;
 };
@@ -173,7 +174,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const { data } = await supabase
       .from("creator_profiles")
       .select(
-        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at, share_count"
+        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at, share_count, trending_score"
       )
       .order("created_at", { ascending: false });
 
@@ -195,6 +196,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           views_count: views || 0,
           followers_count: followers || 0,
           share_count: creator.share_count || 0,
+          trending_score: creator.trending_score || 0,
         };
       })
     );
@@ -993,6 +995,13 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                   ).toLocaleString("pt-BR")}`}
                                   tone="yellow"
                                 />
+
+                                <StatusPill
+                                  label={`🔥 ${Number(
+                                    creator.trending_score || 0
+                                  ).toLocaleString("pt-BR")}`}
+                                  tone="yellow"
+                                />
                               </div>
                             </div>
                           </div>
@@ -1170,6 +1179,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 label="Compartilhamentos"
                                 value={Number(
                                   creator.share_count || 0
+                                ).toLocaleString("pt-BR")}
+                              />
+                              <SmallInfo
+                                label="Trending"
+                                value={Number(
+                                  creator.trending_score || 0
                                 ).toLocaleString("pt-BR")}
                               />
                             </div>
