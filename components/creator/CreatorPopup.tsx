@@ -47,6 +47,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [bannerUrl, setBannerUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [socials, setSocials] = useState<SocialForm>({});
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const isOwner = Boolean(
     creator?.ownerId && currentUserId && creator.ownerId === currentUserId
@@ -115,6 +117,49 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       setCopied(false);
     }, 1800);
   }
+
+  async function uploadImage(
+  file: File,
+  type: "avatar" | "banner"
+) {
+  try {
+    if (type === "avatar") {
+      setUploadingAvatar(true);
+    } else {
+      setUploadingBanner(true);
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+    const filePath = `${type}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("creator-profiles")
+      .upload(filePath, file, {
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from("creator-profiles")
+      .getPublicUrl(filePath);
+
+    if (type === "avatar") {
+      setAvatarUrl(data.publicUrl);
+    } else {
+      setBannerUrl(data.publicUrl);
+    }
+  } catch (error: any) {
+    alert(error.message);
+  } finally {
+    setUploadingAvatar(false);
+    setUploadingBanner(false);
+  }
+}
 
   async function handleSave() {
     if (!creator || !isOwner) return;
@@ -328,6 +373,31 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                       onChange={setAvatarUrl}
                     />
 
+                    <label className="block">
+  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+    Upload Avatar
+  </span>
+
+  <input
+    type="file"
+    accept="image/*"
+    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
+    onChange={(event) => {
+      const file = event.target.files?.[0];
+
+      if (file) {
+        uploadImage(file, "avatar");
+      }
+    }}
+  />
+
+  {uploadingAvatar && (
+    <p className="mt-2 text-xs text-cyan-300">
+      Enviando avatar...
+    </p>
+  )}
+</label>
+
                     <div className="sm:col-span-2">
                       <EditInput
                         label="Banner URL"
@@ -335,6 +405,31 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                         onChange={setBannerUrl}
                       />
                     </div>
+
+                    <label className="block">
+  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+    Upload Banner
+  </span>
+
+  <input
+    type="file"
+    accept="image/*"
+    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
+    onChange={(event) => {
+      const file = event.target.files?.[0];
+
+      if (file) {
+        uploadImage(file, "banner");
+      }
+    }}
+  />
+
+  {uploadingBanner && (
+    <p className="mt-2 text-xs text-cyan-300">
+      Enviando banner...
+    </p>
+  )}
+</label>
 
                     <div className="sm:col-span-2">
                       <EditTextarea
