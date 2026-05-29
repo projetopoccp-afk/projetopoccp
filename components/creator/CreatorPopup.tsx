@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ImagePlus, Pencil, Save, Send } from "lucide-react";
+import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
@@ -30,7 +30,25 @@ const socialPlatforms = [
   "x",
 ];
 
+const clipPlatforms = ["youtube", "twitch", "tiktok", "kick"];
+
 type SocialForm = Record<string, string>;
+
+type ClipForm = {
+  title: string;
+  platform: string;
+  url: string;
+  thumbnailUrl: string;
+  description: string;
+};
+
+const emptyClip = (): ClipForm => ({
+  title: "",
+  platform: "youtube",
+  url: "",
+  thumbnailUrl: "",
+  description: "",
+});
 
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
@@ -48,8 +66,19 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [bannerUrl, setBannerUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [socials, setSocials] = useState<SocialForm>({});
+  const [clips, setClips] = useState<ClipForm[]>([
+    emptyClip(),
+    emptyClip(),
+    emptyClip(),
+  ]);
+
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const [viewCount, setViewCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const [claimPlatform, setClaimPlatform] = useState("youtube");
   const [claimUrl, setClaimUrl] = useState("");
@@ -97,10 +126,47 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setBannerUrl(creator.bannerUrl || "");
     setTagsText((creator.tags || []).join(", "));
 
-    async function loadSocialLinks() {
+    async function loadCreatorData() {
       if (!creator) return;
 
-      const { data } = await supabase
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const viewerId = user?.id || null;
+
+      await supabase.from("creator_views").insert({
+        creator_id: creator.id,
+        viewer_id: viewerId,
+      });
+
+      const { count: views } = await supabase
+        .from("creator_views")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", creator.id);
+
+      const { count: followers } = await supabase
+        .from("creator_followers")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", creator.id);
+
+      setViewCount(views || 0);
+      setFollowerCount(followers || 0);
+
+      if (viewerId) {
+        const { data: followData } = await supabase
+          .from("creator_followers")
+          .select("id")
+          .eq("creator_id", creator.id)
+          .eq("user_id", viewerId)
+          .maybeSingle();
+
+        setIsFollowing(Boolean(followData));
+      } else {
+        setIsFollowing(false);
+      }
+
+      const { data: socialData } = await supabase
         .from("creator_social_links")
         .select("platform, url")
         .eq("creator_id", creator.id);
@@ -111,14 +177,35 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         nextSocials[platform] = "";
       });
 
-      data?.forEach((item: any) => {
+      socialData?.forEach((item: any) => {
         nextSocials[item.platform] = item.url;
       });
 
       setSocials(nextSocials);
+
+      const { data: clipData } = await supabase
+        .from("creator_featured_moments")
+        .select("title, platform, url, thumbnail_url, description")
+        .eq("creator_id", creator.id)
+        .order("created_at", { ascending: true })
+        .limit(3);
+
+      const nextClips = [emptyClip(), emptyClip(), emptyClip()];
+
+      clipData?.forEach((clip: any, index: number) => {
+        nextClips[index] = {
+          title: clip.title || "",
+          platform: clip.platform || "youtube",
+          url: clip.url || "",
+          thumbnailUrl: clip.thumbnail_url || "",
+          description: clip.description || "",
+        };
+      });
+
+      setClips(nextClips);
     }
 
-    loadSocialLinks();
+    loadCreatorData();
   }, [creator]);
 
   async function handleShare() {
@@ -133,6 +220,54 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setTimeout(() => {
       setCopied(false);
     }, 1800);
+  }
+
+  async function handleFollow() {
+    if (!creator) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Faça login para seguir este creator.");
+      return;
+    }
+
+    setFollowLoading(true);
+
+    if (isFollowing) {
+      const { error } = await supabase
+        .from("creator_followers")
+        .delete()
+        .eq("creator_id", creator.id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        setFollowLoading(false);
+        alert(error.message);
+        return;
+      }
+
+      setIsFollowing(false);
+      setFollowerCount((current) => Math.max(0, current - 1));
+    } else {
+      const { error } = await supabase.from("creator_followers").insert({
+        creator_id: creator.id,
+        user_id: user.id,
+      });
+
+      if (error) {
+        setFollowLoading(false);
+        alert(error.message);
+        return;
+      }
+
+      setIsFollowing(true);
+      setFollowerCount((current) => current + 1);
+    }
+
+    setFollowLoading(false);
   }
 
   async function uploadImage(file: File, type: "avatar" | "banner") {
@@ -153,9 +288,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           upsert: true,
         });
 
-      if (uploadError) {
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
         .from("creator-profiles")
@@ -223,6 +356,36 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       if (socialError) {
         setSaving(false);
         alert(socialError.message);
+        return;
+      }
+    }
+
+    await supabase
+      .from("creator_featured_moments")
+      .delete()
+      .eq("creator_id", creator.id);
+
+    const clipRows = clips
+      .filter((clip) => clip.url.trim().length > 0)
+      .slice(0, 3)
+      .map((clip) => ({
+        creator_id: creator.id,
+        platform: clip.platform,
+        title: clip.title || "Featured clip",
+        description: clip.description || null,
+        url: clip.url,
+        thumbnail_url: clip.thumbnailUrl || null,
+        is_featured: true,
+      }));
+
+    if (clipRows.length > 0) {
+      const { error: clipError } = await supabase
+        .from("creator_featured_moments")
+        .insert(clipRows);
+
+      if (clipError) {
+        setSaving(false);
+        alert(clipError.message);
         return;
       }
     }
@@ -337,8 +500,13 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
               <p className="mt-2 text-sm text-white/60">@{creator.username}</p>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <button className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105">
-                  Seguir
+                <button
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105 disabled:opacity-50"
+                >
+                  {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+                  {isFollowing ? "Seguindo" : "Seguir"}
                 </button>
 
                 <button
@@ -400,140 +568,33 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   onBack={() => setClaimMode(false)}
                 />
               ) : editMode ? (
-                <div className="pb-10 pr-16">
-                  <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-                    Edit Mode
-                  </p>
-
-                  <h3 className="mt-3 text-3xl font-bold">Editar perfil</h3>
-
-                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                    <EditInput label="Nickname" value={nickname} onChange={setNickname} />
-                    <EditInput label="Title" value={title} onChange={setTitle} />
-                    <EditInput label="Categoria" value={category} onChange={setCategory} />
-
-                    <EditInput label="Avatar URL" value={avatarUrl} onChange={setAvatarUrl} />
-
-                    <label className="block">
-                      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-                        Upload Avatar
-                      </span>
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          if (file) uploadImage(file, "avatar");
-                        }}
-                      />
-
-                      {uploadingAvatar && (
-                        <p className="mt-2 text-xs text-cyan-300">Enviando avatar...</p>
-                      )}
-                    </label>
-
-                    {avatarUrl && (
-                      <img
-                        src={avatarUrl}
-                        alt="Avatar preview"
-                        className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
-                      />
-                    )}
-
-                    <div className="sm:col-span-2">
-                      <EditInput label="Banner URL" value={bannerUrl} onChange={setBannerUrl} />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block">
-                        <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-                          Upload Banner
-                        </span>
-
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
-                          onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            if (file) uploadImage(file, "banner");
-                          }}
-                        />
-
-                        {uploadingBanner && (
-                          <p className="mt-2 text-xs text-cyan-300">Enviando banner...</p>
-                        )}
-                      </label>
-                    </div>
-
-                    {bannerUrl && (
-                      <div className="sm:col-span-2">
-                        <img
-                          src={bannerUrl}
-                          alt="Banner preview"
-                          className="h-32 w-full rounded-2xl border border-white/10 object-cover"
-                        />
-                      </div>
-                    )}
-
-                    <div className="sm:col-span-2">
-                      <EditTextarea label="Bio curta" value={bio} onChange={setBio} />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <EditTextarea
-                        label="Descrição completa"
-                        value={description}
-                        onChange={setDescription}
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <EditInput
-                        label="Tags separadas por vírgula"
-                        value={tagsText}
-                        onChange={setTagsText}
-                        placeholder="Streamer, MMORPG, Black Desert"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-                    <h4 className="font-bold text-white">Social Links</h4>
-
-                    <p className="mt-2 text-sm text-white/45">
-                      Adicione os links oficiais do creator.
-                    </p>
-
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      {socialPlatforms.map((platform) => (
-                        <EditInput
-                          key={platform}
-                          label={platform}
-                          value={socials[platform] || ""}
-                          onChange={(value) =>
-                            setSocials((current) => ({
-                              ...current,
-                              [platform]: value,
-                            }))
-                          }
-                          placeholder={`Link do ${platform}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
-                  >
-                    <Save size={16} />
-                    {saving ? "Salvando..." : "Salvar alterações"}
-                  </button>
-                </div>
+                <EditPanel
+                  nickname={nickname}
+                  setNickname={setNickname}
+                  title={title}
+                  setTitle={setTitle}
+                  category={category}
+                  setCategory={setCategory}
+                  bio={bio}
+                  setBio={setBio}
+                  description={description}
+                  setDescription={setDescription}
+                  avatarUrl={avatarUrl}
+                  setAvatarUrl={setAvatarUrl}
+                  bannerUrl={bannerUrl}
+                  setBannerUrl={setBannerUrl}
+                  tagsText={tagsText}
+                  setTagsText={setTagsText}
+                  socials={socials}
+                  setSocials={setSocials}
+                  clips={clips}
+                  setClips={setClips}
+                  uploadingAvatar={uploadingAvatar}
+                  uploadingBanner={uploadingBanner}
+                  uploadImage={uploadImage}
+                  saving={saving}
+                  handleSave={handleSave}
+                />
               ) : (
                 <ViewPanel
                   creator={creator}
@@ -542,6 +603,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   description={description}
                   tagsText={tagsText}
                   socials={socials}
+                  clips={clips}
+                  viewCount={viewCount}
+                  followerCount={followerCount}
                 />
               )}
             </div>
@@ -549,6 +613,250 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function EditPanel({
+  nickname,
+  setNickname,
+  title,
+  setTitle,
+  category,
+  setCategory,
+  bio,
+  setBio,
+  description,
+  setDescription,
+  avatarUrl,
+  setAvatarUrl,
+  bannerUrl,
+  setBannerUrl,
+  tagsText,
+  setTagsText,
+  socials,
+  setSocials,
+  clips,
+  setClips,
+  uploadingAvatar,
+  uploadingBanner,
+  uploadImage,
+  saving,
+  handleSave,
+}: {
+  nickname: string;
+  setNickname: (value: string) => void;
+  title: string;
+  setTitle: (value: string) => void;
+  category: string;
+  setCategory: (value: string) => void;
+  bio: string;
+  setBio: (value: string) => void;
+  description: string;
+  setDescription: (value: string) => void;
+  avatarUrl: string;
+  setAvatarUrl: (value: string) => void;
+  bannerUrl: string;
+  setBannerUrl: (value: string) => void;
+  tagsText: string;
+  setTagsText: (value: string) => void;
+  socials: SocialForm;
+  setSocials: React.Dispatch<React.SetStateAction<SocialForm>>;
+  clips: ClipForm[];
+  setClips: React.Dispatch<React.SetStateAction<ClipForm[]>>;
+  uploadingAvatar: boolean;
+  uploadingBanner: boolean;
+  uploadImage: (file: File, type: "avatar" | "banner") => void;
+  saving: boolean;
+  handleSave: () => void;
+}) {
+  function updateClip(index: number, field: keyof ClipForm, value: string) {
+    setClips((current) =>
+      current.map((clip, clipIndex) =>
+        clipIndex === index ? { ...clip, [field]: value } : clip
+      )
+    );
+  }
+
+  return (
+    <div className="pb-10 pr-16">
+      <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+        Edit Mode
+      </p>
+
+      <h3 className="mt-3 text-3xl font-bold">Editar perfil</h3>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <EditInput label="Nickname" value={nickname} onChange={setNickname} />
+        <EditInput label="Title" value={title} onChange={setTitle} />
+        <EditInput label="Categoria" value={category} onChange={setCategory} />
+        <EditInput label="Avatar URL" value={avatarUrl} onChange={setAvatarUrl} />
+
+        <UploadField
+          label="Upload Avatar"
+          uploading={uploadingAvatar}
+          uploadingText="Enviando avatar..."
+          onFile={(file) => uploadImage(file, "avatar")}
+        />
+
+        {avatarUrl && (
+          <img
+            src={avatarUrl}
+            alt="Avatar preview"
+            className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
+          />
+        )}
+
+        <div className="sm:col-span-2">
+          <EditInput label="Banner URL" value={bannerUrl} onChange={setBannerUrl} />
+        </div>
+
+        <div className="sm:col-span-2">
+          <UploadField
+            label="Upload Banner"
+            uploading={uploadingBanner}
+            uploadingText="Enviando banner..."
+            onFile={(file) => uploadImage(file, "banner")}
+          />
+        </div>
+
+        {bannerUrl && (
+          <div className="sm:col-span-2">
+            <img
+              src={bannerUrl}
+              alt="Banner preview"
+              className="h-32 w-full rounded-2xl border border-white/10 object-cover"
+            />
+          </div>
+        )}
+
+        <div className="sm:col-span-2">
+          <EditTextarea label="Bio curta" value={bio} onChange={setBio} />
+        </div>
+
+        <div className="sm:col-span-2">
+          <EditTextarea
+            label="Descrição completa"
+            value={description}
+            onChange={setDescription}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <EditInput
+            label="Tags separadas por vírgula"
+            value={tagsText}
+            onChange={setTagsText}
+            placeholder="Streamer, MMORPG, Black Desert"
+          />
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+        <h4 className="font-bold text-white">Social Links</h4>
+
+        <p className="mt-2 text-sm text-white/45">
+          Adicione os links oficiais do creator.
+        </p>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {socialPlatforms.map((platform) => (
+            <EditInput
+              key={platform}
+              label={platform}
+              value={socials[platform] || ""}
+              onChange={(value) =>
+                setSocials((current) => ({
+                  ...current,
+                  [platform]: value,
+                }))
+              }
+              placeholder={`Link do ${platform}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
+        <h4 className="font-bold text-white">Clips em destaque</h4>
+
+        <p className="mt-2 text-sm text-white/45">
+          Adicione até 3 clips ou shorts para aparecerem no perfil.
+        </p>
+
+        <div className="mt-5 grid gap-4">
+          {clips.map((clip, index) => (
+            <div
+              key={index}
+              className="rounded-3xl border border-white/10 bg-black/20 p-4"
+            >
+              <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
+                Clip {index + 1}
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <EditInput
+                  label="Título"
+                  value={clip.title}
+                  onChange={(value) => updateClip(index, "title", value)}
+                  placeholder="Melhor momento da live"
+                />
+
+                <label className="block">
+                  <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+                    Plataforma
+                  </span>
+
+                  <select
+                    value={clip.platform}
+                    onChange={(event) =>
+                      updateClip(index, "platform", event.target.value)
+                    }
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                  >
+                    {clipPlatforms.map((platform) => (
+                      <option key={platform} value={platform}>
+                        {platform}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <EditInput
+                  label="URL do clip"
+                  value={clip.url}
+                  onChange={(value) => updateClip(index, "url", value)}
+                  placeholder="https://..."
+                />
+
+                <EditInput
+                  label="Thumbnail URL"
+                  value={clip.thumbnailUrl}
+                  onChange={(value) => updateClip(index, "thumbnailUrl", value)}
+                  placeholder="Opcional"
+                />
+
+                <div className="sm:col-span-2">
+                  <EditTextarea
+                    label="Descrição"
+                    value={clip.description}
+                    onChange={(value) => updateClip(index, "description", value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
+      >
+        <Save size={16} />
+        {saving ? "Salvando..." : "Salvar alterações"}
+      </button>
+    </div>
   );
 }
 
@@ -666,6 +974,9 @@ function ViewPanel({
   description,
   tagsText,
   socials,
+  clips,
+  viewCount,
+  followerCount,
 }: {
   creator: Creator;
   bio: string;
@@ -673,7 +984,12 @@ function ViewPanel({
   description: string;
   tagsText: string;
   socials: SocialForm;
+  clips: ClipForm[];
+  viewCount: number;
+  followerCount: number;
 }) {
+  const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
+
   return (
     <>
       <div className="pr-16">
@@ -695,8 +1011,8 @@ function ViewPanel({
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <InfoCard label="Power Score" value={creator.powerScore.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label="Collected by" value={creator.collectedBy.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label="Views" value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
+        <InfoCard label="Seguidores" value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
         <InfoCard label="Status" value={statusLabel[creator.status]} color="text-emerald-200" />
       </div>
 
@@ -719,6 +1035,53 @@ function ViewPanel({
         </div>
       </div>
 
+      {visibleClips.length > 0 && (
+        <div className="mt-8">
+          <h4 className="font-bold">Clips em destaque</h4>
+
+          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            {visibleClips.map((clip, index) => (
+              <a
+                key={`${clip.url}-${index}`}
+                href={clip.url}
+                target="_blank"
+                className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
+              >
+                <div className="aspect-video bg-black/40">
+                  {clip.thumbnailUrl ? (
+                    <img
+                      src={clip.thumbnailUrl}
+                      alt={clip.title || "Clip"}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
+                      {clip.platform}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
+                    {clip.platform}
+                  </p>
+
+                  <p className="mt-2 font-bold text-white">
+                    {clip.title || "Featured clip"}
+                  </p>
+
+                  {clip.description && (
+                    <p className="mt-2 line-clamp-3 text-xs text-white/45">
+                      {clip.description}
+                    </p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 pb-10">
         <h4 className="font-bold">Social Links</h4>
 
@@ -738,6 +1101,43 @@ function ViewPanel({
         </div>
       </div>
     </>
+  );
+}
+
+function UploadField({
+  label,
+  uploading,
+  uploadingText,
+  onFile,
+}: {
+  label: string;
+  uploading: boolean;
+  uploadingText: string;
+  onFile: (file: File) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
+        {label}
+      </span>
+
+      <div className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
+        <ImagePlus size={18} />
+        Escolher arquivo
+      </div>
+
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) onFile(file);
+        }}
+      />
+
+      {uploading && <p className="mt-2 text-xs text-cyan-300">{uploadingText}</p>}
+    </label>
   );
 }
 
