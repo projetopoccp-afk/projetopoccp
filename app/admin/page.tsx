@@ -23,6 +23,7 @@ type CreatorRequest = {
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [requests, setRequests] = useState<CreatorRequest[]>([]);
 
@@ -53,6 +54,7 @@ export default function AdminPage() {
     const { data } = await supabase
       .from("creator_requests")
       .select("*")
+      .eq("status", "pending")
       .order("created_at", { ascending: false });
 
     setRequests((data || []) as CreatorRequest[]);
@@ -64,6 +66,17 @@ export default function AdminPage() {
   }, []);
 
   async function approveRequest(request: CreatorRequest) {
+    setActionLoading(request.id);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setActionLoading(null);
+      return;
+    }
+
     const { data: creatorProfile, error: profileError } = await supabase
       .from("creator_profiles")
       .insert({
@@ -88,6 +101,7 @@ export default function AdminPage() {
       .single();
 
     if (profileError || !creatorProfile) {
+      setActionLoading(null);
       alert(profileError?.message || "Erro ao criar creator profile.");
       return;
     }
@@ -105,30 +119,58 @@ export default function AdminPage() {
     });
 
     if (cardError) {
+      setActionLoading(null);
       alert(cardError.message);
       return;
     }
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("creator_requests")
       .update({
         status: "approved",
         reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
       })
       .eq("id", request.id);
 
+    if (updateError) {
+      setActionLoading(null);
+      alert(updateError.message);
+      return;
+    }
+
+    setActionLoading(null);
     await loadAdmin();
   }
 
   async function rejectRequest(requestId: string) {
-    await supabase
+    setActionLoading(requestId);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setActionLoading(null);
+      return;
+    }
+
+    const { error } = await supabase
       .from("creator_requests")
       .update({
         status: "rejected",
         reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
       })
       .eq("id", requestId);
 
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    setActionLoading(null);
     await loadAdmin();
   }
 
@@ -174,13 +216,13 @@ export default function AdminPage() {
         </div>
 
         <p className="mt-3 text-white/50">
-          Aprove ou rejeite solicitações de creators.
+          Solicitações pendentes de aprovação.
         </p>
 
         <div className="mt-8 grid gap-5">
           {requests.length === 0 && (
             <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-              Nenhuma solicitação encontrada.
+              Nenhuma solicitação pendente.
             </div>
           )}
 
@@ -255,20 +297,20 @@ export default function AdminPage() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     onClick={() => approveRequest(request)}
-                    disabled={request.status !== "pending"}
+                    disabled={actionLoading === request.id}
                     className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Check size={16} />
-                    Aprovar
+                    {actionLoading === request.id ? "Aprovando..." : "Aprovar"}
                   </button>
 
                   <button
                     onClick={() => rejectRequest(request.id)}
-                    disabled={request.status !== "pending"}
+                    disabled={actionLoading === request.id}
                     className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <X size={16} />
-                    Rejeitar
+                    {actionLoading === request.id ? "Processando..." : "Rejeitar"}
                   </button>
                 </div>
               </div>
