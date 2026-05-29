@@ -23,7 +23,7 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "logs";
+type Tab = "requests" | "users" | "creators" | "claims" | "logs";
 
 type CreatorRequest = {
   id: string;
@@ -65,6 +65,17 @@ type CreatorProfile = {
   created_at: string;
 };
 
+type CreatorClaim = {
+  id: string;
+  creator_id: string;
+  user_id: string;
+  verification_platform: string;
+  verification_url: string;
+  verification_code: string;
+  status: "pending" | "approved" | "rejected" | "verified";
+  created_at: string;
+};
+
 type AdminLog = {
   id: string;
   admin_id: string | null;
@@ -83,17 +94,24 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [requests, setRequests] = useState<CreatorRequest[]>([]);
   const [users, setUsers] = useState<ProfileUser[]>([]);
   const [creators, setCreators] = useState<CreatorProfile[]>([]);
+  const [claims, setClaims] = useState<CreatorClaim[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
 
   const [userSearch, setUserSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
+  const [claimSearch, setClaimSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
+
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
     {}
   );
   const [expandedCreators, setExpandedCreators] = useState<
     Record<string, boolean>
   >({});
+  const [expandedClaims, setExpandedClaims] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
 
   async function getCurrentUserId() {
     const {
@@ -159,6 +177,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setCreators((data || []) as CreatorProfile[]);
   }
 
+  async function loadClaims() {
+    const { data } = await supabase
+      .from("creator_claims")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    setClaims((data || []) as CreatorClaim[]);
+  }
+
   async function loadLogs() {
     const { data } = await supabase
       .from("admin_logs")
@@ -172,7 +200,13 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   async function loadPanel() {
     setLoading(true);
 
-    await Promise.all([loadRequests(), loadUsers(), loadCreators(), loadLogs()]);
+    await Promise.all([
+      loadRequests(),
+      loadUsers(),
+      loadCreators(),
+      loadClaims(),
+      loadLogs(),
+    ]);
 
     setLoading(false);
   }
@@ -186,6 +220,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   function getOwner(userId: string | null) {
     if (!userId) return null;
     return users.find((user) => user.id === userId) || null;
+  }
+
+  function getCreator(creatorId: string | null) {
+    if (!creatorId) return null;
+    return creators.find((creator) => creator.id === creatorId) || null;
   }
 
   async function approveRequest(request: CreatorRequest) {
@@ -296,6 +335,115 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       metadata: {
         nickname: request.nickname,
         username: request.username,
+      },
+    });
+
+    setActionLoading(null);
+    await loadPanel();
+  }
+
+  async function approveClaim(claim: CreatorClaim) {
+    setActionLoading(claim.id);
+
+    const adminId = await getCurrentUserId();
+
+    if (!adminId) {
+      setActionLoading(null);
+      return;
+    }
+
+    const creator = getCreator(claim.creator_id);
+    const claimant = getOwner(claim.user_id);
+
+    const { error: creatorError } = await supabase
+      .from("creator_profiles")
+      .update({
+        user_id: claim.user_id,
+        owner_status: "claimed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", claim.creator_id);
+
+    if (creatorError) {
+      setActionLoading(null);
+      alert(creatorError.message);
+      return;
+    }
+
+    const { error: claimError } = await supabase
+      .from("creator_claims")
+      .update({
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: adminId,
+      })
+      .eq("id", claim.id);
+
+    if (claimError) {
+      setActionLoading(null);
+      alert(claimError.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "approve_creator_claim",
+      targetType: "creator_claim",
+      targetId: claim.id,
+      metadata: {
+        creator_id: claim.creator_id,
+        creator_nickname: creator?.nickname,
+        creator_username: creator?.username,
+        claimant_id: claim.user_id,
+        claimant_email: claimant?.email,
+        verification_platform: claim.verification_platform,
+        verification_url: claim.verification_url,
+      },
+    });
+
+    setActionLoading(null);
+    await loadPanel();
+  }
+
+  async function rejectClaim(claim: CreatorClaim) {
+    setActionLoading(claim.id);
+
+    const adminId = await getCurrentUserId();
+
+    if (!adminId) {
+      setActionLoading(null);
+      return;
+    }
+
+    const creator = getCreator(claim.creator_id);
+    const claimant = getOwner(claim.user_id);
+
+    const { error } = await supabase
+      .from("creator_claims")
+      .update({
+        status: "rejected",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: adminId,
+      })
+      .eq("id", claim.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "reject_creator_claim",
+      targetType: "creator_claim",
+      targetId: claim.id,
+      metadata: {
+        creator_id: claim.creator_id,
+        creator_nickname: creator?.nickname,
+        creator_username: creator?.username,
+        claimant_id: claim.user_id,
+        claimant_email: claimant?.email,
+        verification_platform: claim.verification_platform,
+        verification_url: claim.verification_url,
       },
     });
 
@@ -502,6 +650,27 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     return searchableText.includes(search);
   });
 
+  const filteredClaims = claims.filter((claim) => {
+    const search = claimSearch.toLowerCase().trim();
+    const creator = getCreator(claim.creator_id);
+    const claimant = getOwner(claim.user_id);
+
+    const searchableText = [
+      creator?.nickname,
+      creator?.username,
+      claimant?.email,
+      claimant?.display_name,
+      claimant?.username,
+      claim.verification_platform,
+      claim.verification_url,
+      claim.verification_code,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
+
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
     const admin = getOwner(log.admin_id);
@@ -559,11 +728,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             <h2 className="mt-6 text-3xl font-black">Painel Admin</h2>
 
             <p className="mt-2 text-sm text-white/50">
-              Gerencie solicitações, usuários, creators e logs.
+              Gerencie solicitações, usuários, creators, claims e logs.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {(["requests", "users", "creators", "logs"] as Tab[]).map(
+              {(["requests", "users", "creators", "claims", "logs"] as Tab[]).map(
                 (tab) => (
                   <button
                     key={tab}
@@ -589,9 +758,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             {!loading && activeTab === "requests" && (
               <div className="mt-8 grid gap-5">
                 {requests.length === 0 && (
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-                    Nenhuma solicitação pendente.
-                  </div>
+                  <EmptyBox text="Nenhuma solicitação pendente." />
                 )}
 
                 {requests.map((request) => (
@@ -950,6 +1117,161 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
               </div>
             )}
 
+            {!loading && activeTab === "claims" && (
+              <div className="mt-8">
+                <SearchInput
+                  value={claimSearch}
+                  onChange={setClaimSearch}
+                  placeholder="Buscar claims por creator, usuário, email ou código..."
+                />
+
+                <div className="mt-5 grid gap-4">
+                  {filteredClaims.length === 0 && (
+                    <EmptyBox text="Nenhuma reivindicação pendente." />
+                  )}
+
+                  {filteredClaims.map((claim) => {
+                    const creator = getCreator(claim.creator_id);
+                    const claimant = getOwner(claim.user_id);
+                    const isExpanded = expandedClaims[claim.id] ?? false;
+
+                    return (
+                      <div
+                        key={claim.id}
+                        className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
+                      >
+                        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                              {creator?.avatar_url ? (
+                                <img
+                                  src={creator.avatar_url}
+                                  alt={creator.nickname}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
+                                  Sem imagem
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="text-xl font-black text-white">
+                                {creator?.nickname || "Creator não encontrado"}
+                              </h3>
+
+                              <p className="text-sm text-white/45">
+                                @{creator?.username || "sem_username"}
+                              </p>
+
+                              <p className="mt-1 text-xs text-white/35">
+                                Reivindicado por:{" "}
+                                {claimant
+                                  ? claimant.email ||
+                                    claimant.display_name ||
+                                    "sem email"
+                                  : claim.user_id}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            <StatusPill label="Pending claim" tone="yellow" />
+
+                            <StatusPill
+                              label={claim.verification_platform}
+                              tone="cyan"
+                            />
+
+                            <button
+                              onClick={() =>
+                                setExpandedClaims((current) => ({
+                                  ...current,
+                                  [claim.id]: !isExpanded,
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  Recolher
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  Expandir
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <>
+                            <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
+                              <InfoBox
+                                label="Código"
+                                value={claim.verification_code}
+                                highlight
+                              />
+
+                              <InfoBox
+                                label="Solicitado em"
+                                value={new Date(
+                                  claim.created_at
+                                ).toLocaleString("pt-BR")}
+                              />
+
+                              <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
+                                <p className="text-xs text-white/40">
+                                  URL de verificação
+                                </p>
+
+                                <a
+                                  href={claim.verification_url}
+                                  target="_blank"
+                                  className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-cyan-100 hover:text-cyan-200"
+                                >
+                                  <ExternalLink size={16} />
+                                  {claim.verification_url}
+                                </a>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3 border-t border-white/10 bg-black/20 p-5">
+                              <button
+                                onClick={() => approveClaim(claim)}
+                                disabled={actionLoading === claim.id}
+                                className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                              >
+                                <Check size={16} />
+                                {actionLoading === claim.id
+                                  ? "Aprovando..."
+                                  : "Aprovar reivindicação"}
+                              </button>
+
+                              <button
+                                onClick={() => rejectClaim(claim)}
+                                disabled={actionLoading === claim.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                              >
+                                <X size={16} />
+                                {actionLoading === claim.id
+                                  ? "Processando..."
+                                  : "Rejeitar"}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {!loading && activeTab === "logs" && (
               <div className="mt-8">
                 <SearchInput
@@ -965,13 +1287,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                   {filteredLogs.map((log) => {
                     const admin = getOwner(log.admin_id);
+                    const isExpanded = expandedLogs[log.id] ?? false;
 
                     return (
                       <div
                         key={log.id}
-                        className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
+                        className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="flex items-center gap-2 font-bold text-white">
                               <History size={16} />
@@ -986,19 +1309,51 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                             </p>
 
                             <p className="text-sm text-white/35">
-                              Target: {log.target_type} •{" "}
-                              {log.target_id || "sem target"}
+                              Target: {log.target_type}
                             </p>
                           </div>
 
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/50">
-                            {new Date(log.created_at).toLocaleString("pt-BR")}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/50">
+                              {new Date(log.created_at).toLocaleString("pt-BR")}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                setExpandedLogs((current) => ({
+                                  ...current,
+                                  [log.id]: !isExpanded,
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  Recolher
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  Expandir
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
 
-                        <pre className="no-scrollbar mt-4 max-h-32 overflow-y-auto rounded-2xl bg-black/30 p-3 text-xs text-white/45">
-                          {JSON.stringify(log.metadata || {}, null, 2)}
-                        </pre>
+                        {isExpanded && (
+                          <div className="border-t border-white/10 bg-black/20 p-5">
+                            <SmallInfo
+                              label="Target ID"
+                              value={log.target_id || "sem target"}
+                            />
+
+                            <pre className="no-scrollbar mt-4 max-h-48 overflow-y-auto rounded-2xl bg-black/30 p-3 text-xs text-white/45">
+                              {JSON.stringify(log.metadata || {}, null, 2)}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
