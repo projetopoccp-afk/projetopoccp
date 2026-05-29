@@ -17,7 +17,7 @@ export async function GET(
 
   const { data } = await supabase
     .from("creator_profiles")
-    .select("nickname, username, title, category, is_verified")
+    .select("nickname, username, title, category, is_verified, avatar_url")
     .ilike("username", username)
     .maybeSingle();
 
@@ -26,6 +26,9 @@ export async function GET(
   const title = data?.title || "Digital Creator";
   const category = data?.category || "Creator";
   const initials = nickname.slice(0, 2).toUpperCase();
+
+  const origin = new URL(request.url).origin;
+  const avatarProxyUrl = `${origin}/api/og/avatar/${creatorUsername}`;
 
   return new ImageResponse(
     (
@@ -64,12 +67,30 @@ export async function GET(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "92px",
-              fontWeight: 900,
-              color: "#cffafe",
+              overflow: "hidden",
             }}
           >
-            {initials}
+            {data?.avatar_url ? (
+              <img
+                src={avatarProxyUrl}
+                width="300"
+                height="420"
+                style={{
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: "92px",
+                  fontWeight: 900,
+                  color: "#cffafe",
+                }}
+              >
+                {initials}
+              </div>
+            )}
           </div>
 
           <div
@@ -87,7 +108,6 @@ export async function GET(
                 color: "#67e8f9",
                 fontSize: "25px",
                 letterSpacing: "8px",
-                textTransform: "uppercase",
               }}
             >
               CREATOR NEXUS
