@@ -1,8 +1,19 @@
 import { ImageResponse } from "next/og";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export async function GET() {
+  const { data } = await supabase
+    .from("creator_profiles")
+    .select("nickname")
+    .limit(1);
+
   return new ImageResponse(
     (
       <div
@@ -14,12 +25,10 @@ export async function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "72px",
-          fontWeight: 900,
-          fontFamily: "Arial",
+          fontSize: 72,
         }}
       >
-        Creator Nexus
+        {data?.[0]?.nickname || "SEM DADOS"}
       </div>
     ),
     {
