@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LogOut, User } from "lucide-react";
 
+import { AccountModal } from "@/components/account/AccountModal";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
@@ -18,9 +19,18 @@ type AuthUser = {
   email: string;
 };
 
+type AccountProfile = {
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  is_admin: boolean | null;
+};
+
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
 
   useEffect(() => {
     async function getUser() {
@@ -30,6 +40,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
       if (!user) {
         setUser(null);
+        setProfile(null);
         return;
       }
 
@@ -42,6 +53,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
           "Creator",
         email: user.email || "",
       });
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, username, avatar_url, is_admin")
+        .eq("id", user.id)
+        .single();
+
+      setProfile(data);
     }
 
     getUser();
@@ -60,6 +79,8 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   async function handleLogout() {
     await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
+    setAccountOpen(false);
   }
 
   return (
@@ -77,12 +98,12 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
             {user ? (
               <div className="flex items-center gap-2 md:hidden">
-                <a
-                  href="/account"
+                <button
+                  onClick={() => setAccountOpen(true)}
                   className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
                 >
                   Conta
-                </a>
+                </button>
 
                 <button
                   onClick={handleLogout}
@@ -109,7 +130,10 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
           {user ? (
             <div className="hidden items-center gap-3 md:flex">
-              <a href="/account" className="text-right">
+              <button
+                onClick={() => setAccountOpen(true)}
+                className="text-right"
+              >
                 <p className="text-sm font-semibold text-white transition hover:text-cyan-200">
                   {user.name}
                 </p>
@@ -117,7 +141,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 <p className="text-xs text-white/40">
                   {user.email}
                 </p>
-              </a>
+              </button>
 
               <button
                 onClick={handleLogout}
@@ -140,6 +164,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       </header>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+
+      <AccountModal
+        open={accountOpen}
+        email={user?.email || ""}
+        profile={profile}
+        onClose={() => setAccountOpen(false)}
+        onLogout={handleLogout}
+      />
     </>
   );
 }
