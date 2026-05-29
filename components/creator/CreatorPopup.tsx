@@ -123,6 +123,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [editMode, setEditMode] = useState(false);
   const [claimMode, setClaimMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadedCreatorId, setLoadedCreatorId] = useState<string | null>(null);
 
   const [nickname, setNickname] = useState("");
   const [title, setTitle] = useState("");
@@ -177,12 +178,24 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }, []);
 
   useEffect(() => {
-    if (!creator) return;
+    if (!creator) {
+      setLoadedCreatorId(null);
+      return;
+    }
 
+    setLoadedCreatorId(null);
     setEditMode(false);
     setClaimMode(false);
     setClaimSuccess(false);
     setClaimUrl("");
+    setCopied(false);
+    setSaving(false);
+    setFollowLoading(false);
+    setUploadingAvatar(false);
+    setUploadingBanner(false);
+    setViewCount(0);
+    setFollowerCount(0);
+    setIsFollowing(false);
 
     setNickname(creator.nickname);
     setTitle(creator.title || "");
@@ -192,6 +205,15 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setAvatarUrl(creator.avatarUrl || "");
     setBannerUrl(creator.bannerUrl || "");
     setTagsText((creator.tags || []).join(", "));
+
+    const emptySocials: SocialForm = {};
+    socialPlatforms.forEach((platform) => {
+      emptySocials[platform] = "";
+    });
+
+    setSocials(emptySocials);
+    setClips([emptyClip(), emptyClip(), emptyClip()]);
+    setLoadedCreatorId(creator.id);
 
     async function loadCreatorData() {
       if (!creator) return;
@@ -528,9 +550,49 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   if (!creator) return null;
 
+  const isCreatorReady = loadedCreatorId === creator.id;
+
+  if (!isCreatorReady) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          key={`loading-${creator.id}`}
+          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+        >
+          <button
+            onClick={onClose}
+            className="absolute inset-0"
+            aria-label="Fechar popup"
+          />
+
+          <div className="relative w-full max-w-md rounded-[32px] border border-white/15 bg-zinc-950 p-8 text-center text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+            <div className="mx-auto h-16 w-16 rounded-full bg-cyan-300/20 blur-xl" />
+
+            <p className="mt-4 text-xs uppercase tracking-[0.3em] text-cyan-200">
+              Loading creator
+            </p>
+
+            <h2 className="mt-3 text-2xl font-black">
+              {creator.nickname}
+            </h2>
+
+            <p className="mt-2 text-sm text-white/45">
+              Preparando perfil...
+            </p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
   return (
     <AnimatePresence>
       <motion.div
+        key={creator.id}
         initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
         animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
@@ -544,6 +606,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         />
 
         <motion.div
+          key={`popup-card-${creator.id}`}
           initial={{ opacity: 0, scale: 0.92, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 30 }}

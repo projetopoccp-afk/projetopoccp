@@ -11,6 +11,14 @@ type CreatorGridProps = {
   search: string;
 };
 
+function getCreatorUsernameFromPath() {
+  if (typeof window === "undefined") return null;
+
+  const match = window.location.pathname.match(/^\/creator\/([^/]+)$/);
+
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
 export function CreatorGrid({ search }: CreatorGridProps) {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [creators, setCreators] = useState<Creator[]>([]);
@@ -121,6 +129,54 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     loadCreators();
   }, []);
 
+  useEffect(() => {
+    if (loading || creators.length === 0) return;
+
+    function syncPopupWithUrl() {
+      const usernameFromPath = getCreatorUsernameFromPath();
+
+      if (!usernameFromPath) {
+        setSelectedCreator(null);
+        return;
+      }
+
+      const creatorFromUrl = creators.find(
+        (creator) =>
+          creator.username.toLowerCase() === usernameFromPath.toLowerCase()
+      );
+
+      if (creatorFromUrl) {
+        setSelectedCreator(creatorFromUrl);
+      }
+    }
+
+    syncPopupWithUrl();
+
+    window.addEventListener("popstate", syncPopupWithUrl);
+
+    return () => {
+      window.removeEventListener("popstate", syncPopupWithUrl);
+    };
+  }, [creators, loading]);
+
+  function openCreator(creator: Creator) {
+    setSelectedCreator(creator);
+
+    const nextUrl = `/creator/${encodeURIComponent(creator.username)}`;
+
+    if (window.location.pathname !== nextUrl) {
+      window.history.pushState({ creatorId: creator.id }, "", nextUrl);
+    }
+  }
+
+  function closeCreator() {
+    setSelectedCreator(null);
+
+    if (window.location.pathname.startsWith("/creator/")) {
+      window.history.pushState(null, "", "/");
+    }
+  }
+
   const normalizedSearch = search.toLowerCase().trim();
 
   const filteredCreators = creators.filter((creator) => {
@@ -156,7 +212,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
             <CreatorCard
               key={creator.id}
               creator={creator}
-              onClick={setSelectedCreator}
+              onClick={openCreator}
             />
           ))}
 
@@ -179,10 +235,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         )}
       </section>
 
-      <CreatorPopup
-        creator={selectedCreator}
-        onClose={() => setSelectedCreator(null)}
-      />
+      <CreatorPopup creator={selectedCreator} onClose={closeCreator} />
     </>
   );
 }
