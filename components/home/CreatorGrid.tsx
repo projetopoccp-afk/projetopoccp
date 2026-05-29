@@ -295,9 +295,13 @@ function CreatorSection({
 
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-2xl font-black text-white md:text-3xl">
-              {title}
-            </h2>
+            <div className="flex items-center gap-3">
+  <div className="h-px w-8 bg-cyan-400/60" />
+
+  <h2 className="text-sm font-medium uppercase tracking-[0.35em] text-cyan-300">
+    {title}
+  </h2>
+</div>
 
             {description && (
   <p className="mt-3 max-w-2xl text-sm text-white/45">
