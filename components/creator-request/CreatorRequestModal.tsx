@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Copy, ImagePlus, Send, X } from "lucide-react";
+import { Check, Copy, ExternalLink, ImagePlus, Send, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 
@@ -23,31 +23,41 @@ const platforms = [
   "website",
 ];
 
-const aiPrompt = `Create a cinematic fantasy-tech creator portrait for a premium digital collectible card.
+const aiPrompt = `Transform the uploaded photo into a premium digital collectible card portrait.
 
-FORMAT:
-Vertical image, 2:3 aspect ratio, recommended resolution 1024x1536, centered subject, upper body visible, enough empty space around the character for card framing.
+IMPORTANT:
+Preserve the identity, face, hairstyle, facial features and overall appearance of the person in the original image.
 
-SUBJECT:
-[describe the creator appearance, outfit, pose, personality and vibe]
+Do not create a different character.
+Do not change ethnicity, gender, age or facial structure.
 
 STYLE:
-AAA game character portrait, fantasy-tech, cyber minimalism, cinematic lighting, mysterious atmosphere, premium digital identity, collectible card artwork, sharp details, elegant glow, high contrast, realistic but stylized, powerful aura, dark futuristic background, subtle particles, dramatic rim light.
+AAA game character portrait, fantasy-tech aesthetic, cinematic lighting, premium collectible card artwork, detailed clothing, powerful aura, subtle energy effects, realistic but stylized, high-end game splash art quality.
 
 COMPOSITION:
-Vertical portrait, centered character, upper body visible, strong silhouette, clean background, no text, no logos, no watermark, no UI elements, no card frame, no border.
+Vertical portrait.
+Aspect ratio 2:3.
+Recommended resolution 1024x1536.
+Upper body visible.
+Subject centered.
+Clean background.
+Space around the character for future card framing.
 
 MOOD:
-Legendary, rare, mysterious, powerful, cinematic, premium.
+Legendary, mysterious, premium, powerful.
 
-COLOR PALETTE:
-Deep black, cyan glow, violet energy, subtle gold highlights.
+COLORS:
+Dark background, cyan energy, purple accents, subtle gold highlights.
 
-QUALITY:
-High detail, clean face, professional character art, ultra sharp, 4k, game splash art quality.
+RESTRICTIONS:
+No text.
+No logos.
+No watermark.
+No card frame.
+No border.
+No UI elements.
 
-NEGATIVE PROMPT:
-low quality, blurry, distorted face, extra fingers, bad hands, bad anatomy, text, logo, watermark, cropped head, cropped body, messy background, ugly lighting, oversaturated, cartoonish, childish, flat design, UI, frame, border, card template`;
+Keep the person recognizable while enhancing them into a collectible card hero version of themselves.`;
 
 export function CreatorRequestModal({
   open,
@@ -62,6 +72,7 @@ export function CreatorRequestModal({
   const [imageSource, setImageSource] = useState<"external_url" | "upload">(
     "external_url"
   );
+  const [promptCopied, setPromptCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -69,6 +80,16 @@ export function CreatorRequestModal({
   const verificationCode = useMemo(() => {
     return `CNX-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
   }, [open]);
+
+  async function handleCopyPrompt() {
+    await navigator.clipboard.writeText(aiPrompt);
+
+    setPromptCopied(true);
+
+    setTimeout(() => {
+      setPromptCopied(false);
+    }, 2000);
+  }
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -261,6 +282,11 @@ export function CreatorRequestModal({
 
                 <h3 className="mt-8 font-bold">Imagem do card</h3>
 
+                <p className="mt-2 text-sm text-white/45">
+                  Use uma imagem vertical em proporção 2:3. Recomendado:
+                  1024x1536. Não use texto, logo, moldura ou watermark.
+                </p>
+
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <input
                     value={cardImageUrl}
@@ -301,23 +327,44 @@ export function CreatorRequestModal({
                 )}
 
                 <div className="mt-4 rounded-2xl border border-purple-300/15 bg-purple-300/[0.04] p-4">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h4 className="font-bold">
-                        Prompt padrão para imagem IA
+                        Prompt para transformar sua foto
                       </h4>
                       <p className="mt-1 text-xs text-white/45">
-                        Use esse prompt para gerar uma imagem vertical 2:3.
+                        Envie uma foto sua no ChatGPT e cole este prompt para
+                        adaptar a imagem ao estilo do card.
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => navigator.clipboard.writeText(aiPrompt)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs"
-                    >
-                      <Copy size={14} />
-                      Copiar
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={handleCopyPrompt}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs transition hover:bg-white/[0.08]"
+                      >
+                        {promptCopied ? (
+                          <>
+                            <Check size={14} />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={14} />
+                            Copiar
+                          </>
+                        )}
+                      </button>
+
+                      <a
+                        href="https://chatgpt.com"
+                        target="_blank"
+                        className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100 transition hover:bg-cyan-300/20"
+                      >
+                        <ExternalLink size={14} />
+                        Abrir ChatGPT
+                      </a>
+                    </div>
                   </div>
 
                   <pre className="no-scrollbar mt-3 max-h-44 overflow-y-auto whitespace-pre-wrap text-xs text-white/50">
