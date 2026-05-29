@@ -8,33 +8,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-async function imageToDataUrl(url: string | null) {
-  if (!url) return null;
-
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) return null;
-
-    const contentType = response.headers.get("content-type") || "image/png";
-
-    if (!contentType.startsWith("image/")) return null;
-
-    const buffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-
-    let binary = "";
-
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-
-    return `data:${contentType};base64,${btoa(binary)}`;
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ username: string }> }
@@ -44,7 +17,7 @@ export async function GET(
 
   const { data } = await supabase
     .from("creator_profiles")
-    .select("nickname, username, title, category, is_verified, avatar_url")
+    .select("nickname, username, title, category, is_verified")
     .ilike("username", username)
     .maybeSingle();
 
@@ -53,8 +26,6 @@ export async function GET(
   const title = data?.title || "Digital Creator";
   const category = data?.category || "Creator";
   const initials = nickname.slice(0, 2).toUpperCase();
-
-  const avatarDataUrl = await imageToDataUrl(data?.avatar_url || null);
 
   return new ImageResponse(
     (
@@ -93,30 +64,12 @@ export async function GET(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              overflow: "hidden",
+              fontSize: "92px",
+              fontWeight: 900,
+              color: "#cffafe",
             }}
           >
-            {avatarDataUrl ? (
-              <img
-                src={avatarDataUrl}
-                width="300"
-                height="420"
-                style={{
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: "92px",
-                  fontWeight: 900,
-                  color: "#cffafe",
-                }}
-              >
-                {initials}
-              </div>
-            )}
+            {initials}
           </div>
 
           <div
