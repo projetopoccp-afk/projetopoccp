@@ -249,7 +249,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         )}
 
         {!loading && !hasSearch && (
-          <div className="space-y-13">
+          <div className="space-y-10">
             <CreatorSection
               title="Cartas em Destaque"
               description=""
