@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Copy, Send, X } from "lucide-react";
+import { Copy, ImagePlus, Send, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 
@@ -11,19 +11,6 @@ type CreatorRequestModalProps = {
   email: string;
   onClose: () => void;
 };
-
-const categories = [
-  "Streamer",
-  "YouTuber",
-  "VTuber",
-  "Gamer",
-  "Artista",
-  "Editor",
-  "Cosplayer",
-  "Influencer",
-  "Educacional",
-  "Podcaster",
-];
 
 const platforms = [
   "youtube",
@@ -38,23 +25,29 @@ const platforms = [
 
 const aiPrompt = `Create a cinematic fantasy-tech creator portrait for a premium digital collectible card.
 
-Subject:
-[describe the creator appearance, outfit, pose and vibe]
+FORMAT:
+Vertical image, 2:3 aspect ratio, recommended resolution 1024x1536, centered subject, upper body visible, enough empty space around the character for card framing.
 
-Style:
+SUBJECT:
+[describe the creator appearance, outfit, pose, personality and vibe]
+
+STYLE:
 AAA game character portrait, fantasy-tech, cyber minimalism, cinematic lighting, mysterious atmosphere, premium digital identity, collectible card artwork, sharp details, elegant glow, high contrast, realistic but stylized, powerful aura, dark futuristic background, subtle particles, dramatic rim light.
 
-Composition:
-vertical portrait, centered character, upper body visible, strong silhouette, space around the subject for card framing, no text, no logos, no watermark, no UI elements.
+COMPOSITION:
+Vertical portrait, centered character, upper body visible, strong silhouette, clean background, no text, no logos, no watermark, no UI elements, no card frame, no border.
 
-Mood:
-legendary, rare, mysterious, powerful, cinematic, premium.
+MOOD:
+Legendary, rare, mysterious, powerful, cinematic, premium.
 
-Color palette:
-deep black, cyan glow, violet energy, subtle gold highlights.
+COLOR PALETTE:
+Deep black, cyan glow, violet energy, subtle gold highlights.
 
-Quality:
-high detail, clean face, professional character art, ultra sharp, 4k, game splash art quality.`;
+QUALITY:
+High detail, clean face, professional character art, ultra sharp, 4k, game splash art quality.
+
+NEGATIVE PROMPT:
+low quality, blurry, distorted face, extra fingers, bad hands, bad anatomy, text, logo, watermark, cropped head, cropped body, messy background, ugly lighting, oversaturated, cartoonish, childish, flat design, UI, frame, border, card template`;
 
 export function CreatorRequestModal({
   open,
@@ -63,12 +56,13 @@ export function CreatorRequestModal({
 }: CreatorRequestModalProps) {
   const [nickname, setNickname] = useState("");
   const [username, setUsername] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [platformLinks, setPlatformLinks] = useState<Record<string, string>>({});
   const [verificationPlatform, setVerificationPlatform] = useState("youtube");
   const [verificationUrl, setVerificationUrl] = useState("");
   const [cardImageUrl, setCardImageUrl] = useState("");
-  const [imageSource, setImageSource] = useState("external_url");
+  const [imageSource, setImageSource] = useState<"external_url" | "upload">(
+    "external_url"
+  );
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -76,12 +70,41 @@ export function CreatorRequestModal({
     return `CNX-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
   }, [open]);
 
-  function toggleCategory(category: string) {
-    setSelectedCategories((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category]
-    );
+  async function handleUpload(file: File) {
+    setUploading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setUploading(false);
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from("creator-requests")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      setUploading(false);
+      alert(error.message);
+      return;
+    }
+
+    const { data } = supabase.storage
+      .from("creator-requests")
+      .getPublicUrl(fileName);
+
+    setCardImageUrl(data.publicUrl);
+    setImageSource("upload");
+    setUploading(false);
   }
 
   async function handleSubmit() {
@@ -96,23 +119,21 @@ export function CreatorRequestModal({
       return;
     }
 
-    const activePlatforms = Object.entries(platformLinks)
-      .filter(([, url]) => url.trim().length > 0)
-      .map(([platform, url]) => ({
-        platform,
-        url,
-      }));
-
     const { error } = await supabase.from("creator_requests").insert({
       user_id: user.id,
       nickname,
       username,
       email,
-      category: selectedCategories[0] || "Creator",
-      categories: selectedCategories,
+      category: "Creator",
+      categories: [],
       main_platform: verificationPlatform,
       main_url: verificationUrl,
-      platforms: activePlatforms,
+      platforms: [
+        {
+          platform: verificationPlatform,
+          url: verificationUrl,
+        },
+      ],
       verification_platform: verificationPlatform,
       verification_url: verificationUrl,
       verification_code: verificationCode,
@@ -155,17 +176,19 @@ export function CreatorRequestModal({
               <X size={18} />
             </button>
 
-            <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100 w-fit">
+            <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
               Creator Request
             </div>
 
             {success ? (
               <div className="mt-8 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-6">
                 <h2 className="text-2xl font-black">Solicitação enviada!</h2>
+
                 <p className="mt-3 text-white/60">
                   Sua solicitação entrou na fila de análise. Agora coloque o
                   código abaixo na bio/descrição da plataforma escolhida:
                 </p>
+
                 <div className="mt-5 rounded-2xl bg-black/40 p-4 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
                   {verificationCode}
                 </div>
@@ -177,8 +200,9 @@ export function CreatorRequestModal({
                 </h2>
 
                 <p className="mt-3 text-sm text-white/55">
-                  Preencha seus dados, redes e imagem base do card. A aprovação
-                  será manual para evitar perfis falsos.
+                  Preencha o básico para entrar na fila de aprovação. Após ser
+                  aprovado, você poderá completar categorias, redes,
+                  estatísticas e momentos em destaque.
                 </p>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -197,43 +221,9 @@ export function CreatorRequestModal({
                   />
                 </div>
 
-                <h3 className="mt-8 font-bold">Categorias</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => toggleCategory(category)}
-                      className={`rounded-full border px-4 py-2 text-sm transition ${
-                        selectedCategories.includes(category)
-                          ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
-                          : "border-white/10 bg-white/[0.04] text-white/60"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
+                <h3 className="mt-8 font-bold">Verificação do criador</h3>
 
-                <h3 className="mt-8 font-bold">Plataformas e links</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {platforms.map((platform) => (
-                    <input
-                      key={platform}
-                      value={platformLinks[platform] || ""}
-                      onChange={(e) =>
-                        setPlatformLinks((current) => ({
-                          ...current,
-                          [platform]: e.target.value,
-                        }))
-                      }
-                      placeholder={`${platform} URL`}
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan-300/40"
-                    />
-                  ))}
-                </div>
-
-                <h3 className="mt-8 font-bold">Verificação</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
                   <select
                     value={verificationPlatform}
                     onChange={(e) => setVerificationPlatform(e.target.value)}
@@ -249,7 +239,7 @@ export function CreatorRequestModal({
                   <input
                     value={verificationUrl}
                     onChange={(e) => setVerificationUrl(e.target.value)}
-                    placeholder="URL usada para verificação"
+                    placeholder="Link do canal ou perfil principal"
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan-300/40"
                   />
                 </div>
@@ -258,38 +248,69 @@ export function CreatorRequestModal({
                   <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
                     Código de verificação
                   </p>
+
                   <p className="mt-2 text-xl font-black tracking-[0.25em]">
                     {verificationCode}
                   </p>
+
                   <p className="mt-2 text-sm text-white/50">
-                    Coloque esse código na bio ou descrição da plataforma usada
-                    para verificação.
+                    Coloque esse código temporariamente na bio, descrição ou
+                    sobre da plataforma usada para verificação.
                   </p>
                 </div>
 
                 <h3 className="mt-8 font-bold">Imagem do card</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
-                  <select
-                    value={imageSource}
-                    onChange={(e) => setImageSource(e.target.value)}
-                    className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm outline-none"
-                  >
-                    <option value="external_url">Link externo</option>
-                    <option value="ai_generated">Imagem IA</option>
-                    <option value="upload">Upload futuro</option>
-                  </select>
 
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <input
                     value={cardImageUrl}
-                    onChange={(e) => setCardImageUrl(e.target.value)}
+                    onChange={(e) => {
+                      setCardImageUrl(e.target.value);
+                      setImageSource("external_url");
+                    }}
                     placeholder="Cole o link da imagem"
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan-300/40"
                   />
+
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
+                    <ImagePlus size={18} />
+                    {uploading ? "Enviando..." : "Enviar imagem"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+
+                        if (file) {
+                          handleUpload(file);
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
+
+                {cardImageUrl && (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+                    <img
+                      src={cardImageUrl}
+                      alt="Prévia da imagem do card"
+                      className="max-h-72 w-full object-cover"
+                    />
+                  </div>
+                )}
 
                 <div className="mt-4 rounded-2xl border border-purple-300/15 bg-purple-300/[0.04] p-4">
                   <div className="flex items-center justify-between gap-4">
-                    <h4 className="font-bold">Prompt padrão para imagem IA</h4>
+                    <div>
+                      <h4 className="font-bold">
+                        Prompt padrão para imagem IA
+                      </h4>
+                      <p className="mt-1 text-xs text-white/45">
+                        Use esse prompt para gerar uma imagem vertical 2:3.
+                      </p>
+                    </div>
+
                     <button
                       onClick={() => navigator.clipboard.writeText(aiPrompt)}
                       className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs"
@@ -306,8 +327,15 @@ export function CreatorRequestModal({
 
                 <button
                   onClick={handleSubmit}
-                  disabled={loading}
-                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
+                  disabled={
+                    loading ||
+                    uploading ||
+                    !nickname ||
+                    !username ||
+                    !verificationUrl ||
+                    !cardImageUrl
+                  }
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={16} />
                   {loading ? "Enviando..." : "Enviar para análise"}
