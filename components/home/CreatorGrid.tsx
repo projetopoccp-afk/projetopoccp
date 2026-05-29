@@ -23,6 +23,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         .select(
           `
           id,
+          user_id,
           username,
           nickname,
           title,
@@ -48,20 +49,21 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         .order("created_at", { ascending: false });
 
       if (error || !data) {
-  setCreators([]);
-  setLoading(false);
-  return;
-}
+        setCreators([]);
+        setLoading(false);
+        return;
+      }
 
       const mappedCreators: Creator[] = data.map((item: any) => {
         const card = item.creator_cards?.[0];
 
         return {
           id: item.id,
+          ownerId: item.user_id,
           username: item.username,
           nickname: item.nickname,
           title: item.title || "Rising Creator",
-          faction: item.faction || "Nexus Origin",
+          faction: item.faction || "",
           category: item.category || "Creator",
           mainPlatform: "youtube",
           status: item.status || "offline",
@@ -131,7 +133,6 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       creator.aura,
       creator.mainPlatform,
       creator.title,
-      creator.faction,
       creator.status,
       ...creator.tags,
     ]

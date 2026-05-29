@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Pencil } from "lucide-react";
 
+import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
 
 type CreatorPopupProps = {
@@ -20,6 +22,28 @@ const statusLabel = {
 
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [copied, setCopied] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+
+  const isOwner = Boolean(
+    creator?.ownerId && currentUserId && creator.ownerId === currentUserId
+  );
+
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setCurrentUserId(user?.id || null);
+    }
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    setEditMode(false);
+  }, [creator?.id]);
 
   async function handleShare() {
     if (!creator) return;
@@ -124,12 +148,24 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             </div>
 
             <div className="relative h-full overflow-hidden text-white">
-              <button
-                onClick={onClose}
-                className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
-              >
-                Fechar
-              </button>
+              <div className="absolute right-5 top-5 z-20 flex gap-2">
+                {isOwner && (
+                  <button
+                    onClick={() => setEditMode((current) => !current)}
+                    className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100 hover:bg-cyan-300/20"
+                  >
+                    <Pencil size={14} />
+                    {editMode ? "Visualizar" : "Editar"}
+                  </button>
+                )}
+
+                <button
+                  onClick={onClose}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
+                >
+                  Fechar
+                </button>
+              </div>
 
               <div
                 className="no-scrollbar h-full overflow-y-auto p-6 pr-10 md:p-8 md:pr-12"
@@ -138,199 +174,185 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   marginRight: "18px",
                 }}
               >
-                <div className="pr-16">
-                  <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-                    Creator Profile
-                  </p>
+                {editMode ? (
+                  <div className="pr-16">
+                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+                      Edit Mode
+                    </p>
 
-                  <h3 className="mt-3 text-3xl font-bold leading-tight">
-                    {creator.bio}
-                  </h3>
+                    <h3 className="mt-3 text-3xl font-bold">
+                      Edição do perfil
+                    </h3>
 
-                  <p className="mt-3 text-sm font-semibold text-cyan-100">
-                    {creator.title} • {creator.faction}
-                  </p>
-
-                  <p className="mt-4 text-white/65">
-                    {creator.description}
-                  </p>
-                </div>
-
-                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Power Score</p>
-                    <p className="mt-1 font-bold text-cyan-200">
-                      {creator.powerScore.toLocaleString("pt-BR")}
+                    <p className="mt-4 text-white/60">
+                      Esta área já está preparada para edição. No próximo passo
+                      vamos adicionar os campos para editar nickname, title,
+                      bio, descrição, imagem e links.
                     </p>
                   </div>
+                ) : (
+                  <>
+                    <div className="pr-16">
+                      <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+                        Creator Profile
+                      </p>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Collected by</p>
-                    <p className="mt-1 font-bold text-purple-200">
-                      {creator.collectedBy.toLocaleString("pt-BR")}
-                    </p>
-                  </div>
+                      <h3 className="mt-3 text-3xl font-bold leading-tight">
+                        {creator.bio}
+                      </h3>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Status</p>
-                    <p className="mt-1 font-bold text-emerald-200">
-                      {statusLabel[creator.status]}
-                    </p>
-                  </div>
-                </div>
+                      <p className="mt-3 text-sm font-semibold text-cyan-100">
+                        {creator.title}
+                      </p>
 
-                <div className="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-                    Evolution Stage
-                  </p>
-
-                  <p className="mt-2 font-bold text-white">
-                    {creator.evolutionStage}
-                  </p>
-                </div>
-
-                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Rank</p>
-                    <p className="mt-1 font-bold text-yellow-200">
-                      {creator.rank}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Level</p>
-                    <p className="mt-1 font-bold text-cyan-200">
-                      {creator.level}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/40">Aura</p>
-                    <p className="mt-1 font-bold text-purple-200">
-                      {creator.aura}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8">
-                  <h4 className="font-bold">Estatísticas</h4>
-
-                  <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-                    <div className="rounded-2xl bg-white/[0.04] p-4">
-                      <p className="text-white/40">Seguidores</p>
-                      <p className="mt-1 text-lg font-bold">
-                        {creator.followers.toLocaleString("pt-BR")}
+                      <p className="mt-4 text-white/65">
+                        {creator.description}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-white/[0.04] p-4">
-                      <p className="text-white/40">Likes</p>
-                      <p className="mt-1 text-lg font-bold">
-                        {creator.likes.toLocaleString("pt-BR")}
+                    <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <InfoCard label="Power Score" value={creator.powerScore.toLocaleString("pt-BR")} color="text-cyan-200" />
+                      <InfoCard label="Collected by" value={creator.collectedBy.toLocaleString("pt-BR")} color="text-purple-200" />
+                      <InfoCard label="Status" value={statusLabel[creator.status]} color="text-emerald-200" />
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+                      <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
+                        Evolution Stage
+                      </p>
+
+                      <p className="mt-2 font-bold text-white">
+                        {creator.evolutionStage}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-white/[0.04] p-4">
-                      <p className="text-white/40">Views</p>
-                      <p className="mt-1 text-lg font-bold">
-                        {creator.views.toLocaleString("pt-BR")}
-                      </p>
+                    <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <InfoCard label="Rank" value={creator.rank} color="text-yellow-200" />
+                      <InfoCard label="Level" value={String(creator.level)} color="text-cyan-200" />
+                      <InfoCard label="Aura" value={creator.aura} color="text-purple-200" />
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-8">
-                  <h4 className="font-bold">Signature Traits</h4>
+                    <div className="mt-8">
+                      <h4 className="font-bold">Estatísticas</h4>
 
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    {creator.traits.map((trait) => (
-                      <div
-                        key={`${trait.label}-${trait.value}`}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
-                      >
-                        <p className="text-xs text-white/40">
-                          {trait.label}
-                        </p>
-
-                        <p className="mt-1 text-sm font-semibold text-white">
-                          {trait.value}
-                        </p>
+                      <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                        <InfoCard label="Seguidores" value={creator.followers.toLocaleString("pt-BR")} />
+                        <InfoCard label="Likes" value={creator.likes.toLocaleString("pt-BR")} />
+                        <InfoCard label="Views" value={creator.views.toLocaleString("pt-BR")} />
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="mt-8 rounded-2xl border border-purple-300/15 bg-purple-300/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-purple-200">
-                    Featured Moment
-                  </p>
+                    <div className="mt-8">
+                      <h4 className="font-bold">Signature Traits</h4>
 
-                  <h4 className="mt-3 font-bold text-white">
-                    {creator.featuredMoment.title}
-                  </h4>
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        {creator.traits.map((trait) => (
+                          <div
+                            key={`${trait.label}-${trait.value}`}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                          >
+                            <p className="text-xs text-white/40">
+                              {trait.label}
+                            </p>
 
-                  <p className="mt-2 text-sm text-white/55">
-                    {creator.featuredMoment.description}
-                  </p>
-                </div>
-
-                <div className="mt-8">
-                  <h4 className="font-bold">Tags</h4>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {creator.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-8">
-                  <h4 className="font-bold">Achievements</h4>
-
-                  <div className="mt-3 space-y-3">
-                    {creator.achievements.map((achievement) => (
-                      <div
-                        key={achievement.id}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
-                      >
-                        <p className="font-semibold text-white">
-                          {achievement.title}
-                        </p>
-
-                        <p className="mt-1 text-sm text-white/50">
-                          {achievement.description}
-                        </p>
+                            <p className="mt-1 text-sm font-semibold text-white">
+                              {trait.value}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="mt-8 pb-10">
-                  <h4 className="font-bold">Social Links</h4>
+                    <div className="mt-8 rounded-2xl border border-purple-300/15 bg-purple-300/[0.04] p-4">
+                      <p className="text-xs uppercase tracking-[0.25em] text-purple-200">
+                        Featured Moment
+                      </p>
 
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {creator.socials.map((social) => (
-                      <a
-                        key={social.platform}
-                        href={social.url}
-                        target="_blank"
-                        className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
-                      >
-                        {social.platform}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+                      <h4 className="mt-3 font-bold text-white">
+                        {creator.featuredMoment.title}
+                      </h4>
+
+                      <p className="mt-2 text-sm text-white/55">
+                        {creator.featuredMoment.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-8">
+                      <h4 className="font-bold">Tags</h4>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {creator.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-8">
+                      <h4 className="font-bold">Achievements</h4>
+
+                      <div className="mt-3 space-y-3">
+                        {creator.achievements.map((achievement) => (
+                          <div
+                            key={achievement.id}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                          >
+                            <p className="font-semibold text-white">
+                              {achievement.title}
+                            </p>
+
+                            <p className="mt-1 text-sm text-white/50">
+                              {achievement.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pb-10">
+                      <h4 className="font-bold">Social Links</h4>
+
+                      <div className="mt-3 flex flex-wrap gap-3">
+                        {creator.socials.map((social) => (
+                          <a
+                            key={social.platform}
+                            href={social.url}
+                            target="_blank"
+                            className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
+                          >
+                            {social.platform}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function InfoCard({
+  label,
+  value,
+  color = "text-white",
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <p className="text-xs text-white/40">{label}</p>
+      <p className={`mt-1 font-bold ${color}`}>{value}</p>
+    </div>
   );
 }

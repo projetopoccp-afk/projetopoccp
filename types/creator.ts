@@ -62,6 +62,7 @@ export type Creator = {
   bannerUrl: string;
   bio: string;
   description: string;
+  ownerId?: string | null;
   tags: string[];
   rank: CreatorRank;
   rarity: CreatorRarity;
