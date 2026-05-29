@@ -17,8 +17,8 @@ export async function GET(
   const { data: creator } = await supabase
     .from("creator_profiles")
     .select("nickname, username, title, category, avatar_url, is_verified")
-    .eq("username", username)
-    .single();
+    .ilike("username", username)
+    .maybeSingle();
 
   if (!creator) {
     return new ImageResponse(
