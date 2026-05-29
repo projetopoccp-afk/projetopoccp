@@ -730,12 +730,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
           >
             <div className="grid gap-6 p-5 md:grid-cols-[140px_1fr]">
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
+              <div className="flex items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-black/40">
                 {creator.avatar_url ? (
                   <img
                     src={creator.avatar_url}
                     alt={creator.nickname}
-                    className="h-44 w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <div className="flex h-44 items-center justify-center text-white/30">
