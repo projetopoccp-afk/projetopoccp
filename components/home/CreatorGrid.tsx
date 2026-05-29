@@ -295,10 +295,10 @@ function CreatorSection({
 
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <div className="flex items-center gap-3">
-  <div className="h-px w-8 bg-cyan-400/60" />
+            <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-5 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
+  <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
 
-  <h2 className="text-sm font-medium uppercase tracking-[0.35em] text-cyan-300">
+  <h2 className="text-base font-bold uppercase tracking-[0.28em] text-cyan-100">
     {title}
   </h2>
 </div>
