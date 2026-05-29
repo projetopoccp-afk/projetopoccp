@@ -56,7 +56,7 @@ export type Creator = {
   title: string;
   faction: string;
   category: string;
-  mainPlatform: SocialPlatform;
+  mainPlatform: "youtube",
   status: CreatorStatus;
   avatarUrl: string;
   bannerUrl: string;
