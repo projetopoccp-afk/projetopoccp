@@ -12,8 +12,9 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
+
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
+import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 
 type AccountProfile = {
@@ -40,6 +41,7 @@ export function AccountModal({
 }: AccountModalProps) {
   const [requestOpen, setRequestOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   return (
     <>
@@ -144,15 +146,14 @@ export function AccountModal({
                     disabled
                   />
 
-                  <Link href="/collection">
-                    <AccountActionCard
-                      icon={<Archive size={22} />}
-                      title="Minha Coleção"
-                      description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
-                      buttonLabel="Abrir"
-                      variant="purple"
-                    />
-                  </Link>
+                  <AccountActionCard
+                    icon={<Archive size={22} />}
+                    title="Minha Coleção"
+                    description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
+                    buttonLabel="Abrir"
+                    variant="purple"
+                    onClick={() => setCollectionOpen(true)}
+                  />
 
                   <AccountActionCard
                     icon={<BadgeCheck size={22} />}
@@ -223,9 +224,11 @@ export function AccountModal({
         onClose={() => setRequestOpen(false)}
       />
 
-      <AdminPanelModal
-        open={adminOpen}
-        onClose={() => setAdminOpen(false)}
+      <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
+
+      <CollectionModal
+        open={collectionOpen}
+        onClose={() => setCollectionOpen(false)}
       />
     </>
   );
@@ -238,6 +241,7 @@ function AccountActionCard({
   buttonLabel,
   variant,
   disabled = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -245,6 +249,7 @@ function AccountActionCard({
   buttonLabel: string;
   variant: "cyan" | "purple" | "yellow" | "emerald" | "pink";
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   const styles = {
     cyan: {
@@ -289,6 +294,8 @@ function AccountActionCard({
       <p className="mt-2 text-sm text-white/55">{description}</p>
 
       <button
+        type="button"
+        onClick={onClick}
         disabled={disabled}
         className={`mt-4 rounded-full border px-5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${styles.button}`}
       >
