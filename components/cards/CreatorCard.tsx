@@ -31,7 +31,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             <div className="absolute inset-0 translate-x-[-120%] bg-[linear-gradient(115deg,transparent_20%,rgba(255,255,255,0.12)_40%,transparent_60%)] transition-transform duration-1000 group-hover:translate-x-[120%]" />
           </div>
 
-          <div className="absolute inset-0 opacity-70 blur-2xl transition group-hover:opacity-100">
+          <div className="absolute inset-0 opacity-70 transition">
             <div
               className={`absolute -top-20 left-10 h-40 w-40 rounded-full ${rarity.glow}`}
             />
@@ -43,10 +43,10 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <img
             src={creator.avatarUrl}
             alt={creator.nickname}
-            className="absolute inset-0 h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-115"
+            className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
           <div
             className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur ${rarity.badge}`}
