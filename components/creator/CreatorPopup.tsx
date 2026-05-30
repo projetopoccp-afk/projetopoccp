@@ -379,52 +379,65 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }
 
   async function handleFollow() {
-    if (!creator) return;
+  if (!creator) return;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      alert("Faça login para seguir este creator.");
+  if (!user) {
+    alert("Faça login para seguir este creator.");
+    return;
+  }
+
+  setFollowLoading(true);
+
+  if (isFollowing) {
+    const { error } = await supabase
+      .from("creator_followers")
+      .delete()
+      .eq("creator_id", creator.id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      setFollowLoading(false);
+      alert(error.message);
       return;
     }
 
-    setFollowLoading(true);
+    setIsFollowing(false);
+    setFollowerCount((current) => Math.max(0, current - 1));
+  } else {
+    const { error } = await supabase.from("creator_followers").insert({
+      creator_id: creator.id,
+      user_id: user.id,
+    });
 
-    if (isFollowing) {
-      const { error } = await supabase
-        .from("creator_followers")
-        .delete()
-        .eq("creator_id", creator.id)
-        .eq("user_id", user.id);
-
-      if (error) {
-        setFollowLoading(false);
-        alert(error.message);
-        return;
-      }
-
-      setIsFollowing(false);
-      setFollowerCount((current) => Math.max(0, current - 1));
-    } else {
-      const { error } = await supabase.from("creator_followers").insert({
-        creator_id: creator.id,
-        user_id: user.id,
-      });
-
-      if (error) {
-        setFollowLoading(false);
-        alert(error.message);
-        return;
-      }
-
-      setIsFollowing(true);
-      setFollowerCount((current) => current + 1);
+    if (error) {
+      setFollowLoading(false);
+      alert(error.message);
+      return;
     }
 
-    setFollowLoading(false);
+    await supabase.from("user_cards").upsert(
+      {
+        creator_id: creator.id,
+        user_id: user.id,
+        rarity: "common",
+        source: "follow",
+      },
+      {
+        onConflict: "user_id,creator_id",
+        ignoreDuplicates: true,
+      }
+    );
+
+    setIsFollowing(true);
+    setFollowerCount((current) => current + 1);
   }
+
+  setFollowLoading(false);
+}
 
   async function uploadImage(file: File, type: "avatar" | "banner") {
     try {
