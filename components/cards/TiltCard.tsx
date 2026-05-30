@@ -24,17 +24,17 @@ export function TiltCard({ children, className = "" }: TiltCardProps) {
     const percentX = x / rect.width;
     const percentY = y / rect.height;
 
-    const rotateX = ((y - centerY) / centerY) * -6;
-    const rotateY = ((x - centerX) / centerX) * 6;
+    const rotateX = ((y - centerY) / centerY) * -16;
+    const rotateY = ((x - centerX) / centerX) * 16;
 
     card.style.setProperty("--glow-x", `${percentX * 100}%`);
     card.style.setProperty("--glow-y", `${percentY * 100}%`);
 
     card.style.transform = `
-      perspective(1200px)
+      perspective(900px)
       rotateX(${rotateX}deg)
       rotateY(${rotateY}deg)
-      scale(1.02)
+      scale(1.06)
     `;
   }
 
@@ -58,7 +58,7 @@ export function TiltCard({ children, className = "" }: TiltCardProps) {
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`group relative overflow-hidden rounded-[24px] transition-transform duration-200 ease-out ${className}`}
+      className={`group relative overflow-hidden rounded-[24px] transition-transform duration-100 ease-out ${className}`}
       style={{
         transformStyle: "preserve-3d",
         backfaceVisibility: "hidden",
