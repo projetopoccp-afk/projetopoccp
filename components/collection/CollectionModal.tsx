@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Archive,
-  Crown,
-  ExternalLink,
-  Gem,
-  Share2,
-  Sparkles,
-  X,
-  Zap,
-} from "lucide-react";
+import { Archive, Crown, Gem, Sparkles, X, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { TiltCard } from "@/components/cards/TiltCard";
@@ -192,7 +183,7 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
                 ) : cards.length === 0 ? (
                   <EmptyCollection />
                 ) : (
-                  <div className="mt-10 grid grid-cols-1 justify-items-center gap-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="mt-10 grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {cards.map((card) => (
                       <CollectionCard
                         key={card.id}
@@ -263,69 +254,9 @@ function CollectionCard({
   card: UserCard;
   onClick: () => void;
 }) {
-  const creator = card.creator_profiles;
-  const imageUrl = creator?.avatar_url || creator?.banner_url || "";
-  const nickname = creator?.nickname || "Creator Nexus";
-  const username = creator?.username || "creator";
-  const rarity = card.rarity || "common";
-
   return (
     <TiltCard>
-      <button
-        onClick={onClick}
-        className="group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border border-white/15 bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:border-cyan-300/35 hover:shadow-[0_0_70px_rgba(34,211,238,0.18)]"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
-
-        <div className="absolute inset-0 opacity-70 transition">
-          <div className="absolute -top-20 left-10 h-40 w-40 rounded-full bg-cyan-400/20" />
-          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-purple-500/20" />
-        </div>
-
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={nickname}
-            className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-6xl font-black text-cyan-100">
-            {nickname.slice(0, 2).toUpperCase()}
-          </div>
-        )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-        <div
-          className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] backdrop-blur ${
-            rarityClass[rarity] || rarityClass.common
-          }`}
-        >
-          {rarityLabel[rarity] || rarity}
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
-            Carta conquistada
-          </p>
-
-          <h3 className="mt-2 text-xl font-bold text-white">{nickname}</h3>
-
-          <p className="mt-1 text-xs text-white/50">@{username}</p>
-
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/70">
-              {card.source}
-            </span>
-
-            <span className="text-xs text-white/45">
-              {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/20" />
-      </button>
+      <CollectionCardFace card={card} onClick={onClick} size="small" />
     </TiltCard>
   );
 }
@@ -337,45 +268,15 @@ function CollectionCardShowcase({
   card: UserCard | null;
   onClose: () => void;
 }) {
-  const creator = card?.creator_profiles;
-  const nickname = creator?.nickname || "Creator Nexus";
-  const username = creator?.username || "creator";
-  const imageUrl = creator?.avatar_url || creator?.banner_url || "";
-  const rarity = card?.rarity || "common";
-  const profileUrl = creator?.username ? `/creator/${creator.username}` : "/";
-
-  async function shareCard() {
-    if (!card) return;
-
-    const text = `Eu conquistei a carta ${nickname} (${rarityLabel[rarity] || rarity}) no Creator Nexus!`;
-    const url = `${window.location.origin}${profileUrl}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${nickname} | Creator Nexus`,
-          text,
-          url,
-        });
-        return;
-      } catch {
-        return;
-      }
-    }
-
-    await navigator.clipboard.writeText(`${text}\n${url}`);
-    alert("Link da carta copiado!");
-  }
-
   return (
     <AnimatePresence>
       {card && (
         <motion.div
           initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(16px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
           exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
         >
           <button
             onClick={onClose}
@@ -383,127 +284,24 @@ function CollectionCardShowcase({
             aria-label="Fechar carta"
           />
 
+          <button
+            onClick={onClose}
+            className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+            aria-label="Fechar"
+          >
+            <X size={20} />
+          </button>
+
           <motion.div
-            initial={{ opacity: 0, scale: 0.86, y: 30 }}
+            initial={{ opacity: 0, scale: 0.82, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="hide-scrollbar relative max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_90px_rgba(0,0,0,0.95)]"
+            className="relative z-20"
           >
-            <div className="absolute -left-24 -top-24 h-60 w-60 rounded-full bg-cyan-500/20 blur-[90px]" />
-            <div className="absolute -bottom-24 -right-24 h-60 w-60 rounded-full bg-purple-600/25 blur-[90px]" />
-
-            <button
-              onClick={onClose}
-              className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="relative z-10 grid gap-8 lg:grid-cols-[440px_1fr] lg:items-center">
-              <div className="flex justify-center">
-                <TiltCard>
-                  <div className="group relative h-[620px] w-[400px] overflow-hidden rounded-[34px] border border-white/15 bg-black text-left shadow-[0_0_80px_rgba(0,0,0,0.9)]">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
-
-                    <div className="absolute inset-0 opacity-80 transition">
-                      <div className="absolute -top-24 left-12 h-48 w-48 rounded-full bg-cyan-400/25" />
-                      <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-purple-500/25" />
-                    </div>
-
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={nickname}
-                        className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-7xl font-black text-cyan-100">
-                        {nickname.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
-
-                    <div
-                      className={`absolute left-6 top-6 rounded-full border px-4 py-1 text-xs font-bold uppercase tracking-[0.28em] backdrop-blur ${
-                        rarityClass[rarity] || rarityClass.common
-                      }`}
-                    >
-                      {rarityLabel[rarity] || rarity}
-                    </div>
-
-                    <div className="absolute bottom-0 left-0 right-0 p-7">
-                      <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
-                        Carta do Creator
-                      </p>
-
-                      <h3 className="mt-3 text-4xl font-black text-white">
-                        {nickname}
-                      </h3>
-
-                      <p className="mt-2 text-base text-white/55">@{username}</p>
-
-                      <div className="mt-6 flex items-center justify-between gap-3">
-                        <span className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white/70">
-                          {card.source}
-                        </span>
-
-                        <span className="text-sm text-white/45">
-                          {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pointer-events-none absolute inset-0 rounded-[34px] ring-1 ring-inset ring-white/20" />
-                  </div>
-                </TiltCard>
-              </div>
-
-              <div className="flex flex-col justify-center">
-                <div className="inline-flex w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                  Vitrine da carta
-                </div>
-
-                <h2 className="mt-6 text-4xl font-black">
-                  {nickname}
-                </h2>
-
-                <p className="mt-3 max-w-lg text-white/50">
-                  Esta carta faz parte da sua coleção pessoal do Creator Nexus.
-                  Ela foi conquistada e fica registrada como item colecionável da sua conta.
-                </p>
-
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  <DetailBox label="Raridade" value={rarityLabel[rarity] || rarity} />
-                  <DetailBox label="Fonte" value={card.source} />
-                  <DetailBox
-                    label="Conquistada em"
-                    value={new Date(card.obtained_at).toLocaleDateString("pt-BR")}
-                  />
-                  <DetailBox label="Creator" value={`@${username}`} />
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <a
-                    href={profileUrl}
-                    className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105"
-                  >
-                    <ExternalLink size={16} />
-                    Ver perfil
-                  </a>
-
-                  <button
-                    onClick={shareCard}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08]"
-                  >
-                    <Share2 size={16} />
-                    Compartilhar carta
-                  </button>
-                </div>
-              </div>
-            </div>
+            <TiltCard>
+              <CollectionCardFace card={card} onClick={() => {}} size="large" />
+            </TiltCard>
           </motion.div>
         </motion.div>
       )}
@@ -511,13 +309,102 @@ function CollectionCardShowcase({
   );
 }
 
-function DetailBox({ label, value }: { label: string; value: string }) {
+function CollectionCardFace({
+  card,
+  onClick,
+  size,
+}: {
+  card: UserCard;
+  onClick: () => void;
+  size: "small" | "large";
+}) {
+  const creator = card.creator_profiles;
+  const imageUrl = creator?.avatar_url || creator?.banner_url || "";
+  const nickname = creator?.nickname || "Creator Nexus";
+  const username = creator?.username || "creator";
+  const rarity = card.rarity || "common";
+  const isLarge = size === "large";
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-white/35">
-        {label}
-      </p>
-      <p className="mt-2 font-bold text-white">{value}</p>
-    </div>
+    <button
+      onClick={onClick}
+      className={`group relative overflow-hidden border border-white/15 bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:border-cyan-300/35 hover:shadow-[0_0_80px_rgba(34,211,238,0.22)] ${
+        isLarge
+          ? "h-[620px] w-[410px] rounded-[34px]"
+          : "h-[360px] w-[240px] rounded-[24px]"
+      }`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
+
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={nickname}
+          className="absolute inset-0 h-full w-full object-cover opacity-90"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-6xl font-black text-cyan-100">
+          {nickname.slice(0, 2).toUpperCase()}
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
+
+      <div
+        className={`absolute border font-bold uppercase backdrop-blur ${
+          rarityClass[rarity] || rarityClass.common
+        } ${
+          isLarge
+            ? "left-7 top-7 rounded-full px-5 py-2 text-sm tracking-[0.32em]"
+            : "left-4 top-4 rounded-full px-3 py-1 text-[10px] tracking-[0.25em]"
+        }`}
+      >
+        {rarityLabel[rarity] || rarity}
+      </div>
+
+      <div
+        className={`absolute bottom-0 left-0 right-0 ${
+          isLarge ? "p-8" : "p-4"
+        }`}
+      >
+        <p
+          className={`uppercase text-cyan-200 ${
+            isLarge
+              ? "text-sm tracking-[0.35em]"
+              : "text-[10px] tracking-[0.3em]"
+          }`}
+        >
+          Carta do Creator
+        </p>
+
+        <h3
+          className={`mt-2 font-black text-white ${
+            isLarge ? "text-4xl" : "text-xl"
+          }`}
+        >
+          {nickname}
+        </h3>
+
+        <p className={isLarge ? "mt-2 text-base text-white/55" : "mt-1 text-xs text-white/50"}>
+          @{username}
+        </p>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/70">
+            {card.source}
+          </span>
+
+          <span className="text-xs text-white/45">
+            {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className={`pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/20 ${
+          isLarge ? "rounded-[34px]" : "rounded-[24px]"
+        }`}
+      />
+    </button>
   );
 }
