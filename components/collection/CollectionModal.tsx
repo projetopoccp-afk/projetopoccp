@@ -102,7 +102,14 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
         return;
       }
 
-      setCards((data || []) as UserCard[]);
+      const normalizedCards = (data || []).map((item: any) => ({
+  ...item,
+  creator_profiles: Array.isArray(item.creator_profiles)
+    ? item.creator_profiles[0]
+    : item.creator_profiles,
+}));
+
+setCards(normalizedCards as UserCard[]);
       setLoading(false);
     }
 
