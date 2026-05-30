@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { TiltCard } from "@/components/cards/TiltCard";
 import { supabase } from "@/lib/supabase/client";
 
 type CollectionModalProps = {
@@ -103,13 +104,13 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
       }
 
       const normalizedCards = (data || []).map((item: any) => ({
-  ...item,
-  creator_profiles: Array.isArray(item.creator_profiles)
-    ? item.creator_profiles[0]
-    : item.creator_profiles,
-}));
+        ...item,
+        creator_profiles: Array.isArray(item.creator_profiles)
+          ? item.creator_profiles[0]
+          : item.creator_profiles,
+      }));
 
-setCards(normalizedCards as UserCard[]);
+      setCards(normalizedCards as UserCard[]);
       setLoading(false);
     }
 
@@ -191,7 +192,7 @@ setCards(normalizedCards as UserCard[]);
                 ) : cards.length === 0 ? (
                   <EmptyCollection />
                 ) : (
-                  <div className="mt-10 grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="mt-10 grid grid-cols-1 justify-items-center gap-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {cards.map((card) => (
                       <CollectionCard
                         key={card.id}
@@ -269,56 +270,63 @@ function CollectionCard({
   const rarity = card.rarity || "common";
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border border-white/15 bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:scale-[1.03] hover:border-cyan-300/35 hover:shadow-[0_0_70px_rgba(34,211,238,0.18)]"
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
-
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={nickname}
-          className="absolute inset-0 h-full w-full object-cover opacity-85 transition duration-700 group-hover:scale-105"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-6xl font-black text-cyan-100">
-          {nickname.slice(0, 2).toUpperCase()}
-        </div>
-      )}
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
-
-      <div
-        className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] backdrop-blur ${
-          rarityClass[rarity] || rarityClass.common
-        }`}
+    <TiltCard>
+      <button
+        onClick={onClick}
+        className="group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border border-white/15 bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:border-cyan-300/35 hover:shadow-[0_0_70px_rgba(34,211,238,0.18)]"
       >
-        {rarityLabel[rarity] || rarity}
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
 
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
-          Carta conquistada
-        </p>
-
-        <h3 className="mt-2 text-xl font-bold text-white">{nickname}</h3>
-
-        <p className="mt-1 text-xs text-white/50">@{username}</p>
-
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/70">
-            {card.source}
-          </span>
-
-          <span className="text-xs text-white/45">
-            {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
-          </span>
+        <div className="absolute inset-0 opacity-70 transition">
+          <div className="absolute -top-20 left-10 h-40 w-40 rounded-full bg-cyan-400/20" />
+          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-purple-500/20" />
         </div>
-      </div>
 
-      <div className="pointer-events-none absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/20" />
-    </button>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={nickname}
+            className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-6xl font-black text-cyan-100">
+            {nickname.slice(0, 2).toUpperCase()}
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+        <div
+          className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] backdrop-blur ${
+            rarityClass[rarity] || rarityClass.common
+          }`}
+        >
+          {rarityLabel[rarity] || rarity}
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+            Carta conquistada
+          </p>
+
+          <h3 className="mt-2 text-xl font-bold text-white">{nickname}</h3>
+
+          <p className="mt-1 text-xs text-white/50">@{username}</p>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/70">
+              {card.source}
+            </span>
+
+            <span className="text-xs text-white/45">
+              {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
+            </span>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/20" />
+      </button>
+    </TiltCard>
   );
 }
 
@@ -380,8 +388,11 @@ function CollectionCardShowcase({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="relative grid w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_90px_rgba(0,0,0,0.95)] md:grid-cols-[320px_1fr]"
+            className="hide-scrollbar relative max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_90px_rgba(0,0,0,0.95)]"
           >
+            <div className="absolute -left-24 -top-24 h-60 w-60 rounded-full bg-cyan-500/20 blur-[90px]" />
+            <div className="absolute -bottom-24 -right-24 h-60 w-60 rounded-full bg-purple-600/25 blur-[90px]" />
+
             <button
               onClick={onClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
@@ -390,58 +401,78 @@ function CollectionCardShowcase({
               <X size={18} />
             </button>
 
-            <div className="relative min-h-[460px] overflow-hidden bg-black">
-              {imageUrl ? (
-                <motion.img
-                  src={imageUrl}
-                  alt={nickname}
-                  initial={{ scale: 1.05 }}
-                  animate={{ scale: [1.05, 1.1, 1.05] }}
-                  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 h-full w-full object-cover opacity-90"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-7xl font-black text-cyan-100">
-                  {nickname.slice(0, 2).toUpperCase()}
-                </div>
-              )}
+            <div className="relative z-10 grid gap-8 lg:grid-cols-[440px_1fr] lg:items-center">
+              <div className="flex justify-center">
+                <TiltCard>
+                  <div className="group relative h-[620px] w-[400px] overflow-hidden rounded-[34px] border border-white/15 bg-black text-left shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
+                    <div className="absolute inset-0 opacity-80 transition">
+                      <div className="absolute -top-24 left-12 h-48 w-48 rounded-full bg-cyan-400/25" />
+                      <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-purple-500/25" />
+                    </div>
 
-              <div
-                className={`absolute left-5 top-5 rounded-full border px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] backdrop-blur ${
-                  rarityClass[rarity] || rarityClass.common
-                }`}
-              >
-                {rarityLabel[rarity] || rarity}
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={nickname}
+                        className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-cyan-300/10 text-7xl font-black text-cyan-100">
+                        {nickname.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
+
+                    <div
+                      className={`absolute left-6 top-6 rounded-full border px-4 py-1 text-xs font-bold uppercase tracking-[0.28em] backdrop-blur ${
+                        rarityClass[rarity] || rarityClass.common
+                      }`}
+                    >
+                      {rarityLabel[rarity] || rarity}
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 p-7">
+                      <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
+                        Carta do Creator
+                      </p>
+
+                      <h3 className="mt-3 text-4xl font-black text-white">
+                        {nickname}
+                      </h3>
+
+                      <p className="mt-2 text-base text-white/55">@{username}</p>
+
+                      <div className="mt-6 flex items-center justify-between gap-3">
+                        <span className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white/70">
+                          {card.source}
+                        </span>
+
+                        <span className="text-sm text-white/45">
+                          {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-0 rounded-[34px] ring-1 ring-inset ring-white/20" />
+                  </div>
+                </TiltCard>
               </div>
 
-              <div className="absolute bottom-6 left-6 right-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">
-                  Carta do Creator
-                </p>
-
-                <h3 className="mt-2 text-3xl font-black text-white">
-                  {nickname}
-                </h3>
-
-                <p className="mt-1 text-sm text-white/55">@{username}</p>
-              </div>
-            </div>
-
-            <div className="relative p-8">
-              <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-purple-500/20 blur-[90px]" />
-              <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-cyan-500/20 blur-[90px]" />
-
-              <div className="relative z-10 flex h-full flex-col justify-center">
+              <div className="flex flex-col justify-center">
                 <div className="inline-flex w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                  Item colecionável
+                  Vitrine da carta
                 </div>
 
-                <h2 className="mt-6 text-4xl font-black">{nickname}</h2>
+                <h2 className="mt-6 text-4xl font-black">
+                  {nickname}
+                </h2>
 
-                <p className="mt-3 text-white/50">
-                  Você conquistou esta carta dentro do Creator Nexus.
+                <p className="mt-3 max-w-lg text-white/50">
+                  Esta carta faz parte da sua coleção pessoal do Creator Nexus.
+                  Ela foi conquistada e fica registrada como item colecionável da sua conta.
                 </p>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
