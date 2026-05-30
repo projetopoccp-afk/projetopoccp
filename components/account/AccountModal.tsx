@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-
+import Link from "next/link";
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 
@@ -144,14 +144,16 @@ export function AccountModal({
                     disabled
                   />
 
-                  <AccountActionCard
-                    icon={<Archive size={22} />}
-                    title="Minha Coleção"
-                    description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
-                    buttonLabel="Em breve"
-                    variant="purple"
-                    disabled
-                  />
+                  <Link href="/collection">
+                    <AccountActionCard
+                      icon={<Archive size={22} />}
+                      title="Minha Coleção"
+                      description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
+                      buttonLabel="Abrir"
+                      variant="purple"
+                      disabled
+                    />
+                  </Link>
 
                   <AccountActionCard
                     icon={<BadgeCheck size={22} />}
