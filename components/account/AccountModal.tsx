@@ -63,10 +63,10 @@ export function AccountModal({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.94 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
-              className="hide-scrollbar relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+              className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
             >
-              <div className="absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
-              <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
 
               <button
                 onClick={onClose}
@@ -76,7 +76,7 @@ export function AccountModal({
                 <X size={18} />
               </button>
 
-              <div className="relative z-10 max-h-[90vh] overflow-y-auto p-8">
+              <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8 md:pb-6">
                 <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                   Minha Conta
                 </div>
@@ -134,7 +134,7 @@ export function AccountModal({
                   </button>
                 )}
 
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <AccountActionCard
                     icon={<UserRound size={22} />}
                     title="Meu Perfil"
@@ -180,7 +180,7 @@ export function AccountModal({
                     disabled
                   />
 
-                  <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                  <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
                         <ShieldCheck size={22} />
@@ -189,14 +189,14 @@ export function AccountModal({
                       <h3 className="font-bold">Solicitar perfil de criador</h3>
                     </div>
 
-                    <p className="mt-3 text-sm text-white/55">
+                    <p className="mt-2 text-sm text-white/55">
                       Envie seus dados, redes sociais e prova de posse do canal
                       para entrar na fila de aprovação.
                     </p>
 
                     <button
                       onClick={() => setRequestOpen(true)}
-                      className="mt-5 rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105"
+                      className="mt-4 rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105"
                     >
                       Começar solicitação
                     </button>
@@ -205,7 +205,7 @@ export function AccountModal({
 
                 <button
                   onClick={onLogout}
-                  className="mt-8 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
                 >
                   <LogOut size={18} />
                   Sair da conta
@@ -274,7 +274,7 @@ function AccountActionCard({
   }[variant];
 
   return (
-    <div className={`rounded-3xl border p-5 ${styles.card}`}>
+    <div className={`rounded-3xl border p-4 ${styles.card}`}>
       <div className="flex items-center gap-3">
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${styles.icon}`}
@@ -285,11 +285,11 @@ function AccountActionCard({
         <h3 className="font-bold">{title}</h3>
       </div>
 
-      <p className="mt-3 text-sm text-white/55">{description}</p>
+      <p className="mt-2 text-sm text-white/55">{description}</p>
 
       <button
         disabled={disabled}
-        className={`mt-5 rounded-full border px-5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${styles.button}`}
+        className={`mt-4 rounded-full border px-5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${styles.button}`}
       >
         {buttonLabel}
       </button>
