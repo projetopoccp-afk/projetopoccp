@@ -151,7 +151,6 @@ export function AccountModal({
                       description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
                       buttonLabel="Abrir"
                       variant="purple"
-                      disabled
                     />
                   </Link>
 
