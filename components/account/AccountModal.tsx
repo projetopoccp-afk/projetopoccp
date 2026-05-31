@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
+import { UserProfileModal } from "@/components/account/UserProfileModal";
 
 type AccountProfile = {
   display_name: string | null;
@@ -42,6 +43,7 @@ export function AccountModal({
   const [requestOpen, setRequestOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <>
@@ -141,9 +143,9 @@ export function AccountModal({
                     icon={<UserRound size={22} />}
                     title="Meu Perfil"
                     description="Veja seu nível, progresso, badges e atividade dentro do Creator Nexus."
-                    buttonLabel="Em breve"
+                    buttonLabel="Abrir"
                     variant="cyan"
-                    disabled
+                    onClick={() => setProfileOpen(true)}
                   />
 
                   <AccountActionCard
@@ -225,6 +227,13 @@ export function AccountModal({
       />
 
       <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
+
+      <UserProfileModal
+        open={profileOpen}
+        email={email}
+        profile={profile}
+        onClose={() => setProfileOpen(false)}
+      />
 
       <CollectionModal
         open={collectionOpen}

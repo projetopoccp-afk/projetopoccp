@@ -1,0 +1,330 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  Archive,
+  BadgeCheck,
+  CalendarDays,
+  Crown,
+  Gem,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  X,
+  Zap,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { supabase } from "@/lib/supabase/client";
+
+type AccountProfile = {
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  is_admin: boolean | null;
+};
+
+type UserProfileModalProps = {
+  open: boolean;
+  email: string;
+  profile: AccountProfile | null;
+  onClose: () => void;
+};
+
+type UserCard = {
+  id: string;
+  rarity: string;
+  source: string;
+  obtained_at: string;
+};
+
+export function UserProfileModal({
+  open,
+  email,
+  profile,
+  onClose,
+}: UserProfileModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [cards, setCards] = useState<UserCard[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    async function loadProfileStats() {
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCards([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_cards")
+        .select("id, rarity, source, obtained_at")
+        .eq("user_id", user.id)
+        .order("obtained_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        setCards([]);
+        setLoading(false);
+        return;
+      }
+
+      setCards(data || []);
+      setLoading(false);
+    }
+
+    loadProfileStats();
+  }, [open]);
+
+  const stats = useMemo(() => {
+    const total = cards.length;
+    const rare = cards.filter((card) => card.rarity === "rare").length;
+    const epic = cards.filter((card) => card.rarity === "epic").length;
+    const legendary = cards.filter((card) => card.rarity === "legendary").length;
+
+    return {
+      total,
+      rare,
+      epic,
+      legendary,
+      level: Math.max(1, Math.floor(total / 5) + 1),
+      badges: total > 0 ? 1 : 0,
+    };
+  }, [cards]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4"
+        >
+          <button
+            onClick={onClose}
+            className="absolute inset-0"
+            aria-label="Fechar perfil"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.94 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+          >
+            <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
+
+            <button
+              onClick={onClose}
+              className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+              aria-label="Fechar"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
+              <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
+                <UserRound size={14} />
+                Meu Perfil
+              </div>
+
+              <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.display_name || "Avatar"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <UserRound className="text-white/40" size={42} />
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <h2 className="text-3xl font-black leading-tight">
+                    {profile?.display_name || "Creator"}
+                  </h2>
+
+                  <p className="mt-1 break-all text-white/45">{email}</p>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
+                      @{profile?.username || "sem_username"}
+                    </span>
+
+                    <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
+                      Nível {stats.level}
+                    </span>
+
+                    <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
+                      {stats.total} cartas
+                    </span>
+
+                    {profile?.is_admin && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                        <ShieldCheck size={14} />
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <ProfileStatCard
+                  icon={<Archive size={18} />}
+                  label="Cartas"
+                  value={loading ? "..." : String(stats.total)}
+                  tone="cyan"
+                />
+
+                <ProfileStatCard
+                  icon={<Gem size={18} />}
+                  label="Raras"
+                  value={loading ? "..." : String(stats.rare)}
+                  tone="purple"
+                />
+
+                <ProfileStatCard
+                  icon={<Zap size={18} />}
+                  label="Épicas"
+                  value={loading ? "..." : String(stats.epic)}
+                  tone="yellow"
+                />
+
+                <ProfileStatCard
+                  icon={<Crown size={18} />}
+                  label="Lendárias"
+                  value={loading ? "..." : String(stats.legendary)}
+                  tone="pink"
+                />
+              </div>
+
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-yellow-100">
+                      <BadgeCheck size={22} />
+                    </div>
+
+                    <div>
+                      <p className="font-bold">Badges</p>
+                      <p className="text-sm text-white/45">
+                        {stats.badges} conquista desbloqueada
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    {stats.badges > 0 ? (
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="text-cyan-200" size={18} />
+                        <div>
+                          <p className="text-sm font-bold text-white">
+                            Primeira Carta
+                          </p>
+                          <p className="text-xs text-white/45">
+                            Você conquistou sua primeira carta no Nexus.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/45">
+                        Suas badges aparecerão aqui quando você completar
+                        objetivos.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
+                      <CalendarDays size={22} />
+                    </div>
+
+                    <div>
+                      <p className="font-bold">Atividade recente</p>
+                      <p className="text-sm text-white/45">
+                        Últimas ações da sua coleção.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {cards.slice(0, 3).map((card) => (
+                      <div
+                        key={card.id}
+                        className="rounded-2xl border border-white/10 bg-black/20 p-4"
+                      >
+                        <p className="text-sm font-bold text-white">
+                          Carta conquistada
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/45">
+                          {card.rarity} • {card.source} •{" "}
+                          {new Date(card.obtained_at).toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </p>
+                      </div>
+                    ))}
+
+                    {!loading && cards.length === 0 && (
+                      <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
+                        Nenhuma atividade por enquanto.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function ProfileStatCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "cyan" | "purple" | "yellow" | "pink";
+}) {
+  const styles = {
+    cyan: "border-cyan-300/15 bg-cyan-300/[0.04] text-cyan-100",
+    purple: "border-purple-300/15 bg-purple-300/[0.04] text-purple-100",
+    yellow: "border-yellow-300/15 bg-yellow-300/[0.04] text-yellow-100",
+    pink: "border-pink-300/15 bg-pink-300/[0.04] text-pink-100",
+  }[tone];
+
+  return (
+    <div className={`rounded-3xl border p-4 ${styles}`}>
+      <div className="flex items-center justify-between text-white/45">
+        {icon}
+
+        <span className="text-xs uppercase tracking-[0.25em]">{label}</span>
+      </div>
+
+      <p className="mt-4 text-3xl font-black text-white">{value}</p>
+    </div>
+  );
+}
