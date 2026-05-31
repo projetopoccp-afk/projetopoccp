@@ -12,23 +12,42 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
 
+import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { TiltCard } from "@/components/cards/TiltCard";
 import { supabase } from "@/lib/supabase/client";
+import { Creator } from "@/types/creator";
 
 type CollectionModalProps = {
   open: boolean;
   onClose: () => void;
 };
 
+type CreatorCardData = {
+  rank?: string | null;
+  rarity?: string | null;
+  aura?: string | null;
+  evolution_stage?: string | null;
+  power_score?: number | null;
+  level?: number | null;
+};
+
 type CreatorProfile = {
   id: string;
+  user_id?: string | null;
   nickname: string | null;
   username: string | null;
   title: string | null;
+  faction?: string | null;
   category: string | null;
+  status?: string | null;
   avatar_url: string | null;
   banner_url: string | null;
+  bio?: string | null;
+  description?: string | null;
+  tags?: string[] | null;
+  creator_cards?: CreatorCardData[] | CreatorCardData | null;
 };
 
 type UserCard = {
@@ -90,6 +109,7 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -117,12 +137,19 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
           obtained_at,
           creator_profiles (
             id,
+            user_id,
             nickname,
             username,
             title,
+            faction,
             category,
+            status,
             avatar_url,
-            banner_url
+            banner_url,
+            bio,
+            description,
+            tags,
+            creator_cards (*)
           )
         `
         )
@@ -136,12 +163,16 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
         return;
       }
 
-      const normalizedCards = (data || []).map((item: any) => ({
-        ...item,
-        creator_profiles: Array.isArray(item.creator_profiles)
+      const normalizedCards = (data || []).map((item: any) => {
+        const profile = Array.isArray(item.creator_profiles)
           ? item.creator_profiles[0]
-          : item.creator_profiles,
-      }));
+          : item.creator_profiles;
+
+        return {
+          ...item,
+          creator_profiles: profile,
+        };
+      });
 
       setCards(normalizedCards as UserCard[]);
       setLoading(false);
@@ -159,6 +190,15 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
       legendary: cards.filter((card) => card.rarity === "legendary").length,
     };
   }, [cards]);
+
+  function handleOpenCreatorProfile(card: UserCard) {
+    const creator = buildCreatorFromCard(card);
+
+    if (!creator) return;
+
+    setSelectedCard(null);
+    setSelectedCreator(creator);
+  }
 
   return (
     <>
@@ -244,9 +284,69 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
       <CollectionCardShowcase
         card={selectedCard}
         onClose={() => setSelectedCard(null)}
+        onOpenProfile={handleOpenCreatorProfile}
       />
+
+      {selectedCreator && typeof document !== "undefined"
+        ? createPortal(
+            <div className="relative z-[200]">
+              <CreatorPopup
+                creator={selectedCreator}
+                onClose={() => setSelectedCreator(null)}
+              />
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
+}
+
+function buildCreatorFromCard(card: UserCard): Creator | null {
+  const profile = card.creator_profiles;
+
+  if (!profile) return null;
+
+  const creatorCards = Array.isArray(profile.creator_cards)
+    ? profile.creator_cards
+    : profile.creator_cards
+      ? [profile.creator_cards]
+      : [];
+  const creatorCard = creatorCards[0] || {};
+
+  return {
+    id: profile.id,
+    ownerId: profile.user_id || "",
+    username: profile.username || "creator",
+    nickname: profile.nickname || "Creator Nexus",
+    title: profile.title || "Digital Creator",
+    faction: profile.faction || "Creator Nexus",
+    category: profile.category || "Creator",
+    mainPlatform: "youtube",
+    status: (profile.status as Creator["status"]) || "offline",
+    avatarUrl: profile.avatar_url || "",
+    bannerUrl: profile.banner_url || profile.avatar_url || "",
+    bio: profile.bio || "",
+    description: profile.description || "",
+    tags: profile.tags || [],
+    rank: creatorCard.rank || "Bronze",
+    rarity: (creatorCard.rarity as Creator["rarity"]) || "common",
+    aura: creatorCard.aura || "Origin Aura",
+    evolutionStage: creatorCard.evolution_stage || "Stage 1",
+    powerScore: creatorCard.power_score || 0,
+    collectedBy: 0,
+    level: creatorCard.level || 1,
+    followers: 0,
+    likes: 0,
+    views: 0,
+    socials: [],
+    traits: [],
+    featuredMoment: {
+      title: "",
+      description: "",
+    },
+    achievements: [],
+  };
 }
 
 function StatCard({
@@ -306,9 +406,11 @@ function CollectionCard({
 function CollectionCardShowcase({
   card,
   onClose,
+  onOpenProfile,
 }: {
   card: UserCard | null;
   onClose: () => void;
+  onOpenProfile: (card: UserCard) => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -320,8 +422,7 @@ function CollectionCardShowcase({
   const rarity = rarityLabel[card.rarity] || card.rarity;
 
   function openProfile() {
-    if (!creator?.username) return;
-    window.location.href = `/creator/${creator.username}`;
+    onOpenProfile(card);
   }
 
   async function shareCard() {
