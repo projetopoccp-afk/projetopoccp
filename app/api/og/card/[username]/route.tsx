@@ -106,10 +106,10 @@ export async function GET(
               background: "rgba(8,47,73,0.72)",
               color: "#cffafe",
               borderRadius: "999px",
-              padding: "8px 18px",
-              fontSize: "18px",
+              padding: "7px 16px",
+              fontSize: "14px",
               fontWeight: 900,
-              letterSpacing: "6px",
+              letterSpacing: "5px",
             }}
           >
             COMMON
@@ -129,9 +129,9 @@ export async function GET(
               style={{
                 display: "flex",
                 color: "#cffafe",
-                fontSize: "20px",
+                fontSize: "15px",
                 fontWeight: 900,
-                letterSpacing: "7px",
+                letterSpacing: "6px",
               }}
             >
               CARTA DO CREATOR
@@ -141,7 +141,7 @@ export async function GET(
               style={{
                 display: "flex",
                 marginTop: "16px",
-                fontSize: "46px",
+                fontSize: "38px",
                 lineHeight: 1,
                 fontWeight: 900,
               }}
@@ -153,7 +153,7 @@ export async function GET(
               style={{
                 display: "flex",
                 marginTop: "12px",
-                fontSize: "24px",
+                fontSize: "20px",
                 color: "#cbd5e1",
               }}
             >
@@ -164,7 +164,7 @@ export async function GET(
               style={{
                 display: "flex",
                 marginTop: "22px",
-                fontSize: "20px",
+                fontSize: "17px",
                 color: "#e0f2fe",
               }}
             >
