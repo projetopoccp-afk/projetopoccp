@@ -428,16 +428,32 @@ function CollectionCardShowcase({
   }
 
   async function shareCard() {
-    const url = `${window.location.origin}/creator/${username}`;
-    const text = `Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus ✦ ${url}`;
+  const url = `${window.location.origin}/card/${username}?v=1`;
 
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
+  const text = `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`;
 
-    setTimeout(() => {
-      setCopied(false);
-    }, 1800);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Carta ${nickname}`,
+        text,
+        url,
+      });
+
+      return;
+    } catch {
+      // usuário cancelou
+    }
   }
+
+  await navigator.clipboard.writeText(`${text}\n${url}`);
+
+  setCopied(true);
+
+  setTimeout(() => {
+    setCopied(false);
+  }, 1800);
+}
 
   return (
     <AnimatePresence>
