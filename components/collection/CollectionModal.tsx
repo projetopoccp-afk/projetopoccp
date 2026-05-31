@@ -422,6 +422,8 @@ function CollectionCardShowcase({
   const rarity = rarityLabel[card.rarity] || card.rarity;
 
   function openProfile() {
+    if (!card) return;
+
     onOpenProfile(card);
   }
 
