@@ -329,7 +329,7 @@ function buildCreatorFromCard(card: UserCard): Creator | null {
     bio: profile.bio || "",
     description: profile.description || "",
     tags: profile.tags || [],
-    rank: creatorCard.rank || "Bronze",
+    rank: (creatorCard.rank as Creator["rank"]) || "Bronze",
     rarity: (creatorCard.rarity as Creator["rarity"]) || "common",
     aura: creatorCard.aura || "Origin Aura",
     evolutionStage: creatorCard.evolution_stage || "Stage 1",
