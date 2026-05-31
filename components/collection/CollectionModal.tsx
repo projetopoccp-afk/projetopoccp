@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Archive, Crown, Gem, Sparkles, X, Zap } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Archive,
+  Crown,
+  Eye,
+  Gem,
+  Share2,
+  Sparkles,
+  X,
+  Zap,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { TiltCard } from "@/components/cards/TiltCard";
@@ -37,11 +46,44 @@ const rarityLabel: Record<string, string> = {
   legendary: "Legendary",
 };
 
-const rarityClass: Record<string, string> = {
-  common: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
-  rare: "border-blue-300/25 bg-blue-300/10 text-blue-100",
-  epic: "border-purple-300/25 bg-purple-300/10 text-purple-100",
-  legendary: "border-yellow-300/30 bg-yellow-300/10 text-yellow-100",
+const rarityStyles: Record<
+  string,
+  {
+    border: string;
+    badge: string;
+    glow: string;
+    text: string;
+    ring: string;
+  }
+> = {
+  common: {
+    border: "border-cyan-300/30",
+    badge: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
+    glow: "bg-cyan-400/25",
+    text: "text-cyan-200",
+    ring: "ring-cyan-200/25",
+  },
+  rare: {
+    border: "border-blue-300/35",
+    badge: "border-blue-300/30 bg-blue-300/10 text-blue-100",
+    glow: "bg-blue-500/25",
+    text: "text-blue-200",
+    ring: "ring-blue-200/30",
+  },
+  epic: {
+    border: "border-purple-300/40",
+    badge: "border-purple-300/35 bg-purple-300/10 text-purple-100",
+    glow: "bg-purple-500/30",
+    text: "text-purple-200",
+    ring: "ring-purple-200/35",
+  },
+  legendary: {
+    border: "border-yellow-300/45",
+    badge: "border-yellow-300/40 bg-yellow-300/10 text-yellow-100",
+    glow: "bg-yellow-400/30",
+    text: "text-yellow-100",
+    ring: "ring-yellow-200/40",
+  },
 };
 
 export function CollectionModal({ open, onClose }: CollectionModalProps) {
@@ -212,7 +254,7 @@ function StatCard({
   label,
   value,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: number;
 }) {
@@ -268,43 +310,85 @@ function CollectionCardShowcase({
   card: UserCard | null;
   onClose: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!card) return null;
+
+  const creator = card.creator_profiles;
+  const username = creator?.username || "creator";
+  const nickname = creator?.nickname || "Creator Nexus";
+  const rarity = rarityLabel[card.rarity] || card.rarity;
+
+  function openProfile() {
+    if (!creator?.username) return;
+    window.location.href = `/creator/${creator.username}`;
+  }
+
+  async function shareCard() {
+    const url = `${window.location.origin}/creator/${username}`;
+    const text = `Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus ✦ ${url}`;
+
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1800);
+  }
+
   return (
     <AnimatePresence>
-      {card && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
+      <motion.div
+        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+        animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
+        exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
+      >
+        <button
+          onClick={onClose}
+          className="absolute inset-0"
+          aria-label="Fechar carta"
+        />
+
+        <button
+          onClick={onClose}
+          className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+          aria-label="Fechar"
         >
-          <button
-            onClick={onClose}
-            className="absolute inset-0"
-            aria-label="Fechar carta"
-          />
+          <X size={20} />
+        </button>
 
-          <button
-            onClick={onClose}
-            className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-            aria-label="Fechar"
-          >
-            <X size={20} />
-          </button>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.82, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="relative z-20 flex flex-col items-center gap-5"
+        >
+          <TiltCard>
+            <CollectionCardFace card={card} onClick={() => {}} size="large" />
+          </TiltCard>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.82, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="relative z-20"
-          >
-            <TiltCard>
-              <CollectionCardFace card={card} onClick={() => {}} size="large" />
-            </TiltCard>
-          </motion.div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={openProfile}
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+            >
+              <Eye size={16} />
+              Ver perfil
+            </button>
+
+            <button
+              onClick={shareCard}
+              className="inline-flex items-center gap-2 rounded-full border border-purple-300/20 bg-purple-300/10 px-5 py-3 text-sm font-bold text-purple-100 transition hover:bg-purple-300/20"
+            >
+              <Share2 size={16} />
+              {copied ? "Copiado!" : "Compartilhar carta"}
+            </button>
+          </div>
         </motion.div>
-      )}
+      </motion.div>
     </AnimatePresence>
   );
 }
@@ -323,18 +407,32 @@ function CollectionCardFace({
   const nickname = creator?.nickname || "Creator Nexus";
   const username = creator?.username || "creator";
   const rarity = card.rarity || "common";
+  const style = rarityStyles[rarity] || rarityStyles.common;
   const isLarge = size === "large";
 
   return (
     <button
       onClick={onClick}
-      className={`group relative overflow-hidden border border-white/15 bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:border-cyan-300/35 hover:shadow-[0_0_80px_rgba(34,211,238,0.22)] ${
+      className={`group relative overflow-hidden border bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:shadow-[0_0_90px_rgba(34,211,238,0.20)] ${style.border} ${
         isLarge
           ? "h-[620px] w-[410px] rounded-[34px]"
           : "h-[360px] w-[240px] rounded-[24px]"
       }`}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
+
+      <div className="absolute inset-0 opacity-70 transition group-hover:opacity-95">
+        <div
+          className={`absolute -top-20 left-10 h-44 w-44 rounded-full blur-2xl ${style.glow}`}
+        />
+        <div
+          className={`absolute bottom-0 right-0 h-48 w-48 rounded-full blur-2xl ${style.glow}`}
+        />
+      </div>
+
+      <div className="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+        <div className="absolute inset-0 translate-x-[-120%] bg-[linear-gradient(115deg,transparent_20%,rgba(255,255,255,0.12)_40%,transparent_60%)] transition-transform duration-1000 group-hover:translate-x-[120%]" />
+      </div>
 
       {imageUrl ? (
         <img
@@ -348,12 +446,10 @@ function CollectionCardFace({
         </div>
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
       <div
-        className={`absolute border font-bold uppercase backdrop-blur ${
-          rarityClass[rarity] || rarityClass.common
-        } ${
+        className={`absolute border font-bold uppercase backdrop-blur ${style.badge} ${
           isLarge
             ? "left-7 top-7 rounded-full px-5 py-2 text-sm tracking-[0.32em]"
             : "left-4 top-4 rounded-full px-3 py-1 text-[10px] tracking-[0.25em]"
@@ -368,7 +464,7 @@ function CollectionCardFace({
         }`}
       >
         <p
-          className={`uppercase text-cyan-200 ${
+          className={`uppercase ${style.text} ${
             isLarge
               ? "text-sm tracking-[0.35em]"
               : "text-[10px] tracking-[0.3em]"
@@ -385,7 +481,11 @@ function CollectionCardFace({
           {nickname}
         </h3>
 
-        <p className={isLarge ? "mt-2 text-base text-white/55" : "mt-1 text-xs text-white/50"}>
+        <p
+          className={
+            isLarge ? "mt-2 text-base text-white/55" : "mt-1 text-xs text-white/50"
+          }
+        >
           @{username}
         </p>
 
@@ -401,7 +501,7 @@ function CollectionCardFace({
       </div>
 
       <div
-        className={`pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/20 ${
+        className={`pointer-events-none absolute inset-0 ring-1 ring-inset ${style.ring} ${
           isLarge ? "rounded-[34px]" : "rounded-[24px]"
         }`}
       />
