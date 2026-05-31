@@ -332,7 +332,7 @@ function buildCreatorFromCard(card: UserCard): Creator | null {
     rank: (creatorCard.rank as Creator["rank"]) || "Bronze",
     rarity: (creatorCard.rarity as Creator["rarity"]) || "common",
     aura: creatorCard.aura || "Origin Aura",
-    evolutionStage: creatorCard.evolution_stage || "Stage 1",
+    evolutionStage: (creatorCard.evolution_stage as Creator["evolutionStage"]) || "Stage 1",
     powerScore: creatorCard.power_score || 0,
     collectedBy: 0,
     level: creatorCard.level || 1,
