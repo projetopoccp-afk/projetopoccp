@@ -71,12 +71,15 @@ type UserCard = {
   rarity: string;
   source: string;
   obtained_at: string;
+  seen_at?: string | null;
   creator_profiles: CreatorProfile | null;
 };
 
 type PendingNotificationCard = {
   cardId?: string | null;
   creatorId?: string | null;
+  card_id?: string | null;
+  creator_id?: string | null;
 };
 
 const rarityLabel: Record<string, string> = {
@@ -141,6 +144,18 @@ function isRecentlyObtained(date: string) {
   return Number.isFinite(obtainedAt) && now - obtainedAt <= oneDay;
 }
 
+function isCardNew(card: UserCard) {
+  return !card.seen_at && isRecentlyObtained(card.obtained_at);
+}
+
+function getPendingCardId(pending: PendingNotificationCard | null) {
+  return pending?.cardId || pending?.card_id || null;
+}
+
+function getPendingCreatorId(pending: PendingNotificationCard | null) {
+  return pending?.creatorId || pending?.creator_id || null;
+}
+
 function getCardXp(rarity: string) {
   return rarityXp[rarity] || rarityXp.common;
 }
@@ -151,15 +166,18 @@ function findNotificationCard(
 ) {
   if (!pending) return null;
 
-  if (pending.cardId) {
-    const byCardId = cards.find((card) => card.id === pending.cardId);
+  const cardId = getPendingCardId(pending);
+  const creatorId = getPendingCreatorId(pending);
+
+  if (cardId) {
+    const byCardId = cards.find((card) => card.id === cardId);
 
     if (byCardId) return byCardId;
   }
 
-  if (pending.creatorId) {
+  if (creatorId) {
     const byCreatorId = cards.find(
-      (card) => card.creator_profiles?.id === pending.creatorId
+      (card) => card.creator_profiles?.id === creatorId
     );
 
     if (byCreatorId) return byCreatorId;
@@ -206,6 +224,7 @@ export function CollectionModal({
           rarity,
           source,
           obtained_at,
+          seen_at,
           creator_profiles (
             id,
             user_id,
@@ -268,8 +287,9 @@ export function CollectionModal({
       const customEvent = event as CustomEvent<PendingNotificationCard>;
 
       setPendingNotificationCard({
-        cardId: customEvent.detail?.cardId || null,
-        creatorId: customEvent.detail?.creatorId || null,
+        cardId: customEvent.detail?.cardId || customEvent.detail?.card_id || null,
+        creatorId:
+          customEvent.detail?.creatorId || customEvent.detail?.creator_id || null,
       });
     }
 
@@ -295,7 +315,7 @@ export function CollectionModal({
 
     if (!cardToOpen) return;
 
-    setSelectedCard(cardToOpen);
+    handleSelectCard(cardToOpen);
     setPendingNotificationCard(null);
     onInitialCardOpened?.();
   }, [cards, loading, onInitialCardOpened, open, pendingNotificationCard]);
@@ -309,6 +329,38 @@ export function CollectionModal({
       legendary: cards.filter((card) => card.rarity === "legendary").length,
     };
   }, [cards]);
+
+  async function markCardAsSeen(card: UserCard) {
+    if (card.seen_at) return;
+
+    const seenAt = new Date().toISOString();
+
+    setCards((currentCards) =>
+      currentCards.map((currentCard) =>
+        currentCard.id === card.id
+          ? { ...currentCard, seen_at: seenAt }
+          : currentCard
+      )
+    );
+
+    setSelectedCard((currentCard) =>
+      currentCard?.id === card.id ? { ...currentCard, seen_at: seenAt } : currentCard
+    );
+
+    const { error } = await supabase
+      .from("user_cards")
+      .update({ seen_at: seenAt })
+      .eq("id", card.id);
+
+    if (error) {
+      console.error("Erro ao marcar carta como vista:", error);
+    }
+  }
+
+  function handleSelectCard(card: UserCard) {
+    setSelectedCard(card);
+    void markCardAsSeen(card);
+  }
 
   function handleOpenCreatorProfile(card: UserCard) {
     const creator = buildCreatorFromCard(card);
@@ -387,7 +439,7 @@ export function CollectionModal({
                       <CollectionCard
                         key={card.id}
                         card={card}
-                        onClick={() => setSelectedCard(card)}
+                        onClick={() => handleSelectCard(card)}
                       />
                     ))}
                   </div>
@@ -600,15 +652,17 @@ function CollectionCardShowcase({
           className="relative z-20 flex flex-col items-center gap-5"
         >
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {isRecentlyObtained(card.obtained_at) && (
+            {isCardNew(card) && (
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
                 Nova carta
               </span>
             )}
 
-            <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-purple-100">
-              +{xp} XP
-            </span>
+            {isCardNew(card) && (
+              <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-purple-100">
+                +{xp} XP
+              </span>
+            )}
           </div>
 
           <TiltCard>
@@ -657,7 +711,7 @@ function CollectionCardFace({
   const style = rarityStyles[rarity] || rarityStyles.common;
   const isLarge = size === "large";
   const xp = getCardXp(rarity);
-  const isNew = isRecentlyObtained(card.obtained_at);
+  const isNew = isCardNew(card);
 
   return (
     <button
@@ -719,9 +773,11 @@ function CollectionCardFace({
           </span>
         )}
 
-        <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-purple-100 backdrop-blur">
-          +{xp} XP
-        </span>
+        {isNew && (
+          <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-purple-100 backdrop-blur">
+            +{xp} XP
+          </span>
+        )}
       </div>
 
       <div
