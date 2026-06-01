@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bell,
-  ChevronRight,
-  LogOut,
-  Package,
-  Sparkles,
-  Trophy,
-  User,
-  X,
-} from "lucide-react";
+import { Bell, ChevronRight, LogOut, Package, Sparkles, Trophy, User, X } from "lucide-react";
 import { AccountModal } from "@/components/account/AccountModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { LoginModal } from "@/components/auth/LoginModal";
@@ -39,12 +30,9 @@ type AccountProfile = {
 type NotificationType =
   | "card_collected"
   | "card_won"
-  | "follow_creator"
   | "level_up"
   | "pack_received"
   | "pack_opened"
-  | "package_received"
-  | "package_opened"
   | "mission_completed"
   | "badge_unlocked"
   | "generic";
@@ -61,31 +49,17 @@ type UserNotification = {
 };
 
 function getNotificationIcon(type: NotificationType) {
-  if (type === "card_collected" || type === "card_won")
-    return <Sparkles size={16} />;
+  if (type === "card_collected" || type === "card_won") return <Sparkles size={16} />;
   if (type === "level_up") return <Trophy size={16} />;
-  if (
-    type === "pack_received" ||
-    type === "pack_opened" ||
-    type === "package_received" ||
-    type === "package_opened"
-  )
-    return <Package size={16} />;
+  if (type === "pack_received" || type === "pack_opened") return <Package size={16} />;
 
   return <Bell size={16} />;
 }
 
 function getNotificationTone(type: NotificationType) {
-  if (type === "card_collected" || type === "card_won")
-    return "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
-  if (type === "level_up")
-    return "border-yellow-300/20 bg-yellow-300/10 text-yellow-100";
-  if (
-    type === "pack_received" ||
-    type === "pack_opened" ||
-    type === "package_received" ||
-    type === "package_opened"
-  ) {
+  if (type === "card_collected" || type === "card_won") return "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
+  if (type === "level_up") return "border-yellow-300/20 bg-yellow-300/10 text-yellow-100";
+  if (type === "pack_received" || type === "pack_opened") {
     return "border-purple-300/20 bg-purple-300/10 text-purple-100";
   }
 
@@ -113,7 +87,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
-    [notifications],
+    [notifications]
   );
 
   useEffect(() => {
@@ -179,7 +153,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
         },
         () => {
           loadNotifications(user.id);
-        },
+        }
       )
       .subscribe();
 
@@ -191,9 +165,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   useEffect(() => {
     if (!user?.id) return;
 
-    const userId = user.id;
-
-    loadNotifications(userId);
+    const userId: string = user.id;
 
     const interval = window.setInterval(() => {
       loadNotifications(userId);
@@ -223,9 +195,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       }
 
       setNotifications((current) => {
-        const alreadyExists = current.some(
-          (item) => item.id === notification.id,
-        );
+        const alreadyExists = current.some((item) => item.id === notification.id);
 
         if (alreadyExists) {
           return current;
@@ -237,23 +207,23 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
     window.addEventListener(
       "creator-nexus:notifications-updated",
-      handleNotificationsUpdated,
+      handleNotificationsUpdated
     );
 
     window.addEventListener(
       "creator-nexus:notification-created",
-      handleNotificationCreated as EventListener,
+      handleNotificationCreated as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "creator-nexus:notifications-updated",
-        handleNotificationsUpdated,
+        handleNotificationsUpdated
       );
 
       window.removeEventListener(
         "creator-nexus:notification-created",
-        handleNotificationCreated as EventListener,
+        handleNotificationCreated as EventListener
       );
     };
   }, [user?.id]);
@@ -278,9 +248,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   async function loadNotifications(userId: string) {
     const { data, error } = await supabase
       .from("user_notifications")
-      .select(
-        "id, user_id, type, title, message, metadata, read_at, created_at",
-      )
+      .select("id, user_id, type, title, message, metadata, read_at, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(12);
@@ -298,12 +266,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     setNotifications((current) =>
       current.map((notification) =>
         notification.id === notificationId
-          ? {
-              ...notification,
-              read_at: notification.read_at || new Date().toISOString(),
-            }
-          : notification,
-      ),
+          ? { ...notification, read_at: notification.read_at || new Date().toISOString() }
+          : notification
+      )
     );
 
     const { error } = await supabase
@@ -325,7 +290,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       current.map((notification) => ({
         ...notification,
         read_at: notification.read_at || now,
-      })),
+      }))
     );
 
     const { error } = await supabase
@@ -348,59 +313,43 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     const creatorId = metadata.creator_id;
     const creatorUsername = metadata.creator_username;
 
-    if (
-      notification.type === "card_collected" ||
-      notification.type === "card_won"
-    ) {
+    if (notification.type === "card_collected" || notification.type === "card_won") {
       setAccountOpen(false);
       setCollectionOpen(true);
 
-      const detail = {
-        card_id: typeof cardId === "string" ? cardId : undefined,
-        creator_id: typeof creatorId === "string" ? creatorId : undefined,
-        creator_username:
-          typeof creatorUsername === "string" ? creatorUsername : undefined,
-      };
-
       window.setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent("creator-nexus:open-collection-card", {
-            detail,
-          }),
+            detail: {
+              card_id: typeof cardId === "string" ? cardId : undefined,
+              creator_id: typeof creatorId === "string" ? creatorId : undefined,
+              creator_username:
+                typeof creatorUsername === "string" ? creatorUsername : undefined,
+            },
+          })
         );
-      }, 150);
-
-      window.setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("creator-nexus:open-collection-card", {
-            detail,
-          }),
-        );
-      }, 650);
+      }, 250);
 
       return;
     }
 
     if (notification.type === "level_up") {
-      setCollectionOpen(false);
       setAccountOpen(true);
 
-      window.setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("creator-nexus:open-user-profile", {
-            detail: {
-              level:
-                typeof metadata.new_level === "number" ||
-                typeof metadata.new_level === "string"
-                  ? metadata.new_level
-                  : typeof metadata.level === "number" ||
-                      typeof metadata.level === "string"
-                    ? metadata.level
-                    : undefined,
-            },
-          }),
-        );
-      }, 150);
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:open-user-profile", {
+          detail: {
+            level:
+              typeof metadata.new_level === "number" ||
+              typeof metadata.new_level === "string"
+                ? metadata.new_level
+                : typeof metadata.level === "number" ||
+                    typeof metadata.level === "string"
+                  ? metadata.level
+                  : undefined,
+          },
+        })
+      );
 
       return;
     }
@@ -439,6 +388,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                   <button
                     type="button"
                     onClick={(event) => {
+                      event.preventDefault();
                       event.stopPropagation();
                       setNotificationsOpen((current) => !current);
                     }}
@@ -500,6 +450,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 <button
                   type="button"
                   onClick={(event) => {
+                    event.preventDefault();
                     event.stopPropagation();
                     setNotificationsOpen((current) => !current);
                   }}
@@ -561,17 +512,17 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
 
-      <CollectionModal
-        open={collectionOpen}
-        onClose={() => setCollectionOpen(false)}
-      />
-
       <AccountModal
         open={accountOpen}
         email={user?.email || ""}
         profile={profile}
         onClose={() => setAccountOpen(false)}
         onLogout={handleLogout}
+      />
+
+      <CollectionModal
+        open={collectionOpen}
+        onClose={() => setCollectionOpen(false)}
       />
     </>
   );
@@ -617,6 +568,7 @@ function NotificationsPopover({
             <button
               type="button"
               onClick={(event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 onMarkAllAsRead();
               }}
@@ -629,6 +581,7 @@ function NotificationsPopover({
           <button
             type="button"
             onClick={(event) => {
+              event.preventDefault();
               event.stopPropagation();
               onClose();
             }}
@@ -647,6 +600,7 @@ function NotificationsPopover({
               key={notification.id}
               type="button"
               onClick={(event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 onNotificationClick(notification);
               }}
@@ -654,7 +608,7 @@ function NotificationsPopover({
             >
               <div
                 className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border ${getNotificationTone(
-                  notification.type,
+                  notification.type
                 )}`}
               >
                 {getNotificationIcon(notification.type)}
@@ -699,8 +653,8 @@ function NotificationsPopover({
             </p>
 
             <p className="mt-1 text-xs leading-relaxed text-white/40">
-              Quando você ganhar cartas, pacotes, badges ou subir de nível, tudo
-              aparecerá aqui.
+              Quando você ganhar cartas, pacotes, badges ou subir de nível,
+              tudo aparecerá aqui.
             </p>
           </div>
         )}
