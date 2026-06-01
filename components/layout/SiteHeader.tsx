@@ -161,9 +161,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   }, [user?.id]);
 
   useEffect(() => {
-    const userId = user?.id;
+    if (!user?.id) return;
 
-    if (!userId) return;
+    const userId: string = user.id;
 
     function handleNotificationsUpdated() {
       loadNotifications(userId);
