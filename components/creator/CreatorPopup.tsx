@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
+import { addUserXp } from "@/lib/xp/user-xp";
 import { Creator } from "@/types/creator";
 
 type CreatorPopupProps = {
@@ -368,6 +369,13 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     await supabase.rpc("increment_creator_share_count", {
       creator_id_input: creator.id,
     });
+
+    await addUserXp("share_profile", {
+      creator_id: creator.id,
+      creator_username: creator.username,
+      creator_nickname: creator.nickname,
+    });
+
     setShareCount((current) => current + 1);
     } catch (error) {
       console.error("Erro ao registrar compartilhamento:", error);
@@ -419,18 +427,37 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    await supabase.from("user_cards").upsert(
-      {
+    const { data: newCardData } = await supabase
+      .from("user_cards")
+      .upsert(
+        {
+          creator_id: creator.id,
+          user_id: user.id,
+          rarity: "common",
+          source: "follow",
+        },
+        {
+          onConflict: "user_id,creator_id",
+          ignoreDuplicates: true,
+        }
+      )
+      .select("id");
+
+    await addUserXp("follow_creator", {
+      creator_id: creator.id,
+      creator_username: creator.username,
+      creator_nickname: creator.nickname,
+    });
+
+    if (newCardData && newCardData.length > 0) {
+      await addUserXp("collect_common_card", {
         creator_id: creator.id,
-        user_id: user.id,
-        rarity: "common",
+        creator_username: creator.username,
+        creator_nickname: creator.nickname,
+        card_id: newCardData[0].id,
         source: "follow",
-      },
-      {
-        onConflict: "user_id,creator_id",
-        ignoreDuplicates: true,
-      }
-    );
+      });
+    }
 
     setIsFollowing(true);
     setFollowerCount((current) => current + 1);
