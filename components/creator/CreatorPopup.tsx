@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { addUserXp } from "@/lib/xp/user-xp";
 import { Creator } from "@/types/creator";
 
 type CreatorPopupProps = {
@@ -52,6 +51,106 @@ const emptyClip = (): ClipForm => ({
 });
 
 const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+
+type NotificationType =
+  | "card_unlocked"
+  | "level_up"
+  | "follow_creator"
+  | "share_profile"
+  | "generic";
+
+async function createUserNotification({
+  userId,
+  type,
+  title,
+  message,
+  metadata = {},
+}: {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const { error } = await supabase.from("user_notifications").insert({
+    user_id: userId,
+    type,
+    title,
+    message,
+    metadata,
+  });
+
+  if (error) {
+    console.error("Erro ao criar notificação:", error);
+  }
+}
+
+async function getCurrentUserLevel(userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("level")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao buscar level atual:", error);
+  }
+
+  return data?.level || 1;
+}
+
+async function hasXpEvent(
+  userId: string,
+  eventType: string,
+  metadata: Record<string, unknown>
+) {
+  const { data, error } = await supabase
+    .from("user_xp_events")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("event_type", eventType)
+    .contains("metadata", metadata)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao verificar evento de XP:", error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
+async function addXpAndNotifyLevelUp({
+  userId,
+  eventType,
+  metadata,
+}: {
+  userId: string;
+  eventType: Parameters<typeof addUserXp>[0];
+  metadata: Record<string, unknown>;
+}) {
+  const previousLevel = await getCurrentUserLevel(userId);
+  const result = await addUserXp(eventType, metadata);
+
+  if (result?.new_level && result.new_level > previousLevel) {
+    await createUserNotification({
+      userId,
+      type: "level_up",
+      title: `Você chegou ao nível ${result.new_level}!`,
+      message: "Seu perfil evoluiu no Creator Nexus.",
+      metadata: {
+        ...metadata,
+        previous_level: previousLevel,
+        new_level: result.new_level,
+        new_xp: result.new_xp,
+      },
+    });
+  }
+
+  return result;
+}
 
 function getYouTubeVideoId(url: string) {
   try {
@@ -363,20 +462,31 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }
 
   async function registerShare() {
-  if (!creator) return;
+    if (!creator) return;
 
-  try {
-    await supabase.rpc("increment_creator_share_count", {
-      creator_id_input: creator.id,
-    });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    await addUserXp("share_profile", {
-      creator_id: creator.id,
-      creator_username: creator.username,
-      creator_nickname: creator.nickname,
-    });
+    try {
+      await supabase.rpc("increment_creator_share_count", {
+        creator_id_input: creator.id,
+      });
 
-    setShareCount((current) => current + 1);
+      setShareCount((current) => current + 1);
+
+      if (user) {
+        await addXpAndNotifyLevelUp({
+          userId: user.id,
+          eventType: "share_profile",
+          metadata: {
+            creator_id: creator.id,
+            creator_username: creator.username,
+            creator_nickname: creator.nickname,
+            shared_at: new Date().toISOString(),
+          },
+        });
+      }
     } catch (error) {
       console.error("Erro ao registrar compartilhamento:", error);
     }
@@ -387,35 +497,38 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }
 
   async function handleFollow() {
-  if (!creator) return;
+    if (!creator) return;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    alert("Faça login para seguir este creator.");
-    return;
-  }
-
-  setFollowLoading(true);
-
-  if (isFollowing) {
-    const { error } = await supabase
-      .from("creator_followers")
-      .delete()
-      .eq("creator_id", creator.id)
-      .eq("user_id", user.id);
-
-    if (error) {
-      setFollowLoading(false);
-      alert(error.message);
+    if (!user) {
+      alert("Faça login para seguir este creator.");
       return;
     }
 
-    setIsFollowing(false);
-    setFollowerCount((current) => Math.max(0, current - 1));
-  } else {
+    setFollowLoading(true);
+
+    if (isFollowing) {
+      const { error } = await supabase
+        .from("creator_followers")
+        .delete()
+        .eq("creator_id", creator.id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        setFollowLoading(false);
+        alert(error.message);
+        return;
+      }
+
+      setIsFollowing(false);
+      setFollowerCount((current) => Math.max(0, current - 1));
+      setFollowLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("creator_followers").insert({
       creator_id: creator.id,
       user_id: user.id,
@@ -427,44 +540,90 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    const { data: newCardData } = await supabase
+    const followAlreadyRewarded = await hasXpEvent(user.id, "follow_creator", {
+      creator_id: creator.id,
+    });
+
+    if (!followAlreadyRewarded) {
+      await addXpAndNotifyLevelUp({
+        userId: user.id,
+        eventType: "follow_creator",
+        metadata: {
+          creator_id: creator.id,
+          creator_username: creator.username,
+          creator_nickname: creator.nickname,
+        },
+      });
+
+      await createUserNotification({
+        userId: user.id,
+        type: "follow_creator",
+        title: `Você seguiu ${creator.nickname}`,
+        message: "Você ganhou XP por seguir um creator.",
+        metadata: {
+          creator_id: creator.id,
+          creator_username: creator.username,
+          creator_nickname: creator.nickname,
+        },
+      });
+    }
+
+    const { data: existingCard } = await supabase
       .from("user_cards")
-      .upsert(
-        {
+      .select("id")
+      .eq("creator_id", creator.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!existingCard) {
+      const { data: newCard, error: cardError } = await supabase
+        .from("user_cards")
+        .insert({
           creator_id: creator.id,
           user_id: user.id,
           rarity: "common",
           source: "follow",
-        },
-        {
-          onConflict: "user_id,creator_id",
-          ignoreDuplicates: true,
-        }
-      )
-      .select("id");
+        })
+        .select("id, rarity, source, obtained_at")
+        .single();
 
-    await addUserXp("follow_creator", {
-      creator_id: creator.id,
-      creator_username: creator.username,
-      creator_nickname: creator.nickname,
-    });
+      if (cardError) {
+        console.error("Erro ao criar carta do usuário:", cardError);
+      } else {
+        await addXpAndNotifyLevelUp({
+          userId: user.id,
+          eventType: "collect_common_card",
+          metadata: {
+            creator_id: creator.id,
+            creator_username: creator.username,
+            creator_nickname: creator.nickname,
+            card_id: newCard.id,
+            rarity: "common",
+            source: "follow",
+          },
+        });
 
-    if (newCardData && newCardData.length > 0) {
-      await addUserXp("collect_common_card", {
-        creator_id: creator.id,
-        creator_username: creator.username,
-        creator_nickname: creator.nickname,
-        card_id: newCardData[0].id,
-        source: "follow",
-      });
+        await createUserNotification({
+          userId: user.id,
+          type: "card_unlocked",
+          title: "Nova carta conquistada!",
+          message: `Você ganhou a carta de ${creator.nickname}.`,
+          metadata: {
+            creator_id: creator.id,
+            creator_username: creator.username,
+            creator_nickname: creator.nickname,
+            card_id: newCard.id,
+            rarity: "common",
+            source: "follow",
+          },
+        });
+      }
     }
 
     setIsFollowing(true);
     setFollowerCount((current) => current + 1);
+    setFollowLoading(false);
   }
-
-  setFollowLoading(false);
-}
 
   async function uploadImage(file: File, type: "avatar" | "banner") {
     try {
