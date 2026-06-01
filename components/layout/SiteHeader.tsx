@@ -161,19 +161,20 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+
+    if (!userId) return;
 
     function handleNotificationsUpdated() {
-      if (!user) return;
-      loadNotifications(user.id);
+      loadNotifications(userId);
     }
 
     function handleNotificationCreated(event: Event) {
       const customEvent = event as CustomEvent<UserNotification>;
       const notification = customEvent.detail;
 
-      if (!notification || notification.user_id !== user.id) {
-        loadNotifications(user.id);
+      if (!notification || notification.user_id !== userId) {
+        loadNotifications(userId);
         return;
       }
 
