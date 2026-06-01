@@ -22,6 +22,22 @@ import { Creator } from "@/types/creator";
 type CollectionModalProps = {
   open: boolean;
   onClose: () => void;
+  /**
+   * Usado pelo sistema de notificações.
+   * Quando o usuário clicar em uma notificação de carta, envie o id da carta aqui
+   * para a coleção abrir diretamente no detalhe da carta.
+   */
+  initialCardId?: string | null;
+  /**
+   * Alternativa para notificações antigas que talvez ainda não tenham card_id.
+   * Com creator_id, a coleção tenta abrir a carta daquele creator.
+   */
+  initialCreatorId?: string | null;
+  /**
+   * Chamado depois que a carta da notificação for aberta.
+   * Serve para limpar o estado no componente pai, se você usar initialCardId/initialCreatorId.
+   */
+  onInitialCardOpened?: () => void;
 };
 
 type CreatorCardData = {
@@ -58,11 +74,23 @@ type UserCard = {
   creator_profiles: CreatorProfile | null;
 };
 
+type PendingNotificationCard = {
+  cardId?: string | null;
+  creatorId?: string | null;
+};
+
 const rarityLabel: Record<string, string> = {
   common: "Common",
   rare: "Rare",
   epic: "Epic",
   legendary: "Legendary",
+};
+
+const rarityXp: Record<string, number> = {
+  common: 20,
+  rare: 50,
+  epic: 120,
+  legendary: 300,
 };
 
 const rarityStyles: Record<
@@ -105,11 +133,54 @@ const rarityStyles: Record<
   },
 };
 
-export function CollectionModal({ open, onClose }: CollectionModalProps) {
+function isRecentlyObtained(date: string) {
+  const obtainedAt = new Date(date).getTime();
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  return Number.isFinite(obtainedAt) && now - obtainedAt <= oneDay;
+}
+
+function getCardXp(rarity: string) {
+  return rarityXp[rarity] || rarityXp.common;
+}
+
+function findNotificationCard(
+  cards: UserCard[],
+  pending: PendingNotificationCard | null
+) {
+  if (!pending) return null;
+
+  if (pending.cardId) {
+    const byCardId = cards.find((card) => card.id === pending.cardId);
+
+    if (byCardId) return byCardId;
+  }
+
+  if (pending.creatorId) {
+    const byCreatorId = cards.find(
+      (card) => card.creator_profiles?.id === pending.creatorId
+    );
+
+    if (byCreatorId) return byCreatorId;
+  }
+
+  return null;
+}
+
+export function CollectionModal({
+  open,
+  onClose,
+  initialCardId = null,
+  initialCreatorId = null,
+  onInitialCardOpened,
+}: CollectionModalProps) {
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
+  const [pendingNotificationCard, setPendingNotificationCard] =
+    useState<PendingNotificationCard | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -181,6 +252,54 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
     loadCollection();
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    if (initialCardId || initialCreatorId) {
+      setPendingNotificationCard({
+        cardId: initialCardId,
+        creatorId: initialCreatorId,
+      });
+    }
+  }, [open, initialCardId, initialCreatorId]);
+
+  useEffect(() => {
+    function handleOpenCardFromNotification(event: Event) {
+      const customEvent = event as CustomEvent<PendingNotificationCard>;
+
+      setPendingNotificationCard({
+        cardId: customEvent.detail?.cardId || null,
+        creatorId: customEvent.detail?.creatorId || null,
+      });
+    }
+
+    window.addEventListener(
+      "creator-nexus:open-collection-card",
+      handleOpenCardFromNotification
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-collection-card",
+        handleOpenCardFromNotification
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open || loading || cards.length === 0 || !pendingNotificationCard) {
+      return;
+    }
+
+    const cardToOpen = findNotificationCard(cards, pendingNotificationCard);
+
+    if (!cardToOpen) return;
+
+    setSelectedCard(cardToOpen);
+    setPendingNotificationCard(null);
+    onInitialCardOpened?.();
+  }, [cards, loading, onInitialCardOpened, open, pendingNotificationCard]);
+
   const stats = useMemo(() => {
     return {
       total: cards.length,
@@ -209,28 +328,25 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
             animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             transition={{ duration: 0.25 }}
+            onClick={onClose}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
           >
-            <button
-              onClick={onClose}
-              className="absolute inset-0"
-              aria-label="Fechar coleção"
-            />
-
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.94 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
+              onClick={(event) => event.stopPropagation()}
               className="hide-scrollbar relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-8 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
             >
-              <div className="absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
-              <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
 
               <button
+                type="button"
                 onClick={onClose}
-                className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                aria-label="Fechar"
+                className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+                aria-label="Fechar coleção"
               >
                 <X size={18} />
               </button>
@@ -247,7 +363,8 @@ export function CollectionModal({ open, onClose }: CollectionModalProps) {
 
                 <p className="mt-3 max-w-2xl text-sm text-white/45">
                   Aqui ficam as cartas de creators conquistadas por follows,
-                  pacotes, missões e eventos.
+                  pacotes, missões e eventos. Notificações de carta podem abrir
+                  a carta específica diretamente aqui.
                 </p>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -420,6 +537,7 @@ function CollectionCardShowcase({
   const username = creator?.username || "creator";
   const nickname = creator?.nickname || "Creator Nexus";
   const rarity = rarityLabel[card.rarity] || card.rarity;
+  const xp = getCardXp(card.rarity);
 
   function openProfile() {
     if (!card) return;
@@ -428,32 +546,31 @@ function CollectionCardShowcase({
   }
 
   async function shareCard() {
-  const url = `${window.location.origin}/card/${username}?v=1`;
+    const url = `${window.location.origin}/card/${username}?v=1`;
+    const text = `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`;
 
-  const text = `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Carta ${nickname}`,
+          text,
+          url,
+        });
 
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: `Carta ${nickname}`,
-        text,
-        url,
-      });
-
-      return;
-    } catch {
-      // usuário cancelou
+        return;
+      } catch {
+        // usuário cancelou
+      }
     }
+
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1800);
   }
-
-  await navigator.clipboard.writeText(`${text}\n${url}`);
-
-  setCopied(true);
-
-  setTimeout(() => {
-    setCopied(false);
-  }, 1800);
-}
 
   return (
     <AnimatePresence>
@@ -462,18 +579,14 @@ function CollectionCardShowcase({
         animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
         transition={{ duration: 0.25 }}
+        onClick={onClose}
         className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
       >
         <button
-          onClick={onClose}
-          className="absolute inset-0"
-          aria-label="Fechar carta"
-        />
-
-        <button
+          type="button"
           onClick={onClose}
           className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-          aria-label="Fechar"
+          aria-label="Fechar carta"
         >
           <X size={20} />
         </button>
@@ -483,14 +596,28 @@ function CollectionCardShowcase({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
+          onClick={(event) => event.stopPropagation()}
           className="relative z-20 flex flex-col items-center gap-5"
         >
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {isRecentlyObtained(card.obtained_at) && (
+              <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
+                Nova carta
+              </span>
+            )}
+
+            <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-purple-100">
+              +{xp} XP
+            </span>
+          </div>
+
           <TiltCard>
             <CollectionCardFace card={card} onClick={() => {}} size="large" />
           </TiltCard>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
+              type="button"
               onClick={openProfile}
               className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
             >
@@ -499,6 +626,7 @@ function CollectionCardShowcase({
             </button>
 
             <button
+              type="button"
               onClick={shareCard}
               className="inline-flex items-center gap-2 rounded-full border border-purple-300/20 bg-purple-300/10 px-5 py-3 text-sm font-bold text-purple-100 transition hover:bg-purple-300/20"
             >
@@ -528,9 +656,12 @@ function CollectionCardFace({
   const rarity = card.rarity || "common";
   const style = rarityStyles[rarity] || rarityStyles.common;
   const isLarge = size === "large";
+  const xp = getCardXp(rarity);
+  const isNew = isRecentlyObtained(card.obtained_at);
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`group relative overflow-hidden border bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:shadow-[0_0_90px_rgba(34,211,238,0.20)] ${style.border} ${
         isLarge
@@ -575,6 +706,22 @@ function CollectionCardFace({
         }`}
       >
         {rarityLabel[rarity] || rarity}
+      </div>
+
+      <div
+        className={`absolute right-4 top-4 flex flex-col items-end gap-2 ${
+          isLarge ? "right-7 top-20" : "right-4 top-12"
+        }`}
+      >
+        {isNew && (
+          <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100 backdrop-blur">
+            Nova
+          </span>
+        )}
+
+        <span className="rounded-full border border-purple-300/25 bg-purple-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-purple-100 backdrop-blur">
+          +{xp} XP
+        </span>
       </div>
 
       <div

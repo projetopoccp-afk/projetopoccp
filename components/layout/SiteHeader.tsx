@@ -136,6 +136,30 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   }, []);
 
   useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          loadNotifications(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         notificationBoxRef.current &&
@@ -213,23 +237,47 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
   function handleNotificationClick(notification: UserNotification) {
     markNotificationAsRead(notification.id);
+    setNotificationsOpen(false);
 
     const metadata = notification.metadata || {};
-    const creatorUsername = metadata.creator_username;
+    const cardId = metadata.card_id;
     const creatorId = metadata.creator_id;
+    const creatorUsername = metadata.creator_username;
 
-    if (notification.type === "card_won" && typeof creatorUsername === "string") {
-      window.location.href = `/creator/${creatorUsername}`;
+    if (notification.type === "card_won") {
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:open-collection-card", {
+          detail: {
+            card_id: typeof cardId === "string" ? cardId : undefined,
+            creator_id: typeof creatorId === "string" ? creatorId : undefined,
+            creator_username:
+              typeof creatorUsername === "string" ? creatorUsername : undefined,
+          },
+        })
+      );
+
       return;
     }
 
-    if (notification.type === "card_won" && typeof creatorId === "string") {
-      window.location.href = `/creator/${creatorId}`;
+    if (notification.type === "level_up") {
+      setAccountOpen(true);
+
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:open-user-profile", {
+          detail: {
+            level:
+              typeof metadata.level === "number" ||
+              typeof metadata.level === "string"
+                ? metadata.level
+                : undefined,
+          },
+        })
+      );
+
       return;
     }
 
     setAccountOpen(true);
-    setNotificationsOpen(false);
   }
 
   async function handleLogout() {

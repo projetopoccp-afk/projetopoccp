@@ -77,9 +77,47 @@ export function UserProfileModal({
     xp: profile?.xp ?? 0,
     level: profile?.level ?? 1,
   });
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [highlightLevelUp, setHighlightLevelUp] = useState(false);
+
+  const isVisible = open || notificationOpen;
+
+  function handleClose() {
+    setNotificationOpen(false);
+    setHighlightLevelUp(false);
+    onClose();
+  }
 
   useEffect(() => {
-    if (!open) return;
+    function handleOpenUserProfile(event: Event) {
+      const customEvent = event as CustomEvent<{
+        type?: string;
+        level?: number;
+        xp?: number;
+      }>;
+
+      if (customEvent.detail?.level) {
+        setHighlightLevelUp(true);
+      }
+
+      setNotificationOpen(true);
+    }
+
+    window.addEventListener(
+      "creator-nexus:open-user-profile",
+      handleOpenUserProfile
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-user-profile",
+        handleOpenUserProfile
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
 
     async function loadProfileStats() {
       setLoading(true);
@@ -129,7 +167,7 @@ export function UserProfileModal({
     }
 
     loadProfileStats();
-  }, [open, profile?.level, profile?.xp]);
+  }, [isVisible, profile?.level, profile?.xp]);
 
   const stats = useMemo(() => {
     const total = cards.length;
@@ -154,13 +192,13 @@ export function UserProfileModal({
 
   return (
     <AnimatePresence>
-      {open && (
+      {isVisible && (
         <motion.div
           initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
           animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
           exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
           transition={{ duration: 0.25 }}
-          onClick={onClose}
+          onClick={handleClose}
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4"
         >
           <motion.div
@@ -176,7 +214,7 @@ export function UserProfileModal({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
               aria-label="Fechar perfil"
             >
@@ -218,6 +256,12 @@ export function UserProfileModal({
                       Nível {loading ? "..." : profileXp.level}
                     </span>
 
+                    {highlightLevelUp && (
+                      <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-sm text-emerald-100">
+                        Level up recente
+                      </span>
+                    )}
+
                     <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
                       {loading ? "..." : profileXp.xp} XP
                     </span>
@@ -255,6 +299,27 @@ export function UserProfileModal({
                   </div>
                 </div>
               </div>
+
+              {highlightLevelUp && (
+                <div className="mt-6 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.05] p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10 text-emerald-100">
+                      <Trophy size={22} />
+                    </div>
+
+                    <div>
+                      <p className="font-bold text-emerald-100">
+                        Você subiu de nível!
+                      </p>
+                      <p className="text-sm text-white/45">
+                        Seu perfil foi aberto a partir de uma notificação de
+                        evolução. Continue seguindo creators, compartilhando e
+                        colecionando cartas para ganhar mais XP.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <ProfileStatCard
