@@ -164,6 +164,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     if (!user?.id) return;
 
     function handleNotificationsUpdated() {
+      if (!user) return;
       loadNotifications(user.id);
     }
 
