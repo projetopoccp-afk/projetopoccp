@@ -59,6 +59,41 @@ export function AccountModal({
     cards: 0,
   });
 
+
+  useEffect(() => {
+    function handleOpenCollectionCard() {
+      setProfileOpen(false);
+      setCollectionOpen(true);
+    }
+
+    function handleOpenUserProfile() {
+      setCollectionOpen(false);
+      setProfileOpen(true);
+    }
+
+    window.addEventListener(
+      "creator-nexus:open-collection-card",
+      handleOpenCollectionCard
+    );
+
+    window.addEventListener(
+      "creator-nexus:open-user-profile",
+      handleOpenUserProfile
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-collection-card",
+        handleOpenCollectionCard
+      );
+
+      window.removeEventListener(
+        "creator-nexus:open-user-profile",
+        handleOpenUserProfile
+      );
+    };
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 

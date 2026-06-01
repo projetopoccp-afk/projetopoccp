@@ -69,10 +69,18 @@ export async function createUserNotification({
   return data as UserNotification;
 }
 
-export async function getUserNotifications(limit = 10) {
+export async function getUserNotifications(limit = 12) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) return [];
+
   const { data, error } = await supabase
     .from("user_notifications")
     .select("*")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -103,9 +111,17 @@ export async function markUserNotificationAsRead(notificationId: string) {
 }
 
 export async function markAllUserNotificationsAsRead() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) return false;
+
   const { error } = await supabase
     .from("user_notifications")
     .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
     .is("read_at", null);
 
   if (error) {
