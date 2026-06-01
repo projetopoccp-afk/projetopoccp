@@ -61,9 +61,39 @@ export function AccountModal({
 
 
   useEffect(() => {
-    function handleOpenCollectionCard() {
+    function handleOpenCollectionCard(event: Event) {
+      const detail =
+        event instanceof CustomEvent && event.detail ? event.detail : {};
+
+      setRequestOpen(false);
+      setAdminOpen(false);
       setProfileOpen(false);
       setCollectionOpen(true);
+
+      /*
+        Quando a notificação é clicada pelo Header, o AccountModal também pode
+        abrir por causa do clique no bloco do usuário. Então fechamos a tela
+        "Minha Conta" e deixamos somente a coleção/carta aberta.
+      */
+      window.setTimeout(() => {
+        onClose();
+
+        window.dispatchEvent(
+          new CustomEvent("creator-nexus:focus-collection-card", {
+            detail,
+          })
+        );
+
+        /*
+          Mantém compatibilidade com versões do CollectionModal que ainda escutam
+          o evento antigo diretamente.
+        */
+        window.dispatchEvent(
+          new CustomEvent("creator-nexus:open-collection-card", {
+            detail,
+          })
+        );
+      }, 80);
     }
 
     function handleOpenUserProfile() {
@@ -92,7 +122,7 @@ export function AccountModal({
         handleOpenUserProfile
       );
     };
-  }, []);
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
