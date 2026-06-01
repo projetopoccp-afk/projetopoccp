@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
+import { addUserXp } from "@/lib/xp/user-xp";
 import { Creator } from "@/types/creator";
 
 type CreatorPopupProps = {
