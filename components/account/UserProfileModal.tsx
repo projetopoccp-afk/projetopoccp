@@ -9,6 +9,8 @@ import {
   Gem,
   ShieldCheck,
   Sparkles,
+  Star,
+  Trophy,
   UserRound,
   X,
   Zap,
@@ -22,6 +24,8 @@ type AccountProfile = {
   username: string | null;
   avatar_url: string | null;
   is_admin: boolean | null;
+  xp?: number | null;
+  level?: number | null;
 };
 
 type UserProfileModalProps = {
@@ -38,6 +42,29 @@ type UserCard = {
   obtained_at: string;
 };
 
+type ProfileXp = {
+  xp: number;
+  level: number;
+};
+
+function getLevelProgress(xp: number, level: number) {
+  const safeLevel = Math.max(1, level);
+  const currentLevelXp = Math.pow(safeLevel - 1, 2) * 100;
+  const nextLevelXp = Math.pow(safeLevel, 2) * 100;
+  const xpInsideLevel = Math.max(0, xp - currentLevelXp);
+  const xpNeededForLevel = Math.max(1, nextLevelXp - currentLevelXp);
+  const percentage = Math.min(100, Math.round((xpInsideLevel / xpNeededForLevel) * 100));
+
+  return {
+    currentLevelXp,
+    nextLevelXp,
+    xpInsideLevel,
+    xpNeededForLevel,
+    remainingXp: Math.max(0, nextLevelXp - xp),
+    percentage,
+  };
+}
+
 export function UserProfileModal({
   open,
   email,
@@ -46,6 +73,10 @@ export function UserProfileModal({
 }: UserProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<UserCard[]>([]);
+  const [profileXp, setProfileXp] = useState<ProfileXp>({
+    xp: profile?.xp ?? 0,
+    level: profile?.level ?? 1,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -55,13 +86,30 @@ export function UserProfileModal({
 
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
 
-      if (!user) {
+      if (userError || !user) {
+        console.error("Erro ao buscar usuário:", userError);
         setCards([]);
         setLoading(false);
         return;
       }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("xp, level")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Erro ao buscar XP do perfil:", profileError);
+      }
+
+      setProfileXp({
+        xp: profileData?.xp ?? profile?.xp ?? 0,
+        level: profileData?.level ?? profile?.level ?? 1,
+      });
 
       const { data, error } = await supabase
         .from("user_cards")
@@ -81,7 +129,7 @@ export function UserProfileModal({
     }
 
     loadProfileStats();
-  }, [open]);
+  }, [open, profile?.level, profile?.xp]);
 
   const stats = useMemo(() => {
     const total = cards.length;
@@ -96,10 +144,13 @@ export function UserProfileModal({
       rare,
       epic,
       legendary,
-      level: Math.max(1, Math.floor(total / 5) + 1),
       badges: total > 0 ? 1 : 0,
     };
   }, [cards]);
+
+  const levelProgress = useMemo(() => {
+    return getLevelProgress(profileXp.xp, profileXp.level);
+  }, [profileXp.level, profileXp.xp]);
 
   return (
     <AnimatePresence>
@@ -151,7 +202,7 @@ export function UserProfileModal({
                   )}
                 </div>
 
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h2 className="text-3xl font-black leading-tight">
                     {profile?.display_name || "Creator"}
                   </h2>
@@ -164,7 +215,11 @@ export function UserProfileModal({
                     </span>
 
                     <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                      Nível {stats.level}
+                      Nível {loading ? "..." : profileXp.level}
+                    </span>
+
+                    <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                      {loading ? "..." : profileXp.xp} XP
                     </span>
 
                     <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
@@ -178,17 +233,60 @@ export function UserProfileModal({
                       </span>
                     )}
                   </div>
+
+                  <div className="mt-5 max-w-xl">
+                    <div className="mb-2 flex items-center justify-between text-xs text-white/45">
+                      <span>Progresso para o nível {profileXp.level + 1}</span>
+                      <span>{levelProgress.percentage}%</span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full border border-white/10 bg-white/5">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${levelProgress.percentage}%` }}
+                        transition={{ duration: 0.7, ease: "easeOut" }}
+                        className="h-full rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.8)]"
+                      />
+                    </div>
+
+                    <p className="mt-2 text-xs text-white/40">
+                      Faltam {levelProgress.remainingXp} XP para o próximo nível.
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <ProfileStatCard
-                  icon={<Archive size={18} />}
-                  label="Cartas"
-                  value={loading ? "..." : String(stats.total)}
+                  icon={<Trophy size={18} />}
+                  label="Nível"
+                  value={loading ? "..." : String(profileXp.level)}
                   tone="cyan"
                 />
 
+                <ProfileStatCard
+                  icon={<Star size={18} />}
+                  label="XP"
+                  value={loading ? "..." : String(profileXp.xp)}
+                  tone="yellow"
+                />
+
+                <ProfileStatCard
+                  icon={<Archive size={18} />}
+                  label="Cartas"
+                  value={loading ? "..." : String(stats.total)}
+                  tone="purple"
+                />
+
+                <ProfileStatCard
+                  icon={<Crown size={18} />}
+                  label="Lendárias"
+                  value={loading ? "..." : String(stats.legendary)}
+                  tone="pink"
+                />
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <ProfileStatCard
                   icon={<Gem size={18} />}
                   label="Raras"
@@ -208,6 +306,13 @@ export function UserProfileModal({
                   label="Lendárias"
                   value={loading ? "..." : String(stats.legendary)}
                   tone="pink"
+                />
+
+                <ProfileStatCard
+                  icon={<BadgeCheck size={18} />}
+                  label="Badges"
+                  value={loading ? "..." : String(stats.badges)}
+                  tone="cyan"
                 />
               </div>
 

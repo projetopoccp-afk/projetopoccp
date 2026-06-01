@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Archive,
   BadgeCheck,
@@ -17,12 +17,21 @@ import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 import { UserProfileModal } from "@/components/account/UserProfileModal";
+import { supabase } from "@/lib/supabase/client";
 
 type AccountProfile = {
   display_name: string | null;
   username: string | null;
   avatar_url: string | null;
   is_admin: boolean | null;
+  xp?: number | null;
+  level?: number | null;
+};
+
+type AccountStats = {
+  xp: number;
+  level: number;
+  cards: number;
 };
 
 type AccountModalProps = {
@@ -44,6 +53,54 @@ export function AccountModal({
   const [adminOpen, setAdminOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [accountStats, setAccountStats] = useState<AccountStats>({
+    xp: profile?.xp ?? 0,
+    level: profile?.level ?? 1,
+    cards: 0,
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    async function loadAccountStats() {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("Erro ao buscar usuário:", userError);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("xp, level")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Erro ao buscar XP do perfil:", profileError);
+      }
+
+      const { count, error: cardsError } = await supabase
+        .from("user_cards")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if (cardsError) {
+        console.error("Erro ao contar cartas:", cardsError);
+      }
+
+      setAccountStats({
+        xp: profileData?.xp ?? profile?.xp ?? 0,
+        level: profileData?.level ?? profile?.level ?? 1,
+        cards: count ?? 0,
+      });
+    }
+
+    loadAccountStats();
+  }, [open, profile?.level, profile?.xp]);
 
   return (
     <>
@@ -108,11 +165,15 @@ export function AccountModal({
                       </span>
 
                       <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                        Nível 1
+                        Nível {accountStats.level}
+                      </span>
+
+                      <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                        {accountStats.xp} XP
                       </span>
 
                       <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                        0 cartas
+                        {accountStats.cards} cartas
                       </span>
 
                       {profile?.is_admin && (
@@ -140,7 +201,7 @@ export function AccountModal({
                   <AccountActionCard
                     icon={<UserRound size={22} />}
                     title="Meu Perfil"
-                    description="Veja seu nível, progresso, badges e atividade dentro do Creator Nexus."
+                    description="Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus."
                     buttonLabel="Abrir"
                     variant="cyan"
                     onClick={() => setProfileOpen(true)}
