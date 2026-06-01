@@ -6,6 +6,7 @@ import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react
 
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
+import { updateMissionProgress } from "@/lib/missions/user-missions";
 import { Creator } from "@/types/creator";
 
 type CreatorPopupProps = {
@@ -487,6 +488,12 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             shared_at: new Date().toISOString(),
           },
         });
+
+        await updateMissionProgress("share_profile", 1, {
+          creator_id: creator.id,
+          creator_username: creator.username,
+          creator_nickname: creator.nickname,
+        });
       }
     } catch (error) {
       console.error("Erro ao registrar compartilhamento:", error);
@@ -567,6 +574,12 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           creator_nickname: creator.nickname,
         },
       });
+
+      await updateMissionProgress("follow_creator", 1, {
+        creator_id: creator.id,
+        creator_username: creator.username,
+        creator_nickname: creator.nickname,
+      });
     }
 
     const { data: existingCard } = await supabase
@@ -617,6 +630,15 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             rarity: "common",
             source: "follow",
           },
+        });
+
+        await updateMissionProgress("collect_card", 1, {
+          creator_id: creator.id,
+          creator_username: creator.username,
+          creator_nickname: creator.nickname,
+          card_id: newCard.id,
+          rarity: "common",
+          source: "follow",
         });
       }
     }
