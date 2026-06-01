@@ -27,6 +27,7 @@ type AccountProfile = {
 };
 
 type NotificationType =
+  | "card_collected"
   | "card_won"
   | "level_up"
   | "pack_received"
@@ -47,7 +48,7 @@ type UserNotification = {
 };
 
 function getNotificationIcon(type: NotificationType) {
-  if (type === "card_won") return <Sparkles size={16} />;
+  if (type === "card_collected" || type === "card_won") return <Sparkles size={16} />;
   if (type === "level_up") return <Trophy size={16} />;
   if (type === "pack_received" || type === "pack_opened") return <Package size={16} />;
 
@@ -55,7 +56,7 @@ function getNotificationIcon(type: NotificationType) {
 }
 
 function getNotificationTone(type: NotificationType) {
-  if (type === "card_won") return "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
+  if (type === "card_collected" || type === "card_won") return "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
   if (type === "level_up") return "border-yellow-300/20 bg-yellow-300/10 text-yellow-100";
   if (type === "pack_received" || type === "pack_opened") {
     return "border-purple-300/20 bg-purple-300/10 text-purple-100";
@@ -160,6 +161,56 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id) return;
+
+    function handleNotificationsUpdated() {
+      loadNotifications(user.id);
+    }
+
+    function handleNotificationCreated(event: Event) {
+      const customEvent = event as CustomEvent<UserNotification>;
+      const notification = customEvent.detail;
+
+      if (!notification || notification.user_id !== user.id) {
+        loadNotifications(user.id);
+        return;
+      }
+
+      setNotifications((current) => {
+        const alreadyExists = current.some((item) => item.id === notification.id);
+
+        if (alreadyExists) {
+          return current;
+        }
+
+        return [notification, ...current].slice(0, 12);
+      });
+    }
+
+    window.addEventListener(
+      "creator-nexus:notifications-updated",
+      handleNotificationsUpdated
+    );
+
+    window.addEventListener(
+      "creator-nexus:notification-created",
+      handleNotificationCreated as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:notifications-updated",
+        handleNotificationsUpdated
+      );
+
+      window.removeEventListener(
+        "creator-nexus:notification-created",
+        handleNotificationCreated as EventListener
+      );
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         notificationBoxRef.current &&
@@ -240,11 +291,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     setNotificationsOpen(false);
 
     const metadata = notification.metadata || {};
-    const cardId = metadata.card_id;
+    const cardId = metadata.card_id || metadata.user_card_id;
     const creatorId = metadata.creator_id;
     const creatorUsername = metadata.creator_username;
 
-    if (notification.type === "card_won") {
+    if (notification.type === "card_collected" || notification.type === "card_won") {
       window.dispatchEvent(
         new CustomEvent("creator-nexus:open-collection-card", {
           detail: {
@@ -266,10 +317,13 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
         new CustomEvent("creator-nexus:open-user-profile", {
           detail: {
             level:
-              typeof metadata.level === "number" ||
-              typeof metadata.level === "string"
-                ? metadata.level
-                : undefined,
+              typeof metadata.new_level === "number" ||
+              typeof metadata.new_level === "string"
+                ? metadata.new_level
+                : typeof metadata.level === "number" ||
+                    typeof metadata.level === "string"
+                  ? metadata.level
+                  : undefined,
           },
         })
       );

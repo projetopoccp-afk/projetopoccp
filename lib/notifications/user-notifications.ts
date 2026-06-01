@@ -56,6 +56,16 @@ export async function createUserNotification({
     return null;
   }
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("creator-nexus:notification-created", {
+        detail: data,
+      })
+    );
+
+    window.dispatchEvent(new Event("creator-nexus:notifications-updated"));
+  }
+
   return data as UserNotification;
 }
 
@@ -85,6 +95,10 @@ export async function markUserNotificationAsRead(notificationId: string) {
     return false;
   }
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("creator-nexus:notifications-updated"));
+  }
+
   return true;
 }
 
@@ -97,6 +111,10 @@ export async function markAllUserNotificationsAsRead() {
   if (error) {
     console.error("Erro ao marcar todas como lidas:", error);
     return false;
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("creator-nexus:notifications-updated"));
   }
 
   return true;
