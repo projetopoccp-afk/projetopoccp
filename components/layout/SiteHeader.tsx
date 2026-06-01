@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, ChevronRight, LogOut, Package, Sparkles, Trophy, User, X } from "lucide-react";
 import { AccountModal } from "@/components/account/AccountModal";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
@@ -77,6 +78,7 @@ function formatNotificationDate(date: string) {
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
@@ -157,6 +159,19 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
     return () => {
       supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const userId = user.id;
+    const interval = window.setInterval(() => {
+      loadNotifications(userId);
+    }, 2500);
+
+    return () => {
+      window.clearInterval(interval);
     };
   }, [user?.id]);
 
@@ -298,16 +313,22 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     const creatorUsername = metadata.creator_username;
 
     if (notification.type === "card_collected" || notification.type === "card_won") {
-      window.dispatchEvent(
-        new CustomEvent("creator-nexus:open-collection-card", {
-          detail: {
-            card_id: typeof cardId === "string" ? cardId : undefined,
-            creator_id: typeof creatorId === "string" ? creatorId : undefined,
-            creator_username:
-              typeof creatorUsername === "string" ? creatorUsername : undefined,
-          },
-        })
-      );
+      const detail = {
+        card_id: typeof cardId === "string" ? cardId : undefined,
+        creator_id: typeof creatorId === "string" ? creatorId : undefined,
+        creator_username:
+          typeof creatorUsername === "string" ? creatorUsername : undefined,
+      };
+
+      setCollectionOpen(true);
+
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("creator-nexus:open-collection-card", {
+            detail,
+          })
+        );
+      }, 120);
 
       return;
     }
@@ -481,6 +502,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       </header>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+
+      <CollectionModal
+        open={collectionOpen}
+        onClose={() => setCollectionOpen(false)}
+      />
 
       <AccountModal
         open={accountOpen}
