@@ -87,7 +87,9 @@ export function UserProfileModal({
     const total = cards.length;
     const rare = cards.filter((card) => card.rarity === "rare").length;
     const epic = cards.filter((card) => card.rarity === "epic").length;
-    const legendary = cards.filter((card) => card.rarity === "legendary").length;
+    const legendary = cards.filter(
+      (card) => card.rarity === "legendary"
+    ).length;
 
     return {
       total,
@@ -107,28 +109,25 @@ export function UserProfileModal({
           animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
           exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
           transition={{ duration: 0.25 }}
+          onClick={onClose}
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4"
         >
-          <button
-            onClick={onClose}
-            className="absolute inset-0"
-            aria-label="Fechar perfil"
-          />
-
           <motion.div
             initial={{ opacity: 0, y: 30, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
+            onClick={(event) => event.stopPropagation()}
             className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
           >
             <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
             <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
 
             <button
+              type="button"
               onClick={onClose}
-              className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar"
+              className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+              aria-label="Fechar perfil"
             >
               <X size={18} />
             </button>
