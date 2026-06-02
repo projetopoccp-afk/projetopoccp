@@ -428,6 +428,9 @@ export const translations = {
     packsModalRevealing: "Revelando...",
     packsModalTearingPack: "Rasgando pack...",
     packsModalNewCard: "Nova carta",
+    homePageBadge: "Plataforma de Reputação Digital",
+    homePageDescription: "Descubra criadores lendários por meio de cartas digitais.",
+
 
 
 
@@ -862,6 +865,9 @@ export const translations = {
     packsModalRevealing: "Revealing...",
     packsModalTearingPack: "Tearing pack...",
     packsModalNewCard: "New card",
+    homePageBadge: "Digital Reputation Platform",
+    homePageDescription: "Discover legendary creators through digital cards.",
+
 
 
 
@@ -1296,6 +1302,9 @@ export const translations = {
     packsModalRevealing: "Revelando...",
     packsModalTearingPack: "Rasgando pack...",
     packsModalNewCard: "Nueva carta",
+    homePageBadge: "Plataforma de Reputación Digital",
+    homePageDescription: "Descubre creadores legendarios a través de cartas digitales.",
+
 
 
 

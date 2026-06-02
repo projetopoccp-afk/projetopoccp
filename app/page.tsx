@@ -7,10 +7,14 @@ import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { CreatorGrid } from "@/components/home/CreatorGrid";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LoadingScreen } from "@/components/loading/LoadingScreen";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const { t } = useLanguage();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -37,17 +41,24 @@ export default function HomePage() {
       <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
         <div className="mx-auto flex flex-col items-center text-center">
           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
-            Plataforma de Reputação Digital
+            {translate(
+              t,
+              "homePageBadge",
+              "Plataforma de Reputação Digital"
+            )}
           </div>
 
           <p className="mt-4 max-w-xl text-sm text-white/50">
-            Descubra criadores lendários por meio de cartas digitais.
+            {translate(
+              t,
+              "homePageDescription",
+              "Descubra criadores lendários por meio de cartas digitais."
+            )}
           </p>
         </div>
       </section>
 
       <CreatorGrid search={search} />
-      
     </main>
   );
 }
