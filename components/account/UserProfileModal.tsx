@@ -443,7 +443,7 @@ export function UserProfileModal({
                         </p>
 
                         <p className="mt-1 text-xs text-white/45">
-                          {card.rarity} • {card.source} •{" "}
+                          {getRarityLabel(card.rarity)} • {card.source} •{" "}
                           {new Date(card.obtained_at).toLocaleDateString(
                             "pt-BR"
                           )}
