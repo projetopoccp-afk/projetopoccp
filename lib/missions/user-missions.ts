@@ -18,7 +18,10 @@ export async function updateMissionProgress(
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) return;
+  if (userError || !user) {
+    console.error("Missões: usuário não autenticado", userError);
+    return;
+  }
 
   const { data: missions, error: missionsError } = await supabase
     .from("missions")
@@ -27,11 +30,16 @@ export async function updateMissionProgress(
     .eq("is_active", true);
 
   if (missionsError) {
-    console.error("Erro ao buscar missões:", missionsError);
+    console.error("Missões: erro ao buscar missões", missionsError);
     return;
   }
 
-  for (const mission of missions || []) {
+  if (!missions || missions.length === 0) {
+    console.warn("Missões: nenhuma missão ativa encontrada para", missionType);
+    return;
+  }
+
+  for (const mission of missions) {
     const { data: existingMission, error: existingMissionError } =
       await supabase
         .from("user_missions")
@@ -41,7 +49,7 @@ export async function updateMissionProgress(
         .maybeSingle();
 
     if (existingMissionError) {
-      console.error("Erro ao buscar progresso da missão:", existingMissionError);
+      console.error("Missões: erro ao buscar progresso", existingMissionError);
       continue;
     }
 
@@ -49,43 +57,33 @@ export async function updateMissionProgress(
       continue;
     }
 
-    const currentProgress = existingMission?.progress || 0;
-    const nextProgress = Math.min(
-      mission.target_amount,
-      currentProgress + amount
-    );
+    const currentProgress = Number(existingMission?.progress || 0);
+    const targetAmount = Number(mission.target_amount || 1);
+    const nextProgress = Math.min(targetAmount, currentProgress + amount);
 
     const completedNow =
-      currentProgress < mission.target_amount &&
-      nextProgress >= mission.target_amount;
+      currentProgress < targetAmount && nextProgress >= targetAmount;
 
-    if (existingMission) {
-      const { error } = await supabase
-        .from("user_missions")
-        .update({
-          progress: nextProgress,
-          completed_at: completedNow
-            ? new Date().toISOString()
-            : existingMission.completed_at,
-        })
-        .eq("id", existingMission.id);
+    const completedAt = completedNow
+      ? new Date().toISOString()
+      : existingMission?.completed_at || null;
 
-      if (error) {
-        console.error("Erro ao atualizar missão:", error);
-        continue;
-      }
-    } else {
-      const { error } = await supabase.from("user_missions").insert({
-        user_id: user.id,
-        mission_id: mission.id,
-        progress: nextProgress,
-        completed_at: completedNow ? new Date().toISOString() : null,
+    const payload = {
+      user_id: user.id,
+      mission_id: mission.id,
+      progress: nextProgress,
+      completed_at: completedAt,
+    };
+
+    const { error: upsertError } = await supabase
+      .from("user_missions")
+      .upsert(payload, {
+        onConflict: "user_id,mission_id",
       });
 
-      if (error) {
-        console.error("Erro ao criar progresso da missão:", error);
-        continue;
-      }
+    if (upsertError) {
+      console.error("Missões: erro ao salvar progresso", upsertError);
+      continue;
     }
 
     if (completedNow) {
@@ -101,5 +99,9 @@ export async function updateMissionProgress(
         },
       });
     }
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("creator-nexus:missions-updated"));
   }
 }
