@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
 import { Creator } from "@/types/creator";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 
 type CreatorPopupProps = {
   creator: Creator | null;
@@ -218,6 +220,7 @@ async function resolveClipThumbnail(url: string) {
 
 
 export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(null);
@@ -512,7 +515,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      alert("Faça login para seguir este creator.");
+      alert(translate(t, "creatorPopupLoginToFollow", "Faça login para seguir este creator."));
       return;
     }
 
@@ -566,8 +569,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       await createUserNotification({
         userId: user.id,
         type: "follow_creator",
-        title: `Você seguiu ${creator.nickname}`,
-        message: "Você ganhou XP por seguir um creator.",
+        title: `${translate(t, "creatorPopupFollowNotificationPrefix", "Você seguiu")} ${creator.nickname}`,
+        message: translate(t, "creatorPopupFollowXpMessage", "Você ganhou XP por seguir um creator."),
         metadata: {
           creator_id: creator.id,
           creator_username: creator.username,
@@ -624,7 +627,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           userId: user.id,
           type: "card_unlocked",
           title: "Nova carta conquistada!",
-          message: `Você ganhou a carta de ${creator.nickname}.`,
+          message: `${translate(t, "creatorPopupCardNotificationPrefix", "Você ganhou a carta de")} ${creator.nickname}.`,
           metadata: {
             creator_id: creator.id,
             creator_username: creator.username,
@@ -780,17 +783,17 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     setSaving(false);
     setEditMode(false);
-    alert("Perfil atualizado com sucesso!");
+    alert(translate(t, "creatorPopupProfileUpdated", "Perfil atualizado com sucesso!"));
   }
 
   async function handleClaimProfile() {
     if (!creator || !currentUserId) {
-      alert("Faça login para reivindicar este perfil.");
+      alert(translate(t, "creatorPopupLoginToClaim", "Faça login para reivindicar este perfil."));
       return;
     }
 
     if (!claimUrl) {
-      alert("Informe o link do canal ou perfil usado para verificação.");
+      alert(translate(t, "creatorPopupClaimUrlRequired", "Informe o link do canal ou perfil usado para verificação."));
       return;
     }
 
@@ -819,6 +822,16 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   const isPreparingCreator = preparedCreatorId !== creator.id;
 
+  function getTranslatedStatusLabel(status: keyof typeof statusLabel) {
+    if (status === "online") return translate(t, "creatorPopupStatusOnline", "Online");
+    if (status === "offline") return translate(t, "creatorPopupStatusOffline", "Offline");
+    if (status === "live") return translate(t, "creatorPopupStatusLive", "Live now");
+    if (status === "trending") return translate(t, "creatorPopupStatusTrending", "Trending");
+    if (status === "event") return translate(t, "creatorPopupStatusEvent", "In event");
+
+    return statusLabel[status];
+  }
+
   return (
     <AnimatePresence>
       <motion.div
@@ -831,7 +844,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         <button
           onClick={onClose}
           className="absolute inset-0"
-          aria-label="Fechar popup"
+          aria-label={translate(t, "creatorPopupCloseAria", "Fechar popup")}
         />
 
         <motion.div
@@ -866,13 +879,13 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             </div>
 
             <div className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1 text-xs text-cyan-100 backdrop-blur">
-              Lv. {creator.level}
+              {translate(t, "creatorPopupLevelPrefix", "Lv.")} {creator.level}
             </div>
 
             <div className="absolute bottom-6 left-6 right-6">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100 backdrop-blur">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-                {statusLabel[creator.status]}
+                {getTranslatedStatusLabel(creator.status)}
               </div>
 
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
@@ -896,14 +909,16 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105 disabled:opacity-50"
                 >
                   {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                  {isFollowing ? "Seguindo" : "Seguir"}
+                  {isFollowing
+                    ? translate(t, "creatorPopupFollowing", "Seguindo")
+                    : translate(t, "creatorPopupFollow", "Seguir")}
                 </button>
 
                 <button
                   onClick={handleShare}
                   className="rounded-full border border-white/15 bg-white/[0.05] px-5 py-2 text-sm text-white transition hover:bg-white/[0.08]"
                 >
-                  Compartilhar
+                  {translate(t, "creatorPopupShare", "Compartilhar")}
                 </button>
 
                 {canClaim && (
@@ -911,7 +926,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                     onClick={() => setClaimMode(true)}
                     className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-semibold text-yellow-100 transition hover:bg-yellow-300/20"
                   >
-                    Este perfil é meu
+                    {translate(t, "creatorPopupClaimMine", "Este perfil é meu")}
                   </button>
                 )}
               </div>
@@ -926,15 +941,17 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100 hover:bg-cyan-300/20"
                 >
                   <Pencil size={14} />
-                  {editMode ? "Visualizar" : "Editar"}
+                  {editMode
+                    ? translate(t, "creatorPopupView", "Visualizar")
+                    : translate(t, "creatorPopupEdit", "Editar")}
                 </button>
               )}
 
               <button
                 onClick={onClose}
                 className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
-              >
-                Fechar
+                >
+                {translate(t, "creatorPopupClose", "Fechar")}
               </button>
             </div>
 
@@ -947,10 +964,11 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             >
               {isPreparingCreator ? (
   <div className="flex h-full items-center justify-center text-white/50">
-    Carregando perfil...
+    {translate(t, "creatorPopupLoadingProfile", "Carregando perfil...")}
   </div>
 ) : claimMode ? (
                 <ClaimPanel
+                  t={t}
                   claimPlatform={claimPlatform}
                   setClaimPlatform={setClaimPlatform}
                   claimUrl={claimUrl}
@@ -963,6 +981,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 />
               ) : editMode ? (
                 <EditPanel
+                  t={t}
                   nickname={nickname}
                   setNickname={setNickname}
                   title={title}
@@ -991,6 +1010,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 />
               ) : (
                 <ViewPanel
+                  t={t}
   creator={creator}
   bio={bio}
   title={title}
@@ -1019,7 +1039,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           <button
             onClick={() => setShareOpen(false)}
             className="absolute inset-0"
-            aria-label="Fechar compartilhamento"
+            aria-label={translate(t, "creatorPopupCloseShareAria", "Fechar compartilhamento")}
           />
 
           <motion.div
@@ -1034,15 +1054,17 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
             <div className="relative z-10">
               <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                Share Profile
+                {translate(t, "creatorPopupShareBadge", "Share Profile")}
               </div>
 
               <h3 className="mt-5 text-2xl font-black">
-                Compartilhar perfil
+                {translate(t, "creatorPopupShare", "Compartilhar")} perfil
               </h3>
 
               <p className="mt-2 text-sm text-white/50">
-                Compartilhe o perfil de {creator.nickname} usando o link com preview do Creator Nexus.
+                {translate(t, "creatorPopupShareDescriptionPrefix", "Compartilhe o perfil de")}{" "}
+                {creator.nickname}{" "}
+                {translate(t, "creatorPopupShareDescriptionSuffix", "usando o link com preview do Creator Nexus.")}
               </p>
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/45">
@@ -1058,7 +1080,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                 <ShareButton label="Discord" onClick={() => shareTo("discord")} />
                 <ShareButton label="Instagram" onClick={() => shareTo("instagram")} />
                 <ShareButton
-                  label={copied ? "Link copiado!" : "Copiar link"}
+                  label={copied
+                    ? translate(t, "creatorPopupLinkCopied", "Link copiado!")
+                    : translate(t, "creatorPopupCopyLink", "Copiar link")}
                   onClick={() => shareTo("copy")}
                   full
                 />
@@ -1067,8 +1091,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
               <button
                 onClick={() => setShareOpen(false)}
                 className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
-              >
-                Fechar
+                >
+                {translate(t, "creatorPopupClose", "Fechar")}
               </button>
             </div>
           </motion.div>
@@ -1100,6 +1124,7 @@ function ShareButton({
 }
 
 function EditPanel({
+  t,
   nickname,
   setNickname,
   title,
@@ -1126,6 +1151,7 @@ function EditPanel({
   saving,
   handleSave,
 }: {
+  t: (key: any) => string;
   nickname: string;
   setNickname: (value: string) => void;
   title: string;
@@ -1165,41 +1191,43 @@ function EditPanel({
   return (
     <div className="pb-10 pr-16">
       <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-        Edit Mode
+        {translate(t, "creatorPopupEditModeBadge", "Edit Mode")}
       </p>
 
-      <h3 className="mt-3 text-3xl font-bold">Editar perfil</h3>
+      <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupEditProfileTitle", "Editar perfil")}</h3>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <EditInput label="Nickname" value={nickname} onChange={setNickname} />
-        <EditInput label="Title" value={title} onChange={setTitle} />
-        <EditInput label="Categoria" value={category} onChange={setCategory} />
-        <EditInput label="Avatar URL" value={avatarUrl} onChange={setAvatarUrl} />
+        <EditInput label={translate(t, "creatorPopupFieldNickname", "Nickname")} value={nickname} onChange={setNickname} />
+        <EditInput label={translate(t, "creatorPopupFieldTitle", "Title")} value={title} onChange={setTitle} />
+        <EditInput label={translate(t, "creatorPopupFieldCategory", "Categoria")} value={category} onChange={setCategory} />
+        <EditInput label={translate(t, "creatorPopupFieldAvatarUrl", "Avatar URL")} value={avatarUrl} onChange={setAvatarUrl} />
 
         <UploadField
-          label="Upload Avatar"
+          label={translate(t, "creatorPopupFieldUploadAvatar", "Upload Avatar")}
           uploading={uploadingAvatar}
-          uploadingText="Enviando avatar..."
+          uploadingText={translate(t, "creatorPopupUploadingAvatar", "Enviando avatar...")}
+          chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
           onFile={(file) => uploadImage(file, "avatar")}
         />
 
         {avatarUrl && (
           <img
             src={avatarUrl}
-            alt="Avatar preview"
+            alt={translate(t, "creatorPopupAvatarPreviewAlt", "Avatar preview")}
             className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
           />
         )}
 
         <div className="sm:col-span-2">
-          <EditInput label="Banner URL" value={bannerUrl} onChange={setBannerUrl} />
+          <EditInput label={translate(t, "creatorPopupFieldBannerUrl", "Banner URL")} value={bannerUrl} onChange={setBannerUrl} />
         </div>
 
         <div className="sm:col-span-2">
           <UploadField
-            label="Upload Banner"
+            label={translate(t, "creatorPopupFieldUploadBanner", "Upload Banner")}
             uploading={uploadingBanner}
-            uploadingText="Enviando banner..."
+            uploadingText={translate(t, "creatorPopupUploadingBanner", "Enviando banner...")}
+            chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
             onFile={(file) => uploadImage(file, "banner")}
           />
         </div>
@@ -1208,19 +1236,19 @@ function EditPanel({
           <div className="sm:col-span-2">
             <img
               src={bannerUrl}
-              alt="Banner preview"
+              alt={translate(t, "creatorPopupBannerPreviewAlt", "Banner preview")}
               className="h-32 w-full rounded-2xl border border-white/10 object-cover"
             />
           </div>
         )}
 
         <div className="sm:col-span-2">
-          <EditTextarea label="Bio curta" value={bio} onChange={setBio} />
+          <EditTextarea label={translate(t, "creatorPopupFieldShortBio", "Bio curta")} value={bio} onChange={setBio} />
         </div>
 
         <div className="sm:col-span-2">
           <EditTextarea
-            label="Descrição completa"
+            label={translate(t, "creatorPopupFieldFullDescription", "Descrição completa")}
             value={description}
             onChange={setDescription}
           />
@@ -1228,7 +1256,7 @@ function EditPanel({
 
         <div className="sm:col-span-2">
           <EditInput
-            label="Tags separadas por vírgula"
+            label={translate(t, "creatorPopupFieldTags", "Tags separadas por vírgula")}
             value={tagsText}
             onChange={setTagsText}
             placeholder="Streamer, MMORPG, Black Desert"
@@ -1237,10 +1265,10 @@ function EditPanel({
       </div>
 
       <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <h4 className="font-bold text-white">Redes Sociais</h4>
+        <h4 className="font-bold text-white">{translate(t, "creatorPopupSocialLinksTitle", "Redes Sociais")}</h4>
 
         <p className="mt-2 text-sm text-white/45">
-          Adicione os links oficiais do creator.
+          {translate(t, "creatorPopupSocialLinksDescription", "Adicione os links oficiais do creator.")}
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1255,7 +1283,7 @@ function EditPanel({
                   [platform]: value,
                 }))
               }
-              placeholder={`Link do ${platform}`}
+              placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} ${platform}`}
             />
           ))}
         </div>
@@ -1264,11 +1292,10 @@ function EditPanel({
       <div className="mt-8 rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h4 className="font-bold text-white">Clips em destaque</h4>
+            <h4 className="font-bold text-white">{translate(t, "creatorPopupFeaturedClipsTitle", "Clips em destaque")}</h4>
 
             <p className="mt-2 text-sm text-white/45">
-              Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
-              será buscada automaticamente pelo link quando possível.
+              {translate(t, "creatorPopupFeaturedClipsDescription", "Adicione até 3 clips ou shorts para aparecerem no perfil. A capa será buscada automaticamente pelo link quando possível.")}
             </p>
           </div>
 
@@ -1277,7 +1304,9 @@ function EditPanel({
             onClick={() => setClipsExpanded((current) => !current)}
             className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 transition hover:bg-white/[0.08]"
           >
-            {clipsExpanded ? "Recolher clips" : "Expandir clips"}
+            {clipsExpanded
+              ? translate(t, "creatorPopupCollapseClips", "Recolher clips")
+              : translate(t, "creatorPopupExpandClips", "Expandir clips")}
           </button>
         </div>
 
@@ -1293,20 +1322,20 @@ function EditPanel({
                   className="rounded-3xl border border-white/10 bg-black/20 p-4"
                 >
                   <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
-                    Clip {index + 1}
+                    {translate(t, "creatorPopupClipPrefix", "Clip")} {index + 1}
                   </p>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <EditInput
-                      label="Título"
+                      label={translate(t, "creatorPopupFieldClipTitle", "Título")}
                       value={clip.title}
                       onChange={(value) => updateClip(index, "title", value)}
-                      placeholder="Melhor momento da live"
+                      placeholder={translate(t, "creatorPopupClipTitlePlaceholder", "Melhor momento da live")}
                     />
 
                     <label className="block">
                       <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-                        Plataforma
+                        {translate(t, "creatorPopupFieldPlatform", "Plataforma")}
                       </span>
 
                       <select
@@ -1326,7 +1355,7 @@ function EditPanel({
 
                     <div className="sm:col-span-2">
                       <EditInput
-                        label="URL do clip"
+                        label={translate(t, "creatorPopupFieldClipUrl", "URL do clip")}
                         value={clip.url}
                         onChange={(value) => updateClip(index, "url", value)}
                         placeholder="https://..."
@@ -1337,7 +1366,7 @@ function EditPanel({
                       <div className="sm:col-span-2 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
                         <img
                           src={previewThumbnail}
-                          alt={clip.title || `Preview do clip ${index + 1}`}
+                          alt={clip.title || `${translate(t, "creatorPopupClipPreviewAltPrefix", "Preview do clip")} ${index + 1}`}
                           className="aspect-video w-full object-cover"
                         />
                       </div>
@@ -1345,7 +1374,7 @@ function EditPanel({
 
                     <div className="sm:col-span-2">
                       <EditTextarea
-                        label="Descrição"
+                        label={translate(t, "creatorPopupFieldDescription", "Descrição")}
                         value={clip.description}
                         onChange={(value) =>
                           updateClip(index, "description", value)
@@ -1366,13 +1395,16 @@ function EditPanel({
         className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
       >
         <Save size={16} />
-        {saving ? "Salvando..." : "Salvar alterações"}
+        {saving
+          ? translate(t, "creatorPopupSaving", "Salvando...")
+          : translate(t, "creatorPopupSaveChanges", "Salvar alterações")}
       </button>
     </div>
   );
 }
 
 function ClaimPanel({
+  t,
   claimPlatform,
   setClaimPlatform,
   claimUrl,
@@ -1383,6 +1415,7 @@ function ClaimPanel({
   onSubmit,
   onBack,
 }: {
+  t: (key: any) => string;
   claimPlatform: string;
   setClaimPlatform: (value: string) => void;
   claimUrl: string;
@@ -1397,14 +1430,13 @@ function ClaimPanel({
     return (
       <div className="pb-10 pr-16">
         <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-          Claim Sent
+          {translate(t, "creatorPopupClaimSentBadge", "Claim Sent")}
         </p>
 
-        <h3 className="mt-3 text-3xl font-bold">Solicitação enviada</h3>
+        <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupClaimSentTitle", "Solicitação enviada")}</h3>
 
         <p className="mt-4 text-white/60">
-          Agora coloque o código abaixo na bio, descrição ou sobre da plataforma
-          informada. Um administrador irá revisar sua solicitação.
+          {translate(t, "creatorPopupClaimSentDescription", "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.")}
         </p>
 
         <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
@@ -1417,14 +1449,13 @@ function ClaimPanel({
   return (
     <div className="pb-10 pr-16">
       <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
-        Claim Profile
+        {translate(t, "creatorPopupClaimProfileBadge", "Claim Profile")}
       </p>
 
-      <h3 className="mt-3 text-3xl font-bold">Este perfil é meu</h3>
+      <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupClaimMine", "Este perfil é meu")}</h3>
 
       <p className="mt-4 text-white/60">
-        Para provar que este perfil pertence a você, informe uma plataforma oficial
-        e coloque temporariamente o código abaixo na bio/descrição do canal.
+        {translate(t, "creatorPopupClaimDescription", "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.")}
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-[180px_1fr]">
@@ -1443,14 +1474,14 @@ function ClaimPanel({
         <input
           value={claimUrl}
           onChange={(event) => setClaimUrl(event.target.value)}
-          placeholder="Link do canal ou perfil oficial"
+          placeholder={translate(t, "creatorPopupClaimUrlPlaceholder", "Link do canal ou perfil oficial")}
           className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
         />
       </div>
 
       <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
         <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-          Código de verificação
+          {translate(t, "creatorPopupVerificationCode", "Código de verificação")}
         </p>
 
         <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
@@ -1465,14 +1496,16 @@ function ClaimPanel({
           className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
         >
           <Send size={16} />
-          {claimSending ? "Enviando..." : "Enviar reivindicação"}
+          {claimSending
+            ? translate(t, "creatorPopupSending", "Enviando...")
+            : translate(t, "creatorPopupSendClaim", "Enviar reivindicação")}
         </button>
 
         <button
           onClick={onBack}
           className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm text-white/70 hover:bg-white/[0.08]"
         >
-          Voltar
+          {translate(t, "creatorPopupBack", "Voltar")}
         </button>
       </div>
     </div>
@@ -1480,6 +1513,7 @@ function ClaimPanel({
 }
 
 function ViewPanel({
+  t,
   creator,
   bio,
   title,
@@ -1491,6 +1525,7 @@ function ViewPanel({
   followerCount,
   shareCount,
 }: {
+  t: (key: any) => string;
   creator: Creator;
   bio: string;
   title: string;
@@ -1508,7 +1543,7 @@ function ViewPanel({
     <>
       <div className="pr-16">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-          Pefil do Criador
+          {translate(t, "creatorPopupCreatorProfileBadge", "Perfil do Criador")}
         </p>
 
         <h3 className="mt-3 text-3xl font-bold leading-tight">
@@ -1525,13 +1560,13 @@ function ViewPanel({
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <InfoCard label="Views" value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label="Seguidores" value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
-        <InfoCard label="Compartilhamentos" value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
+        <InfoCard label={translate(t, "creatorPopupViews", "Views")} value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
+        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label={translate(t, "creatorPopupShares", "Compartilhamentos")} value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
       </div>
 
       <div className="mt-8">
-        <h4 className="font-bold">Tags</h4>
+        <h4 className="font-bold">{translate(t, "creatorPopupTags", "Tags")}</h4>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {tagsText
@@ -1551,7 +1586,7 @@ function ViewPanel({
 
       {visibleClips.length > 0 && (
         <div className="mt-8">
-          <h4 className="font-bold">Clips em destaque</h4>
+          <h4 className="font-bold">{translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}</h4>
 
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
             {visibleClips.map((clip, index) => {
@@ -1585,7 +1620,7 @@ function ViewPanel({
                     </p>
 
                     <p className="mt-2 font-bold text-white">
-                      {clip.title || "Featured clip"}
+                      {clip.title || translate(t, "creatorPopupFeaturedClipFallback", "Featured clip")}
                     </p>
 
                     {clip.description && (
@@ -1602,7 +1637,7 @@ function ViewPanel({
       )}
 
       <div className="mt-8 pb-10">
-        <h4 className="font-bold">Redes Sociais</h4>
+        <h4 className="font-bold">{translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}</h4>
 
         <div className="mt-3 flex flex-wrap gap-3">
           {Object.entries(socials)
@@ -1627,11 +1662,13 @@ function UploadField({
   label,
   uploading,
   uploadingText,
+  chooseFileText,
   onFile,
 }: {
   label: string;
   uploading: boolean;
   uploadingText: string;
+  chooseFileText: string;
   onFile: (file: File) => void;
 }) {
   return (
@@ -1642,7 +1679,7 @@ function UploadField({
 
       <div className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
         <ImagePlus size={18} />
-        Escolher arquivo
+        {chooseFileText}
       </div>
 
       <input

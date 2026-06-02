@@ -7,10 +7,13 @@ import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
 
 export function CollectionPage() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<Creator[]>([]);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
@@ -52,9 +55,13 @@ export function CollectionPage() {
             ownerId: profile.user_id,
             username: profile.username,
             nickname: profile.nickname,
-            title: profile.title || "Digital Creator",
-            faction: profile.faction || "Creator Nexus",
-            category: profile.category || "Creator",
+            title:
+              profile.title ||
+              translate(t, "collectionDefaultTitle", "Digital Creator"),
+            faction:
+              profile.faction ||
+              translate(t, "collectionDefaultFaction", "Creator Nexus"),
+            category: profile.category || translate(t, "creator", "Creator"),
             mainPlatform: "youtube",
             status: profile.status || "offline",
             avatarUrl: profile.avatar_url || "",
@@ -64,8 +71,10 @@ export function CollectionPage() {
             tags: profile.tags || [],
             rank: card?.rank || "Bronze",
             rarity: item.rarity || card?.rarity || "common",
-            aura: card?.aura || "Origin Aura",
-            evolutionStage: card?.evolution_stage || "Stage 1",
+            aura: card?.aura || translate(t, "collectionDefaultAura", "Origin Aura"),
+            evolutionStage:
+              card?.evolution_stage ||
+              translate(t, "collectionDefaultEvolutionStage", "Stage 1"),
             powerScore: card?.power_score || 0,
             collectedBy: 0,
             level: card?.level || 1,
@@ -88,7 +97,7 @@ export function CollectionPage() {
     }
 
     loadCollection();
-  }, []);
+  }, [t]);
 
   const stats = useMemo(() => {
     return {
@@ -111,7 +120,7 @@ export function CollectionPage() {
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 transition hover:bg-white/[0.08] hover:text-white"
         >
           <ArrowLeft size={16} />
-          Voltar
+          {translate(t, "back", "Voltar")}
         </a>
 
         <div className="mt-10">
@@ -119,38 +128,58 @@ export function CollectionPage() {
             <Sparkles size={16} className="text-cyan-200" />
 
             <span className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-100">
-              Minha Coleção
+              {translate(t, "collectionPageBadge", "Minha Coleção")}
             </span>
           </div>
 
           <h1 className="mt-6 text-4xl font-black md:text-6xl">
-            Suas cartas do Nexus
+            {translate(t, "collectionPageTitle", "Suas cartas do Nexus")}
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm text-white/45">
-            Aqui ficarão todas as cartas de creators que você conquistar por
-            follows, pacotes, missões e eventos.
+            {translate(
+              t,
+              "collectionPageDescription",
+              "Aqui ficarão todas as cartas de creators que você conquistar por follows, pacotes, missões e eventos."
+            )}
           </p>
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Total" value={stats.total} />
-          <StatCard label="Comuns" value={stats.common} />
-          <StatCard label="Raras" value={stats.rare} />
-          <StatCard label="Épicas" value={stats.epic} />
-          <StatCard label="Lendárias" value={stats.legendary} />
+          <StatCard label={translate(t, "total", "Total")} value={stats.total} />
+          <StatCard
+            label={translate(t, "commonPlural", "Comuns")}
+            value={stats.common}
+          />
+          <StatCard
+            label={translate(t, "rarePlural", "Raras")}
+            value={stats.rare}
+          />
+          <StatCard
+            label={translate(t, "epicPlural", "Épicas")}
+            value={stats.epic}
+          />
+          <StatCard
+            label={translate(t, "legendaryPlural", "Lendárias")}
+            value={stats.legendary}
+          />
         </div>
 
         {loading ? (
           <div className="mt-16 rounded-3xl border border-white/10 bg-white/[0.04] p-10 text-center text-white/50">
-            Carregando coleção...
+            {translate(t, "collectionPageLoading", "Carregando coleção...")}
           </div>
         ) : creators.length === 0 ? (
           <div className="mt-16 rounded-[32px] border border-white/10 bg-white/[0.04] p-10 text-center">
-            <p className="text-lg font-bold text-white">Coleção vazia</p>
+            <p className="text-lg font-bold text-white">
+              {translate(t, "emptyCollectionTitle", "Coleção vazia")}
+            </p>
             <p className="mt-3 text-sm text-white/45">
-              Em breve você poderá conquistar cartas seguindo creators, abrindo
-              pacotes e completando missões.
+              {translate(
+                t,
+                "emptyCollectionDescription",
+                "Em breve você poderá conquistar cartas seguindo creators, abrindo pacotes e completando missões."
+              )}
             </p>
           </div>
         ) : (
