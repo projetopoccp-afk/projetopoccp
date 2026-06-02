@@ -303,7 +303,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <div
             className={`absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
           >
-            {getRarityLabel(card.rarity)}
+            {getRarityLabel(creator.rarity)}
           </div>
 
           <div className="absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
