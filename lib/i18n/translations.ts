@@ -1,1730 +1,1348 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
-import { getRarityLabel } from "@/lib/rarity";
-import { supabase } from "@/lib/supabase/client";
-import { addUserXp } from "@/lib/xp/user-xp";
-import { updateMissionProgress } from "@/lib/missions/user-missions";
-import { Creator } from "@/types/creator";
-
-type CreatorPopupProps = {
-  creator: Creator | null;
-  onClose: () => void;
-};
-
-const statusLabel = {
-  online: "Online",
-  offline: "Offline",
-  live: "Live now",
-  trending: "Trending",
-  event: "In event",
-};
-
-const socialPlatforms = [
-  "youtube",
-  "twitch",
-  "tiktok",
-  "kick",
-  "instagram",
-  "discord",
-  "x",
-];
-
-const clipPlatforms = ["youtube", "twitch", "tiktok", "kick"];
-
-type SocialForm = Record<string, string>;
-
-type ClipForm = {
-  title: string;
-  platform: string;
-  url: string;
-  thumbnailUrl: string;
-  description: string;
-};
-
-const emptyClip = (): ClipForm => ({
-  title: "",
-  platform: "youtube",
-  url: "",
-  thumbnailUrl: "",
-  description: "",
-});
-
-const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
-
-type NotificationType =
-  | "card_unlocked"
-  | "level_up"
-  | "follow_creator"
-  | "share_profile"
-  | "generic";
-
-async function createUserNotification({
-  userId,
-  type,
-  title,
-  message,
-  metadata = {},
-}: {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message?: string;
-  metadata?: Record<string, unknown>;
-}) {
-  const { error } = await supabase.from("user_notifications").insert({
-    user_id: userId,
-    type,
-    title,
-    message,
-    metadata,
-  });
-
-  if (error) {
-    console.error("Erro ao criar notificação:", error);
-  }
-}
-
-async function getCurrentUserLevel(userId: string) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("level")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Erro ao buscar level atual:", error);
-  }
-
-  return data?.level || 1;
-}
-
-async function hasXpEvent(
-  userId: string,
-  eventType: string,
-  metadata: Record<string, unknown>
-) {
-  const { data, error } = await supabase
-    .from("user_xp_events")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("event_type", eventType)
-    .contains("metadata", metadata)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Erro ao verificar evento de XP:", error);
-    return false;
-  }
-
-  return Boolean(data);
-}
-
-async function addXpAndNotifyLevelUp({
-  userId,
-  eventType,
-  metadata,
-}: {
-  userId: string;
-  eventType: Parameters<typeof addUserXp>[0];
-  metadata: Record<string, unknown>;
-}) {
-  const previousLevel = await getCurrentUserLevel(userId);
-  const result = await addUserXp(eventType, metadata);
-
-  if (result?.new_level && result.new_level > previousLevel) {
-    await createUserNotification({
-      userId,
-      type: "level_up",
-      title: `Você chegou ao nível ${result.new_level}!`,
-      message: "Seu perfil evoluiu no Creator Nexus.",
-      metadata: {
-        ...metadata,
-        previous_level: previousLevel,
-        new_level: result.new_level,
-        new_xp: result.new_xp,
-      },
-    });
-  }
-
-  return result;
-}
-
-function getYouTubeVideoId(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-
-    if (parsedUrl.hostname.includes("youtu.be")) {
-      return parsedUrl.pathname.replace("/", "");
-    }
-
-    if (parsedUrl.searchParams.get("v")) {
-      return parsedUrl.searchParams.get("v");
-    }
-
-    const shortsMatch = parsedUrl.pathname.match(/\/shorts\/([^/?]+)/);
-    if (shortsMatch?.[1]) {
-      return shortsMatch[1];
-    }
-
-    const embedMatch = parsedUrl.pathname.match(/\/embed\/([^/?]+)/);
-    if (embedMatch?.[1]) {
-      return embedMatch[1];
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function getClipPreviewThumbnail(url: string) {
-  const youtubeId = getYouTubeVideoId(url);
-
-  if (youtubeId) {
-    return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-  }
-
-  return "";
-}
-
-async function resolveClipThumbnail(url: string) {
-  const youtubeThumbnail = getClipPreviewThumbnail(url);
-
-  if (youtubeThumbnail) {
-    return youtubeThumbnail;
-  }
-
-  try {
-    const response = await fetch(
-      `https://noembed.com/embed?url=${encodeURIComponent(url)}`
-    );
-
-    if (!response.ok) {
-      return "";
-    }
-
-    const data = await response.json();
-
-    return data?.thumbnail_url || "";
-  } catch {
-    return "";
-  }
-}
-
-
-export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
-  const [copied, setCopied] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [claimMode, setClaimMode] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [nickname, setNickname] = useState("");
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [bio, setBio] = useState("");
-  const [description, setDescription] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [tagsText, setTagsText] = useState("");
-  const [socials, setSocials] = useState<SocialForm>({});
-  const [clips, setClips] = useState<ClipForm[]>([
-    emptyClip(),
-    emptyClip(),
-    emptyClip(),
-  ]);
-
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-
-  const [viewCount, setViewCount] = useState(0);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [shareCount, setShareCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
-
-  const [claimPlatform, setClaimPlatform] = useState("youtube");
-  const [claimUrl, setClaimUrl] = useState("");
-  const [claimSending, setClaimSending] = useState(false);
-  const [claimSuccess, setClaimSuccess] = useState(false);
-
-  const claimCode = useMemo(() => {
-    return `CNX-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-  }, [creator?.id]);
-
-  const isOwner = Boolean(
-    creator?.ownerId && currentUserId && creator.ownerId === currentUserId
-  );
-
-  const canClaim = Boolean(
-    creator && currentUserId && !creator.ownerId && !isOwner
-  );
-
-  useEffect(() => {
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      setCurrentUserId(user?.id || null);
-    }
-
-    loadUser();
-  }, []);
-
-  useEffect(() => {
-    if (!creator) return;
-
-    setPreparedCreatorId(null);
-    setEditMode(false);
-    setClaimMode(false);
-    setClaimSuccess(false);
-    setClaimUrl("");
-    setShareOpen(false);
-
-    setNickname(creator.nickname);
-    setTitle(creator.title || "");
-    setCategory(creator.category || "");
-    setBio(creator.bio || "");
-    setDescription(creator.description || "");
-    setAvatarUrl(creator.avatarUrl || "");
-    setBannerUrl(creator.bannerUrl || "");
-    setTagsText((creator.tags || []).join(", "));
-
-    async function loadCreatorData() {
-      if (!creator) return;
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const viewerId = user?.id || null;
-
-      const viewKey = `creator-view:${creator.id}:${viewerId || "guest"}`;
-      const lastViewAt = Number(localStorage.getItem(viewKey) || 0);
-      const now = Date.now();
-
-      if (!lastViewAt || now - lastViewAt > VIEW_INTERVAL_MS) {
-        const { error: viewError } = await supabase.from("creator_views").insert({
-          creator_id: creator.id,
-          viewer_id: viewerId,
-        });
-
-        if (!viewError) {
-          localStorage.setItem(viewKey, String(now));
-        }
-      }
-
-      const { count: views } = await supabase
-        .from("creator_views")
-        .select("id", { count: "exact", head: true })
-        .eq("creator_id", creator.id);
-
-      const { count: followers } = await supabase
-        .from("creator_followers")
-        .select("id", { count: "exact", head: true })
-        .eq("creator_id", creator.id);
-
-      const { data: creatorStats } = await supabase
-        .from("creator_profiles")
-        .select("share_count")
-        .eq("id", creator.id)
-        .maybeSingle();
-
-      setViewCount(views || 0);
-      setFollowerCount(followers || 0);
-      setShareCount(creatorStats?.share_count || 0);
-
-      if (viewerId) {
-        const { data: followData } = await supabase
-          .from("creator_followers")
-          .select("id")
-          .eq("creator_id", creator.id)
-          .eq("user_id", viewerId)
-          .maybeSingle();
-
-        setIsFollowing(Boolean(followData));
-      } else {
-        setIsFollowing(false);
-      }
-
-      const { data: socialData } = await supabase
-        .from("creator_social_links")
-        .select("platform, url")
-        .eq("creator_id", creator.id);
-
-      const nextSocials: SocialForm = {};
-
-      socialPlatforms.forEach((platform) => {
-        nextSocials[platform] = "";
-      });
-
-      socialData?.forEach((item: any) => {
-        nextSocials[item.platform] = item.url;
-      });
-
-      setSocials(nextSocials);
-
-      const { data: clipData } = await supabase
-        .from("creator_featured_moments")
-        .select("title, platform, url, thumbnail_url, description")
-        .eq("creator_id", creator.id)
-        .order("created_at", { ascending: true })
-        .limit(3);
-
-      const nextClips = [emptyClip(), emptyClip(), emptyClip()];
-
-      clipData?.forEach((clip: any, index: number) => {
-        nextClips[index] = {
-          title: clip.title || "",
-          platform: clip.platform || "youtube",
-          url: clip.url || "",
-          thumbnailUrl: clip.thumbnail_url || "",
-          description: clip.description || "",
-        };
-      });
-
-      setClips(nextClips);
-      setPreparedCreatorId(creator.id);
-    }
-
-    loadCreatorData();
-  }, [creator]);
-
-  function getCreatorShareUrl() {
-    if (!creator) return "";
-
-    return `${window.location.origin}/creator/${creator.username}`;
-  }
-
-  async function copyCreatorLink() {
-    const url = getCreatorShareUrl();
-
-    if (!url) return;
-
-    await navigator.clipboard.writeText(url);
-
-    setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-  }
-
-  async function shareTo(platform: string) {
-    if (!creator) return;
-
-    const url = getCreatorShareUrl();
-    const encodedUrl = encodeURIComponent(url);
-    const encodedText = encodeURIComponent(
-      `Confira ${creator.nickname} no Creator Nexus ✦`
-    );
-
-    const shareLinks: Record<string, string> = {
-      whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
-      x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
-      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-    };
-
-    if (platform === "copy") {
-      await registerShare();
-      copyCreatorLink();
-      return;
-    }
-
-    if (platform === "discord") {
-      await registerShare();
-      copyCreatorLink();
-      window.open("https://discord.com/channels/@me", "_blank");
-      return;
-    }
-
-    if (platform === "instagram") {
-      await registerShare();
-      copyCreatorLink();
-      window.open("https://www.instagram.com/", "_blank");
-      return;
-    }
-
-    const shareUrl = shareLinks[platform];
-
-    if (shareUrl) {
-      await registerShare();
-      window.open(shareUrl, "_blank", "noopener,noreferrer");
-    }
-  }
-
-  async function registerShare() {
-    if (!creator) return;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    try {
-      await supabase.rpc("increment_creator_share_count", {
-        creator_id_input: creator.id,
-      });
-
-      setShareCount((current) => current + 1);
-
-      if (user) {
-        await addXpAndNotifyLevelUp({
-          userId: user.id,
-          eventType: "share_profile",
-          metadata: {
-            creator_id: creator.id,
-            creator_username: creator.username,
-            creator_nickname: creator.nickname,
-            shared_at: new Date().toISOString(),
-          },
-        });
-
-        await updateMissionProgress("share_profile", 1, {
-          creator_id: creator.id,
-          creator_username: creator.username,
-          creator_nickname: creator.nickname,
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao registrar compartilhamento:", error);
-    }
-  }
+export const translations = {
+  pt: {
+    notifications: "Notificações",
+    collection: "Minha Coleção",
+    profile: "Meu Perfil",
+    logout: "Sair",
+    login: "Entrar",
+    account: "Conta",
+    openPanel: "Clique para abrir o painel",
+
+    common: "Comum",
+    rare: "Raro",
+    epic: "Épico",
+    legendary: "Lendário",
+    mythic: "Mítico",
+
+    commonPlural: "Comuns",
+    rarePlural: "Raras",
+    epicPlural: "Épicas",
+    legendaryPlural: "Lendárias",
+
+    searchCreators: "Buscar criadores...",
+    digitalReputationPlatform: "Plataforma de Reputação Digital",
+    discoverCreators:
+      "Descubra criadores lendários por meio de cartas digitais.",
+
+    language: "Idioma",
+    changeLanguage: "Alterar idioma",
+    chooseSiteLanguage: "Escolha o idioma do site",
+    languagePortuguese: "Português",
+    languageEnglish: "Inglês",
+    languageSpanish: "Espanhol",
+
+    openNotifications: "Abrir notificações",
+    closeNotifications: "Fechar notificações",
+    markAllRead: "Ler todas",
+    allCaughtUp: "Tudo em dia",
+    newNotificationsCount: "{count} nova(s)",
+    noNotificationsTitle: "Sem notificações por enquanto",
+    noNotificationsDescription:
+      "Quando você ganhar cartas, pacotes, badges ou subir de nível, tudo aparecerá aqui.",
+
+    closeCollection: "Fechar coleção",
+    collectionTitle: "Suas cartas do Nexus",
+    collectionDescription:
+      "Aqui ficam as cartas de creators conquistadas por follows, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui.",
+    total: "Total",
+    loadingCollection: "Carregando coleção...",
+    emptyCollectionTitle: "Coleção vazia por enquanto",
+    emptyCollectionDescription:
+      "Em breve você poderá conquistar cartas seguindo creators, abrindo pacotes e completando missões dentro do Creator Nexus.",
+
+    card: "Carta",
+    creatorCard: "Carta do Creator",
+    new: "Nova",
+    newCard: "Nova carta",
+    closeCard: "Fechar carta",
+    viewProfile: "Ver perfil",
+    share: "Compartilhar",
+    shareCard: "Compartilhar carta",
+    copied: "Copiado!",
+    shareCardText:
+      "🃏 Eu conquistei a carta {nickname} ({rarity}) no Creator Nexus",
+
+    close: "Fechar",
+    myAccount: "Minha Conta",
+    noUsername: "sem_username",
+    level: "Nível",
+    cards: "cartas",
+    cardsTitle: "Cartas",
+    adminPanel: "Painel Admin",
+    open: "Abrir",
+    soon: "Em breve",
+    myBadges: "Minhas Badges",
+    missions: "Missões",
+    packs: "Pacotes",
+    requestCreatorProfile: "Solicitar perfil de criador",
+    startRequest: "Começar solicitação",
+    logoutAccount: "Sair da conta",
+
+    profileCardDescription:
+      "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus.",
+    collectionCardDescription:
+      "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção.",
+    badgesCardDescription:
+      "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos.",
+    missionsCardDescription:
+      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus.",
+    packsCardDescription:
+      "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas.",
+    requestCreatorProfileDescription:
+      "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação.",
+
+    closeProfile: "Fechar perfil",
+    creator: "Creator",
+    recentLevelUp: "Level up recente",
+    progressToLevel: "Progresso para o nível",
+    remainingXpPrefix: "Faltam",
+    remainingXpSuffix: "para o próximo nível.",
+    levelUpTitle: "Você subiu de nível!",
+    levelUpDescription:
+      "Seu perfil foi aberto a partir de uma notificação de evolução. Continue seguindo criadores, compartilhando e colecionando cartas para ganhar mais XP.",
+    badges: "Badges",
+    unlockedAchievement: "conquista desbloqueada",
+    firstCard: "Primeira Carta",
+    firstCardDescription:
+      "Você conquistou sua primeira carta no Nexus.",
+    badgesEmptyDescription:
+      "Suas badges aparecerão aqui quando você completar objetivos.",
+    recentActivity: "Atividade recente",
+    recentActivityDescription: "Últimas ações da sua coleção.",
+    cardCollected: "Carta conquistada",
+    noActivityYet: "Nenhuma atividade por enquanto.",
+    cardsCountSingular: "{count} carta",
+    cardsCountPlural: "{count} cartas",
+    unlockedAchievementSingular: "{count} conquista desbloqueada",
+    unlockedAchievementPlural: "{count} conquistas desbloqueadas",
+
+    user: "Usuário",
+    adminActivities: "Atividades",
+    adminApproveClaim: "Aprovar reivindicação",
+    adminAssignOwner: "Atribuir proprietário",
+    adminCardSentSuccess:
+      "Carta enviada! {creator} ({rarity}) foi entregue para {user}.",
+    adminChooseCardDescription:
+      "Pesquise pelo nome do creator, username, categoria ou dono.",
+    adminChooseCardStep: "1. Escolher carta",
+    adminChooseRarityStep: "3. Escolher raridade",
+    adminChooseUserDescription: "Pesquise por nome, username ou email.",
+    adminChooseUserStep: "2. Escolher usuário",
+    adminClaims: "Reivindicações",
+    adminClosePanel: "Fechar painel admin",
+    adminCreateCreatorProfileError: "Erro ao criar o perfil do criador.",
+    adminCreatorOrUserNotFound: "Creator ou usuário não encontrado.",
+    adminHideProfile: "Ocultar perfil",
+    adminMakeAdmin: "Tornar Admin",
+    adminManageCards: "Gerenciar Cartas",
+    adminManageCardsDescription:
+      "Escolha uma carta de creator, selecione o usuário e envie uma raridade específica ou aleatória.",
+    adminNoCardsFound: "Nenhuma carta encontrada.",
+    adminNoCreatorsFound: "Nenhum creator encontrado.",
+    adminNoLogsFound: "Nenhum log encontrado.",
+    adminNoPendingClaims: "Nenhuma reivindicação pendente.",
+    adminNoPendingRequests: "Nenhuma solicitação pendente.",
+    adminNoUsersFound: "Nenhum usuário encontrado.",
+    adminOpenChannelProfile: "Abrir canal/perfil",
+    adminOwnerManagement: "Gerenciamento do proprietário",
+    adminOwnerManagementDescription:
+      "Atribua este perfil a um usuário logado ou remova o dono atual.",
+    adminPanelBadge: "Admin Panel",
+    adminPanelDescription:
+      "Gerencie solicitações, usuários, creators, reivindicações e atividades.",
+    adminPanelLoading: "Carregando painel...",
+    adminPanelTitle: "Painel Admin",
+    adminProfiles: "Perfis",
+    adminPublishProfile: "Publicar perfil",
+    adminQuickActions: "Ações rápidas",
+    adminQuickActionsDescription:
+      "Controle visibilidade e validação pública do creator.",
+    adminRandom: "Aleatório",
+    adminRarityCommonDescription: "Prata metálico",
+    adminRarityRareDescription: "Azul claro elétrico",
+    adminRarityEpicDescription: "Violeta arcano",
+    adminRarityLegendaryDescription: "Ouro celestial",
+    adminRarityRandomDescription: "Sorteia entre as 4 raridades",
+    adminRemoveAdmin: "Remover Admin",
+    adminRemoveOwner: "Remover dono",
+    adminRemoveVerification: "Remover verificação",
+    adminRequests: "Solicitações",
+    adminSearchCardPlaceholder: "Buscar creator/carta...",
+    adminSearchClaimPlaceholder:
+      "Buscar reivindicações por criador, usuário, email ou código...",
+    adminSearchCreatorPlaceholder:
+      "Buscar por creator, dono, email ou username...",
+    adminSearchLogsPlaceholder: "Buscar logs por ação, usuário ou metadata...",
+    adminSearchUserPlaceholder: "Buscar por nome, username ou email...",
+    adminSearchUserShortPlaceholder: "Buscar usuário...",
+    adminSelectCardRecipient: "Selecione o usuário que vai receber a carta.",
+    adminSelectCreatorCardFirst: "Selecione um creator/carta primeiro.",
+    adminSendCardToUser: "Enviar carta para usuário",
+    adminSendingCard: "Enviando carta...",
+    adminUsers: "Usuários",
+    adminVerifyProfile: "Verificar perfil",
+    approve: "Aprovar",
+    approving: "Aprovando...",
+    avatar: "Avatar",
+    category: "Categoria",
+    claimed: "Reivindicado",
+    claimedBy: "Reivindicado por",
+    collapse: "Recolher",
+    createdAt: "Criado em",
+    creatorNotFound: "Creator não encontrado",
+    expand: "Expandir",
+    followers: "Seguidores",
+    hidden: "Oculto",
+    id: "ID",
+    noEmail: "Sem email",
+    noEmailLower: "sem email",
+    noImage: "Sem imagem",
+    noName: "Sem nome",
+    noOwner: "Sem dono",
+    noTarget: "sem target",
+    noneSelectedFeminine: "Nenhuma selecionada",
+    noneSelectedMasculine: "Nenhum selecionado",
+    notInformed: "Não informado",
+    notVerified: "Não verificado",
+    owner: "Dono",
+    pendingClaim: "Pending claim",
+    platform: "Plataforma",
+    processing: "Processando...",
+    public: "Público",
+    requestedAt: "Solicitado em",
+    shares: "Compartilhamentos",
+    summary: "Resumo",
+    system: "Sistema",
+    target: "Target",
+    verificationUrl: "URL de verificação",
+    verified: "Verificado",
+    views: "Views",
+    admin: "Admin",
+    code: "Código",
+    rarity: "Raridade",
+    reject: "Rejeitar",
   
-  function handleShare() {
-    setShareOpen(true);
-  }
-
-  async function handleFollow() {
-    if (!creator) return;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("Faça login para seguir este creator.");
-      return;
-    }
-
-    setFollowLoading(true);
-
-    if (isFollowing) {
-      const { error } = await supabase
-        .from("creator_followers")
-        .delete()
-        .eq("creator_id", creator.id)
-        .eq("user_id", user.id);
-
-      if (error) {
-        setFollowLoading(false);
-        alert(error.message);
-        return;
-      }
-
-      setIsFollowing(false);
-      setFollowerCount((current) => Math.max(0, current - 1));
-      setFollowLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from("creator_followers").insert({
-      creator_id: creator.id,
-      user_id: user.id,
-    });
-
-    if (error) {
-      setFollowLoading(false);
-      alert(error.message);
-      return;
-    }
-
-    const followAlreadyRewarded = await hasXpEvent(user.id, "follow_creator", {
-      creator_id: creator.id,
-    });
-
-    if (!followAlreadyRewarded) {
-      await addXpAndNotifyLevelUp({
-        userId: user.id,
-        eventType: "follow_creator",
-        metadata: {
-          creator_id: creator.id,
-          creator_username: creator.username,
-          creator_nickname: creator.nickname,
-        },
-      });
-
-      await createUserNotification({
-        userId: user.id,
-        type: "follow_creator",
-        title: `Você seguiu ${creator.nickname}`,
-        message: "Você ganhou XP por seguir um creator.",
-        metadata: {
-          creator_id: creator.id,
-          creator_username: creator.username,
-          creator_nickname: creator.nickname,
-        },
-      });
-
-    }
-
-    console.log("MISSÃO FOLLOW: follow salvo, atualizando progresso");
-
-    await updateMissionProgress("follow_creator", 1, {
-      creator_id: creator.id,
-      creator_username: creator.username,
-      creator_nickname: creator.nickname,
-    });
-
-    const { data: existingCard } = await supabase
-      .from("user_cards")
-      .select("id")
-      .eq("creator_id", creator.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!existingCard) {
-      const { data: newCard, error: cardError } = await supabase
-        .from("user_cards")
-        .insert({
-          creator_id: creator.id,
-          user_id: user.id,
-          rarity: "common",
-          source: "follow",
-        })
-        .select("id, rarity, source, obtained_at")
-        .single();
-
-      if (cardError) {
-        console.error("Erro ao criar carta do usuário:", cardError);
-      } else {
-        await addXpAndNotifyLevelUp({
-          userId: user.id,
-          eventType: "collect_common_card",
-          metadata: {
-            creator_id: creator.id,
-            creator_username: creator.username,
-            creator_nickname: creator.nickname,
-            card_id: newCard.id,
-            rarity: "common",
-            source: "follow",
-          },
-        });
-
-        await createUserNotification({
-          userId: user.id,
-          type: "card_unlocked",
-          title: "Nova carta conquistada!",
-          message: `Você ganhou a carta de ${creator.nickname}.`,
-          metadata: {
-            creator_id: creator.id,
-            creator_username: creator.username,
-            creator_nickname: creator.nickname,
-            card_id: newCard.id,
-            rarity: "common",
-            source: "follow",
-          },
-        });
-
-        await updateMissionProgress("collect_card", 1, {
-          creator_id: creator.id,
-          creator_username: creator.username,
-          creator_nickname: creator.nickname,
-          card_id: newCard.id,
-          rarity: "common",
-          source: "follow",
-        });
-      }
-    }
-
-    setIsFollowing(true);
-    setFollowerCount((current) => current + 1);
-    setFollowLoading(false);
-  }
-
-  async function uploadImage(file: File, type: "avatar" | "banner") {
-    try {
-      if (type === "avatar") {
-        setUploadingAvatar(true);
-      } else {
-        setUploadingBanner(true);
-      }
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${type}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("creator-profiles")
-        .upload(filePath, file, {
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from("creator-profiles")
-        .getPublicUrl(filePath);
-
-      if (type === "avatar") {
-        setAvatarUrl(data.publicUrl);
-      } else {
-        setBannerUrl(data.publicUrl);
-      }
-    } catch (error: any) {
-      alert(error.message);
-    } finally {
-      setUploadingAvatar(false);
-      setUploadingBanner(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!creator || !isOwner) return;
-
-    setSaving(true);
-
-    const tags = tagsText
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    const { error: profileError } = await supabase
-      .from("creator_profiles")
-      .update({
-        nickname,
-        title,
-        category,
-        bio,
-        description,
-        avatar_url: avatarUrl,
-        banner_url: bannerUrl,
-        tags,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", creator.id);
-
-    if (profileError) {
-      setSaving(false);
-      alert(profileError.message);
-      return;
-    }
-
-    await supabase.from("creator_social_links").delete().eq("creator_id", creator.id);
-
-    const socialRows = Object.entries(socials)
-      .filter(([, url]) => url.trim().length > 0)
-      .map(([platform, url]) => ({
-        creator_id: creator.id,
-        platform,
-        url,
-      }));
-
-    if (socialRows.length > 0) {
-      const { error: socialError } = await supabase
-        .from("creator_social_links")
-        .insert(socialRows);
-
-      if (socialError) {
-        setSaving(false);
-        alert(socialError.message);
-        return;
-      }
-    }
-
-    await supabase
-      .from("creator_featured_moments")
-      .delete()
-      .eq("creator_id", creator.id);
-
-    const clipRows = await Promise.all(
-      clips
-        .filter((clip) => clip.url.trim().length > 0)
-        .slice(0, 3)
-        .map(async (clip) => {
-          const thumbnailUrl =
-            clip.thumbnailUrl || (await resolveClipThumbnail(clip.url));
-
-          return {
-            creator_id: creator.id,
-            platform: clip.platform,
-            title: clip.title || "Featured clip",
-            description: clip.description || null,
-            url: clip.url,
-            thumbnail_url: thumbnailUrl || null,
-            is_featured: true,
-          };
-        })
-    );
-
-    if (clipRows.length > 0) {
-      const { error: clipError } = await supabase
-        .from("creator_featured_moments")
-        .insert(clipRows);
-
-      if (clipError) {
-        setSaving(false);
-        alert(clipError.message);
-        return;
-      }
-    }
-
-    setSaving(false);
-    setEditMode(false);
-    alert("Perfil atualizado com sucesso!");
-  }
-
-  async function handleClaimProfile() {
-    if (!creator || !currentUserId) {
-      alert("Faça login para reivindicar este perfil.");
-      return;
-    }
-
-    if (!claimUrl) {
-      alert("Informe o link do canal ou perfil usado para verificação.");
-      return;
-    }
-
-    setClaimSending(true);
-
-    const { error } = await supabase.from("creator_claims").insert({
-      creator_id: creator.id,
-      user_id: currentUserId,
-      verification_platform: claimPlatform,
-      verification_url: claimUrl,
-      verification_code: claimCode,
-      status: "pending",
-    });
-
-    setClaimSending(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setClaimSuccess(true);
-  }
-
-  if (!creator) return null;
-
-  const isPreparingCreator = preparedCreatorId !== creator.id;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-        animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-        exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-        transition={{ duration: 0.25 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-      >
-        <button
-          onClick={onClose}
-          className="absolute inset-0"
-          aria-label="Fechar popup"
-        />
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 40 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.92, y: 30 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="relative grid h-[88vh] w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 shadow-[0_0_80px_rgba(0,0,0,0.9)] md:grid-cols-[360px_1fr]"
-        >
-          <div className="relative hidden overflow-hidden bg-black md:block">
-            <motion.img
-              src={avatarUrl || creator.avatarUrl}
-              alt={nickname || creator.nickname}
-              initial={{ scale: 1.08, x: 0, y: 0 }}
-              animate={{
-                scale: [1.08, 1.14, 1.1, 1.08],
-                x: [0, -10, 8, 0],
-                y: [0, -8, 6, 0],
-              }}
-              transition={{
-                duration: 14,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute inset-0 h-full w-full object-cover object-center opacity-80"
-            />
-
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-
-            <div className="absolute left-5 top-5 rounded-full border border-yellow-300/30 bg-yellow-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-yellow-100 backdrop-blur">
-              {getRarityLabel(creator.rarity)}
-            </div>
-
-            <div className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1 text-xs text-cyan-100 backdrop-blur">
-              Lv. {creator.level}
-            </div>
-
-            <div className="absolute bottom-6 left-6 right-6">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100 backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-                {statusLabel[creator.status]}
-              </div>
-
-              <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
-                {category || creator.category}
-              </p>
-
-              <h2 className="mt-2 text-4xl font-black text-white">
-                {nickname || creator.nickname}
-              </h2>
-
-              <p className="mt-1 text-sm font-semibold text-cyan-100">
-                {title || creator.title}
-              </p>
-
-              <p className="mt-2 text-sm text-white/60">@{creator.username}</p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105 disabled:opacity-50"
-                >
-                  {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                  {isFollowing ? "Seguindo" : "Seguir"}
-                </button>
-
-                <button
-                  onClick={handleShare}
-                  className="rounded-full border border-white/15 bg-white/[0.05] px-5 py-2 text-sm text-white transition hover:bg-white/[0.08]"
-                >
-                  Compartilhar
-                </button>
-
-                {canClaim && (
-                  <button
-                    onClick={() => setClaimMode(true)}
-                    className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-semibold text-yellow-100 transition hover:bg-yellow-300/20"
-                  >
-                    Este perfil é meu
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="relative h-full overflow-hidden text-white">
-            <div className="absolute right-5 top-5 z-20 flex gap-2">
-              {isOwner && (
-                <button
-                  onClick={() => setEditMode((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100 hover:bg-cyan-300/20"
-                >
-                  <Pencil size={14} />
-                  {editMode ? "Visualizar" : "Editar"}
-                </button>
-              )}
-
-              <button
-                onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
-              >
-                Fechar
-              </button>
-            </div>
-
-            <div
-              className="no-scrollbar h-full overflow-y-auto p-6 pr-10 md:p-8 md:pr-12"
-              style={{
-                width: "calc(100% - 18px)",
-                marginRight: "18px",
-              }}
-            >
-              {isPreparingCreator ? (
-  <div className="flex h-full items-center justify-center text-white/50">
-    Carregando perfil...
-  </div>
-) : claimMode ? (
-                <ClaimPanel
-                  claimPlatform={claimPlatform}
-                  setClaimPlatform={setClaimPlatform}
-                  claimUrl={claimUrl}
-                  setClaimUrl={setClaimUrl}
-                  claimCode={claimCode}
-                  claimSending={claimSending}
-                  claimSuccess={claimSuccess}
-                  onSubmit={handleClaimProfile}
-                  onBack={() => setClaimMode(false)}
-                />
-              ) : editMode ? (
-                <EditPanel
-                  nickname={nickname}
-                  setNickname={setNickname}
-                  title={title}
-                  setTitle={setTitle}
-                  category={category}
-                  setCategory={setCategory}
-                  bio={bio}
-                  setBio={setBio}
-                  description={description}
-                  setDescription={setDescription}
-                  avatarUrl={avatarUrl}
-                  setAvatarUrl={setAvatarUrl}
-                  bannerUrl={bannerUrl}
-                  setBannerUrl={setBannerUrl}
-                  tagsText={tagsText}
-                  setTagsText={setTagsText}
-                  socials={socials}
-                  setSocials={setSocials}
-                  clips={clips}
-                  setClips={setClips}
-                  uploadingAvatar={uploadingAvatar}
-                  uploadingBanner={uploadingBanner}
-                  uploadImage={uploadImage}
-                  saving={saving}
-                  handleSave={handleSave}
-                />
-              ) : (
-                <ViewPanel
-  creator={creator}
-  bio={bio}
-  title={title}
-  description={description}
-  tagsText={tagsText}
-  socials={socials}
-  clips={clips}
-  viewCount={viewCount}
-  followerCount={followerCount}
-  shareCount={shareCount}
-/>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {shareOpen && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(10px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
-        >
-          <button
-            onClick={() => setShareOpen(false)}
-            className="absolute inset-0"
-            aria-label="Fechar compartilhamento"
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.96 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]"
-          >
-            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
-            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-purple-500/20 blur-[70px]" />
-
-            <div className="relative z-10">
-              <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                Share Profile
-              </div>
-
-              <h3 className="mt-5 text-2xl font-black">
-                Compartilhar perfil
-              </h3>
-
-              <p className="mt-2 text-sm text-white/50">
-                Compartilhe o perfil de {creator.nickname} usando o link com preview do Creator Nexus.
-              </p>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/45">
-                {getCreatorShareUrl()}
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <ShareButton label="WhatsApp" onClick={() => shareTo("whatsapp")} />
-                <ShareButton label="X / Twitter" onClick={() => shareTo("x")} />
-                <ShareButton label="Telegram" onClick={() => shareTo("telegram")} />
-                <ShareButton label="Facebook" onClick={() => shareTo("facebook")} />
-                <ShareButton label="LinkedIn" onClick={() => shareTo("linkedin")} />
-                <ShareButton label="Discord" onClick={() => shareTo("discord")} />
-                <ShareButton label="Instagram" onClick={() => shareTo("instagram")} />
-                <ShareButton
-                  label={copied ? "Link copiado!" : "Copiar link"}
-                  onClick={() => shareTo("copy")}
-                  full
-                />
-              </div>
-
-              <button
-                onClick={() => setShareOpen(false)}
-                className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
-              >
-                Fechar
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function ShareButton({
-  label,
-  onClick,
-  full = false,
-}: {
-  label: string;
-  onClick: () => void;
-  full?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
-        full ? "col-span-2" : ""
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function EditPanel({
-  nickname,
-  setNickname,
-  title,
-  setTitle,
-  category,
-  setCategory,
-  bio,
-  setBio,
-  description,
-  setDescription,
-  avatarUrl,
-  setAvatarUrl,
-  bannerUrl,
-  setBannerUrl,
-  tagsText,
-  setTagsText,
-  socials,
-  setSocials,
-  clips,
-  setClips,
-  uploadingAvatar,
-  uploadingBanner,
-  uploadImage,
-  saving,
-  handleSave,
-}: {
-  nickname: string;
-  setNickname: (value: string) => void;
-  title: string;
-  setTitle: (value: string) => void;
-  category: string;
-  setCategory: (value: string) => void;
-  bio: string;
-  setBio: (value: string) => void;
-  description: string;
-  setDescription: (value: string) => void;
-  avatarUrl: string;
-  setAvatarUrl: (value: string) => void;
-  bannerUrl: string;
-  setBannerUrl: (value: string) => void;
-  tagsText: string;
-  setTagsText: (value: string) => void;
-  socials: SocialForm;
-  setSocials: React.Dispatch<React.SetStateAction<SocialForm>>;
-  clips: ClipForm[];
-  setClips: React.Dispatch<React.SetStateAction<ClipForm[]>>;
-  uploadingAvatar: boolean;
-  uploadingBanner: boolean;
-  uploadImage: (file: File, type: "avatar" | "banner") => void;
-  saving: boolean;
-  handleSave: () => void;
-}) {
-  const [clipsExpanded, setClipsExpanded] = useState(false);
-
-  function updateClip(index: number, field: keyof ClipForm, value: string) {
-    setClips((current) =>
-      current.map((clip, clipIndex) =>
-        clipIndex === index ? { ...clip, [field]: value } : clip
-      )
-    );
-  }
-
-  return (
-    <div className="pb-10 pr-16">
-      <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-        Edit Mode
-      </p>
-
-      <h3 className="mt-3 text-3xl font-bold">Editar perfil</h3>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <EditInput label="Nickname" value={nickname} onChange={setNickname} />
-        <EditInput label="Title" value={title} onChange={setTitle} />
-        <EditInput label="Categoria" value={category} onChange={setCategory} />
-        <EditInput label="Avatar URL" value={avatarUrl} onChange={setAvatarUrl} />
-
-        <UploadField
-          label="Upload Avatar"
-          uploading={uploadingAvatar}
-          uploadingText="Enviando avatar..."
-          onFile={(file) => uploadImage(file, "avatar")}
-        />
-
-        {avatarUrl && (
-          <img
-            src={avatarUrl}
-            alt="Avatar preview"
-            className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
-          />
-        )}
-
-        <div className="sm:col-span-2">
-          <EditInput label="Banner URL" value={bannerUrl} onChange={setBannerUrl} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <UploadField
-            label="Upload Banner"
-            uploading={uploadingBanner}
-            uploadingText="Enviando banner..."
-            onFile={(file) => uploadImage(file, "banner")}
-          />
-        </div>
-
-        {bannerUrl && (
-          <div className="sm:col-span-2">
-            <img
-              src={bannerUrl}
-              alt="Banner preview"
-              className="h-32 w-full rounded-2xl border border-white/10 object-cover"
-            />
-          </div>
-        )}
-
-        <div className="sm:col-span-2">
-          <EditTextarea label="Bio curta" value={bio} onChange={setBio} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <EditTextarea
-            label="Descrição completa"
-            value={description}
-            onChange={setDescription}
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <EditInput
-            label="Tags separadas por vírgula"
-            value={tagsText}
-            onChange={setTagsText}
-            placeholder="Streamer, MMORPG, Black Desert"
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <h4 className="font-bold text-white">Redes Sociais</h4>
-
-        <p className="mt-2 text-sm text-white/45">
-          Adicione os links oficiais do creator.
-        </p>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {socialPlatforms.map((platform) => (
-            <EditInput
-              key={platform}
-              label={platform}
-              value={socials[platform] || ""}
-              onChange={(value) =>
-                setSocials((current) => ({
-                  ...current,
-                  [platform]: value,
-                }))
-              }
-              placeholder={`Link do ${platform}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h4 className="font-bold text-white">Clips em destaque</h4>
-
-            <p className="mt-2 text-sm text-white/45">
-              Adicione até 3 clips ou shorts para aparecerem no perfil. A capa
-              será buscada automaticamente pelo link quando possível.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setClipsExpanded((current) => !current)}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 transition hover:bg-white/[0.08]"
-          >
-            {clipsExpanded ? "Recolher clips" : "Expandir clips"}
-          </button>
-        </div>
-
-        {clipsExpanded && (
-          <div className="mt-5 grid gap-4">
-            {clips.map((clip, index) => {
-              const previewThumbnail =
-                clip.thumbnailUrl || getClipPreviewThumbnail(clip.url);
-
-              return (
-                <div
-                  key={index}
-                  className="rounded-3xl border border-white/10 bg-black/20 p-4"
-                >
-                  <p className="mb-3 text-xs uppercase tracking-[0.25em] text-white/35">
-                    Clip {index + 1}
-                  </p>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <EditInput
-                      label="Título"
-                      value={clip.title}
-                      onChange={(value) => updateClip(index, "title", value)}
-                      placeholder="Melhor momento da live"
-                    />
-
-                    <label className="block">
-                      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-                        Plataforma
-                      </span>
-
-                      <select
-                        value={clip.platform}
-                        onChange={(event) =>
-                          updateClip(index, "platform", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-                      >
-                        {clipPlatforms.map((platform) => (
-                          <option key={platform} value={platform}>
-                            {platform}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="sm:col-span-2">
-                      <EditInput
-                        label="URL do clip"
-                        value={clip.url}
-                        onChange={(value) => updateClip(index, "url", value)}
-                        placeholder="https://..."
-                      />
-                    </div>
-
-                    {previewThumbnail && (
-                      <div className="sm:col-span-2 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-                        <img
-                          src={previewThumbnail}
-                          alt={clip.title || `Preview do clip ${index + 1}`}
-                          className="aspect-video w-full object-cover"
-                        />
-                      </div>
-                    )}
-
-                    <div className="sm:col-span-2">
-                      <EditTextarea
-                        label="Descrição"
-                        value={clip.description}
-                        onChange={(value) =>
-                          updateClip(index, "description", value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
-      >
-        <Save size={16} />
-        {saving ? "Salvando..." : "Salvar alterações"}
-      </button>
-    </div>
-  );
-}
-
-function ClaimPanel({
-  claimPlatform,
-  setClaimPlatform,
-  claimUrl,
-  setClaimUrl,
-  claimCode,
-  claimSending,
-  claimSuccess,
-  onSubmit,
-  onBack,
-}: {
-  claimPlatform: string;
-  setClaimPlatform: (value: string) => void;
-  claimUrl: string;
-  setClaimUrl: (value: string) => void;
-  claimCode: string;
-  claimSending: boolean;
-  claimSuccess: boolean;
-  onSubmit: () => void;
-  onBack: () => void;
-}) {
-  if (claimSuccess) {
-    return (
-      <div className="pb-10 pr-16">
-        <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-          Claim Sent
-        </p>
-
-        <h3 className="mt-3 text-3xl font-bold">Solicitação enviada</h3>
-
-        <p className="mt-4 text-white/60">
-          Agora coloque o código abaixo na bio, descrição ou sobre da plataforma
-          informada. Um administrador irá revisar sua solicitação.
-        </p>
-
-        <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
-          {claimCode}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pb-10 pr-16">
-      <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
-        Claim Profile
-      </p>
-
-      <h3 className="mt-3 text-3xl font-bold">Este perfil é meu</h3>
-
-      <p className="mt-4 text-white/60">
-        Para provar que este perfil pertence a você, informe uma plataforma oficial
-        e coloque temporariamente o código abaixo na bio/descrição do canal.
-      </p>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-[180px_1fr]">
-        <select
-          value={claimPlatform}
-          onChange={(event) => setClaimPlatform(event.target.value)}
-          className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
-        >
-          {socialPlatforms.map((platform) => (
-            <option key={platform} value={platform}>
-              {platform}
-            </option>
-          ))}
-        </select>
-
-        <input
-          value={claimUrl}
-          onChange={(event) => setClaimUrl(event.target.value)}
-          placeholder="Link do canal ou perfil oficial"
-          className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-        />
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-          Código de verificação
-        </p>
-
-        <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
-          {claimCode}
-        </p>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          onClick={onSubmit}
-          disabled={claimSending}
-          className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
-        >
-          <Send size={16} />
-          {claimSending ? "Enviando..." : "Enviar reivindicação"}
-        </button>
-
-        <button
-          onClick={onBack}
-          className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm text-white/70 hover:bg-white/[0.08]"
-        >
-          Voltar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ViewPanel({
-  creator,
-  bio,
-  title,
-  description,
-  tagsText,
-  socials,
-  clips,
-  viewCount,
-  followerCount,
-  shareCount,
-}: {
-  creator: Creator;
-  bio: string;
-  title: string;
-  description: string;
-  tagsText: string;
-  socials: SocialForm;
-  clips: ClipForm[];
-  viewCount: number;
-  followerCount: number;
-  shareCount: number;
-}) {
-  const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
-
-  return (
-    <>
-      <div className="pr-16">
-        <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-          Pefil do Criador
-        </p>
-
-        <h3 className="mt-3 text-3xl font-bold leading-tight">
-          {bio || creator.bio}
-        </h3>
-
-        <p className="mt-3 text-sm font-semibold text-cyan-100">
-          {title || creator.title}
-        </p>
-
-        <p className="mt-4 text-white/65">
-          {description || creator.description}
-        </p>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <InfoCard label="Views" value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label="Seguidores" value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
-        <InfoCard label="Compartilhamentos" value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
-      </div>
-
-      <div className="mt-8">
-        <h4 className="font-bold">Tags</h4>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {tagsText
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-            .map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
-              >
-                {tag}
-              </span>
-            ))}
-        </div>
-      </div>
-
-      {visibleClips.length > 0 && (
-        <div className="mt-8">
-          <h4 className="font-bold">Clips em destaque</h4>
-
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {visibleClips.map((clip, index) => {
-              const previewThumbnail =
-                clip.thumbnailUrl || getClipPreviewThumbnail(clip.url);
-
-              return (
-                <a
-                  key={`${clip.url}-${index}`}
-                  href={clip.url}
-                  target="_blank"
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
-                >
-                  <div className="aspect-video bg-black/40">
-                    {previewThumbnail ? (
-                      <img
-                        src={previewThumbnail}
-                        alt={clip.title || "Clip"}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
-                        {clip.platform}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                      {clip.platform}
-                    </p>
-
-                    <p className="mt-2 font-bold text-white">
-                      {clip.title || "Featured clip"}
-                    </p>
-
-                    {clip.description && (
-                      <p className="mt-2 line-clamp-3 text-xs text-white/45">
-                        {clip.description}
-                      </p>
-                    )}
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8 pb-10">
-        <h4 className="font-bold">Redes Sociais</h4>
-
-        <div className="mt-3 flex flex-wrap gap-3">
-          {Object.entries(socials)
-            .filter(([, url]) => url.trim().length > 0)
-            .map(([platform, url]) => (
-              <a
-                key={platform}
-                href={url}
-                target="_blank"
-                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
-              >
-                {platform}
-              </a>
-            ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-function UploadField({
-  label,
-  uploading,
-  uploadingText,
-  onFile,
-}: {
-  label: string;
-  uploading: boolean;
-  uploadingText: string;
-  onFile: (file: File) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <div className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
-        <ImagePlus size={18} />
-        Escolher arquivo
-      </div>
-
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onFile(file);
-        }}
-      />
-
-      {uploading && <p className="mt-2 text-xs text-cyan-300">{uploadingText}</p>}
-    </label>
-  );
-}
-
-function InfoCard({
-  label,
-  value,
-  color = "text-white",
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-xs text-white/40">{label}</p>
-      <p className={`mt-1 font-bold ${color}`}>{value}</p>
-    </div>
-  );
-}
-
-function EditInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-      />
-    </label>
-  );
-}
-
-function EditTextarea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={4}
-        className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-      />
-    </label>
-  );
-}
+    creatorSearchPlaceholder: "Buscar creators, ranks, tags...",
+    status: "Status",
+    creatorGridDefaultTitle: "Criador em Ascensão",
+    creatorGridDefaultBio: "Novo criador aprovado na plataforma.",
+    creatorGridDefaultDescription: "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
+    creatorGridDefaultEvolutionStage: "Estágio 1 — Criador em Ascensão",
+    creatorGridRecentlyApproved: "Aprovado recentemente",
+    creatorGridOrigin: "Origem",
+    creatorGridCreatorRequest: "Solicitação de creator",
+    creatorGridStyle: "Estilo",
+    creatorGridPendingCustomization: "Personalização pendente",
+    creatorGridFirstAppearance: "Primeira aparição",
+    creatorGridFirstAppearanceDescription: "Este creator acabou de entrar no universo da plataforma.",
+    creatorGridCreatorApproved: "Creator Aprovado",
+    creatorGridCreatorApprovedDescription: "Perfil aprovado pela moderação.",
+    creatorGridLoading: "Carregando creators...",
+    creatorGridSearchResults: "Resultado da busca",
+    creatorGridSearchResultsDescription: "Creators encontrados com base no termo pesquisado.",
+    creatorGridFeaturedCards: "Cartas em Destaque",
+    creatorGridNewCards: "Cartas Novas",
+    creatorGridEmptyTitle: "Não identificamos nenhuma identidade correspondente à sua busca.",
+    creatorGridEmptyDescription: "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.",
+
+    loginModalCloseLoginAria: "Fechar login",
+    loginModalBadge: "Acesso Creator",
+    loginModalTitle: "Entre no seu perfil digital",
+    loginModalDescription:
+      "Faça login para criar seu perfil, evoluir seu card, desbloquear achievements e participar da reputação digital.",
+    loginModalContinueDiscord: "Continuar com Discord",
+    loginModalDiscordDescription:
+      "Ideal para creators, comunidades e servidores.",
+    loginModalContinueGoogle: "Continuar com Google",
+    loginModalGoogleDescription:
+      "Acesso rápido para criar ou gerenciar seu perfil.",
+    loginModalOnboardingLabel: "Cadastro Creator",
+    loginModalOnboardingDescription:
+      "Novos perfis passam por uma etapa de pré-cadastro e aprovação para manter a plataforma segura, autêntica e premium.",
+    loginModalSupabaseNotice:
+      "Login real será conectado ao Supabase Auth na próxima etapa.",
+
+    creatorCardOpenAria: "Abrir perfil do creator",
+    creatorCardLevelPrefix: "Nível",
+    creatorCardRarityCommon: "Comum",
+    creatorCardRarityRare: "Raro",
+    creatorCardRarityEpic: "Épico",
+    creatorCardRarityLegendary: "Lendário",
+    back: "Voltar",
+    collectionDefaultAura: "Aura de Origem",
+    collectionDefaultEvolutionStage: "Estágio 1",
+    collectionDefaultFaction: "Creator Nexus",
+    collectionDefaultTitle: "Creator Digital",
+    collectionPageBadge: "Minha Coleção",
+    collectionPageLoading: "Carregando coleção...",
+    collectionPageTitle: "Suas cartas do Nexus",
+    collectionPageDescription:
+      "Aqui ficarão todas as cartas de creators que você conquistar por follows, eventos e recompensas especiais.",
+    creatorPopupAvatarPreviewAlt: "Prévia do avatar",
+    creatorPopupBack: "Voltar",
+    creatorPopupBannerPreviewAlt: "Prévia do banner",
+    creatorPopupCardNotificationPrefix: "Você ganhou a carta de",
+    creatorPopupChooseFile: "Escolher arquivo",
+    creatorPopupClaimDescription: "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
+    creatorPopupClaimMine: "Este perfil é meu",
+    creatorPopupClaimProfileBadge: "Reivindicar Perfil",
+    creatorPopupClaimSentBadge: "Reivindicação Enviada",
+    creatorPopupClaimSentDescription: "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.",
+    creatorPopupClaimSentTitle: "Solicitação enviada",
+    creatorPopupClaimUrlPlaceholder: "Link do canal ou perfil oficial",
+    creatorPopupClaimUrlRequired: "Informe o link do canal ou perfil usado para verificação.",
+    creatorPopupClipPrefix: "Clip",
+    creatorPopupClipPreviewAltPrefix: "Prévia do clip",
+    creatorPopupClipTitlePlaceholder: "Melhor momento da live",
+    creatorPopupClose: "Fechar",
+    creatorPopupCloseAria: "Fechar popup",
+    creatorPopupCloseShareAria: "Fechar compartilhamento",
+    creatorPopupCollapseClips: "Recolher clips",
+    creatorPopupCopyLink: "Copiar link",
+    creatorPopupCreatorProfileBadge: "Perfil do Criador",
+    creatorPopupEdit: "Editar",
+    creatorPopupEditModeBadge: "Modo de Edição",
+    creatorPopupEditProfileTitle: "Editar perfil",
+    creatorPopupExpandClips: "Expandir clips",
+    creatorPopupFeaturedClipFallback: "Clip em destaque",
+    creatorPopupFeaturedClipsDescription: "Adicione até 3 clips ou shorts para aparecerem no perfil. A capa será buscada automaticamente pelo link quando possível.",
+    creatorPopupFeaturedClipsTitle: "Clips em destaque",
+    creatorPopupFeaturedClipsViewTitle: "Clips em destaque",
+    creatorPopupFieldAvatarUrl: "URL do avatar",
+    creatorPopupFieldBannerUrl: "URL do banner",
+    creatorPopupFieldCategory: "Categoria",
+    creatorPopupFieldClipTitle: "Título",
+    creatorPopupFieldClipUrl: "URL do clip",
+    creatorPopupFieldDescription: "Descrição",
+    creatorPopupFieldFullDescription: "Descrição completa",
+    creatorPopupFieldNickname: "Nickname",
+    creatorPopupFieldPlatform: "Plataforma",
+    creatorPopupFieldShortBio: "Bio curta",
+    creatorPopupFieldTags: "Tags separadas por vírgula",
+    creatorPopupFieldTitle: "Título",
+    creatorPopupFieldUploadAvatar: "Upload do avatar",
+    creatorPopupFieldUploadBanner: "Upload do banner",
+    creatorPopupFollow: "Seguir",
+    creatorPopupFollowNotificationPrefix: "Você seguiu",
+    creatorPopupFollowXpMessage: "Você ganhou XP por seguir um creator.",
+    creatorPopupFollowers: "Seguidores",
+    creatorPopupFollowing: "Seguindo",
+    creatorPopupLevelPrefix: "Nv.",
+    creatorPopupLinkCopied: "Link copiado!",
+    creatorPopupLoadingProfile: "Carregando perfil...",
+    creatorPopupLoginToClaim: "Faça login para reivindicar este perfil.",
+    creatorPopupLoginToFollow: "Faça login para seguir este creator.",
+    creatorPopupProfileUpdated: "Perfil atualizado com sucesso!",
+    creatorPopupSaveChanges: "Salvar alterações",
+    creatorPopupSaving: "Salvando...",
+    creatorPopupSendClaim: "Enviar reivindicação",
+    creatorPopupSending: "Enviando...",
+    creatorPopupShare: "Compartilhar",
+    creatorPopupShareBadge: "Compartilhar Perfil",
+    creatorPopupShareDescriptionPrefix: "Compartilhe o perfil de",
+    creatorPopupShareDescriptionSuffix: "usando o link com preview do Creator Nexus.",
+    creatorPopupShares: "Compartilhamentos",
+    creatorPopupSocialLinkPlaceholderPrefix: "Link do",
+    creatorPopupSocialLinksDescription: "Adicione os links oficiais do creator.",
+    creatorPopupSocialLinksTitle: "Redes Sociais",
+    creatorPopupSocialNetworks: "Redes Sociais",
+    creatorPopupStatusEvent: "Em evento",
+    creatorPopupStatusLive: "Ao vivo",
+    creatorPopupStatusOffline: "Offline",
+    creatorPopupStatusOnline: "Online",
+    creatorPopupStatusTrending: "Em alta",
+    creatorPopupTags: "Tags",
+    creatorPopupUploadingAvatar: "Enviando avatar...",
+    creatorPopupUploadingBanner: "Enviando banner...",
+    creatorPopupVerificationCode: "Código de verificação",
+    creatorPopupView: "Visualizar",
+    creatorPopupViews: "Views",
+    creatorRequestModalBadge: "Solicitação Creator",
+    creatorRequestModalSuccessTitle: "Solicitação enviada",
+    creatorRequestModalSuccessDescription: "Sua solicitação foi enviada para análise.",
+    creatorRequestModalTitle: "Torne-se um Creator",
+    creatorRequestModalDescription: "Envie sua solicitação para criar seu perfil.",
+    creatorRequestModalNicknamePlaceholder: "Apelido",
+    creatorRequestModalUsernamePlaceholder: "Username",
+    creatorRequestModalVerificationTitle: "Verificação",
+    creatorRequestModalVerificationUrlPlaceholder: "URL de verificação",
+    creatorRequestModalVerificationCodeLabel: "Código",
+    creatorRequestModalVerificationCodeDescription: "Use este código para validar seu perfil.",
+    creatorRequestModalCardImageTitle: "Imagem da Carta",
+    creatorRequestModalCardImageDescription: "Envie uma imagem para sua carta.",
+    creatorRequestModalImageUrlPlaceholder: "URL da imagem",
+    creatorRequestModalUploading: "Enviando...",
+    creatorRequestModalUploadImage: "Enviar imagem",
+    creatorRequestModalImagePreviewAlt: "Prévia da imagem",
+    creatorRequestModalPromptTitle: "Prompt",
+    creatorRequestModalPromptDescription: "Use o prompt abaixo.",
+    creatorRequestModalCopied: "Copiado",
+    creatorRequestModalCopy: "Copiar",
+    creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
+    creatorRequestModalSubmitting: "Enviando...",
+    creatorRequestModalSubmit: "Enviar solicitação",
+    loadingScreenTitle: "Preparando seu universo",
+    loadingScreenDescription: "Sincronizando perfis, cartas e conquistas...",
+    missionsModalCloseAria: "Fechar missões",
+    missionsModalNotificationTitle: "Recompensa resgatada",
+    missionsModalNotificationMessage: "Sua recompensa foi adicionada à sua conta.",
+    missionsModalBadge: "Missões",
+    missionsModalTitle: "Central de Missões",
+    missionsModalDescription: "Complete missões para ganhar recompensas e evoluir sua presença no Nexus.",
+    missionsModalProgressLabel: "Progresso",
+    missionsModalLoading: "Carregando missões...",
+    missionsModalEmpty: "Nenhuma missão disponível no momento.",
+    missionsModalProgressCount: "{current}/{target}",
+    missionsModalClaiming: "Resgatando...",
+    missionsModalClaimed: "Resgatado",
+    missionsModalClaim: "Resgatar",
+    missionsModalInProgress: "Em progresso",
+    packsModalCloseAria: "Fechar packs",
+    packsModalBadge: "Packs",
+    packsModalTitle: "Abrir Packs",
+    packsModalDescription: "Abra seus packs para revelar novas cartas de creators.",
+    packsModalInventoryTitle: "Inventário de Packs",
+    packsModalPackCountSingular: "{count} pack disponível",
+    packsModalPackCountPlural: "{count} packs disponíveis",
+    packsModalLoading: "Carregando packs...",
+    packsModalSearching: "Buscando seus packs...",
+    packsModalEmpty: "Você ainda não possui packs disponíveis.",
+    packsModalDefaultPackName: "Pack Nexus",
+    packsModalDefaultPackDescription: "Um pack especial com cartas de creators.",
+    packsModalOriginLabel: "Origem",
+    packsModalSystemSource: "Sistema",
+    packsModalOpenPackButton: "Abrir pack",
+    packsModalDefaultNexusPack: "Pack Nexus",
+    packsModalIdleTitle: "Escolha um pack",
+    packsModalIdleDescription: "Selecione um pack do seu inventário para iniciar a abertura.",
+    packsModalDuplicateCard: "Carta duplicada",
+    packsModalRevealedCard: "Carta revelada",
+    packsModalDuplicateDescription: "Você já possuía esta carta, então ela foi marcada como duplicada.",
+    packsModalThisCreator: "Este creator",
+    packsModalReceivedDescription: "foi adicionado à sua coleção.",
+    packsModalOpenErrorTitle: "Não foi possível abrir o pack",
+    packsModalOpenErrorDescription: "Tente novamente em alguns instantes.",
+    packsModalAnimationLabel: "Revelação em andamento",
+    packsModalAnimationDescription: "Rasgando o pack e revelando sua carta...",
+    packsModalOpenAnother: "Abrir outro pack",
+    packsModalRevealing: "Revelando...",
+    packsModalTearingPack: "Rasgando pack...",
+    packsModalNewCard: "Nova carta",
+    homePageBadge: "Plataforma de Reputação Digital",
+    homePageDescription: "Descubra criadores lendários por meio de cartas digitais.",
+    packsModalLegendaryPackName: "Pacote Lendário",
+    packsModalEpicPackName: "Pacote Épico",
+    packsModalRarePackName: "Pacote Raro",
+    packsModalCommonPackName: "Pacote Comum",
+    packsModalLegendaryPackDescription: "Um pacote especial com chance elevada de carta lendária.",
+    packsModalEpicPackDescription: "Um pacote especial com maiores chances de carta épica.",
+    packsModalRarePackDescription: "Um pacote melhorado com maiores chances de carta rara.",
+    packsModalCommonPackDescription: "Um pacote básico com cartas de creators.",
+    packsModalManualTestSource: "Teste manual",
+    packsModalMissionSource: "Missão",
+
+
+
+
+
+},
+
+  en: {
+    notifications: "Notifications",
+    collection: "My Collection",
+    profile: "My Profile",
+    logout: "Logout",
+    login: "Login",
+    account: "Account",
+    openPanel: "Open panel",
+
+    common: "Common",
+    rare: "Rare",
+    epic: "Epic",
+    legendary: "Legendary",
+    mythic: "Mythic",
+
+    commonPlural: "Common",
+    rarePlural: "Rare",
+    epicPlural: "Epic",
+    legendaryPlural: "Legendary",
+
+    searchCreators: "Search creators...",
+    digitalReputationPlatform: "Digital Reputation Platform",
+    discoverCreators:
+      "Discover legendary creators through digital cards.",
+
+    language: "Language",
+    changeLanguage: "Change language",
+    chooseSiteLanguage: "Choose the site language",
+    languagePortuguese: "Portuguese",
+    languageEnglish: "English",
+    languageSpanish: "Spanish",
+
+    openNotifications: "Open notifications",
+    closeNotifications: "Close notifications",
+    markAllRead: "Mark all as read",
+    allCaughtUp: "All caught up",
+    newNotificationsCount: "{count} new",
+    noNotificationsTitle: "No notifications yet",
+    noNotificationsDescription:
+      "When you earn cards, packs, badges, or level up, everything will appear here.",
+
+    closeCollection: "Close collection",
+    collectionTitle: "Your Nexus cards",
+    collectionDescription:
+      "Here are the creator cards you earned through follows, packs, missions, and events. Card notifications can open a specific card directly here.",
+    total: "Total",
+    loadingCollection: "Loading collection...",
+    emptyCollectionTitle: "Your collection is empty for now",
+    emptyCollectionDescription:
+      "Soon you will be able to earn cards by following creators, opening packs, and completing missions inside Creator Nexus.",
+
+    card: "Card",
+    creatorCard: "Creator Card",
+    new: "New",
+    newCard: "New card",
+    closeCard: "Close card",
+    viewProfile: "View profile",
+    share: "Share",
+    shareCard: "Share card",
+    copied: "Copied!",
+    shareCardText:
+      "🃏 I earned the {nickname} card ({rarity}) on Creator Nexus",
+
+    close: "Close",
+    myAccount: "My Account",
+    noUsername: "no_username",
+    level: "Level",
+    cards: "cards",
+    cardsTitle: "Cards",
+    adminPanel: "Admin Panel",
+    open: "Open",
+    soon: "Soon",
+    myBadges: "My Badges",
+    missions: "Missions",
+    packs: "Packs",
+    requestCreatorProfile: "Request creator profile",
+    startRequest: "Start request",
+    logoutAccount: "Log out",
+
+    profileCardDescription:
+      "View your level, XP, progress, badges, and activity inside Creator Nexus.",
+    collectionCardDescription:
+      "Access your collected cards, rarities, favorite creators, and collection progress.",
+    badgesCardDescription:
+      "Special achievements for following creators, sharing profiles, and completing goals.",
+    missionsCardDescription:
+      "Complete challenges to earn packs, special cards, and Nexus rewards.",
+    packsCardDescription:
+      "Open daily packs, mission packs, and event packs to unlock new cards.",
+    requestCreatorProfileDescription:
+      "Submit your data, social links, and proof of channel ownership to enter the approval queue.",
+
+    closeProfile: "Close profile",
+    creator: "Creator",
+    recentLevelUp: "Recent level up",
+    progressToLevel: "Progress to level",
+    remainingXpPrefix: "",
+    remainingXpSuffix: "remaining for the next level.",
+    levelUpTitle: "You leveled up!",
+    levelUpDescription:
+      "Your profile was opened from a level-up notification. Keep following creators, sharing, and collecting cards to earn more XP.",
+    badges: "Badges",
+    unlockedAchievement: "unlocked achievement",
+    firstCard: "First Card",
+    firstCardDescription:
+      "You earned your first card in the Nexus.",
+    badgesEmptyDescription:
+      "Your badges will appear here when you complete objectives.",
+    recentActivity: "Recent activity",
+    recentActivityDescription: "Latest actions from your collection.",
+    cardCollected: "Card collected",
+    noActivityYet: "No activity yet.",
+    cardsCountSingular: "{count} card",
+    cardsCountPlural: "{count} cards",
+    unlockedAchievementSingular: "{count} unlocked achievement",
+    unlockedAchievementPlural: "{count} unlocked achievements",
+
+    user: "User",
+    adminActivities: "Activities",
+    adminApproveClaim: "Approve claim",
+    adminAssignOwner: "Assign owner",
+    adminCardSentSuccess:
+      "Card sent! {creator} ({rarity}) was delivered to {user}.",
+    adminChooseCardDescription:
+      "Search by creator name, username, category, or owner.",
+    adminChooseCardStep: "1. Choose card",
+    adminChooseRarityStep: "3. Choose rarity",
+    adminChooseUserDescription: "Search by name, username, or email.",
+    adminChooseUserStep: "2. Choose user",
+    adminClaims: "Claims",
+    adminClosePanel: "Close admin panel",
+    adminCreateCreatorProfileError: "Error creating creator profile.",
+    adminCreatorOrUserNotFound: "Creator or user not found.",
+    adminHideProfile: "Hide profile",
+    adminMakeAdmin: "Make Admin",
+    adminManageCards: "Manage Cards",
+    adminManageCardsDescription:
+      "Choose a creator card, select the user, and send a specific or random rarity.",
+    adminNoCardsFound: "No cards found.",
+    adminNoCreatorsFound: "No creators found.",
+    adminNoLogsFound: "No logs found.",
+    adminNoPendingClaims: "No pending claims.",
+    adminNoPendingRequests: "No pending requests.",
+    adminNoUsersFound: "No users found.",
+    adminOpenChannelProfile: "Open channel/profile",
+    adminOwnerManagement: "Owner management",
+    adminOwnerManagementDescription:
+      "Assign this profile to a logged-in user or remove the current owner.",
+    adminPanelBadge: "Admin Panel",
+    adminPanelDescription:
+      "Manage requests, users, creators, claims, and activities.",
+    adminPanelLoading: "Loading panel...",
+    adminPanelTitle: "Admin Panel",
+    adminProfiles: "Profiles",
+    adminPublishProfile: "Publish profile",
+    adminQuickActions: "Quick actions",
+    adminQuickActionsDescription:
+      "Control creator visibility and public verification.",
+    adminRandom: "Random",
+    adminRarityCommonDescription: "Metallic silver",
+    adminRarityRareDescription: "Electric light blue",
+    adminRarityEpicDescription: "Arcane violet",
+    adminRarityLegendaryDescription: "Celestial gold",
+    adminRarityRandomDescription: "Rolls between the 4 rarities",
+    adminRemoveAdmin: "Remove Admin",
+    adminRemoveOwner: "Remove owner",
+    adminRemoveVerification: "Remove verification",
+    adminRequests: "Requests",
+    adminSearchCardPlaceholder: "Search creator/card...",
+    adminSearchClaimPlaceholder:
+      "Search claims by creator, user, email, or code...",
+    adminSearchCreatorPlaceholder:
+      "Search by creator, owner, email, or username...",
+    adminSearchLogsPlaceholder: "Search logs by action, user, or metadata...",
+    adminSearchUserPlaceholder: "Search by name, username, or email...",
+    adminSearchUserShortPlaceholder: "Search user...",
+    adminSelectCardRecipient: "Select the user who will receive the card.",
+    adminSelectCreatorCardFirst: "Select a creator/card first.",
+    adminSendCardToUser: "Send card to user",
+    adminSendingCard: "Sending card...",
+    adminUsers: "Users",
+    adminVerifyProfile: "Verify profile",
+    approve: "Approve",
+    approving: "Approving...",
+    avatar: "Avatar",
+    category: "Category",
+    claimed: "Claimed",
+    claimedBy: "Claimed by",
+    collapse: "Collapse",
+    createdAt: "Created at",
+    creatorNotFound: "Creator not found",
+    expand: "Expand",
+    followers: "Followers",
+    hidden: "Hidden",
+    id: "ID",
+    noEmail: "No email",
+    noEmailLower: "no email",
+    noImage: "No image",
+    noName: "No name",
+    noOwner: "No owner",
+    noTarget: "no target",
+    noneSelectedFeminine: "None selected",
+    noneSelectedMasculine: "None selected",
+    notInformed: "Not informed",
+    notVerified: "Not verified",
+    owner: "Owner",
+    pendingClaim: "Pending claim",
+    platform: "Platform",
+    processing: "Processing...",
+    public: "Public",
+    requestedAt: "Requested at",
+    shares: "Shares",
+    summary: "Summary",
+    system: "System",
+    target: "Target",
+    verificationUrl: "Verification URL",
+    verified: "Verified",
+    views: "Views",
+    admin: "Admin",
+    code: "Code",
+    rarity: "Rarity",
+    reject: "Reject",
+  
+    creatorSearchPlaceholder: "Search creators, ranks, tags...",
+    status: "Status",
+    creatorGridDefaultTitle: "Rising Creator",
+    creatorGridDefaultBio: "New creator approved on the platform.",
+    creatorGridDefaultDescription: "This profile has been approved and can be customized by the creator soon.",
+    creatorGridDefaultEvolutionStage: "Stage 1 — Rising Creator",
+    creatorGridRecentlyApproved: "Recently approved",
+    creatorGridOrigin: "Origin",
+    creatorGridCreatorRequest: "Creator request",
+    creatorGridStyle: "Style",
+    creatorGridPendingCustomization: "Pending customization",
+    creatorGridFirstAppearance: "First appearance",
+    creatorGridFirstAppearanceDescription: "This creator has just entered the platform universe.",
+    creatorGridCreatorApproved: "Creator Approved",
+    creatorGridCreatorApprovedDescription: "Profile approved by moderation.",
+    creatorGridLoading: "Loading creators...",
+    creatorGridSearchResults: "Search result",
+    creatorGridSearchResultsDescription: "Creators found based on the searched term.",
+    creatorGridFeaturedCards: "Featured Cards",
+    creatorGridNewCards: "New Cards",
+    creatorGridEmptyTitle: "We could not identify any identity matching your search.",
+    creatorGridEmptyDescription: "Try searching by creator name, category, rarity, platform, or tags.",
+
+    loginModalCloseLoginAria: "Close login",
+    loginModalBadge: "Creator Access",
+    loginModalTitle: "Access your digital profile",
+    loginModalDescription:
+      "Sign in to create your profile, evolve your card, unlock achievements and participate in the digital reputation system.",
+    loginModalContinueDiscord: "Continue with Discord",
+    loginModalDiscordDescription:
+      "Ideal for creators, communities and servers.",
+    loginModalContinueGoogle: "Continue with Google",
+    loginModalGoogleDescription:
+      "Quick access to create or manage your profile.",
+    loginModalOnboardingLabel: "Creator Onboarding",
+    loginModalOnboardingDescription:
+      "New profiles go through a pre-registration and approval stage to keep the platform safe, authentic and premium.",
+    loginModalSupabaseNotice:
+      "Real login will be connected to Supabase Auth in the next stage.",
+
+    creatorCardOpenAria: "Open creator profile",
+    creatorCardLevelPrefix: "Level",
+    creatorCardRarityCommon: "Common",
+    creatorCardRarityRare: "Rare",
+    creatorCardRarityEpic: "Epic",
+    creatorCardRarityLegendary: "Legendary",
+    back: "Back",
+    collectionDefaultAura: "Origin Aura",
+    collectionDefaultEvolutionStage: "Stage 1",
+    collectionDefaultFaction: "Creator Nexus",
+    collectionDefaultTitle: "Digital Creator",
+    collectionPageBadge: "My Collection",
+    collectionPageLoading: "Loading collection...",
+    collectionPageTitle: "Your Nexus cards",
+    collectionPageDescription:
+      "All creator cards you earn through follows, events, and special rewards will appear here.",
+    creatorPopupAvatarPreviewAlt: "Avatar preview",
+    creatorPopupBack: "Back",
+    creatorPopupBannerPreviewAlt: "Banner preview",
+    creatorPopupCardNotificationPrefix: "You earned the card of",
+    creatorPopupChooseFile: "Choose file",
+    creatorPopupClaimDescription: "To prove this profile belongs to you, enter an official platform and temporarily place the code below in the channel bio/description.",
+    creatorPopupClaimMine: "This profile is mine",
+    creatorPopupClaimProfileBadge: "Claim Profile",
+    creatorPopupClaimSentBadge: "Claim Sent",
+    creatorPopupClaimSentDescription: "Now place the code below in the bio, description, or about section of the provided platform. An administrator will review your request.",
+    creatorPopupClaimSentTitle: "Request sent",
+    creatorPopupClaimUrlPlaceholder: "Official channel or profile link",
+    creatorPopupClaimUrlRequired: "Enter the channel or profile link used for verification.",
+    creatorPopupClipPrefix: "Clip",
+    creatorPopupClipPreviewAltPrefix: "Clip preview",
+    creatorPopupClipTitlePlaceholder: "Best live moment",
+    creatorPopupClose: "Close",
+    creatorPopupCloseAria: "Close popup",
+    creatorPopupCloseShareAria: "Close sharing",
+    creatorPopupCollapseClips: "Collapse clips",
+    creatorPopupCopyLink: "Copy link",
+    creatorPopupCreatorProfileBadge: "Creator Profile",
+    creatorPopupEdit: "Edit",
+    creatorPopupEditModeBadge: "Edit Mode",
+    creatorPopupEditProfileTitle: "Edit profile",
+    creatorPopupExpandClips: "Expand clips",
+    creatorPopupFeaturedClipFallback: "Featured clip",
+    creatorPopupFeaturedClipsDescription: "Add up to 3 clips or shorts to appear on the profile. The thumbnail will be fetched automatically from the link whenever possible.",
+    creatorPopupFeaturedClipsTitle: "Featured clips",
+    creatorPopupFeaturedClipsViewTitle: "Featured clips",
+    creatorPopupFieldAvatarUrl: "Avatar URL",
+    creatorPopupFieldBannerUrl: "Banner URL",
+    creatorPopupFieldCategory: "Category",
+    creatorPopupFieldClipTitle: "Title",
+    creatorPopupFieldClipUrl: "Clip URL",
+    creatorPopupFieldDescription: "Description",
+    creatorPopupFieldFullDescription: "Full description",
+    creatorPopupFieldNickname: "Nickname",
+    creatorPopupFieldPlatform: "Platform",
+    creatorPopupFieldShortBio: "Short bio",
+    creatorPopupFieldTags: "Comma-separated tags",
+    creatorPopupFieldTitle: "Title",
+    creatorPopupFieldUploadAvatar: "Upload avatar",
+    creatorPopupFieldUploadBanner: "Upload banner",
+    creatorPopupFollow: "Follow",
+    creatorPopupFollowNotificationPrefix: "You followed",
+    creatorPopupFollowXpMessage: "You earned XP for following a creator.",
+    creatorPopupFollowers: "Followers",
+    creatorPopupFollowing: "Following",
+    creatorPopupLevelPrefix: "Lv.",
+    creatorPopupLinkCopied: "Link copied!",
+    creatorPopupLoadingProfile: "Loading profile...",
+    creatorPopupLoginToClaim: "Sign in to claim this profile.",
+    creatorPopupLoginToFollow: "Sign in to follow this creator.",
+    creatorPopupProfileUpdated: "Profile updated successfully!",
+    creatorPopupSaveChanges: "Save changes",
+    creatorPopupSaving: "Saving...",
+    creatorPopupSendClaim: "Send claim",
+    creatorPopupSending: "Sending...",
+    creatorPopupShare: "Share",
+    creatorPopupShareBadge: "Share Profile",
+    creatorPopupShareDescriptionPrefix: "Share the profile of",
+    creatorPopupShareDescriptionSuffix: "using the Creator Nexus preview link.",
+    creatorPopupShares: "Shares",
+    creatorPopupSocialLinkPlaceholderPrefix: "Link to",
+    creatorPopupSocialLinksDescription: "Add the creator's official links.",
+    creatorPopupSocialLinksTitle: "Social Links",
+    creatorPopupSocialNetworks: "Social Networks",
+    creatorPopupStatusEvent: "In event",
+    creatorPopupStatusLive: "Live now",
+    creatorPopupStatusOffline: "Offline",
+    creatorPopupStatusOnline: "Online",
+    creatorPopupStatusTrending: "Trending",
+    creatorPopupTags: "Tags",
+    creatorPopupUploadingAvatar: "Uploading avatar...",
+    creatorPopupUploadingBanner: "Uploading banner...",
+    creatorPopupVerificationCode: "Verification code",
+    creatorPopupView: "View",
+    creatorPopupViews: "Views",
+    creatorRequestModalBadge: "Creator Request",
+    creatorRequestModalSuccessTitle: "Request submitted",
+    creatorRequestModalSuccessDescription: "Your request has been submitted for review.",
+    creatorRequestModalTitle: "Become a Creator",
+    creatorRequestModalDescription: "Submit your request to create your profile.",
+    creatorRequestModalNicknamePlaceholder: "Nickname",
+    creatorRequestModalUsernamePlaceholder: "Username",
+    creatorRequestModalVerificationTitle: "Verification",
+    creatorRequestModalVerificationUrlPlaceholder: "Verification URL",
+    creatorRequestModalVerificationCodeLabel: "Code",
+    creatorRequestModalVerificationCodeDescription: "Use this code to validate your profile.",
+    creatorRequestModalCardImageTitle: "Card Image",
+    creatorRequestModalCardImageDescription: "Upload an image for your card.",
+    creatorRequestModalImageUrlPlaceholder: "Image URL",
+    creatorRequestModalUploading: "Uploading...",
+    creatorRequestModalUploadImage: "Upload image",
+    creatorRequestModalImagePreviewAlt: "Image preview",
+    creatorRequestModalPromptTitle: "Prompt",
+    creatorRequestModalPromptDescription: "Use the prompt below.",
+    creatorRequestModalCopied: "Copied",
+    creatorRequestModalCopy: "Copy",
+    creatorRequestModalOpenChatGPT: "Open ChatGPT",
+    creatorRequestModalSubmitting: "Submitting...",
+    creatorRequestModalSubmit: "Submit request",
+    loadingScreenTitle: "Preparing your universe",
+    loadingScreenDescription: "Synchronizing profiles, cards and achievements...",
+    missionsModalCloseAria: "Close missions",
+    missionsModalNotificationTitle: "Reward claimed",
+    missionsModalNotificationMessage: "Your reward has been added to your account.",
+    missionsModalBadge: "Missions",
+    missionsModalTitle: "Mission Center",
+    missionsModalDescription: "Complete missions to earn rewards and evolve your presence in the Nexus.",
+    missionsModalProgressLabel: "Progress",
+    missionsModalLoading: "Loading missions...",
+    missionsModalEmpty: "No missions available right now.",
+    missionsModalProgressCount: "{current}/{target}",
+    missionsModalClaiming: "Claiming...",
+    missionsModalClaimed: "Claimed",
+    missionsModalClaim: "Claim",
+    missionsModalInProgress: "In progress",
+    packsModalCloseAria: "Close packs",
+    packsModalBadge: "Packs",
+    packsModalTitle: "Open Packs",
+    packsModalDescription: "Open your packs to reveal new creator cards.",
+    packsModalInventoryTitle: "Pack Inventory",
+    packsModalPackCountSingular: "{count} pack available",
+    packsModalPackCountPlural: "{count} packs available",
+    packsModalLoading: "Loading packs...",
+    packsModalSearching: "Searching your packs...",
+    packsModalEmpty: "You do not have any packs available yet.",
+    packsModalDefaultPackName: "Nexus Pack",
+    packsModalDefaultPackDescription: "A special pack with creator cards.",
+    packsModalOriginLabel: "Origin",
+    packsModalSystemSource: "System",
+    packsModalOpenPackButton: "Open pack",
+    packsModalDefaultNexusPack: "Nexus Pack",
+    packsModalIdleTitle: "Choose a pack",
+    packsModalIdleDescription: "Select a pack from your inventory to start opening it.",
+    packsModalDuplicateCard: "Duplicate card",
+    packsModalRevealedCard: "Revealed card",
+    packsModalDuplicateDescription: "You already owned this card, so it was marked as duplicate.",
+    packsModalThisCreator: "This creator",
+    packsModalReceivedDescription: "has been added to your collection.",
+    packsModalOpenErrorTitle: "Could not open the pack",
+    packsModalOpenErrorDescription: "Please try again in a few moments.",
+    packsModalAnimationLabel: "Reveal in progress",
+    packsModalAnimationDescription: "Tearing the pack and revealing your card...",
+    packsModalOpenAnother: "Open another pack",
+    packsModalRevealing: "Revealing...",
+    packsModalTearingPack: "Tearing pack...",
+    packsModalNewCard: "New card",
+    homePageBadge: "Digital Reputation Platform",
+    homePageDescription: "Discover legendary creators through digital cards.",
+    packsModalLegendaryPackName: "Legendary Pack",
+    packsModalEpicPackName: "Epic Pack",
+    packsModalRarePackName: "Rare Pack",
+    packsModalCommonPackName: "Common Pack",
+    packsModalLegendaryPackDescription: "A special pack with an increased chance of a legendary card.",
+    packsModalEpicPackDescription: "A special pack with better chances of an epic card.",
+    packsModalRarePackDescription: "An upgraded pack with better chances of a rare card.",
+    packsModalCommonPackDescription: "A basic pack with creator cards.",
+    packsModalManualTestSource: "Manual test",
+    packsModalMissionSource: "Mission",
+
+
+
+
+
+},
+
+  es: {
+    notifications: "Notificaciones",
+    collection: "Mi Colección",
+    profile: "Mi Perfil",
+    logout: "Salir",
+    login: "Entrar",
+    account: "Cuenta",
+    openPanel: "Abrir panel",
+
+    common: "Común",
+    rare: "Raro",
+    epic: "Épico",
+    legendary: "Legendario",
+    mythic: "Mítico",
+
+    commonPlural: "Comunes",
+    rarePlural: "Raras",
+    epicPlural: "Épicas",
+    legendaryPlural: "Legendarias",
+
+    searchCreators: "Buscar creadores...",
+    digitalReputationPlatform: "Plataforma de Reputación Digital",
+    discoverCreators:
+      "Descubre creadores legendarios mediante cartas digitales.",
+
+    language: "Idioma",
+    changeLanguage: "Cambiar idioma",
+    chooseSiteLanguage: "Elige el idioma del sitio",
+    languagePortuguese: "Portugués",
+    languageEnglish: "Inglés",
+    languageSpanish: "Español",
+
+    openNotifications: "Abrir notificaciones",
+    closeNotifications: "Cerrar notificaciones",
+    markAllRead: "Marcar todas como leídas",
+    allCaughtUp: "Todo al día",
+    newNotificationsCount: "{count} nueva(s)",
+    noNotificationsTitle: "Sin notificaciones por ahora",
+    noNotificationsDescription:
+      "Cuando ganes cartas, paquetes, insignias o subas de nivel, todo aparecerá aquí.",
+
+    closeCollection: "Cerrar colección",
+    collectionTitle: "Tus cartas del Nexus",
+    collectionDescription:
+      "Aquí están las cartas de creadores que ganaste mediante follows, paquetes, misiones y eventos. Las notificaciones de carta pueden abrir una carta específica directamente aquí.",
+    total: "Total",
+    loadingCollection: "Cargando colección...",
+    emptyCollectionTitle: "Tu colección está vacía por ahora",
+    emptyCollectionDescription:
+      "Pronto podrás ganar cartas siguiendo creadores, abriendo paquetes y completando misiones dentro de Creator Nexus.",
+
+    card: "Carta",
+    creatorCard: "Carta del Creador",
+    new: "Nueva",
+    newCard: "Nueva carta",
+    closeCard: "Cerrar carta",
+    viewProfile: "Ver perfil",
+    share: "Compartir",
+    shareCard: "Compartir carta",
+    copied: "¡Copiado!",
+    shareCardText:
+      "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
+
+    close: "Cerrar",
+    myAccount: "Mi Cuenta",
+    noUsername: "sin_usuario",
+    level: "Nivel",
+    cards: "cartas",
+    cardsTitle: "Cartas",
+    adminPanel: "Panel Admin",
+    open: "Abrir",
+    soon: "Pronto",
+    myBadges: "Mis Insignias",
+    missions: "Misiones",
+    packs: "Paquetes",
+    requestCreatorProfile: "Solicitar perfil de creador",
+    startRequest: "Iniciar solicitud",
+    logoutAccount: "Cerrar sesión",
+
+    profileCardDescription:
+      "Consulta tu nivel, XP, progreso, insignias y actividad dentro de Creator Nexus.",
+    collectionCardDescription:
+      "Accede a tus cartas obtenidas, rarezas, creadores favoritos y progreso de colección.",
+    badgesCardDescription:
+      "Logros especiales por seguir creadores, compartir perfiles y completar objetivos.",
+    missionsCardDescription:
+      "Completa desafíos para ganar paquetes, cartas especiales y recompensas del Nexus.",
+    packsCardDescription:
+      "Abre paquetes diarios, paquetes de misión y eventos para desbloquear nuevas cartas.",
+    requestCreatorProfileDescription:
+      "Envía tus datos, redes sociales y prueba de propiedad del canal para entrar en la cola de aprobación.",
+
+    closeProfile: "Cerrar perfil",
+    creator: "Creator",
+    recentLevelUp: "Subida de nivel reciente",
+    progressToLevel: "Progreso al nivel",
+    remainingXpPrefix: "Faltan",
+    remainingXpSuffix: "para el próximo nivel.",
+    levelUpTitle: "¡Subiste de nivel!",
+    levelUpDescription:
+      "Tu perfil se abrió desde una notificación de evolución. Sigue creadores, comparte y colecciona cartas para ganar más XP.",
+    badges: "Insignias",
+    unlockedAchievement: "logro desbloqueado",
+    firstCard: "Primera Carta",
+    firstCardDescription:
+      "Conseguiste tu primera carta en el Nexus.",
+    badgesEmptyDescription:
+      "Tus insignias aparecerán aquí cuando completes objetivos.",
+    recentActivity: "Actividad reciente",
+    recentActivityDescription: "Últimas acciones de tu colección.",
+    cardCollected: "Carta conseguida",
+    noActivityYet: "Sin actividad por ahora.",
+    cardsCountSingular: "{count} carta",
+    cardsCountPlural: "{count} cartas",
+    unlockedAchievementSingular: "{count} logro desbloqueado",
+    unlockedAchievementPlural: "{count} logros desbloqueados",
+
+    user: "Usuario",
+    adminActivities: "Actividades",
+    adminApproveClaim: "Aprobar reivindicación",
+    adminAssignOwner: "Asignar propietario",
+    adminCardSentSuccess:
+      "¡Carta enviada! {creator} ({rarity}) fue entregada a {user}.",
+    adminChooseCardDescription:
+      "Busca por nombre del creator, username, categoría o propietario.",
+    adminChooseCardStep: "1. Elegir carta",
+    adminChooseRarityStep: "3. Elegir rareza",
+    adminChooseUserDescription: "Busca por nombre, username o email.",
+    adminChooseUserStep: "2. Elegir usuario",
+    adminClaims: "Reivindicaciones",
+    adminClosePanel: "Cerrar panel admin",
+    adminCreateCreatorProfileError: "Error al crear el perfil del creador.",
+    adminCreatorOrUserNotFound: "Creator o usuario no encontrado.",
+    adminHideProfile: "Ocultar perfil",
+    adminMakeAdmin: "Hacer Admin",
+    adminManageCards: "Gestionar Cartas",
+    adminManageCardsDescription:
+      "Elige una carta de creator, selecciona el usuario y envía una rareza específica o aleatoria.",
+    adminNoCardsFound: "Ninguna carta encontrada.",
+    adminNoCreatorsFound: "Ningún creator encontrado.",
+    adminNoLogsFound: "Ningún log encontrado.",
+    adminNoPendingClaims: "Ninguna reivindicación pendiente.",
+    adminNoPendingRequests: "Ninguna solicitud pendiente.",
+    adminNoUsersFound: "Ningún usuario encontrado.",
+    adminOpenChannelProfile: "Abrir canal/perfil",
+    adminOwnerManagement: "Gestión del propietario",
+    adminOwnerManagementDescription:
+      "Asigna este perfil a un usuario conectado o elimina el propietario actual.",
+    adminPanelBadge: "Admin Panel",
+    adminPanelDescription:
+      "Gestiona solicitudes, usuarios, creators, reivindicaciones y actividades.",
+    adminPanelLoading: "Cargando panel...",
+    adminPanelTitle: "Panel Admin",
+    adminProfiles: "Perfiles",
+    adminPublishProfile: "Publicar perfil",
+    adminQuickActions: "Acciones rápidas",
+    adminQuickActionsDescription:
+      "Controla la visibilidad y la validación pública del creator.",
+    adminRandom: "Aleatorio",
+    adminRarityCommonDescription: "Plata metálica",
+    adminRarityRareDescription: "Azul claro eléctrico",
+    adminRarityEpicDescription: "Violeta arcano",
+    adminRarityLegendaryDescription: "Oro celestial",
+    adminRarityRandomDescription: "Sortea entre las 4 rarezas",
+    adminRemoveAdmin: "Quitar Admin",
+    adminRemoveOwner: "Quitar propietario",
+    adminRemoveVerification: "Quitar verificación",
+    adminRequests: "Solicitudes",
+    adminSearchCardPlaceholder: "Buscar creator/carta...",
+    adminSearchClaimPlaceholder:
+      "Buscar reivindicaciones por creador, usuario, email o código...",
+    adminSearchCreatorPlaceholder:
+      "Buscar por creator, propietario, email o username...",
+    adminSearchLogsPlaceholder: "Buscar logs por acción, usuario o metadata...",
+    adminSearchUserPlaceholder: "Buscar por nombre, username o email...",
+    adminSearchUserShortPlaceholder: "Buscar usuario...",
+    adminSelectCardRecipient: "Selecciona el usuario que recibirá la carta.",
+    adminSelectCreatorCardFirst: "Selecciona un creator/carta primero.",
+    adminSendCardToUser: "Enviar carta al usuario",
+    adminSendingCard: "Enviando carta...",
+    adminUsers: "Usuarios",
+    adminVerifyProfile: "Verificar perfil",
+    approve: "Aprobar",
+    approving: "Aprobando...",
+    avatar: "Avatar",
+    category: "Categoría",
+    claimed: "Reivindicado",
+    claimedBy: "Reivindicado por",
+    collapse: "Recolher",
+    createdAt: "Creado el",
+    creatorNotFound: "Creator no encontrado",
+    expand: "Expandir",
+    followers: "Seguidores",
+    hidden: "Oculto",
+    id: "ID",
+    noEmail: "Sin email",
+    noEmailLower: "sin email",
+    noImage: "Sin imagen",
+    noName: "Sin nombre",
+    noOwner: "Sin propietario",
+    noTarget: "sin target",
+    noneSelectedFeminine: "Ninguna seleccionada",
+    noneSelectedMasculine: "Ninguno seleccionado",
+    notInformed: "No informado",
+    notVerified: "No verificado",
+    owner: "Propietario",
+    pendingClaim: "Reivindicación pendiente",
+    platform: "Plataforma",
+    processing: "Procesando...",
+    public: "Público",
+    requestedAt: "Solicitado el",
+    shares: "Compartidos",
+    summary: "Resumen",
+    system: "Sistema",
+    target: "Target",
+    verificationUrl: "URL de verificación",
+    verified: "Verificado",
+    views: "Views",
+    admin: "Admin",
+    code: "Código",
+    rarity: "Rareza",
+    reject: "Rechazar",
+  
+    creatorSearchPlaceholder: "Buscar creators, rangos, tags...",
+    status: "Estado",
+    creatorGridDefaultTitle: "Creador en Ascenso",
+    creatorGridDefaultBio: "Nuevo creador aprobado en la plataforma.",
+    creatorGridDefaultDescription: "Este perfil fue aprobado y podrá ser personalizado por el creador pronto.",
+    creatorGridDefaultEvolutionStage: "Etapa 1 — Creador en Ascenso",
+    creatorGridRecentlyApproved: "Aprobado recientemente",
+    creatorGridOrigin: "Origen",
+    creatorGridCreatorRequest: "Solicitud de creator",
+    creatorGridStyle: "Estilo",
+    creatorGridPendingCustomization: "Personalización pendiente",
+    creatorGridFirstAppearance: "Primera aparición",
+    creatorGridFirstAppearanceDescription: "Este creator acaba de entrar en el universo de la plataforma.",
+    creatorGridCreatorApproved: "Creator Aprobado",
+    creatorGridCreatorApprovedDescription: "Perfil aprobado por la moderación.",
+    creatorGridLoading: "Cargando creators...",
+    creatorGridSearchResults: "Resultado de la búsqueda",
+    creatorGridSearchResultsDescription: "Creators encontrados según el término buscado.",
+    creatorGridFeaturedCards: "Cartas Destacadas",
+    creatorGridNewCards: "Cartas Nuevas",
+    creatorGridEmptyTitle: "No identificamos ninguna identidad que coincida con tu búsqueda.",
+    creatorGridEmptyDescription: "Intenta buscar por nombre del creador, categoría, rareza, plataforma o tags.",
+
+    loginModalCloseLoginAria: "Cerrar acceso",
+    loginModalBadge: "Acceso Creator",
+    loginModalTitle: "Accede a tu perfil digital",
+    loginModalDescription:
+      "Inicia sesión para crear tu perfil, evolucionar tu carta, desbloquear logros y participar en el sistema de reputación digital.",
+    loginModalContinueDiscord: "Continuar con Discord",
+    loginModalDiscordDescription:
+      "Ideal para creadores, comunidades y servidores.",
+    loginModalContinueGoogle: "Continuar con Google",
+    loginModalGoogleDescription:
+      "Acceso rápido para crear o administrar tu perfil.",
+    loginModalOnboardingLabel: "Registro Creator",
+    loginModalOnboardingDescription:
+      "Los nuevos perfiles pasan por una etapa de preinscripción y aprobación para mantener la plataforma segura, auténtica y premium.",
+    loginModalSupabaseNotice:
+      "El inicio de sesión real se conectará con Supabase Auth en la próxima etapa.",
+
+    creatorCardOpenAria: "Abrir perfil del creator",
+    creatorCardLevelPrefix: "Nivel",
+    creatorCardRarityCommon: "Común",
+    creatorCardRarityRare: "Raro",
+    creatorCardRarityEpic: "Épico",
+    creatorCardRarityLegendary: "Legendario",
+    back: "Volver",
+    collectionDefaultAura: "Aura de Origen",
+    collectionDefaultEvolutionStage: "Etapa 1",
+    collectionDefaultFaction: "Creator Nexus",
+    collectionDefaultTitle: "Creator Digital",
+    collectionPageBadge: "Mi Colección",
+    collectionPageLoading: "Cargando colección...",
+    collectionPageTitle: "Tus cartas del Nexus",
+    collectionPageDescription:
+      "Aquí aparecerán todas las cartas de creators que conquistes por follows, eventos y recompensas especiales.",
+    creatorPopupAvatarPreviewAlt: "Vista previa del avatar",
+    creatorPopupBack: "Volver",
+    creatorPopupBannerPreviewAlt: "Vista previa del banner",
+    creatorPopupCardNotificationPrefix: "Ganaste la carta de",
+    creatorPopupChooseFile: "Elegir archivo",
+    creatorPopupClaimDescription: "Para demostrar que este perfil te pertenece, informa una plataforma oficial y coloca temporalmente el código abajo en la bio/descripción del canal.",
+    creatorPopupClaimMine: "Este perfil es mío",
+    creatorPopupClaimProfileBadge: "Reclamar Perfil",
+    creatorPopupClaimSentBadge: "Reclamación Enviada",
+    creatorPopupClaimSentDescription: "Ahora coloca el código abajo en la bio, descripción o sección acerca de la plataforma indicada. Un administrador revisará tu solicitud.",
+    creatorPopupClaimSentTitle: "Solicitud enviada",
+    creatorPopupClaimUrlPlaceholder: "Link del canal o perfil oficial",
+    creatorPopupClaimUrlRequired: "Informa el link del canal o perfil usado para la verificación.",
+    creatorPopupClipPrefix: "Clip",
+    creatorPopupClipPreviewAltPrefix: "Vista previa del clip",
+    creatorPopupClipTitlePlaceholder: "Mejor momento del directo",
+    creatorPopupClose: "Cerrar",
+    creatorPopupCloseAria: "Cerrar popup",
+    creatorPopupCloseShareAria: "Cerrar compartir",
+    creatorPopupCollapseClips: "Contraer clips",
+    creatorPopupCopyLink: "Copiar link",
+    creatorPopupCreatorProfileBadge: "Perfil del Creador",
+    creatorPopupEdit: "Editar",
+    creatorPopupEditModeBadge: "Modo de Edición",
+    creatorPopupEditProfileTitle: "Editar perfil",
+    creatorPopupExpandClips: "Expandir clips",
+    creatorPopupFeaturedClipFallback: "Clip destacado",
+    creatorPopupFeaturedClipsDescription: "Agrega hasta 3 clips o shorts para que aparezcan en el perfil. La portada se buscará automáticamente desde el link cuando sea posible.",
+    creatorPopupFeaturedClipsTitle: "Clips destacados",
+    creatorPopupFeaturedClipsViewTitle: "Clips destacados",
+    creatorPopupFieldAvatarUrl: "URL del avatar",
+    creatorPopupFieldBannerUrl: "URL del banner",
+    creatorPopupFieldCategory: "Categoría",
+    creatorPopupFieldClipTitle: "Título",
+    creatorPopupFieldClipUrl: "URL del clip",
+    creatorPopupFieldDescription: "Descripción",
+    creatorPopupFieldFullDescription: "Descripción completa",
+    creatorPopupFieldNickname: "Nickname",
+    creatorPopupFieldPlatform: "Plataforma",
+    creatorPopupFieldShortBio: "Bio corta",
+    creatorPopupFieldTags: "Tags separadas por coma",
+    creatorPopupFieldTitle: "Título",
+    creatorPopupFieldUploadAvatar: "Subir avatar",
+    creatorPopupFieldUploadBanner: "Subir banner",
+    creatorPopupFollow: "Seguir",
+    creatorPopupFollowNotificationPrefix: "Seguiste a",
+    creatorPopupFollowXpMessage: "Ganaste XP por seguir a un creator.",
+    creatorPopupFollowers: "Seguidores",
+    creatorPopupFollowing: "Siguiendo",
+    creatorPopupLevelPrefix: "Nv.",
+    creatorPopupLinkCopied: "¡Link copiado!",
+    creatorPopupLoadingProfile: "Cargando perfil...",
+    creatorPopupLoginToClaim: "Inicia sesión para reclamar este perfil.",
+    creatorPopupLoginToFollow: "Inicia sesión para seguir a este creator.",
+    creatorPopupProfileUpdated: "¡Perfil actualizado con éxito!",
+    creatorPopupSaveChanges: "Guardar cambios",
+    creatorPopupSaving: "Guardando...",
+    creatorPopupSendClaim: "Enviar reclamación",
+    creatorPopupSending: "Enviando...",
+    creatorPopupShare: "Compartir",
+    creatorPopupShareBadge: "Compartir Perfil",
+    creatorPopupShareDescriptionPrefix: "Comparte el perfil de",
+    creatorPopupShareDescriptionSuffix: "usando el link con vista previa de Creator Nexus.",
+    creatorPopupShares: "Compartidos",
+    creatorPopupSocialLinkPlaceholderPrefix: "Link de",
+    creatorPopupSocialLinksDescription: "Agrega los links oficiales del creator.",
+    creatorPopupSocialLinksTitle: "Redes Sociales",
+    creatorPopupSocialNetworks: "Redes Sociales",
+    creatorPopupStatusEvent: "En evento",
+    creatorPopupStatusLive: "En vivo",
+    creatorPopupStatusOffline: "Offline",
+    creatorPopupStatusOnline: "Online",
+    creatorPopupStatusTrending: "En tendencia",
+    creatorPopupTags: "Tags",
+    creatorPopupUploadingAvatar: "Subiendo avatar...",
+    creatorPopupUploadingBanner: "Subiendo banner...",
+    creatorPopupVerificationCode: "Código de verificación",
+    creatorPopupView: "Ver",
+    creatorPopupViews: "Views",
+    creatorRequestModalBadge: "Solicitud Creator",
+    creatorRequestModalSuccessTitle: "Solicitud enviada",
+    creatorRequestModalSuccessDescription: "Tu solicitud fue enviada para revisión.",
+    creatorRequestModalTitle: "Conviértete en Creator",
+    creatorRequestModalDescription: "Envía tu solicitud para crear tu perfil.",
+    creatorRequestModalNicknamePlaceholder: "Apodo",
+    creatorRequestModalUsernamePlaceholder: "Username",
+    creatorRequestModalVerificationTitle: "Verificación",
+    creatorRequestModalVerificationUrlPlaceholder: "URL de verificación",
+    creatorRequestModalVerificationCodeLabel: "Código",
+    creatorRequestModalVerificationCodeDescription: "Usa este código para validar tu perfil.",
+    creatorRequestModalCardImageTitle: "Imagen de la Carta",
+    creatorRequestModalCardImageDescription: "Sube una imagen para tu carta.",
+    creatorRequestModalImageUrlPlaceholder: "URL de la imagen",
+    creatorRequestModalUploading: "Subiendo...",
+    creatorRequestModalUploadImage: "Subir imagen",
+    creatorRequestModalImagePreviewAlt: "Vista previa de la imagen",
+    creatorRequestModalPromptTitle: "Prompt",
+    creatorRequestModalPromptDescription: "Usa el prompt de abajo.",
+    creatorRequestModalCopied: "Copiado",
+    creatorRequestModalCopy: "Copiar",
+    creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
+    creatorRequestModalSubmitting: "Enviando...",
+    creatorRequestModalSubmit: "Enviar solicitud",
+    loadingScreenTitle: "Preparando tu universo",
+    loadingScreenDescription: "Sincronizando perfiles, cartas y logros...",
+    missionsModalCloseAria: "Cerrar misiones",
+    missionsModalNotificationTitle: "Recompensa reclamada",
+    missionsModalNotificationMessage: "Tu recompensa fue agregada a tu cuenta.",
+    missionsModalBadge: "Misiones",
+    missionsModalTitle: "Centro de Misiones",
+    missionsModalDescription: "Completa misiones para ganar recompensas y evolucionar tu presencia en Nexus.",
+    missionsModalProgressLabel: "Progreso",
+    missionsModalLoading: "Cargando misiones...",
+    missionsModalEmpty: "No hay misiones disponibles en este momento.",
+    missionsModalProgressCount: "{current}/{target}",
+    missionsModalClaiming: "Reclamando...",
+    missionsModalClaimed: "Reclamado",
+    missionsModalClaim: "Reclamar",
+    missionsModalInProgress: "En progreso",
+    packsModalCloseAria: "Cerrar packs",
+    packsModalBadge: "Packs",
+    packsModalTitle: "Abrir Packs",
+    packsModalDescription: "Abre tus packs para revelar nuevas cartas de creators.",
+    packsModalInventoryTitle: "Inventario de Packs",
+    packsModalPackCountSingular: "{count} pack disponible",
+    packsModalPackCountPlural: "{count} packs disponibles",
+    packsModalLoading: "Cargando packs...",
+    packsModalSearching: "Buscando tus packs...",
+    packsModalEmpty: "Todavía no tienes packs disponibles.",
+    packsModalDefaultPackName: "Pack Nexus",
+    packsModalDefaultPackDescription: "Un pack especial con cartas de creators.",
+    packsModalOriginLabel: "Origen",
+    packsModalSystemSource: "Sistema",
+    packsModalOpenPackButton: "Abrir pack",
+    packsModalDefaultNexusPack: "Pack Nexus",
+    packsModalIdleTitle: "Elige un pack",
+    packsModalIdleDescription: "Selecciona un pack de tu inventario para iniciar la apertura.",
+    packsModalDuplicateCard: "Carta duplicada",
+    packsModalRevealedCard: "Carta revelada",
+    packsModalDuplicateDescription: "Ya tenías esta carta, así que fue marcada como duplicada.",
+    packsModalThisCreator: "Este creator",
+    packsModalReceivedDescription: "fue agregado a tu colección.",
+    packsModalOpenErrorTitle: "No se pudo abrir el pack",
+    packsModalOpenErrorDescription: "Inténtalo de nuevo en unos instantes.",
+    packsModalAnimationLabel: "Revelación en progreso",
+    packsModalAnimationDescription: "Rasgando el pack y revelando tu carta...",
+    packsModalOpenAnother: "Abrir otro pack",
+    packsModalRevealing: "Revelando...",
+    packsModalTearingPack: "Rasgando pack...",
+    packsModalNewCard: "Nueva carta",
+    homePageBadge: "Plataforma de Reputación Digital",
+    homePageDescription: "Descubre creadores legendarios a través de cartas digitales.",
+    packsModalLegendaryPackName: "Pack Legendario",
+    packsModalEpicPackName: "Pack Épico",
+    packsModalRarePackName: "Pack Raro",
+    packsModalCommonPackName: "Pack Común",
+    packsModalLegendaryPackDescription: "Un pack especial con mayor probabilidad de una carta legendaria.",
+    packsModalEpicPackDescription: "Un pack especial con mejores probabilidades de una carta épica.",
+    packsModalRarePackDescription: "Un pack mejorado con mejores probabilidades de una carta rara.",
+    packsModalCommonPackDescription: "Un pack básico con cartas de creators.",
+    packsModalManualTestSource: "Prueba manual",
+    packsModalMissionSource: "Misión",
+
+
+
+
+
+},
+} as const;
+
+export type TranslationKey = keyof typeof translations.pt;
+export type LanguageCode = keyof typeof translations;
