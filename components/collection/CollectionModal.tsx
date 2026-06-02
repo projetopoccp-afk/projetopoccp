@@ -851,7 +851,7 @@ function CollectionCardShowcase({
   }
 
   async function shareCard() {
-    const url = `${window.location.origin}/card/${username}?v=1`;
+    const url = `${window.location.origin}/creator/${username}`;
     const text = translate(
       t,
       "shareCardText",
