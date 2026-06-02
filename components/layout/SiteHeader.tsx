@@ -572,7 +572,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               <button
                 onClick={() => setAccountOpen(true)}
                 className="group rounded-2xl px-2 py-1 text-right transition hover:bg-white/[0.04]"
-                title={translate(t, "openPanel", "{translate(t, "openPanel", "Clique para abrir o painel")}")}
+                {translate(t, "openPanel", "Clique para abrir o painel")}
               >
                 <p className="text-sm font-semibold text-white transition group-hover:text-cyan-200">
                   {displayName}
