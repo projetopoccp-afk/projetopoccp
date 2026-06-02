@@ -440,6 +440,15 @@ export const translations = {
     packsModalCommonPackDescription: "Um pacote básico com cartas de creators.",
     packsModalManualTestSource: "Teste manual",
     packsModalMissionSource: "Missão",
+    missionFirstFollowTitle: "Primeiro follow",
+    missionBeginnerCollectorTitle: "Colecionador iniciante",
+    missionSocialNexusTitle: "Social Nexus",
+    missionCardHunterTitle: "Caçador de cartas",
+    missionFirstFollowDescription: "Siga seu primeiro criador.",
+    missionBeginnerCollectorDescription: "Conquiste 3 cartas.",
+    missionSocialNexusDescription: "Compartilhe 2 perfis de criadores.",
+    missionCardHunterDescription: "Conquiste 10 cartas.",
+
 
 
 
@@ -888,6 +897,15 @@ export const translations = {
     packsModalCommonPackDescription: "A basic pack with creator cards.",
     packsModalManualTestSource: "Manual test",
     packsModalMissionSource: "Mission",
+    missionFirstFollowTitle: "First follow",
+    missionBeginnerCollectorTitle: "Beginner collector",
+    missionSocialNexusTitle: "Social Nexus",
+    missionCardHunterTitle: "Card hunter",
+    missionFirstFollowDescription: "Follow your first creator.",
+    missionBeginnerCollectorDescription: "Collect 3 cards.",
+    missionSocialNexusDescription: "Share 2 creator profiles.",
+    missionCardHunterDescription: "Collect 10 cards.",
+
 
 
 
@@ -1336,6 +1354,15 @@ export const translations = {
     packsModalCommonPackDescription: "Un pack básico con cartas de creators.",
     packsModalManualTestSource: "Prueba manual",
     packsModalMissionSource: "Misión",
+    missionFirstFollowTitle: "Primer follow",
+    missionBeginnerCollectorTitle: "Coleccionista principiante",
+    missionSocialNexusTitle: "Social Nexus",
+    missionCardHunterTitle: "Cazador de cartas",
+    missionFirstFollowDescription: "Sigue a tu primer creator.",
+    missionBeginnerCollectorDescription: "Consigue 3 cartas.",
+    missionSocialNexusDescription: "Comparte 2 perfiles de creators.",
+    missionCardHunterDescription: "Consigue 10 cartas.",
+
 
 
 
