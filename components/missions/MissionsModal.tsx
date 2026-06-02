@@ -106,7 +106,7 @@ function getMissionTranslationKey(
   return null;
 }
 
-function getMissionTitle(t: (key: never) => string, mission: Mission) {
+function getMissionTitle(t: any, mission: Mission) {
   const key = getMissionTranslationKey(mission, "title");
 
   if (!key) {
@@ -116,7 +116,7 @@ function getMissionTitle(t: (key: never) => string, mission: Mission) {
   return translate(t, key, mission.title);
 }
 
-function getMissionDescription(t: (key: never) => string, mission: Mission) {
+function getMissionDescription(t: any, mission: Mission) {
   const key = getMissionTranslationKey(mission, "description");
 
   if (!key) {
