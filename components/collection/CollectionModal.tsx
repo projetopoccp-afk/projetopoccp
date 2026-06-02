@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Archive,
   Crown,
@@ -112,52 +112,123 @@ const rarityStyles: Record<
   }
 > = {
   common: {
-    border: "border-cyan-300/55",
-    badge: "border-cyan-300/35 bg-cyan-300/12 text-cyan-100",
-    glow: "bg-cyan-400/20",
+    border: "border-cyan-300/30",
+    badge: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
+    glow: "bg-cyan-400/25",
     text: "text-cyan-200",
-    ring: "ring-cyan-200/35",
-    frame: "from-cyan-300/8 via-transparent to-cyan-950/18",
-    aura: "bg-cyan-400/10",
+    ring: "ring-cyan-200/25",
+    frame: "from-cyan-300/16 via-slate-900/10 to-cyan-900/28",
+    aura: "bg-cyan-400/18",
     shine: "from-transparent via-cyan-100/10 to-transparent",
-    corner: "",
-    shadow: "shadow-[0_0_18px_rgba(34,211,238,0.38),0_0_42px_rgba(34,211,238,0.16)] hover:shadow-[0_0_24px_rgba(34,211,238,0.55),0_0_70px_rgba(34,211,238,0.26)]",
+    corner: "border-cyan-200/35 bg-cyan-300/10",
+    shadow: "shadow-[0_0_70px_rgba(34,211,238,0.18)]",
   },
   rare: {
-    border: "border-blue-300/70",
-    badge: "border-blue-300/45 bg-blue-300/16 text-blue-100",
-    glow: "bg-blue-500/26",
+    border: "border-blue-300/45",
+    badge: "border-blue-300/35 bg-blue-300/15 text-blue-100",
+    glow: "bg-blue-500/35",
     text: "text-blue-100",
-    ring: "ring-blue-200/45",
-    frame: "from-blue-300/10 via-transparent to-blue-950/24",
-    aura: "bg-blue-500/16",
+    ring: "ring-blue-200/35",
+    frame: "from-blue-300/22 via-indigo-500/12 to-blue-950/40",
+    aura: "bg-blue-500/24",
     shine: "from-transparent via-blue-100/18 to-transparent",
-    corner: "",
-    shadow: "shadow-[0_0_24px_rgba(59,130,246,0.55),0_0_70px_rgba(59,130,246,0.25)] hover:shadow-[0_0_32px_rgba(59,130,246,0.75),0_0_95px_rgba(59,130,246,0.38)]",
+    corner: "border-blue-200/45 bg-blue-300/15",
+    shadow: "shadow-[0_0_85px_rgba(59,130,246,0.28)]",
   },
   epic: {
-    border: "border-fuchsia-300/75",
-    badge: "border-fuchsia-300/55 bg-fuchsia-300/18 text-fuchsia-100",
-    glow: "bg-fuchsia-500/32",
+    border: "border-purple-300/55",
+    badge: "border-fuchsia-300/45 bg-fuchsia-300/15 text-fuchsia-100",
+    glow: "bg-fuchsia-500/40",
     text: "text-fuchsia-100",
-    ring: "ring-fuchsia-200/55",
-    frame: "from-fuchsia-300/12 via-transparent to-purple-950/30",
-    aura: "bg-fuchsia-500/22",
+    ring: "ring-fuchsia-200/45",
+    frame: "from-fuchsia-300/25 via-purple-600/18 to-yellow-500/16",
+    aura: "bg-fuchsia-500/30",
     shine: "from-transparent via-fuchsia-100/24 to-transparent",
-    corner: "",
-    shadow: "shadow-[0_0_34px_rgba(217,70,239,0.70),0_0_105px_rgba(168,85,247,0.38)] hover:shadow-[0_0_44px_rgba(217,70,239,0.90),0_0_135px_rgba(168,85,247,0.50)]",
+    corner: "border-fuchsia-200/55 bg-fuchsia-300/15",
+    shadow: "shadow-[0_0_100px_rgba(217,70,239,0.35)]",
   },
   legendary: {
-    border: "border-yellow-300/85",
-    badge: "border-yellow-200/70 bg-yellow-300/22 text-yellow-50",
-    glow: "bg-yellow-400/38",
+    border: "border-yellow-300/70",
+    badge: "border-yellow-200/60 bg-yellow-300/20 text-yellow-50",
+    glow: "bg-yellow-400/45",
     text: "text-yellow-50",
-    ring: "ring-yellow-100/65",
-    frame: "from-yellow-200/14 via-transparent to-red-950/30",
-    aura: "bg-yellow-300/28",
-    shine: "from-transparent via-yellow-50/32 to-transparent",
-    corner: "",
-    shadow: "shadow-[0_0_42px_rgba(250,204,21,0.78),0_0_120px_rgba(249,115,22,0.44)] hover:shadow-[0_0_56px_rgba(250,204,21,0.95),0_0_160px_rgba(249,115,22,0.60)]",
+    ring: "ring-yellow-100/55",
+    frame: "from-yellow-200/28 via-orange-500/20 to-red-600/20",
+    aura: "bg-yellow-300/35",
+    shine: "from-transparent via-yellow-50/30 to-transparent",
+    corner: "border-yellow-100/70 bg-yellow-300/20",
+    shadow: "shadow-[0_0_120px_rgba(250,204,21,0.45)]",
+  },
+};
+
+const rarityNeonStyles: Record<
+  string,
+  {
+    outerAura: string;
+    pulseAura: string;
+    energyOverlay: string;
+    staticOverlay: string;
+    borderGlow: CSSProperties;
+    badgeGlow: CSSProperties;
+  }
+> = {
+  common: {
+    outerAura: "bg-cyan-400/18 blur-2xl opacity-55",
+    pulseAura: "bg-cyan-300/12",
+    energyOverlay: "bg-[radial-gradient(circle_at_50%_8%,rgba(34,211,238,0.16),transparent_34%)]",
+    staticOverlay: "bg-[linear-gradient(135deg,rgba(34,211,238,0.14),transparent_38%,rgba(34,211,238,0.08))]",
+    borderGlow: {
+      boxShadow:
+        "0 0 0 1px rgba(103,232,249,.55), 0 0 18px rgba(34,211,238,.45), 0 0 46px rgba(34,211,238,.18)",
+    },
+    badgeGlow: {
+      boxShadow: "0 0 18px rgba(34,211,238,.32)",
+    },
+  },
+  rare: {
+    outerAura: "bg-blue-500/36 blur-3xl opacity-90",
+    pulseAura: "bg-blue-400/24",
+    energyOverlay:
+      "bg-[radial-gradient(circle_at_22%_18%,rgba(96,165,250,0.38),transparent_32%),radial-gradient(circle_at_82%_75%,rgba(34,211,238,0.22),transparent_30%)]",
+    staticOverlay:
+      "bg-[linear-gradient(135deg,rgba(96,165,250,0.28),transparent_36%,rgba(34,211,238,0.18))]",
+    borderGlow: {
+      boxShadow:
+        "0 0 0 1px rgba(147,197,253,.75), 0 0 26px rgba(59,130,246,.78), 0 0 76px rgba(37,99,235,.42), inset 0 0 24px rgba(59,130,246,.22)",
+    },
+    badgeGlow: {
+      boxShadow: "0 0 24px rgba(96,165,250,.55)",
+    },
+  },
+  epic: {
+    outerAura: "bg-fuchsia-500/48 blur-[38px] opacity-100",
+    pulseAura: "bg-fuchsia-400/34",
+    energyOverlay:
+      "bg-[radial-gradient(circle_at_20%_16%,rgba(217,70,239,0.45),transparent_34%),radial-gradient(circle_at_80%_72%,rgba(168,85,247,0.34),transparent_32%),linear-gradient(115deg,transparent,rgba(236,72,153,0.20),transparent)]",
+    staticOverlay:
+      "bg-[linear-gradient(135deg,rgba(217,70,239,0.34),transparent_35%,rgba(168,85,247,0.25))]",
+    borderGlow: {
+      boxShadow:
+        "0 0 0 1px rgba(240,171,252,.86), 0 0 34px rgba(217,70,239,.95), 0 0 95px rgba(168,85,247,.62), inset 0 0 30px rgba(217,70,239,.28)",
+    },
+    badgeGlow: {
+      boxShadow: "0 0 30px rgba(217,70,239,.75)",
+    },
+  },
+  legendary: {
+    outerAura: "bg-yellow-400/54 blur-[44px] opacity-100",
+    pulseAura: "bg-yellow-300/38",
+    energyOverlay:
+      "bg-[radial-gradient(circle_at_18%_18%,rgba(250,204,21,0.52),transparent_34%),radial-gradient(circle_at_80%_70%,rgba(248,113,113,0.38),transparent_34%),linear-gradient(115deg,transparent,rgba(251,191,36,0.26),transparent)]",
+    staticOverlay:
+      "bg-[linear-gradient(135deg,rgba(250,204,21,0.42),transparent_34%,rgba(248,113,113,0.30))]",
+    borderGlow: {
+      boxShadow:
+        "0 0 0 1px rgba(254,240,138,.95), 0 0 42px rgba(250,204,21,1), 0 0 120px rgba(249,115,22,.72), inset 0 0 34px rgba(250,204,21,.34)",
+    },
+    badgeGlow: {
+      boxShadow: "0 0 34px rgba(250,204,21,.85)",
+    },
   },
 };
 
@@ -737,26 +808,40 @@ function CollectionCardFace({
   const isLarge = size === "large";
   const xp = getCardXp(rarity);
   const isNew = isCardNew(card);
+  const neon = rarityNeonStyles[rarity] || rarityNeonStyles.common;
+  const cardSizeClass = isLarge
+    ? "h-[620px] w-[410px] rounded-[34px]"
+    : "h-[360px] w-[240px] rounded-[24px]";
+  const auraSizeClass = isLarge ? "rounded-[40px]" : "rounded-[28px]";
 
   return (
-    <button
+    <div className={`relative ${cardSizeClass}`}>
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -inset-4 ${auraSizeClass} ${neon.outerAura}`}
+      />
+
+      {rarity !== "common" && (
+        <motion.div
+          aria-hidden
+          animate={{ opacity: [0.45, 0.95, 0.45], scale: [0.98, 1.08, 0.98] }}
+          transition={{
+            duration: rarity === "legendary" ? 1.7 : rarity === "epic" ? 2 : 2.4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className={`pointer-events-none absolute -inset-6 ${auraSizeClass} ${neon.pulseAura} blur-2xl`}
+        />
+      )}
+
+      <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden border-2 bg-black text-left ${style.shadow} transition duration-500 hover:scale-[1.018] ${style.border} ${
-        isLarge
-          ? "h-[620px] w-[410px] rounded-[34px]"
-          : "h-[360px] w-[240px] rounded-[24px]"
-      }`}
+      style={neon.borderGlow}
+      className={`group relative ${cardSizeClass} overflow-hidden border bg-black text-left ${style.shadow} transition duration-500 hover:scale-[1.015] ${style.border}`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${style.frame}`} />
       <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
-
-      <motion.div
-        aria-hidden
-        animate={{ opacity: rarity === "common" ? [0.22, 0.38, 0.22] : [0.36, 0.78, 0.36] }}
-        transition={{ duration: rarity === "legendary" ? 1.5 : rarity === "epic" ? 1.8 : 2.4, repeat: Infinity, ease: "easeInOut" }}
-        className={`pointer-events-none absolute inset-0 ${isLarge ? "rounded-[34px]" : "rounded-[24px]"} ring-2 ring-inset ${style.ring}`}
-      />
 
       {rarity !== "common" && (
         <div className="pointer-events-none absolute inset-0 opacity-50 mix-blend-screen">
@@ -809,9 +894,38 @@ function CollectionCardFace({
         </div>
       )}
 
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 ${neon.staticOverlay} mix-blend-screen ${
+          rarity === "common"
+            ? "opacity-35"
+            : rarity === "rare"
+              ? "opacity-60"
+              : rarity === "epic"
+                ? "opacity-78"
+                : "opacity-90"
+        }`}
+      />
+
+      <motion.div
+        aria-hidden
+        animate={{
+          opacity:
+            rarity === "common" ? [0.18, 0.32, 0.18] : [0.35, 0.86, 0.35],
+          x: ["-8%", "8%", "-8%"],
+        }}
+        transition={{
+          duration: rarity === "legendary" ? 2 : rarity === "epic" ? 2.4 : 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className={`pointer-events-none absolute inset-0 ${neon.energyOverlay} mix-blend-screen`}
+      />
+
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
       <div
+        style={neon.badgeGlow}
         className={`absolute border font-bold uppercase backdrop-blur ${style.badge} ${
           isLarge
             ? "left-7 top-7 rounded-full px-5 py-2 text-sm tracking-[0.32em]"
@@ -890,6 +1004,7 @@ function CollectionCardFace({
           isLarge ? "rounded-[34px]" : "rounded-[24px]"
         }`}
       />
-    </button>
+      </button>
+    </div>
   );
 }
