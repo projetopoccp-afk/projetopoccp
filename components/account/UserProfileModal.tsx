@@ -16,6 +16,8 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+
+import { useLanguage } from "@/contexts/LanguageContext";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 
@@ -47,13 +49,35 @@ type ProfileXp = {
   level: number;
 };
 
+type TranslateFunction = (key: any) => string;
+
+function translate(t: TranslateFunction, key: string, fallback: string) {
+  const value = t(key);
+
+  return value && value !== key ? value : fallback;
+}
+
+function getDateLocale(language: string) {
+  if (language === "en") return "en-US";
+  if (language === "es") return "es-ES";
+
+  return "pt-BR";
+}
+
+function getTranslatedRarityLabel(rarity: string, t: TranslateFunction) {
+  return translate(t, rarity.toLowerCase(), getRarityLabel(rarity));
+}
+
 function getLevelProgress(xp: number, level: number) {
   const safeLevel = Math.max(1, level);
   const currentLevelXp = Math.pow(safeLevel - 1, 2) * 100;
   const nextLevelXp = Math.pow(safeLevel, 2) * 100;
   const xpInsideLevel = Math.max(0, xp - currentLevelXp);
   const xpNeededForLevel = Math.max(1, nextLevelXp - currentLevelXp);
-  const percentage = Math.min(100, Math.round((xpInsideLevel / xpNeededForLevel) * 100));
+  const percentage = Math.min(
+    100,
+    Math.round((xpInsideLevel / xpNeededForLevel) * 100)
+  );
 
   return {
     currentLevelXp,
@@ -79,6 +103,7 @@ export function UserProfileModal({
   });
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [highlightLevelUp, setHighlightLevelUp] = useState(false);
+  const { language, t } = useLanguage();
 
   const isVisible = open || notificationOpen;
 
@@ -216,7 +241,7 @@ export function UserProfileModal({
               type="button"
               onClick={handleClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar perfil"
+              aria-label={translate(t, "closeProfile", "Fechar perfil")}
             >
               <X size={18} />
             </button>
@@ -224,7 +249,7 @@ export function UserProfileModal({
             <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                 <UserRound size={14} />
-                Meu Perfil
+                {translate(t, "profile", "Meu Perfil")}
               </div>
 
               <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -242,23 +267,23 @@ export function UserProfileModal({
 
                 <div className="min-w-0 flex-1">
                   <h2 className="text-3xl font-black leading-tight">
-                    {profile?.display_name || "Creator"}
+                    {profile?.display_name || translate(t, "creator", "Creator")}
                   </h2>
 
                   <p className="mt-1 break-all text-white/45">{email}</p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                      @{profile?.username || "sem_username"}
+                      @{profile?.username || translate(t, "noUsername", "sem_username")}
                     </span>
 
                     <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                      Nível {loading ? "..." : profileXp.level}
+                      {translate(t, "level", "Nível")} {loading ? "..." : profileXp.level}
                     </span>
 
                     {highlightLevelUp && (
                       <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-sm text-emerald-100">
-                        Level up recente
+                        {translate(t, "recentLevelUp", "Level up recente")}
                       </span>
                     )}
 
@@ -267,7 +292,7 @@ export function UserProfileModal({
                     </span>
 
                     <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                      {stats.total} cartas
+                      {stats.total} {translate(t, "cards", "cartas")}
                     </span>
 
                     {profile?.is_admin && (
@@ -280,7 +305,10 @@ export function UserProfileModal({
 
                   <div className="mt-5 max-w-xl">
                     <div className="mb-2 flex items-center justify-between text-xs text-white/45">
-                      <span>Progresso para o nível {profileXp.level + 1}</span>
+                      <span>
+                        {translate(t, "progressToLevel", "Progresso para o nível")}{" "}
+                        {profileXp.level + 1}
+                      </span>
                       <span>{levelProgress.percentage}%</span>
                     </div>
 
@@ -294,7 +322,9 @@ export function UserProfileModal({
                     </div>
 
                     <p className="mt-2 text-xs text-white/40">
-                      Faltam {levelProgress.remainingXp} XP para o próximo nível.
+                      {translate(t, "remainingXpPrefix", "Faltam")}{" "}
+                      {levelProgress.remainingXp} XP{" "}
+                      {translate(t, "remainingXpSuffix", "para o próximo nível.")}
                     </p>
                   </div>
                 </div>
@@ -309,12 +339,14 @@ export function UserProfileModal({
 
                     <div>
                       <p className="font-bold text-emerald-100">
-                        Você subiu de nível!
+                        {translate(t, "levelUpTitle", "Você subiu de nível!")}
                       </p>
                       <p className="text-sm text-white/45">
-                        Seu perfil foi aberto a partir de uma notificação de
-                        evolução. Continue seguindo criadores, compartilhando e
-                        colecionando cartas para ganhar mais XP.
+                        {translate(
+                          t,
+                          "levelUpDescription",
+                          "Seu perfil foi aberto a partir de uma notificação de evolução. Continue seguindo criadores, compartilhando e colecionando cartas para ganhar mais XP."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -324,7 +356,7 @@ export function UserProfileModal({
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <ProfileStatCard
                   icon={<Trophy size={18} />}
-                  label="Nível"
+                  label={translate(t, "level", "Nível")}
                   value={loading ? "..." : String(profileXp.level)}
                   tone="cyan"
                 />
@@ -338,14 +370,14 @@ export function UserProfileModal({
 
                 <ProfileStatCard
                   icon={<Archive size={18} />}
-                  label="Cartas"
+                  label={translate(t, "cardsTitle", "Cartas")}
                   value={loading ? "..." : String(stats.total)}
                   tone="purple"
                 />
 
                 <ProfileStatCard
                   icon={<Crown size={18} />}
-                  label="Lendárias"
+                  label={translate(t, "legendaryPlural", "Lendárias")}
                   value={loading ? "..." : String(stats.legendary)}
                   tone="pink"
                 />
@@ -354,28 +386,28 @@ export function UserProfileModal({
               <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <ProfileStatCard
                   icon={<Gem size={18} />}
-                  label="Raras"
+                  label={translate(t, "rarePlural", "Raras")}
                   value={loading ? "..." : String(stats.rare)}
                   tone="purple"
                 />
 
                 <ProfileStatCard
                   icon={<Zap size={18} />}
-                  label="Épicas"
+                  label={translate(t, "epicPlural", "Épicas")}
                   value={loading ? "..." : String(stats.epic)}
                   tone="yellow"
                 />
 
                 <ProfileStatCard
                   icon={<Crown size={18} />}
-                  label="Lendárias"
+                  label={translate(t, "legendaryPlural", "Lendárias")}
                   value={loading ? "..." : String(stats.legendary)}
                   tone="pink"
                 />
 
                 <ProfileStatCard
                   icon={<BadgeCheck size={18} />}
-                  label="Badges"
+                  label={translate(t, "badges", "Badges")}
                   value={loading ? "..." : String(stats.badges)}
                   tone="cyan"
                 />
@@ -389,9 +421,12 @@ export function UserProfileModal({
                     </div>
 
                     <div>
-                      <p className="font-bold">Badges</p>
+                      <p className="font-bold">
+                        {translate(t, "badges", "Badges")}
+                      </p>
                       <p className="text-sm text-white/45">
-                        {stats.badges} conquista desbloqueada
+                        {stats.badges}{" "}
+                        {translate(t, "unlockedAchievement", "conquista desbloqueada")}
                       </p>
                     </div>
                   </div>
@@ -402,17 +437,24 @@ export function UserProfileModal({
                         <Sparkles className="text-cyan-200" size={18} />
                         <div>
                           <p className="text-sm font-bold text-white">
-                            Primeira Carta
+                            {translate(t, "firstCard", "Primeira Carta")}
                           </p>
                           <p className="text-xs text-white/45">
-                            Você conquistou sua primeira carta no Nexus.
+                            {translate(
+                              t,
+                              "firstCardDescription",
+                              "Você conquistou sua primeira carta no Nexus."
+                            )}
                           </p>
                         </div>
                       </div>
                     ) : (
                       <p className="text-sm text-white/45">
-                        Suas badges aparecerão aqui quando você completar
-                        objetivos.
+                        {translate(
+                          t,
+                          "badgesEmptyDescription",
+                          "Suas badges aparecerão aqui quando você completar objetivos."
+                        )}
                       </p>
                     )}
                   </div>
@@ -425,9 +467,15 @@ export function UserProfileModal({
                     </div>
 
                     <div>
-                      <p className="font-bold">Atividade recente</p>
+                      <p className="font-bold">
+                        {translate(t, "recentActivity", "Atividade recente")}
+                      </p>
                       <p className="text-sm text-white/45">
-                        Últimas ações da sua coleção.
+                        {translate(
+                          t,
+                          "recentActivityDescription",
+                          "Últimas ações da sua coleção."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -439,13 +487,14 @@ export function UserProfileModal({
                         className="rounded-2xl border border-white/10 bg-black/20 p-4"
                       >
                         <p className="text-sm font-bold text-white">
-                          Carta conquistada
+                          {translate(t, "cardCollected", "Carta conquistada")}
                         </p>
 
                         <p className="mt-1 text-xs text-white/45">
-                          {getRarityLabel(card.rarity)} • {card.source} •{" "}
+                          {getTranslatedRarityLabel(card.rarity, t)} •{" "}
+                          {card.source} •{" "}
                           {new Date(card.obtained_at).toLocaleDateString(
-                            "pt-BR"
+                            getDateLocale(language)
                           )}
                         </p>
                       </div>
@@ -453,7 +502,11 @@ export function UserProfileModal({
 
                     {!loading && cards.length === 0 && (
                       <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                        Nenhuma atividade por enquanto.
+                        {translate(
+                          t,
+                          "noActivityYet",
+                          "Nenhuma atividade por enquanto."
+                        )}
                       </p>
                     )}
                   </div>

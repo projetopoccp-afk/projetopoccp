@@ -67,6 +67,7 @@ export const translations = {
     noUsername: "sem_username",
     level: "Nível",
     cards: "cartas",
+    cardsTitle: "Cartas",
     adminPanel: "Painel Admin",
     open: "Abrir",
     soon: "Em breve",
@@ -89,6 +90,27 @@ export const translations = {
       "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas.",
     requestCreatorProfileDescription:
       "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação.",
+
+    closeProfile: "Fechar perfil",
+    creator: "Creator",
+    recentLevelUp: "Level up recente",
+    progressToLevel: "Progresso para o nível",
+    remainingXpPrefix: "Faltam",
+    remainingXpSuffix: "para o próximo nível.",
+    levelUpTitle: "Você subiu de nível!",
+    levelUpDescription:
+      "Seu perfil foi aberto a partir de uma notificação de evolução. Continue seguindo criadores, compartilhando e colecionando cartas para ganhar mais XP.",
+    badges: "Badges",
+    unlockedAchievement: "conquista desbloqueada",
+    firstCard: "Primeira Carta",
+    firstCardDescription:
+      "Você conquistou sua primeira carta no Nexus.",
+    badgesEmptyDescription:
+      "Suas badges aparecerão aqui quando você completar objetivos.",
+    recentActivity: "Atividade recente",
+    recentActivityDescription: "Últimas ações da sua coleção.",
+    cardCollected: "Carta conquistada",
+    noActivityYet: "Nenhuma atividade por enquanto.",
   },
 
   en: {
@@ -159,6 +181,7 @@ export const translations = {
     noUsername: "no_username",
     level: "Level",
     cards: "cards",
+    cardsTitle: "Cards",
     adminPanel: "Admin Panel",
     open: "Open",
     soon: "Soon",
@@ -181,6 +204,27 @@ export const translations = {
       "Open daily packs, mission packs, and event packs to unlock new cards.",
     requestCreatorProfileDescription:
       "Submit your data, social links, and proof of channel ownership to enter the approval queue.",
+
+    closeProfile: "Close profile",
+    creator: "Creator",
+    recentLevelUp: "Recent level up",
+    progressToLevel: "Progress to level",
+    remainingXpPrefix: "",
+    remainingXpSuffix: "remaining for the next level.",
+    levelUpTitle: "You leveled up!",
+    levelUpDescription:
+      "Your profile was opened from a level-up notification. Keep following creators, sharing, and collecting cards to earn more XP.",
+    badges: "Badges",
+    unlockedAchievement: "unlocked achievement",
+    firstCard: "First Card",
+    firstCardDescription:
+      "You earned your first card in the Nexus.",
+    badgesEmptyDescription:
+      "Your badges will appear here when you complete objectives.",
+    recentActivity: "Recent activity",
+    recentActivityDescription: "Latest actions from your collection.",
+    cardCollected: "Card collected",
+    noActivityYet: "No activity yet.",
   },
 
   es: {
@@ -251,6 +295,7 @@ export const translations = {
     noUsername: "sin_usuario",
     level: "Nivel",
     cards: "cartas",
+    cardsTitle: "Cartas",
     adminPanel: "Panel Admin",
     open: "Abrir",
     soon: "Pronto",
@@ -273,6 +318,27 @@ export const translations = {
       "Abre paquetes diarios, paquetes de misión y eventos para desbloquear nuevas cartas.",
     requestCreatorProfileDescription:
       "Envía tus datos, redes sociales y prueba de propiedad del canal para entrar en la cola de aprobación.",
+
+    closeProfile: "Cerrar perfil",
+    creator: "Creator",
+    recentLevelUp: "Subida de nivel reciente",
+    progressToLevel: "Progreso al nivel",
+    remainingXpPrefix: "Faltan",
+    remainingXpSuffix: "para el próximo nivel.",
+    levelUpTitle: "¡Subiste de nivel!",
+    levelUpDescription:
+      "Tu perfil se abrió desde una notificación de evolución. Sigue creadores, comparte y colecciona cartas para ganar más XP.",
+    badges: "Insignias",
+    unlockedAchievement: "logro desbloqueado",
+    firstCard: "Primera Carta",
+    firstCardDescription:
+      "Conseguiste tu primera carta en el Nexus.",
+    badgesEmptyDescription:
+      "Tus insignias aparecerán aquí cuando completes objetivos.",
+    recentActivity: "Actividad reciente",
+    recentActivityDescription: "Últimas acciones de tu colección.",
+    cardCollected: "Carta conseguida",
+    noActivityYet: "Sin actividad por ahora.",
   },
 } as const;
 
