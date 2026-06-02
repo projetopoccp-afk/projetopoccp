@@ -18,6 +18,7 @@ import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 import { UserProfileModal } from "@/components/account/UserProfileModal";
 import { MissionsModal } from "@/components/missions/MissionsModal";
+import { PacksModal } from "@/components/packs/PacksModal";
 import { supabase } from "@/lib/supabase/client";
 
 type AccountProfile = {
@@ -55,6 +56,7 @@ export function AccountModal({
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
   const [accountStats, setAccountStats] = useState<AccountStats>({
     xp: profile?.xp ?? 0,
     level: profile?.level ?? 1,
@@ -307,9 +309,9 @@ export function AccountModal({
                     icon={<Package size={22} />}
                     title="Pacotes"
                     description="Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
-                    buttonLabel="Em breve"
+                    buttonLabel="Abrir"
                     variant="pink"
-                    disabled
+                    onClick={() => setPacksOpen(true)}
                   />
 
                   <div className="flex h-full flex-col rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
@@ -373,6 +375,11 @@ export function AccountModal({
       <MissionsModal
         open={missionsOpen}
         onClose={() => setMissionsOpen(false)}
+      />
+
+      <PacksModal
+        open={packsOpen}
+        onClose={() => setPacksOpen(false)}
       />
     </>
   );
