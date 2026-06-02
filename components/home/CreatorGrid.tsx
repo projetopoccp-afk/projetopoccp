@@ -25,36 +25,6 @@ const RARITY_SHOWCASE_CYCLE = [
 
 const RARITY_SHOWCASE_INTERVAL = 8500;
 
-const RARITY_SHOWCASE_VISUALS = {
-  common: {
-    frame:
-      "border-cyan-300/35 bg-cyan-300/[0.025] shadow-[0_0_14px_rgba(34,211,238,0.14)]",
-    aura: "opacity-0",
-    pulse: "",
-  },
-  rare: {
-    frame:
-      "border-sky-300/55 bg-sky-300/[0.03] shadow-[0_0_18px_rgba(56,189,248,0.28),0_0_34px_rgba(14,165,233,0.16)]",
-    aura:
-      "bg-sky-400/10 shadow-[0_0_42px_rgba(56,189,248,0.28),0_0_70px_rgba(14,165,233,0.16)]",
-    pulse: "",
-  },
-  epic: {
-    frame:
-      "border-fuchsia-300/60 bg-fuchsia-400/[0.03] shadow-[0_0_20px_rgba(217,70,239,0.3),0_0_42px_rgba(168,85,247,0.18)]",
-    aura:
-      "bg-fuchsia-400/12 shadow-[0_0_48px_rgba(217,70,239,0.32),0_0_76px_rgba(168,85,247,0.18)]",
-    pulse: "",
-  },
-  legendary: {
-    frame:
-      "border-amber-300/65 bg-amber-300/[0.035] shadow-[0_0_22px_rgba(251,191,36,0.36),0_0_48px_rgba(245,158,11,0.22)]",
-    aura:
-      "bg-amber-300/14 shadow-[0_0_56px_rgba(251,191,36,0.36),0_0_90px_rgba(245,158,11,0.2)]",
-    pulse: "",
-  },
-} as const;
-
 
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
@@ -375,7 +345,9 @@ function AnimatedRarityCreatorCard({
   index: number;
   onClick: (creator: Creator) => void;
 }) {
-  const [rarityIndex, setRarityIndex] = useState(index % RARITY_SHOWCASE_CYCLE.length);
+  const [rarityIndex, setRarityIndex] = useState(
+    index % RARITY_SHOWCASE_CYCLE.length
+  );
 
   useEffect(() => {
     const startDelay = index * 1100;
@@ -385,7 +357,9 @@ function AnimatedRarityCreatorCard({
       setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
 
       intervalId = window.setInterval(() => {
-        setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
+        setRarityIndex(
+          (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length
+        );
       }, RARITY_SHOWCASE_INTERVAL);
     }, startDelay);
 
@@ -399,7 +373,6 @@ function AnimatedRarityCreatorCard({
   }, [index]);
 
   const showcase = RARITY_SHOWCASE_CYCLE[rarityIndex];
-  const visual = RARITY_SHOWCASE_VISUALS[showcase.rarity];
 
   const showcasedCreator: CreatorWithMeta = {
     ...creator,
@@ -408,34 +381,17 @@ function AnimatedRarityCreatorCard({
   };
 
   return (
-    <div
-      className={`group relative rounded-[34px] border p-[2px] transition-all duration-1000 ease-in-out ${visual.frame}`}
-    >
-      <div
-        className={`pointer-events-none absolute -inset-3 rounded-[40px] blur-xl transition-all duration-1000 ease-in-out ${visual.aura} ${visual.pulse}`}
-      />
-
-      {showcase.rarity === "epic" && (
-        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[34px]">
-          <span className="absolute left-[16%] top-[18%] h-1 w-1 rounded-full bg-fuchsia-200/80 shadow-[0_0_10px_rgba(232,121,249,0.9)] animate-pulse" />
-          <span className="absolute right-[18%] top-[34%] h-1.5 w-1.5 rounded-full bg-purple-200/70 shadow-[0_0_12px_rgba(216,180,254,0.85)] animate-pulse" />
-          <span className="absolute bottom-[22%] left-[28%] h-1 w-1 rounded-full bg-pink-200/70 shadow-[0_0_10px_rgba(244,114,182,0.85)] animate-pulse" />
-          <span className="absolute bottom-[16%] right-[30%] h-1 w-1 rounded-full bg-fuchsia-100/70 shadow-[0_0_10px_rgba(250,232,255,0.75)] animate-pulse" />
-        </div>
-      )}
-
-      {showcase.rarity === "legendary" && (
-        <div className="pointer-events-none absolute -inset-[2px] rounded-[36px] border border-amber-200/40 shadow-[0_0_16px_rgba(251,191,36,0.32)]" />
-      )}
-
-      <div className="relative z-0 transition-all duration-1000 ease-in-out">
-        <CreatorCard creator={showcasedCreator} onClick={onClick} />
+    <div className="relative h-[360px] w-[240px]">
+      <div className="relative h-full w-full transition-all duration-1000 ease-in-out">
+        <CreatorCard
+          key={`${creator.id}-${showcase.rarity}`}
+          creator={showcasedCreator}
+          onClick={onClick}
+        />
       </div>
-
     </div>
   );
 }
-
 
 function EmptyState() {
   return (
