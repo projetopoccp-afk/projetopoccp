@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 import { Creator } from "@/types/creator";
 
@@ -25,7 +27,6 @@ const RARITY_SHOWCASE_CYCLE = [
 
 const RARITY_SHOWCASE_INTERVAL = 8500;
 
-
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
 
@@ -37,6 +38,8 @@ function getCreatorUsernameFromPath() {
 }
 
 export function CreatorGrid({ search }: CreatorGridProps) {
+  const { t } = useLanguage();
+
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [creators, setCreators] = useState<CreatorWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,22 +92,34 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           ownerId: item.user_id,
           username: item.username,
           nickname: item.nickname,
-          title: item.title || "Rising Creator",
+          title: item.title || translate(t, "creatorGridDefaultTitle", "Rising Creator"),
           faction: item.faction || "",
-          category: item.category || "Creator",
+          category: item.category || translate(t, "creator", "Creator"),
           mainPlatform: "youtube",
           status: item.status || "offline",
           avatarUrl: item.avatar_url || "",
           bannerUrl: item.banner_url || "",
-          bio: item.bio || "Novo criador aprovado na plataforma.",
+          bio:
+            item.bio ||
+            translate(
+              t,
+              "creatorGridDefaultBio",
+              "Novo criador aprovado na plataforma."
+            ),
           description:
             item.description ||
-            "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
+            translate(
+              t,
+              "creatorGridDefaultDescription",
+              "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve."
+            ),
           tags: item.tags || [],
           rank: card?.rank || "Bronze",
           rarity: card?.rarity || "common",
           aura: card?.aura || "Origin Aura",
-          evolutionStage: card?.evolution_stage || "Stage 1 — Rising Creator",
+          evolutionStage:
+            card?.evolution_stage ||
+            translate(t, "creatorGridDefaultEvolutionStage", "Stage 1 — Rising Creator"),
           powerScore: card?.power_score || 0,
           collectedBy: 0,
           level: card?.level || 1,
@@ -114,28 +129,35 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           socials: [],
           traits: [
             {
-              label: "Status",
-              value: "Recently approved",
+              label: translate(t, "status", "Status"),
+              value: translate(t, "creatorGridRecentlyApproved", "Recently approved"),
             },
             {
-              label: "Origin",
-              value: "Creator request",
+              label: translate(t, "creatorGridOrigin", "Origin"),
+              value: translate(t, "creatorGridCreatorRequest", "Creator request"),
             },
             {
-              label: "Style",
-              value: "Pending customization",
+              label: translate(t, "creatorGridStyle", "Style"),
+              value: translate(t, "creatorGridPendingCustomization", "Pending customization"),
             },
           ],
           featuredMoment: {
-            title: "First appearance",
-            description:
-              "Este creator acabou de entrar no universo da plataforma.",
+            title: translate(t, "creatorGridFirstAppearance", "First appearance"),
+            description: translate(
+              t,
+              "creatorGridFirstAppearanceDescription",
+              "Este creator acabou de entrar no universo da plataforma."
+            ),
           },
           achievements: [
             {
               id: "approved",
-              title: "Creator Approved",
-              description: "Perfil aprovado pela moderação.",
+              title: translate(t, "creatorGridCreatorApproved", "Creator Approved"),
+              description: translate(
+                t,
+                "creatorGridCreatorApprovedDescription",
+                "Perfil aprovado pela moderação."
+              ),
             },
           ],
           createdAt: item.created_at || new Date().toISOString(),
@@ -148,7 +170,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     }
 
     loadCreators();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     function syncPopupWithUrl() {
@@ -245,14 +267,18 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       <section className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-10">
         {loading && (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
-            Carregando creators...
+            {translate(t, "creatorGridLoading", "Carregando creators...")}
           </div>
         )}
 
         {!loading && hasSearch && (
           <CreatorSection
-            title="Resultado da busca"
-            description="Creators encontrados com base no termo pesquisado."
+            title={translate(t, "creatorGridSearchResults", "Resultado da busca")}
+            description={translate(
+              t,
+              "creatorGridSearchResultsDescription",
+              "Creators encontrados com base no termo pesquisado."
+            )}
             creators={filteredCreators}
             onOpenCreator={handleOpenCreator}
           />
@@ -261,14 +287,14 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         {!loading && !hasSearch && (
           <div className="space-y-10">
             <CreatorSection
-              title="Cartas em Destaque"
+              title={translate(t, "creatorGridFeaturedCards", "Cartas em Destaque")}
               description=""
               creators={featuredCreators}
               onOpenCreator={handleOpenCreator}
             />
 
             <CreatorSection
-              title="Cartas Novas"
+              title={translate(t, "creatorGridNewCards", "Cartas Novas")}
               description=""
               creators={newestCreators}
               onOpenCreator={handleOpenCreator}
@@ -394,6 +420,8 @@ function AnimatedRarityCreatorCard({
 }
 
 function EmptyState() {
+  const { t } = useLanguage();
+
   return (
     <div className="flex w-full flex-col items-center rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center backdrop-blur-xl">
       <div className="h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400/20 to-purple-500/20 blur-2xl" />
@@ -403,11 +431,19 @@ function EmptyState() {
       </div>
 
       <h3 className="mt-6 text-2xl font-bold text-white">
-        Não identificamos nenhuma identidade correspondente à sua busca.
+        {translate(
+          t,
+          "creatorGridEmptyTitle",
+          "Não identificamos nenhuma identidade correspondente à sua busca."
+        )}
       </h3>
 
       <p className="mt-3 max-w-md text-sm text-white/50">
-        Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.
+        {translate(
+          t,
+          "creatorGridEmptyDescription",
+          "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags."
+        )}
       </p>
     </div>
   );
