@@ -1237,7 +1237,7 @@ function EditPanel({
       </div>
 
       <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <h4 className="font-bold text-white">Social Links</h4>
+        <h4 className="font-bold text-white">Redes Sociais</h4>
 
         <p className="mt-2 text-sm text-white/45">
           Adicione os links oficiais do creator.
@@ -1508,7 +1508,7 @@ function ViewPanel({
     <>
       <div className="pr-16">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-          Creator Profile
+          Pefil do Criador
         </p>
 
         <h3 className="mt-3 text-3xl font-bold leading-tight">
@@ -1602,7 +1602,7 @@ function ViewPanel({
       )}
 
       <div className="mt-8 pb-10">
-        <h4 className="font-bold">Social Links</h4>
+        <h4 className="font-bold">Redes Sociais</h4>
 
         <div className="mt-3 flex flex-wrap gap-3">
           {Object.entries(socials)

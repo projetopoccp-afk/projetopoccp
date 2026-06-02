@@ -313,7 +313,7 @@ export function UserProfileModal({
                       </p>
                       <p className="text-sm text-white/45">
                         Seu perfil foi aberto a partir de uma notificação de
-                        evolução. Continue seguindo creators, compartilhando e
+                        evolução. Continue seguindo criadores, compartilhando e
                         colecionando cartas para ganhar mais XP.
                       </p>
                     </div>

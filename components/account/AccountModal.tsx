@@ -281,7 +281,7 @@ export function AccountModal({
                   <AccountActionCard
                     icon={<Archive size={22} />}
                     title="Minha Coleção"
-                    description="Acesse suas cartas conquistadas, raridades, creators favoritos e progresso da coleção."
+                    description="Acesse suas cartas conquistadas, raridades, criadoresfavoritos e progresso da coleção."
                     buttonLabel="Abrir"
                     variant="purple"
                     onClick={() => setCollectionOpen(true)}
@@ -290,7 +290,7 @@ export function AccountModal({
                   <AccountActionCard
                     icon={<BadgeCheck size={22} />}
                     title="Minhas Badges"
-                    description="Conquistas especiais por seguir creators, compartilhar perfis e completar objetivos."
+                    description="Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
                     buttonLabel="Em breve"
                     variant="yellow"
                     disabled

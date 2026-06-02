@@ -120,7 +120,7 @@ export default function AccountPage() {
             </div>
 
             <div className="rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-              <h2 className="font-bold">Coleção de creators</h2>
+              <h2 className="font-bold">Coleção de criadores</h2>
 
               <p className="mt-2 text-sm text-white/55">
                 Em breve você poderá seguir, favoritar e colecionar cards de

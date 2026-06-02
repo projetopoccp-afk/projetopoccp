@@ -31,10 +31,10 @@ type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 const ADMIN_TABS: { id: Tab; label: string }[] = [
   { id: "requests", label: "Solicitações" },
   { id: "users", label: "Usuários" },
-  { id: "creators", label: "Creators" },
+  { id: "creators", label: "Perfis" },
   { id: "cards", label: "Gerenciar Cartas" },
-  { id: "claims", label: "Claims" },
-  { id: "logs", label: "Logs" },
+  { id: "claims", label: "Reivindicações" },
+  { id: "logs", label: "Atividades" },
 ];
 
 const GRANT_RARITIES: { id: GrantRarity; label: string; description: string }[] = [
@@ -335,7 +335,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     if (profileError || !creatorProfile) {
       setActionLoading(null);
-      alert(profileError?.message || "Erro ao criar creator profile.");
+      alert(profileError?.message || "Erro ao criar o perfil do criador.");
       return;
     }
 
@@ -895,7 +895,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             <h2 className="mt-6 text-3xl font-black">Painel Admin</h2>
 
             <p className="mt-2 text-sm text-white/50">
-              Gerencie solicitações, usuários, creators, claims e logs.
+              Gerencie solicitações, usuários, creators, reivindicações e atividades.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -1555,7 +1555,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 <SearchInput
                   value={claimSearch}
                   onChange={setClaimSearch}
-                  placeholder="Buscar claims por creator, usuário, email ou código..."
+                  placeholder="Buscar reivindicações por criador, usuário, email ou código..."
                 />
 
                 <div className="mt-5 grid gap-4">

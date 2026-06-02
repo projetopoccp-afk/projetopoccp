@@ -102,7 +102,7 @@ export default function AdminPage() {
 
     if (profileError || !creatorProfile) {
       setActionLoading(null);
-      alert(profileError?.message || "Erro ao criar creator profile.");
+      alert(profileError?.message || "Erro ao criar o perfil do criador.");
       return;
     }
 
