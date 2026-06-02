@@ -575,14 +575,15 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         },
       });
 
-      console.log("TESTE MISSÃO FOLLOW: chamou updateMissionProgress");
-
-      await updateMissionProgress("follow_creator", 1, {
-        creator_id: creator.id,
-        creator_username: creator.username,
-        creator_nickname: creator.nickname,
-      });
     }
+
+    console.log("MISSÃO FOLLOW: follow salvo, atualizando progresso");
+
+    await updateMissionProgress("follow_creator", 1, {
+      creator_id: creator.id,
+      creator_username: creator.username,
+      creator_nickname: creator.nickname,
+    });
 
     const { data: existingCard } = await supabase
       .from("user_cards")
