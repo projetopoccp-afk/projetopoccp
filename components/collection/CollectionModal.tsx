@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Archive,
   Crown,
@@ -83,11 +83,18 @@ type PendingNotificationCard = {
 };
 
 const rarityLabel: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  common: "Comum",
+  rare: "Raro",
+  epic: "Épico",
+  legendary: "Lendário",
+  mythic: "Mítico",
 };
+
+function getRarityLabel(rarity?: string | null) {
+  if (!rarity) return "Comum";
+
+  return rarityLabel[rarity.toLowerCase()] || rarity;
+}
 
 const rarityXp: Record<string, number> = {
   common: 20,
@@ -399,18 +406,6 @@ function findNotificationCard(
   return null;
 }
 
-function getPendingNotificationCardKey(card: PendingNotificationCard | null) {
-  if (!card) return null;
-
-  const cardId = getPendingCardId(card);
-  const creatorId = getPendingCreatorId(card);
-
-  if (cardId) return `card:${cardId}`;
-  if (creatorId) return `creator:${creatorId}`;
-
-  return null;
-}
-
 export function CollectionModal({
   open,
   onClose,
@@ -424,23 +419,6 @@ export function CollectionModal({
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [pendingNotificationCard, setPendingNotificationCard] =
     useState<PendingNotificationCard | null>(null);
-  const openedNotificationCardKeyRef = useRef<string | null>(null);
-  const lastEventCardKeyRef = useRef<string | null>(null);
-
-  function clearSelectedCard() {
-    setSelectedCard(null);
-    setPendingNotificationCard(null);
-  }
-
-  useEffect(() => {
-    if (open) return;
-
-    setSelectedCard(null);
-    setSelectedCreator(null);
-    setPendingNotificationCard(null);
-    openedNotificationCardKeyRef.current = null;
-    lastEventCardKeyRef.current = null;
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -516,33 +494,37 @@ export function CollectionModal({
   useEffect(() => {
     if (!open) return;
 
-    const nextPendingCard = {
-      cardId: initialCardId,
-      creatorId: initialCreatorId,
-    };
-
-    const nextKey = getPendingNotificationCardKey(nextPendingCard);
-
-    // Importante: quando não vem initialCardId/initialCreatorId do pai,
-    // NÃO limpamos openedNotificationCardKeyRef aqui.
-    // O SiteHeader abre a carta via evento global; se limparmos esse ref a cada render,
-    // a mesma carta pode ser aberta de novo imediatamente ao fechar.
-    if (!nextKey) return;
-
-    if (openedNotificationCardKeyRef.current === nextKey) return;
-
-    setPendingNotificationCard(nextPendingCard);
+    if (initialCardId || initialCreatorId) {
+      setPendingNotificationCard({
+        cardId: initialCardId,
+        creatorId: initialCreatorId,
+      });
+    }
   }, [open, initialCardId, initialCreatorId]);
 
-  /*
-    A abertura de carta vinda de notificação agora é feita apenas por props
-    (initialCardId / initialCreatorId) recebidas do SiteHeader.
+  useEffect(() => {
+    function handleOpenCardFromNotification(event: Event) {
+      const customEvent = event as CustomEvent<PendingNotificationCard>;
 
-    Antes este modal também escutava o evento global
-    "creator-nexus:open-collection-card". Em alguns cenários o evento ficava
-    sendo reprocessado depois de fechar a carta, causando o loop infinito.
-    Por isso removemos o listener global daqui.
-  */
+      setPendingNotificationCard({
+        cardId: customEvent.detail?.cardId || customEvent.detail?.card_id || null,
+        creatorId:
+          customEvent.detail?.creatorId || customEvent.detail?.creator_id || null,
+      });
+    }
+
+    window.addEventListener(
+      "creator-nexus:open-collection-card",
+      handleOpenCardFromNotification
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-collection-card",
+        handleOpenCardFromNotification
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!open || loading || cards.length === 0 || !pendingNotificationCard) {
@@ -552,12 +534,6 @@ export function CollectionModal({
     const cardToOpen = findNotificationCard(cards, pendingNotificationCard);
 
     if (!cardToOpen) return;
-
-    const pendingKey = getPendingNotificationCardKey(pendingNotificationCard);
-
-    if (pendingKey) {
-      openedNotificationCardKeyRef.current = pendingKey;
-    }
 
     handleSelectCard(cardToOpen);
     setPendingNotificationCard(null);
@@ -696,7 +672,7 @@ export function CollectionModal({
 
       <CollectionCardShowcase
         card={selectedCard}
-        onClose={clearSelectedCard}
+        onClose={() => setSelectedCard(null)}
         onOpenProfile={handleOpenCreatorProfile}
       />
 
@@ -832,7 +808,7 @@ function CollectionCardShowcase({
   const creator = card.creator_profiles;
   const username = creator?.username || "creator";
   const nickname = creator?.nickname || "Creator Nexus";
-  const rarity = rarityLabel[card.rarity] || card.rarity;
+  const rarity = getRarityLabel(card.rarity);
   const xp = getCardXp(card.rarity);
 
   function openProfile() {
@@ -880,10 +856,7 @@ function CollectionCardShowcase({
       >
         <button
           type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onClose();
-          }}
+          onClick={onClose}
           className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
           aria-label="Fechar carta"
         >
@@ -1022,7 +995,7 @@ function CollectionCardFace({
             : "left-4 top-4 rounded-full px-3 py-1 text-[10px] tracking-[0.25em]"
         }`}
       >
-        {rarityLabel[rarity] || rarity}
+        {getRarityLabel(rarity)}
       </div>
 
       <div

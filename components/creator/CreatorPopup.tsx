@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
-
+import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
@@ -862,7 +862,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
             <div className="absolute left-5 top-5 rounded-full border border-yellow-300/30 bg-yellow-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-yellow-100 backdrop-blur">
-              {creator.rarity}
+              {getRarityLabel(creator.rarity)}
             </div>
 
             <div className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1 text-xs text-cyan-100 backdrop-blur">
