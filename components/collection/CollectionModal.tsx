@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Archive,
   Crown,
@@ -399,6 +399,15 @@ function findNotificationCard(
   return null;
 }
 
+function getPendingNotificationCardKey(card: PendingNotificationCard | null) {
+  if (!card) return null;
+
+  if (card.cardId) return `card:${card.cardId}`;
+  if (card.creatorId) return `creator:${card.creatorId}`;
+
+  return null;
+}
+
 export function CollectionModal({
   open,
   onClose,
@@ -412,6 +421,13 @@ export function CollectionModal({
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [pendingNotificationCard, setPendingNotificationCard] =
     useState<PendingNotificationCard | null>(null);
+  const openedNotificationCardKeyRef = useRef<string | null>(null);
+  const lastEventCardKeyRef = useRef<string | null>(null);
+
+  function clearSelectedCard() {
+    setSelectedCard(null);
+    setPendingNotificationCard(null);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -487,23 +503,51 @@ export function CollectionModal({
   useEffect(() => {
     if (!open) return;
 
-    if (initialCardId || initialCreatorId) {
-      setPendingNotificationCard({
-        cardId: initialCardId,
-        creatorId: initialCreatorId,
-      });
+    const nextPendingCard = {
+      cardId: initialCardId,
+      creatorId: initialCreatorId,
+    };
+
+    const nextKey = getPendingNotificationCardKey(nextPendingCard);
+
+    if (!nextKey) {
+      openedNotificationCardKeyRef.current = null;
+      return;
     }
+
+    if (openedNotificationCardKeyRef.current === nextKey) {
+      return;
+    }
+
+    setPendingNotificationCard(nextPendingCard);
   }, [open, initialCardId, initialCreatorId]);
 
   useEffect(() => {
     function handleOpenCardFromNotification(event: Event) {
       const customEvent = event as CustomEvent<PendingNotificationCard>;
 
-      setPendingNotificationCard({
+      const nextPendingCard = {
         cardId: customEvent.detail?.cardId || customEvent.detail?.card_id || null,
         creatorId:
           customEvent.detail?.creatorId || customEvent.detail?.creator_id || null,
-      });
+      };
+
+      const nextKey = getPendingNotificationCardKey(nextPendingCard);
+
+      if (!nextKey) return;
+
+      if (lastEventCardKeyRef.current === nextKey) {
+        return;
+      }
+
+      lastEventCardKeyRef.current = nextKey;
+      setPendingNotificationCard(nextPendingCard);
+
+      window.setTimeout(() => {
+        if (lastEventCardKeyRef.current === nextKey) {
+          lastEventCardKeyRef.current = null;
+        }
+      }, 500);
     }
 
     window.addEventListener(
@@ -527,6 +571,12 @@ export function CollectionModal({
     const cardToOpen = findNotificationCard(cards, pendingNotificationCard);
 
     if (!cardToOpen) return;
+
+    const pendingKey = getPendingNotificationCardKey(pendingNotificationCard);
+
+    if (pendingKey) {
+      openedNotificationCardKeyRef.current = pendingKey;
+    }
 
     handleSelectCard(cardToOpen);
     setPendingNotificationCard(null);
@@ -665,7 +715,7 @@ export function CollectionModal({
 
       <CollectionCardShowcase
         card={selectedCard}
-        onClose={() => setSelectedCard(null)}
+        onClose={clearSelectedCard}
         onOpenProfile={handleOpenCreatorProfile}
       />
 
@@ -849,7 +899,10 @@ function CollectionCardShowcase({
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClose();
+          }}
           className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
           aria-label="Fechar carta"
         >
