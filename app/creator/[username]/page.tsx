@@ -18,7 +18,7 @@ export async function generateMetadata({
 
   const profileUrl = `${siteUrl}/creator/${username}`;
 
-  const ogImage = `${siteUrl}/api/og/card/${username}?v=2`;
+  const ogImage = `${siteUrl}/api/og/card/${username}?v=3`;
 
   return {
     title: `${username} | Creator Nexus`,
