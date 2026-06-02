@@ -32,6 +32,9 @@ export type PackOpeningResult = {
   creatorId: string;
   cardId: string;
   rarity: string;
+  duplicate?: boolean;
+  duplicateXp?: number;
+  creatorName?: string | null;
 };
 
 type CreatorForPack = {
@@ -162,6 +165,46 @@ function getXpEventByRarity(rarity: string): UserXpEventType {
   return "collect_common_card";
 }
 
+function getDuplicateXpByRarity(rarity: string) {
+  if (rarity === "legendary") return 500;
+  if (rarity === "epic") return 180;
+  if (rarity === "rare") return 75;
+  return 25;
+}
+
+async function addDuplicateCardXp({
+  userId,
+  xpAmount,
+  creatorId,
+  creatorName,
+  rarity,
+  userPackId,
+}: {
+  userId: string;
+  xpAmount: number;
+  creatorId: string;
+  creatorName: string | null;
+  rarity: string;
+  userPackId: string;
+}) {
+  const { error } = await supabase.rpc("add_user_xp", {
+    target_user_id: userId,
+    xp_value: xpAmount,
+    xp_event_type: "duplicate_card",
+    xp_metadata: {
+      user_pack_id: userPackId,
+      creator_id: creatorId,
+      creator_name: creatorName,
+      rarity,
+      source: "pack_duplicate",
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao adicionar XP de carta repetida:", error);
+  }
+}
+
 async function getRandomCreatorForPack() {
   const { data, error } = await supabase
     .from("creator_profiles")
@@ -231,6 +274,95 @@ export async function openUserPack(userPackId: string) {
     return null;
   }
 
+  const creatorName = randomCreator.nickname ?? randomCreator.username ?? "Creator";
+  const now = new Date().toISOString();
+
+  const { data: existingCard, error: existingCardError } = await supabase
+    .from("user_cards")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("creator_id", randomCreator.id)
+    .maybeSingle();
+
+  if (existingCardError) {
+    console.error("Erro ao verificar carta repetida:", existingCardError);
+    return null;
+  }
+
+  if (existingCard) {
+    const duplicateXp = getDuplicateXpByRarity(rarity);
+
+    const { error: packUpdateError } = await supabase
+      .from("user_packs")
+      .update({ opened_at: now })
+      .eq("id", userPackId)
+      .eq("user_id", user.id);
+
+    if (packUpdateError) {
+      console.error("Erro ao marcar pacote como aberto:", packUpdateError);
+      return null;
+    }
+
+    const { error: openingError } = await supabase.from("pack_openings").insert({
+      user_id: user.id,
+      user_pack_id: userPackId,
+      creator_id: randomCreator.id,
+      card_id: existingCard.id,
+      rarity,
+    });
+
+    if (openingError) {
+      console.error("Erro ao registrar abertura repetida do pacote:", openingError);
+    }
+
+    await addDuplicateCardXp({
+      userId: user.id,
+      xpAmount: duplicateXp,
+      creatorId: randomCreator.id,
+      creatorName,
+      rarity,
+      userPackId,
+    });
+
+    await updateMissionProgress("open_pack", 1, {
+      user_pack_id: userPackId,
+      card_id: existingCard.id,
+      creator_id: randomCreator.id,
+      rarity,
+      duplicate: true,
+    });
+
+    await createUserNotification({
+      type: "package_opened",
+      title: "Carta repetida convertida em XP!",
+      message: `Você tirou ${creatorName}, mas essa carta já estava na sua coleção. Ela foi convertida em +${duplicateXp} XP.`,
+      metadata: {
+        user_pack_id: userPackId,
+        card_id: existingCard.id,
+        creator_id: randomCreator.id,
+        creator_name: creatorName,
+        rarity,
+        pack_type: packType,
+        duplicate: true,
+        duplicate_xp: duplicateXp,
+      },
+    });
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("creator-nexus:packs-updated"));
+    }
+
+    return {
+      userPackId,
+      creatorId: randomCreator.id,
+      cardId: existingCard.id,
+      rarity,
+      duplicate: true,
+      duplicateXp,
+      creatorName,
+    } as PackOpeningResult;
+  }
+
   const { data: newCard, error: cardError } = await supabase
     .from("user_cards")
     .insert({
@@ -246,8 +378,6 @@ export async function openUserPack(userPackId: string) {
     console.error("Erro ao criar carta do pacote:", cardError);
     return null;
   }
-
-  const now = new Date().toISOString();
 
   const { error: packUpdateError } = await supabase
     .from("user_packs")
@@ -275,6 +405,7 @@ export async function openUserPack(userPackId: string) {
   await addUserXp(getXpEventByRarity(rarity), {
     card_id: newCard.id,
     creator_id: randomCreator.id,
+    creator_name: creatorName,
     rarity,
     source: "pack",
   });
@@ -282,6 +413,7 @@ export async function openUserPack(userPackId: string) {
   await updateMissionProgress("collect_card", 1, {
     card_id: newCard.id,
     creator_id: randomCreator.id,
+    creator_name: creatorName,
     rarity,
     source: "pack",
   });
@@ -295,14 +427,15 @@ export async function openUserPack(userPackId: string) {
   await createUserNotification({
     type: "package_opened",
     title: "Pacote aberto!",
-    message: `Você abriu um pacote e recebeu uma carta ${rarity}.`,
+    message: `Você abriu um pacote e recebeu a carta ${creatorName} (${rarity}).`,
     metadata: {
       user_pack_id: userPackId,
       card_id: newCard.id,
       creator_id: randomCreator.id,
-      creator_name: randomCreator.nickname ?? randomCreator.username ?? null,
+      creator_name: creatorName,
       rarity,
       pack_type: packType,
+      duplicate: false,
     },
   });
 
@@ -316,5 +449,7 @@ export async function openUserPack(userPackId: string) {
     creatorId: randomCreator.id,
     cardId: newCard.id,
     rarity,
+    duplicate: false,
+    creatorName,
   } as PackOpeningResult;
 }
