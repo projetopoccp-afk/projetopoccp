@@ -8,6 +8,7 @@ import { LoginModal } from "@/components/auth/LoginModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type SiteHeaderProps = {
   search: string;
@@ -76,23 +77,6 @@ const SITE_LANGUAGES: {
   },
 ];
 
-function getInitialLanguage(): SiteLanguage {
-  if (typeof window === "undefined") return "pt";
-
-  const savedLanguage = window.localStorage.getItem("creator-nexus-language");
-
-  if (savedLanguage === "pt" || savedLanguage === "en" || savedLanguage === "es") {
-    return savedLanguage;
-  }
-
-  const browserLanguage = window.navigator.language.toLowerCase();
-
-  if (browserLanguage.startsWith("en")) return "en";
-  if (browserLanguage.startsWith("es")) return "es";
-
-  return "pt";
-}
-
 function getLanguageLabel(language: SiteLanguage) {
   return SITE_LANGUAGES.find((item) => item.id === language)?.shortLabel || "PT";
 }
@@ -135,19 +119,17 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [collectionInitialCardId, setCollectionInitialCardId] = useState<string | null>(null);
   const [collectionInitialCreatorId, setCollectionInitialCreatorId] = useState<string | null>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [language, setLanguage] = useState<SiteLanguage>("pt");
   const notificationBoxRef = useRef<HTMLDivElement | null>(null);
   const languageBoxRef = useRef<HTMLDivElement | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
+
+  const { language, setLanguage } = useLanguage();
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications]
   );
 
-  useEffect(() => {
-    setLanguage(getInitialLanguage());
-  }, []);
 
   useEffect(() => {
     async function getUser() {
