@@ -12,7 +12,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { username } = await params;
 
-  const ogImage = `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/creator/${username}`;
+  const ogImage = `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/card/${username}`;
 
   return {
     title: `${username} | Creator Nexus`,
