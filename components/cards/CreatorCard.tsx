@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
-
+import { getRarityLabel } from "@/lib/rarity";
 import { rarityStyles } from "@/lib/rarity";
 import { Creator } from "@/types/creator";
 import { TiltCard } from "./TiltCard";
@@ -303,7 +303,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <div
             className={`absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
           >
-            {rarity.label}
+            {getRarityLabel(card.rarity)}
           </div>
 
           <div className="absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
