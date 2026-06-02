@@ -30,6 +30,21 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
   useEffect(() => {
     if (!open) return;
 
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
     loadPacks();
 
     function handlePacksUpdated() {
@@ -94,7 +109,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
           exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
           transition={{ duration: 0.25 }}
           onClick={onClose}
-          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[130] flex items-center justify-center overflow-hidden bg-black/80 p-4"
         >
           <motion.div
             initial={{ opacity: 0, y: 30, scale: 0.94 }}
@@ -102,7 +117,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto overflow-x-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+            className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
           >
             <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-pink-500/20 blur-[90px]" />
             <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-cyan-600/20 blur-[90px]" />
