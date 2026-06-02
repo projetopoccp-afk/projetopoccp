@@ -38,6 +38,7 @@ type MissionsModalProps = {
 
 export function MissionsModal({ open, onClose }: MissionsModalProps) {
   const [loading, setLoading] = useState(false);
+  const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [missions, setMissions] = useState<MissionWithProgress[]>([]);
 
   useEffect(() => {
@@ -109,6 +110,8 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
     const now = new Date().toISOString();
 
+    setClaimingMissionId(mission.id);
+
     const { error } = await supabase
       .from("user_missions")
       .update({
@@ -120,8 +123,32 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
     if (error) {
       console.error("Erro ao resgatar missão:", error);
+      setClaimingMissionId(null);
       return;
     }
+
+    setMissions((currentMissions) =>
+      currentMissions.map((currentMission) =>
+        currentMission.id === mission.id
+          ? {
+              ...currentMission,
+              userMission: currentMission.userMission
+                ? {
+                    ...currentMission.userMission,
+                    completed_at: currentMission.userMission.completed_at || now,
+                    claimed_at: now,
+                  }
+                : {
+                    id: "",
+                    mission_id: mission.id,
+                    progress: mission.target_amount,
+                    completed_at: now,
+                    claimed_at: now,
+                  },
+            }
+          : currentMission
+      )
+    );
 
     if (mission.reward_xp > 0) {
       await addUserXp("complete_mission", {
@@ -140,7 +167,7 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
       },
     });
 
-    await loadMissions();
+    setClaimingMissionId(null);
   }
 
   const completedCount = useMemo(() => {
@@ -230,6 +257,7 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                     );
                     const completed = progress >= mission.target_amount;
                     const claimed = Boolean(mission.userMission?.claimed_at);
+                    const claiming = claimingMissionId === mission.id;
 
                     return (
                       <div
@@ -281,15 +309,17 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
                             <button
                               type="button"
-                              disabled={!completed || claimed}
+                              disabled={!completed || claimed || claiming}
                               onClick={() => claimMissionReward(mission)}
                               className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 disabled:hover:scale-100"
                             >
-                              {claimed
-                                ? "Resgatado"
-                                : completed
-                                  ? "Resgatar"
-                                  : "Em progresso"}
+                              {claiming
+                                ? "Resgatando..."
+                                : claimed
+                                  ? "Resgatado"
+                                  : completed
+                                    ? "Resgatar"
+                                    : "Em progresso"}
                             </button>
                           </div>
                         </div>
