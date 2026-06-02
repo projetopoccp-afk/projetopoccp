@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Gift,
   History,
   Search,
   ShieldCheck,
@@ -23,7 +24,46 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "claims" | "logs";
+type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs";
+
+type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
+
+const ADMIN_TABS: { id: Tab; label: string }[] = [
+  { id: "requests", label: "Solicitações" },
+  { id: "users", label: "Usuários" },
+  { id: "creators", label: "Creators" },
+  { id: "cards", label: "Gerenciar Cartas" },
+  { id: "claims", label: "Claims" },
+  { id: "logs", label: "Logs" },
+];
+
+const GRANT_RARITIES: { id: GrantRarity; label: string; description: string }[] = [
+  { id: "common", label: "Comum", description: "Prata metálico" },
+  { id: "rare", label: "Raro", description: "Azul claro elétrico" },
+  { id: "epic", label: "Épico", description: "Violeta arcano" },
+  { id: "legendary", label: "Lendário", description: "Ouro celestial" },
+  { id: "random", label: "Aleatório", description: "Sorteia entre as 4 raridades" },
+];
+
+const RARITY_LEVEL: Record<Exclude<GrantRarity, "random">, number> = {
+  common: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 5,
+};
+
+function rollRandomRarity(): Exclude<GrantRarity, "random"> {
+  const roll = Math.random() * 100;
+
+  if (roll < 60) return "common";
+  if (roll < 88) return "rare";
+  if (roll < 98) return "epic";
+  return "legendary";
+}
+
+function getGrantRarityLabel(rarity: GrantRarity | string) {
+  return GRANT_RARITIES.find((item) => item.id === rarity)?.label || rarity;
+}
 
 type CreatorRequest = {
   id: string;
@@ -105,6 +145,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [creatorSearch, setCreatorSearch] = useState("");
   const [claimSearch, setClaimSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
+  const [cardCreatorSearch, setCardCreatorSearch] = useState("");
+  const [cardUserSearch, setCardUserSearch] = useState("");
+  const [selectedCardCreatorId, setSelectedCardCreatorId] = useState("");
+  const [selectedCardUserId, setSelectedCardUserId] = useState("");
+  const [selectedGrantRarity, setSelectedGrantRarity] = useState<GrantRarity>("common");
 
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
     {}
@@ -647,6 +692,83 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
   }
 
+
+  async function grantCardToUser() {
+    if (!selectedCardCreatorId) {
+      alert("Selecione um creator/carta primeiro.");
+      return;
+    }
+
+    if (!selectedCardUserId) {
+      alert("Selecione o usuário que vai receber a carta.");
+      return;
+    }
+
+    const selectedCreator = creators.find(
+      (creator) => creator.id === selectedCardCreatorId
+    );
+    const selectedUser = users.find((user) => user.id === selectedCardUserId);
+
+    if (!selectedCreator || !selectedUser) {
+      alert("Creator ou usuário não encontrado.");
+      return;
+    }
+
+    const finalRarity =
+      selectedGrantRarity === "random"
+        ? rollRandomRarity()
+        : selectedGrantRarity;
+
+    const actionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
+    setActionLoading(actionId);
+
+    const { error } = await supabase.from("user_cards").insert({
+      user_id: selectedCardUserId,
+      creator_id: selectedCardCreatorId,
+      rarity: finalRarity,
+      source:
+        selectedGrantRarity === "random" ? "admin_random_grant" : "admin_grant",
+      obtained_at: new Date().toISOString(),
+      seen_at: null,
+    });
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action:
+        selectedGrantRarity === "random"
+          ? "grant_random_card_to_user"
+          : "grant_card_to_user",
+      targetType: "user_card",
+      targetId: selectedCardUserId,
+      metadata: {
+        target_user_id: selectedCardUserId,
+        target_user_email: selectedUser.email,
+        target_user_username: selectedUser.username,
+        creator_id: selectedCardCreatorId,
+        creator_nickname: selectedCreator.nickname,
+        creator_username: selectedCreator.username,
+        selected_rarity: selectedGrantRarity,
+        delivered_rarity: finalRarity,
+      },
+    });
+
+    setActionLoading(null);
+    await loadLogs();
+
+    alert(
+      `Carta enviada! ${selectedCreator.nickname} (${getGrantRarityLabel(
+        finalRarity
+      )}) foi entregue para ${
+        selectedUser.display_name || selectedUser.username || selectedUser.email
+      }.`
+    );
+  }
+
   const filteredUsers = users.filter((user) => {
     const search = userSearch.toLowerCase().trim();
 
@@ -697,6 +819,44 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     return searchableText.includes(search);
   });
+
+
+  const filteredCardCreators = creators.filter((creator) => {
+    const search = cardCreatorSearch.toLowerCase().trim();
+    const owner = getOwner(creator.user_id);
+
+    const searchableText = [
+      creator.nickname,
+      creator.username,
+      creator.title,
+      creator.category,
+      owner?.email,
+      owner?.display_name,
+      owner?.username,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
+
+  const filteredCardUsers = users.filter((user) => {
+    const search = cardUserSearch.toLowerCase().trim();
+
+    const searchableText = [user.email, user.display_name, user.username]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
+
+  const selectedCardCreator =
+    creators.find((creator) => creator.id === selectedCardCreatorId) || null;
+
+  const selectedCardUser =
+    users.find((user) => user.id === selectedCardUserId) || null;
+
+  const grantActionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
@@ -759,21 +919,19 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {(["requests", "users", "creators", "claims", "logs"] as Tab[]).map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`rounded-full px-4 py-2 text-sm capitalize transition ${
-                      activeTab === tab
-                        ? "bg-cyan-300 text-black"
-                        : "border border-white/10 bg-white/[0.04] text-white/60"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                )
-              )}
+              {ADMIN_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    activeTab === tab.id
+                      ? "bg-cyan-300 text-black"
+                      : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             {loading && (
@@ -1193,6 +1351,221 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {!loading && activeTab === "cards" && (
+              <div className="mt-8 space-y-6">
+                <div className="rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
+                      <Gift size={20} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-black text-white">
+                        Gerenciar Cartas
+                      </h3>
+                      <p className="mt-1 text-sm text-white/50">
+                        Escolha uma carta de creator, selecione o usuário e envie uma raridade específica ou aleatória.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+                  <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                    <h4 className="font-black text-white">1. Escolher carta</h4>
+                    <p className="mt-1 text-sm text-white/45">
+                      Pesquise pelo nome do creator, username, categoria ou dono.
+                    </p>
+
+                    <div className="mt-4">
+                      <SearchInput
+                        value={cardCreatorSearch}
+                        onChange={setCardCreatorSearch}
+                        placeholder="Buscar creator/carta..."
+                      />
+                    </div>
+
+                    <div className="mt-4 grid max-h-[420px] gap-3 overflow-y-auto pr-1">
+                      {filteredCardCreators.length === 0 && (
+                        <EmptyBox text="Nenhuma carta encontrada." />
+                      )}
+
+                      {filteredCardCreators.map((creator) => {
+                        const selected = selectedCardCreatorId === creator.id;
+                        const owner = getOwner(creator.user_id);
+
+                        return (
+                          <button
+                            key={creator.id}
+                            type="button"
+                            onClick={() => setSelectedCardCreatorId(creator.id)}
+                            className={`flex items-center gap-4 rounded-3xl border p-4 text-left transition ${
+                              selected
+                                ? "border-cyan-300/60 bg-cyan-300/10"
+                                : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                            }`}
+                          >
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                              {creator.avatar_url ? (
+                                <img
+                                  src={creator.avatar_url}
+                                  alt={creator.nickname}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
+                                  Sem imagem
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h5 className="truncate font-black text-white">
+                                {creator.nickname}
+                              </h5>
+                              <p className="truncate text-sm text-cyan-100/70">
+                                @{creator.username}
+                              </p>
+                              <p className="mt-1 truncate text-xs text-white/40">
+                                Dono: {owner?.email || owner?.username || "Sem dono"}
+                              </p>
+                            </div>
+
+                            {selected && (
+                              <Check size={18} className="shrink-0 text-cyan-200" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                      <h4 className="font-black text-white">2. Escolher usuário</h4>
+                      <p className="mt-1 text-sm text-white/45">
+                        Pesquise por nome, username ou email.
+                      </p>
+
+                      <div className="mt-4">
+                        <SearchInput
+                          value={cardUserSearch}
+                          onChange={setCardUserSearch}
+                          placeholder="Buscar usuário..."
+                        />
+                      </div>
+
+                      <div className="mt-4 grid max-h-[260px] gap-3 overflow-y-auto pr-1">
+                        {filteredCardUsers.length === 0 && (
+                          <EmptyBox text="Nenhum usuário encontrado." />
+                        )}
+
+                        {filteredCardUsers.map((profile) => {
+                          const selected = selectedCardUserId === profile.id;
+
+                          return (
+                            <button
+                              key={profile.id}
+                              type="button"
+                              onClick={() => setSelectedCardUserId(profile.id)}
+                              className={`flex items-center justify-between gap-3 rounded-3xl border p-3 text-left transition ${
+                                selected
+                                  ? "border-purple-300/60 bg-purple-300/10"
+                                  : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                              }`}
+                            >
+                              <UserInfo profile={profile} />
+                              {selected && (
+                                <Check
+                                  size={18}
+                                  className="shrink-0 text-purple-200"
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                      <h4 className="font-black text-white">3. Escolher raridade</h4>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        {GRANT_RARITIES.map((rarityOption) => {
+                          const selected = selectedGrantRarity === rarityOption.id;
+
+                          return (
+                            <button
+                              key={rarityOption.id}
+                              type="button"
+                              onClick={() => setSelectedGrantRarity(rarityOption.id)}
+                              className={`rounded-2xl border p-3 text-left transition ${
+                                selected
+                                  ? "border-yellow-300/60 bg-yellow-300/10"
+                                  : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                              }`}
+                            >
+                              <p className="font-bold text-white">
+                                {rarityOption.label}
+                              </p>
+                              <p className="mt-1 text-xs text-white/40">
+                                {rarityOption.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-5 rounded-3xl border border-white/10 bg-black/25 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/35">
+                          Resumo
+                        </p>
+
+                        <div className="mt-3 space-y-2 text-sm text-white/65">
+                          <p>
+                            Carta:{" "}
+                            <span className="font-bold text-white">
+                              {selectedCardCreator?.nickname || "Nenhuma selecionada"}
+                            </span>
+                          </p>
+                          <p>
+                            Usuário:{" "}
+                            <span className="font-bold text-white">
+                              {selectedCardUser?.display_name ||
+                                selectedCardUser?.username ||
+                                selectedCardUser?.email ||
+                                "Nenhum selecionado"}
+                            </span>
+                          </p>
+                          <p>
+                            Raridade:{" "}
+                            <span className="font-bold text-white">
+                              {getGrantRarityLabel(selectedGrantRarity)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={grantCardToUser}
+                        disabled={
+                          !selectedCardCreatorId ||
+                          !selectedCardUserId ||
+                          actionLoading === grantActionId
+                        }
+                        className="mt-5 w-full rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {actionLoading === grantActionId
+                          ? "Enviando carta..."
+                          : "Enviar carta para usuário"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
