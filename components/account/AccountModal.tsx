@@ -17,6 +17,7 @@ import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 import { UserProfileModal } from "@/components/account/UserProfileModal";
+import { MissionsModal } from "@/components/missions/MissionsModal";
 import { supabase } from "@/lib/supabase/client";
 
 type AccountProfile = {
@@ -53,6 +54,7 @@ export function AccountModal({
   const [adminOpen, setAdminOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [missionsOpen, setMissionsOpen] = useState(false);
   const [accountStats, setAccountStats] = useState<AccountStats>({
     xp: profile?.xp ?? 0,
     level: profile?.level ?? 1,
@@ -68,6 +70,7 @@ export function AccountModal({
       setRequestOpen(false);
       setAdminOpen(false);
       setProfileOpen(false);
+      setMissionsOpen(false);
       setCollectionOpen(true);
 
       /*
@@ -98,6 +101,7 @@ export function AccountModal({
 
     function handleOpenUserProfile() {
       setCollectionOpen(false);
+      setMissionsOpen(false);
       setProfileOpen(true);
     }
 
@@ -294,9 +298,9 @@ export function AccountModal({
                     icon={<Target size={22} />}
                     title="Missões"
                     description="Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus."
-                    buttonLabel="Em breve"
+                    buttonLabel="Abrir"
                     variant="emerald"
-                    disabled
+                    onClick={() => setMissionsOpen(true)}
                   />
 
                   <AccountActionCard
@@ -364,6 +368,11 @@ export function AccountModal({
       <CollectionModal
         open={collectionOpen}
         onClose={() => setCollectionOpen(false)}
+      />
+
+      <MissionsModal
+        open={missionsOpen}
+        onClose={() => setMissionsOpen(false)}
       />
     </>
   );
