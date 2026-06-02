@@ -23,7 +23,39 @@ const RARITY_SHOWCASE_CYCLE = [
   { rarity: "legendary", level: 5 },
 ] as const;
 
-const RARITY_SHOWCASE_INTERVAL = 2200;
+const RARITY_SHOWCASE_INTERVAL = 5200;
+
+const RARITY_SHOWCASE_VISUALS = {
+  common: {
+    frame:
+      "border-white/10 bg-white/[0.03] shadow-[0_0_18px_rgba(255,255,255,0.05)]",
+    aura: "bg-white/0",
+    pulse: "",
+    label: "Comum",
+  },
+  rare: {
+    frame:
+      "border-sky-300/55 bg-sky-300/[0.035] shadow-[0_0_22px_rgba(56,189,248,0.35),0_0_52px_rgba(14,165,233,0.18)]",
+    aura: "bg-sky-400/20 shadow-[0_0_70px_rgba(56,189,248,0.42)]",
+    pulse: "animate-pulse",
+    label: "Rara",
+  },
+  epic: {
+    frame:
+      "border-fuchsia-300/60 bg-fuchsia-400/[0.04] shadow-[0_0_28px_rgba(217,70,239,0.45),0_0_70px_rgba(168,85,247,0.28)]",
+    aura: "bg-fuchsia-400/24 shadow-[0_0_90px_rgba(217,70,239,0.5)]",
+    pulse: "animate-pulse",
+    label: "Épica",
+  },
+  legendary: {
+    frame:
+      "border-amber-300/70 bg-amber-300/[0.055] shadow-[0_0_34px_rgba(251,191,36,0.55),0_0_90px_rgba(245,158,11,0.34)]",
+    aura: "bg-amber-300/28 shadow-[0_0_110px_rgba(251,191,36,0.58)]",
+    pulse: "animate-pulse",
+    label: "Lendária",
+  },
+} as const;
+
 
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
@@ -347,7 +379,7 @@ function AnimatedRarityCreatorCard({
   const [rarityIndex, setRarityIndex] = useState(index % RARITY_SHOWCASE_CYCLE.length);
 
   useEffect(() => {
-    const startDelay = index * 280;
+    const startDelay = index * 650;
     let intervalId: number | null = null;
 
     const timeoutId = window.setTimeout(() => {
@@ -368,6 +400,7 @@ function AnimatedRarityCreatorCard({
   }, [index]);
 
   const showcase = RARITY_SHOWCASE_CYCLE[rarityIndex];
+  const visual = RARITY_SHOWCASE_VISUALS[showcase.rarity];
 
   const showcasedCreator: CreatorWithMeta = {
     ...creator,
@@ -376,8 +409,33 @@ function AnimatedRarityCreatorCard({
   };
 
   return (
-    <div className="transition duration-500 ease-out">
-      <CreatorCard creator={showcasedCreator} onClick={onClick} />
+    <div
+      className={`group relative rounded-[34px] border p-[2px] transition-all duration-1000 ease-in-out ${visual.frame}`}
+    >
+      <div
+        className={`pointer-events-none absolute -inset-4 rounded-[40px] opacity-70 blur-2xl transition-all duration-1000 ease-in-out ${visual.aura} ${visual.pulse}`}
+      />
+
+      {showcase.rarity === "epic" && (
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[34px]">
+          <span className="absolute left-[16%] top-[18%] h-1 w-1 rounded-full bg-fuchsia-200/80 shadow-[0_0_10px_rgba(232,121,249,0.9)] animate-pulse" />
+          <span className="absolute right-[18%] top-[34%] h-1.5 w-1.5 rounded-full bg-purple-200/70 shadow-[0_0_12px_rgba(216,180,254,0.85)] animate-pulse" />
+          <span className="absolute bottom-[22%] left-[28%] h-1 w-1 rounded-full bg-pink-200/70 shadow-[0_0_10px_rgba(244,114,182,0.85)] animate-pulse" />
+          <span className="absolute bottom-[16%] right-[30%] h-1 w-1 rounded-full bg-fuchsia-100/70 shadow-[0_0_10px_rgba(250,232,255,0.75)] animate-pulse" />
+        </div>
+      )}
+
+      {showcase.rarity === "legendary" && (
+        <div className="pointer-events-none absolute -inset-[3px] rounded-[36px] border border-amber-200/70 shadow-[0_0_22px_rgba(251,191,36,0.65)]" />
+      )}
+
+      <div className="relative z-0 transition-all duration-1000 ease-in-out">
+        <CreatorCard creator={showcasedCreator} onClick={onClick} />
+      </div>
+
+      <div className="pointer-events-none absolute right-4 top-4 z-20 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/85 backdrop-blur-md transition-all duration-1000">
+        {visual.label}
+      </div>
     </div>
   );
 }
