@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { addUserXp } from "@/lib/xp/user-xp";
+import { addUserXp, type UserXpEventType } from "@/lib/xp/user-xp";
 import { createUserNotification } from "@/lib/notifications/user-notifications";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
 
@@ -34,6 +34,13 @@ export type PackOpeningResult = {
   rarity: string;
 };
 
+type CreatorForPack = {
+  id: string;
+  nickname?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
+};
+
 export async function getUserPacks() {
   const { data, error } = await supabase
     .from("user_packs")
@@ -62,16 +69,16 @@ export async function getUserPacks() {
   return (data || []) as UserPack[];
 }
 
-export async function giveUserPack(
-  packType: PackType,
-  source = "system"
-) {
+export async function giveUserPack(packType: PackType, source = "system") {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) return null;
+  if (userError || !user) {
+    console.error("Erro ao buscar usuário para entregar pacote:", userError);
+    return null;
+  }
 
   const { data: pack, error: packError } = await supabase
     .from("packs")
@@ -148,11 +155,37 @@ function rollCardRarity(packType: PackType) {
   return "common";
 }
 
-function getXpEventByRarity(rarity: string) {
+function getXpEventByRarity(rarity: string): UserXpEventType {
   if (rarity === "legendary") return "collect_legendary_card";
   if (rarity === "epic") return "collect_epic_card";
   if (rarity === "rare") return "collect_rare_card";
   return "collect_common_card";
+}
+
+async function getRandomCreatorForPack() {
+  /*
+    Importante:
+    A versão anterior filtrava creators por status = "approved".
+    Se sua tabela creators não tiver essa coluna/valor, nenhum creator era encontrado
+    e o pacote falhava com "Não foi possível abrir o pacote".
+  */
+  const { data, error } = await supabase
+    .from("creators")
+    .select("id, nickname, username, avatar_url")
+    .limit(100);
+
+  if (error) {
+    console.error("Erro ao buscar creators para pacote:", error);
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    console.error("Nenhum creator encontrado para sortear carta do pacote.");
+    return null;
+  }
+
+  const creators = data as CreatorForPack[];
+  return creators[Math.floor(Math.random() * creators.length)];
 }
 
 export async function openUserPack(userPackId: string) {
@@ -161,7 +194,10 @@ export async function openUserPack(userPackId: string) {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) return null;
+  if (userError || !user) {
+    console.error("Erro ao buscar usuário para abrir pacote:", userError);
+    return null;
+  }
 
   const { data: userPack, error: userPackError } = await supabase
     .from("user_packs")
@@ -187,22 +223,19 @@ export async function openUserPack(userPackId: string) {
   }
 
   const pack = userPack.packs;
-  const packType = pack?.pack_type as PackType;
-  const rarity = rollCardRarity(packType);
 
-  const { data: creators, error: creatorsError } = await supabase
-    .from("creators")
-    .select("id, nickname, username, avatar_url")
-    .eq("status", "approved")
-    .limit(100);
-
-  if (creatorsError || !creators || creators.length === 0) {
-    console.error("Erro ao buscar creators para pacote:", creatorsError);
+  if (!pack?.pack_type) {
+    console.error("Pacote sem pack_type válido:", userPack);
     return null;
   }
 
-  const randomCreator =
-    creators[Math.floor(Math.random() * creators.length)];
+  const packType = pack.pack_type as PackType;
+  const rarity = rollCardRarity(packType);
+  const randomCreator = await getRandomCreatorForPack();
+
+  if (!randomCreator) {
+    return null;
+  }
 
   const { data: newCard, error: cardError } = await supabase
     .from("user_cards")
@@ -222,19 +255,28 @@ export async function openUserPack(userPackId: string) {
 
   const now = new Date().toISOString();
 
-  await supabase
+  const { error: packUpdateError } = await supabase
     .from("user_packs")
     .update({ opened_at: now })
     .eq("id", userPackId)
     .eq("user_id", user.id);
 
-  await supabase.from("pack_openings").insert({
+  if (packUpdateError) {
+    console.error("Erro ao marcar pacote como aberto:", packUpdateError);
+    return null;
+  }
+
+  const { error: openingError } = await supabase.from("pack_openings").insert({
     user_id: user.id,
     user_pack_id: userPackId,
     creator_id: randomCreator.id,
     card_id: newCard.id,
     rarity,
   });
+
+  if (openingError) {
+    console.error("Erro ao registrar abertura do pacote:", openingError);
+  }
 
   await addUserXp(getXpEventByRarity(rarity), {
     card_id: newCard.id,
@@ -264,6 +306,7 @@ export async function openUserPack(userPackId: string) {
       user_pack_id: userPackId,
       card_id: newCard.id,
       creator_id: randomCreator.id,
+      creator_name: randomCreator.nickname ?? randomCreator.username ?? null,
       rarity,
       pack_type: packType,
     },
