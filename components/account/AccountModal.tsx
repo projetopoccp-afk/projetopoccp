@@ -19,6 +19,7 @@ import { CreatorRequestModal } from "@/components/creator-request/CreatorRequest
 import { UserProfileModal } from "@/components/account/UserProfileModal";
 import { MissionsModal } from "@/components/missions/MissionsModal";
 import { PacksModal } from "@/components/packs/PacksModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
 
 type AccountProfile = {
@@ -44,6 +45,14 @@ type AccountModalProps = {
   onLogout: () => void;
 };
 
+type TranslateFunction = (key: any) => string;
+
+function translate(t: TranslateFunction, key: string, fallback: string) {
+  const value = t(key);
+
+  return value && value !== key ? value : fallback;
+}
+
 export function AccountModal({
   open,
   email,
@@ -63,6 +72,7 @@ export function AccountModal({
     cards: 0,
   });
 
+  const { t } = useLanguage();
 
   useEffect(() => {
     function handleOpenCollectionCard(event: Event) {
@@ -200,14 +210,14 @@ export function AccountModal({
                 type="button"
                 onClick={onClose}
                 className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                aria-label="Fechar"
+                aria-label={translate(t, "close", "Fechar")}
               >
                 <X size={18} />
               </button>
 
               <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8 md:pb-6">
                 <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                  Minha Conta
+                  {translate(t, "myAccount", "Minha Conta")}
                 </div>
 
                 <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -232,11 +242,11 @@ export function AccountModal({
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                        @{profile?.username || "sem_username"}
+                        @{profile?.username || translate(t, "noUsername", "sem_username")}
                       </span>
 
                       <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                        Nível {accountStats.level}
+                        {translate(t, "level", "Nível")} {accountStats.level}
                       </span>
 
                       <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
@@ -244,7 +254,7 @@ export function AccountModal({
                       </span>
 
                       <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                        {accountStats.cards} cartas
+                        {accountStats.cards} {translate(t, "cards", "cartas")}
                       </span>
 
                       {profile?.is_admin && (
@@ -264,52 +274,72 @@ export function AccountModal({
                     className="mt-6 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20"
                   >
                     <ShieldCheck size={18} />
-                    Painel Admin
+                    {translate(t, "adminPanel", "Painel Admin")}
                   </button>
                 )}
 
                 <div className="mt-7 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <AccountActionCard
                     icon={<UserRound size={22} />}
-                    title="Meu Perfil"
-                    description="Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus."
-                    buttonLabel="Abrir"
+                    title={translate(t, "profile", "Meu Perfil")}
+                    description={translate(
+                      t,
+                      "profileCardDescription",
+                      "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus."
+                    )}
+                    buttonLabel={translate(t, "open", "Abrir")}
                     variant="cyan"
                     onClick={() => setProfileOpen(true)}
                   />
 
                   <AccountActionCard
                     icon={<Archive size={22} />}
-                    title="Minha Coleção"
-                    description="Acesse suas cartas conquistadas, raridades, criadoresfavoritos e progresso da coleção."
-                    buttonLabel="Abrir"
+                    title={translate(t, "collection", "Minha Coleção")}
+                    description={translate(
+                      t,
+                      "collectionCardDescription",
+                      "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção."
+                    )}
+                    buttonLabel={translate(t, "open", "Abrir")}
                     variant="purple"
                     onClick={() => setCollectionOpen(true)}
                   />
 
                   <AccountActionCard
                     icon={<BadgeCheck size={22} />}
-                    title="Minhas Badges"
-                    description="Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
-                    buttonLabel="Em breve"
+                    title={translate(t, "myBadges", "Minhas Badges")}
+                    description={translate(
+                      t,
+                      "badgesCardDescription",
+                      "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
+                    )}
+                    buttonLabel={translate(t, "soon", "Em breve")}
                     variant="yellow"
                     disabled
                   />
 
                   <AccountActionCard
                     icon={<Target size={22} />}
-                    title="Missões"
-                    description="Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus."
-                    buttonLabel="Abrir"
+                    title={translate(t, "missions", "Missões")}
+                    description={translate(
+                      t,
+                      "missionsCardDescription",
+                      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus."
+                    )}
+                    buttonLabel={translate(t, "open", "Abrir")}
                     variant="emerald"
                     onClick={() => setMissionsOpen(true)}
                   />
 
                   <AccountActionCard
                     icon={<Package size={22} />}
-                    title="Pacotes"
-                    description="Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
-                    buttonLabel="Abrir"
+                    title={translate(t, "packs", "Pacotes")}
+                    description={translate(
+                      t,
+                      "packsCardDescription",
+                      "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
+                    )}
+                    buttonLabel={translate(t, "open", "Abrir")}
                     variant="pink"
                     onClick={() => setPacksOpen(true)}
                   />
@@ -320,12 +350,17 @@ export function AccountModal({
                         <ShieldCheck size={22} />
                       </div>
 
-                      <h3 className="font-bold">Solicitar perfil de criador</h3>
+                      <h3 className="font-bold">
+                        {translate(t, "requestCreatorProfile", "Solicitar perfil de criador")}
+                      </h3>
                     </div>
 
                     <p className="mt-2 flex-1 text-sm text-white/55">
-                      Envie seus dados, redes sociais e prova de posse do canal
-                      para entrar na fila de aprovação.
+                      {translate(
+                        t,
+                        "requestCreatorProfileDescription",
+                        "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação."
+                      )}
                     </p>
 
                     <button
@@ -333,7 +368,7 @@ export function AccountModal({
                       onClick={() => setRequestOpen(true)}
                       className="mt-4 w-fit rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105"
                     >
-                      Começar solicitação
+                      {translate(t, "startRequest", "Começar solicitação")}
                     </button>
                   </div>
                 </div>
@@ -344,7 +379,7 @@ export function AccountModal({
                   className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
                 >
                   <LogOut size={18} />
-                  Sair da conta
+                  {translate(t, "logoutAccount", "Sair da conta")}
                 </button>
               </div>
             </motion.div>
