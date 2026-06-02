@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { TiltCard } from "@/components/cards/TiltCard";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Creator } from "@/types/creator";
 
 type CollectionModalProps = {
@@ -90,10 +91,33 @@ const rarityLabel: Record<string, string> = {
   mythic: "Mítico",
 };
 
-function getRarityLabel(rarity?: string | null) {
-  if (!rarity) return "Comum";
+type TranslateFunction = (key: any) => string;
 
-  return rarityLabel[rarity.toLowerCase()] || rarity;
+function translate(t: TranslateFunction, key: string, fallback: string) {
+  const value = t(key);
+
+  return value && value !== key ? value : fallback;
+}
+
+function getDateLocale(language: string) {
+  if (language === "en") return "en-US";
+  if (language === "es") return "es-ES";
+
+  return "pt-BR";
+}
+
+function getRarityLabel(rarity?: string | null, t?: TranslateFunction) {
+  if (!rarity) {
+    return t ? translate(t, "common", "Comum") : "Comum";
+  }
+
+  const normalizedRarity = rarity.toLowerCase();
+
+  if (t) {
+    return translate(t, normalizedRarity, rarityLabel[normalizedRarity] || rarity);
+  }
+
+  return rarityLabel[normalizedRarity] || rarity;
 }
 
 const rarityXp: Record<string, number> = {
@@ -618,7 +642,7 @@ export function CollectionModal({
                 type="button"
                 onClick={onClose}
                 className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                aria-label="Fechar coleção"
+                aria-label={translate(t, "closeCollection", "Fechar coleção")}
               >
                 <X size={18} />
               </button>
@@ -626,30 +650,32 @@ export function CollectionModal({
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                   <Archive size={14} />
-                  Minha Coleção
+                  {translate(t, "collection", "Minha Coleção")}
                 </div>
 
                 <h2 className="mt-5 text-3xl font-black">
-                  Suas cartas do Nexus
+                  {translate(t, "collectionTitle", "Suas cartas do Nexus")}
                 </h2>
 
                 <p className="mt-3 max-w-2xl text-sm text-white/45">
-                  Aqui ficam as cartas de creators conquistadas por follows,
-                  pacotes, missões e eventos. Notificações de carta podem abrir
-                  a carta específica diretamente aqui.
+                  {translate(
+                    t,
+                    "collectionDescription",
+                    "Aqui ficam as cartas de creators conquistadas por follows, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui."
+                  )}
                 </p>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                  <StatCard icon={<Archive size={18} />} label="Total" value={stats.total} />
-                  <StatCard icon={<Sparkles size={18} />} label="Comuns" value={stats.common} />
-                  <StatCard icon={<Gem size={18} />} label="Raras" value={stats.rare} />
-                  <StatCard icon={<Zap size={18} />} label="Épicas" value={stats.epic} />
-                  <StatCard icon={<Crown size={18} />} label="Lendárias" value={stats.legendary} />
+                  <StatCard icon={<Archive size={18} />} label={translate(t, "total", "Total")} value={stats.total} />
+                  <StatCard icon={<Sparkles size={18} />} label={translate(t, "commonPlural", "Comuns")} value={stats.common} />
+                  <StatCard icon={<Gem size={18} />} label={translate(t, "rarePlural", "Raras")} value={stats.rare} />
+                  <StatCard icon={<Zap size={18} />} label={translate(t, "epicPlural", "Épicas")} value={stats.epic} />
+                  <StatCard icon={<Crown size={18} />} label={translate(t, "legendaryPlural", "Lendárias")} value={stats.legendary} />
                 </div>
 
                 {loading ? (
                   <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-white/50">
-                    Carregando coleção...
+                    {translate(t, "loadingCollection", "Carregando coleção...")}
                   </div>
                 ) : cards.length === 0 ? (
                   <EmptyCollection />
@@ -760,6 +786,8 @@ function StatCard({
 }
 
 function EmptyCollection() {
+  const { t } = useLanguage();
+
   return (
     <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-center">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
@@ -767,12 +795,15 @@ function EmptyCollection() {
       </div>
 
       <p className="mt-5 text-lg font-bold text-white">
-        Coleção vazia por enquanto
+        {translate(t, "emptyCollectionTitle", "Coleção vazia por enquanto")}
       </p>
 
       <p className="mx-auto mt-3 max-w-xl text-sm text-white/45">
-        Em breve você poderá conquistar cartas seguindo creators, abrindo
-        pacotes e completando missões dentro do Creator Nexus.
+        {translate(
+          t,
+          "emptyCollectionDescription",
+          "Em breve você poderá conquistar cartas seguindo creators, abrindo pacotes e completando missões dentro do Creator Nexus."
+        )}
       </p>
     </div>
   );
@@ -802,13 +833,14 @@ function CollectionCardShowcase({
   onOpenProfile: (card: UserCard) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const { language, t } = useLanguage();
 
   if (!card) return null;
 
   const creator = card.creator_profiles;
   const username = creator?.username || "creator";
   const nickname = creator?.nickname || "Creator Nexus";
-  const rarity = getRarityLabel(card.rarity);
+  const rarity = getRarityLabel(card.rarity, t);
   const xp = getCardXp(card.rarity);
 
   function openProfile() {
@@ -819,12 +851,18 @@ function CollectionCardShowcase({
 
   async function shareCard() {
     const url = `${window.location.origin}/card/${username}?v=1`;
-    const text = `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`;
+    const text = translate(
+      t,
+      "shareCardText",
+      `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`
+    )
+      .replace("{nickname}", nickname)
+      .replace("{rarity}", rarity);
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Carta ${nickname}`,
+          title: `${translate(t, "card", "Carta")} ${nickname}`,
           text,
           url,
         });
@@ -858,7 +896,7 @@ function CollectionCardShowcase({
           type="button"
           onClick={onClose}
           className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-          aria-label="Fechar carta"
+          aria-label={translate(t, "closeCard", "Fechar carta")}
         >
           <X size={20} />
         </button>
@@ -874,7 +912,7 @@ function CollectionCardShowcase({
           <div className="flex flex-wrap items-center justify-center gap-2">
             {isCardNew(card) && (
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
-                Nova carta
+                {translate(t, "newCard", "Nova carta")}
               </span>
             )}
 
@@ -896,7 +934,7 @@ function CollectionCardShowcase({
               className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
             >
               <Eye size={16} />
-              Ver perfil
+              {translate(t, "viewProfile", "Ver perfil")}
             </button>
 
             <button
@@ -905,7 +943,9 @@ function CollectionCardShowcase({
               className="inline-flex items-center gap-2 rounded-full border border-purple-300/20 bg-purple-300/10 px-5 py-3 text-sm font-bold text-purple-100 transition hover:bg-purple-300/20"
             >
               <Share2 size={16} />
-              {copied ? "Copiado!" : "Compartilhar carta"}
+              {copied
+                ? translate(t, "copied", "Copiado!")
+                : translate(t, "shareCard", "Compartilhar carta")}
             </button>
           </div>
         </motion.div>
@@ -923,6 +963,7 @@ function CollectionCardFace({
   onClick: () => void;
   size: "small" | "large";
 }) {
+  const { language, t } = useLanguage();
   const creator = card.creator_profiles;
   const imageUrl = creator?.avatar_url || creator?.banner_url || "";
   const nickname = creator?.nickname || "Creator Nexus";
@@ -995,7 +1036,7 @@ function CollectionCardFace({
             : "left-4 top-4 rounded-full px-3 py-1 text-[10px] tracking-[0.25em]"
         }`}
       >
-        {getRarityLabel(rarity)}
+        {getRarityLabel(rarity, t)}
       </div>
 
       <div
@@ -1005,7 +1046,7 @@ function CollectionCardFace({
       >
         {isNew && (
           <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100 backdrop-blur">
-            Nova
+            {translate(t, "new", "Nova")}
           </span>
         )}
 
@@ -1023,7 +1064,7 @@ function CollectionCardFace({
           }`}
           style={{ textShadow: "0 0 10px var(--collection-glow)" }}
         >
-          Carta do Creator
+          {translate(t, "creatorCard", "Carta do Creator")}
         </p>
 
         <h3
@@ -1050,7 +1091,7 @@ function CollectionCardFace({
           </span>
 
           <span className="text-xs text-white/48">
-            {new Date(card.obtained_at).toLocaleDateString("pt-BR")}
+            {new Date(card.obtained_at).toLocaleDateString(getDateLocale(language))}
           </span>
         </div>
       </div>
