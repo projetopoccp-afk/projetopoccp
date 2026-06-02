@@ -102,7 +102,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+            className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto overflow-x-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
           >
             <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-pink-500/20 blur-[90px]" />
             <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-cyan-600/20 blur-[90px]" />
@@ -116,7 +116,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
               <X size={18} />
             </button>
 
-            <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
+            <div className="relative z-10 p-6 md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-pink-300/20 bg-pink-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-pink-100">
                 <Package size={14} />
                 Pacotes
@@ -254,8 +254,8 @@ function PackOpeningStage({
   const revealed = openingStep === "revealed" && openingResult;
 
   return (
-    <div className="flex min-h-[520px] flex-col items-center justify-center rounded-[32px] border border-white/10 bg-black/30 p-6">
-      <div className="relative flex h-[360px] w-full items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-zinc-950/70">
+    <div className="flex min-h-[640px] flex-col items-center justify-center rounded-[32px] border border-white/10 bg-black/30 p-6">
+      <div className="relative flex min-h-[480px] w-full items-center justify-center overflow-visible rounded-[28px] border border-white/10 bg-zinc-950/70 px-4 py-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.16),transparent_55%)]" />
 
         <AnimatePresence mode="wait">
@@ -307,13 +307,15 @@ function PackOpeningStage({
                 className="mt-6"
               >
                 <p className="text-xs uppercase tracking-[0.35em] text-pink-100">
-                  Carta revelada
+                  {openingResult.duplicate ? "Carta repetida" : "Carta revelada"}
                 </p>
                 <h3 className="mt-2 text-2xl font-black capitalize">
-                  {openingResult.rarity}
+                  {openingResult.creatorName || openingResult.rarity}
                 </h3>
-                <p className="mt-2 max-w-xs text-sm text-white/45">
-                  A carta foi enviada para sua coleção e o XP foi contabilizado.
+                <p className="mt-2 max-w-sm text-sm text-white/45">
+                  {openingResult.duplicate
+                    ? `Você já tinha a carta ${openingResult.creatorName || "desse creator"} nessa raridade. Ela foi convertida em +${openingResult.duplicateXp || 0} XP.`
+                    : `Você recebeu uma carta ${openingResult.rarity}. Ela foi enviada para sua coleção e o XP foi contabilizado.`}
                 </p>
               </motion.div>
             </motion.div>

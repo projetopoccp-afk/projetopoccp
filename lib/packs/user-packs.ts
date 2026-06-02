@@ -282,6 +282,7 @@ export async function openUserPack(userPackId: string) {
     .select("id")
     .eq("user_id", user.id)
     .eq("creator_id", randomCreator.id)
+    .eq("rarity", rarity)
     .maybeSingle();
 
   if (existingCardError) {
