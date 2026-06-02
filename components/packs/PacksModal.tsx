@@ -117,7 +117,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+            className="relative flex h-[calc(100vh-2rem)] max-h-[760px] w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
           >
             <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-pink-500/20 blur-[90px]" />
             <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-cyan-600/20 blur-[90px]" />
@@ -131,15 +131,15 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
               <X size={18} />
             </button>
 
-            <div className="relative z-10 p-6 md:p-8">
+            <div className="relative z-10 flex h-full min-h-0 w-full flex-col p-6 md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-pink-300/20 bg-pink-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-pink-100">
                 <Package size={14} />
                 Pacotes
               </div>
 
-              <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1.05fr] lg:items-start">
-                <div>
-                  <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div className="mt-8 grid min-h-0 flex-1 gap-8 lg:grid-cols-[1fr_1.05fr] lg:items-stretch">
+                <div className="flex min-h-0 flex-col">
+                  <div className="shrink-0 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div>
                       <h2 className="text-3xl font-black md:text-5xl">
                         Abrir Pacotes
@@ -152,7 +152,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                     </div>
                   </div>
 
-                  <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="mt-6 flex min-h-0 flex-1 flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-5">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <Gift className="text-yellow-100" size={20} />
@@ -164,7 +164,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                       </span>
                     </div>
 
-                    <div className="mt-5 grid gap-3">
+                    <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {loading && (
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
                           Buscando seus pacotes...
@@ -269,8 +269,8 @@ function PackOpeningStage({
   const revealed = openingStep === "revealed" && openingResult;
 
   return (
-    <div className="flex min-h-[640px] flex-col items-center justify-center rounded-[32px] border border-white/10 bg-black/30 p-6">
-      <div className="relative flex min-h-[480px] w-full items-center justify-center overflow-visible rounded-[28px] border border-white/10 bg-zinc-950/70 px-4 py-8">
+    <div className="flex h-full min-h-[560px] flex-col items-center justify-center rounded-[32px] border border-white/10 bg-black/30 p-6">
+      <div className="relative flex min-h-[430px] w-full items-center justify-center overflow-visible rounded-[28px] border border-white/10 bg-zinc-950/70 px-4 py-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.16),transparent_55%)]" />
 
         <AnimatePresence mode="wait">
