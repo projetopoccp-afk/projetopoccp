@@ -16,7 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-
+import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 
 type AccountProfile = {
