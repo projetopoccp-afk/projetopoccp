@@ -101,7 +101,10 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
 
   const packCountLabel = useMemo(() => {
     if (packs.length === 1) {
-      return translate(t, "packsModalPackCountSingular", "1 pack available");
+      return translate(t, "packsModalPackCountSingular", "{count} pack available").replace(
+        "{count}",
+        String(packs.length)
+      );
     }
 
     return translate(t, "packsModalPackCountPlural", "{count} packs available").replace(
@@ -254,15 +257,14 @@ function PackInventoryItem({
 
           <div>
             <h3 className="font-black">
-              {packInfo?.name || translate(t, "packsModalDefaultPackName", "Pack")}
+              {getTranslatedPackName(t, pack)}
             </h3>
             <p className="mt-1 text-xs text-white/45">
-              {packInfo?.description ||
-                translate(t, "packsModalDefaultPackDescription", "Pack available to open.")}
+              {getTranslatedPackDescription(t, pack)}
             </p>
             <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-white/30">
-              {translate(t, "packsModalOriginLabel", "source")}: {" "}
-              {pack.source || translate(t, "packsModalSystemSource", "system")}
+              {translate(t, "packsModalOriginLabel", "Origin")}: {" "}
+              {getTranslatedPackSource(t, pack.source)}
             </p>
           </div>
         </div>
@@ -293,8 +295,9 @@ function PackOpeningStage({
 }) {
   const { t } = useLanguage();
 
-  const packName =
-    selectedPack?.packs?.name || translate(t, "packsModalDefaultNexusPack", "Nexus Pack");
+  const packName = selectedPack
+    ? getTranslatedPackName(t, selectedPack)
+    : translate(t, "packsModalDefaultNexusPack", "Nexus Pack");
   const revealed = openingStep === "revealed" && openingResult;
 
   return (
@@ -379,7 +382,10 @@ function PackOpeningStage({
                         t,
                         "packsModalReceivedDescription",
                         "You received a {rarity} card. It was sent to your collection and the XP was counted."
-                      ).replace("{rarity}", openingResult.rarity)}
+                      ).replace(
+                        "{rarity}",
+                        getTranslatedRarityLabel(t, openingResult.rarity)
+                      )}
                 </p>
               </motion.div>
             </motion.div>
@@ -545,7 +551,7 @@ function RevealedCard({ rarity }: { rarity: string }) {
       <div className="relative flex h-full flex-col rounded-[22px] border border-white/15 bg-black/55 p-4">
         <div className="flex items-center justify-between">
           <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
-            {rarity}
+            {getTranslatedRarityLabel(t, rarity)}
           </span>
           <Sparkles size={16} className="text-yellow-100" />
         </div>
@@ -560,6 +566,134 @@ function RevealedCard({ rarity }: { rarity: string }) {
       </div>
     </motion.div>
   );
+}
+
+function normalizeTranslationMatch(value?: string | null) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function getTranslatedPackName(
+  t: ReturnType<typeof useLanguage>["t"],
+  pack: UserPack
+) {
+  const packInfo = pack.packs;
+  const name = packInfo?.name || "";
+  const rarity = packInfo?.rarity || "common";
+  const normalizedName = normalizeTranslationMatch(name);
+
+  if (rarity === "legendary" || normalizedName.includes("lendario")) {
+    return translate(t, "packsModalLegendaryPackName", "Legendary Pack");
+  }
+
+  if (rarity === "epic" || normalizedName.includes("epico")) {
+    return translate(t, "packsModalEpicPackName", "Epic Pack");
+  }
+
+  if (rarity === "rare" || normalizedName.includes("raro")) {
+    return translate(t, "packsModalRarePackName", "Rare Pack");
+  }
+
+  if (rarity === "common" || normalizedName.includes("comum")) {
+    return translate(t, "packsModalCommonPackName", "Common Pack");
+  }
+
+  return name || translate(t, "packsModalDefaultPackName", "Pack");
+}
+
+function getTranslatedPackDescription(
+  t: ReturnType<typeof useLanguage>["t"],
+  pack: UserPack
+) {
+  const packInfo = pack.packs;
+  const description = packInfo?.description || "";
+  const rarity = packInfo?.rarity || "common";
+  const normalizedDescription = normalizeTranslationMatch(description);
+
+  if (
+    rarity === "legendary" ||
+    normalizedDescription.includes("chance elevada") ||
+    normalizedDescription.includes("carta lendaria")
+  ) {
+    return translate(
+      t,
+      "packsModalLegendaryPackDescription",
+      "A special pack with an increased chance of a legendary card."
+    );
+  }
+
+  if (rarity === "epic" || normalizedDescription.includes("epic")) {
+    return translate(
+      t,
+      "packsModalEpicPackDescription",
+      "An enhanced pack with a higher chance of epic cards."
+    );
+  }
+
+  if (
+    rarity === "rare" ||
+    normalizedDescription.includes("pacote melhorado") ||
+    normalizedDescription.includes("maiores chances")
+  ) {
+    return translate(
+      t,
+      "packsModalRarePackDescription",
+      "An improved pack with better chances of rare cards."
+    );
+  }
+
+  if (rarity === "common") {
+    return translate(
+      t,
+      "packsModalCommonPackDescription",
+      "A basic pack with creator cards for your collection."
+    );
+  }
+
+  return (
+    description ||
+    translate(t, "packsModalDefaultPackDescription", "Pack available to open.")
+  );
+}
+
+function getTranslatedPackSource(
+  t: ReturnType<typeof useLanguage>["t"],
+  source?: string | null
+) {
+  const normalizedSource = normalizeTranslationMatch(source);
+
+  if (!source) {
+    return translate(t, "packsModalSystemSource", "System");
+  }
+
+  if (normalizedSource === "manual_test") {
+    return translate(t, "packsModalManualTestSource", "Manual test");
+  }
+
+  if (normalizedSource === "system") {
+    return translate(t, "packsModalSystemSource", "System");
+  }
+
+  if (normalizedSource === "mission" || normalizedSource === "missions") {
+    return translate(t, "packsModalMissionSource", "Mission");
+  }
+
+  return source;
+}
+
+function getTranslatedRarityLabel(
+  t: ReturnType<typeof useLanguage>["t"],
+  rarity: string
+) {
+  if (rarity === "legendary") return translate(t, "legendary", "Legendary");
+  if (rarity === "epic") return translate(t, "epic", "Epic");
+  if (rarity === "rare") return translate(t, "rare", "Rare");
+  if (rarity === "common") return translate(t, "common", "Common");
+
+  return rarity;
 }
 
 function getRarityBoxClass(rarity: string) {
