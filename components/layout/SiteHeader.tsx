@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, ChevronRight, LogOut, Package, Sparkles, Trophy, User, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Bell, ChevronRight, Globe2, LogOut, Package, Sparkles, Trophy, User, X } from "lucide-react";
 import { AccountModal } from "@/components/account/AccountModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { LoginModal } from "@/components/auth/LoginModal";
@@ -48,6 +48,55 @@ type UserNotification = {
   created_at: string;
 };
 
+type SiteLanguage = "pt" | "en" | "es";
+
+const SITE_LANGUAGES: {
+  id: SiteLanguage;
+  label: string;
+  shortLabel: string;
+  nativeLabel: string;
+}[] = [
+  {
+    id: "pt",
+    label: "Português",
+    shortLabel: "PT",
+    nativeLabel: "Português",
+  },
+  {
+    id: "en",
+    label: "Inglês",
+    shortLabel: "EN",
+    nativeLabel: "English",
+  },
+  {
+    id: "es",
+    label: "Espanhol",
+    shortLabel: "ES",
+    nativeLabel: "Español",
+  },
+];
+
+function getInitialLanguage(): SiteLanguage {
+  if (typeof window === "undefined") return "pt";
+
+  const savedLanguage = window.localStorage.getItem("creator-nexus-language");
+
+  if (savedLanguage === "pt" || savedLanguage === "en" || savedLanguage === "es") {
+    return savedLanguage;
+  }
+
+  const browserLanguage = window.navigator.language.toLowerCase();
+
+  if (browserLanguage.startsWith("en")) return "en";
+  if (browserLanguage.startsWith("es")) return "es";
+
+  return "pt";
+}
+
+function getLanguageLabel(language: SiteLanguage) {
+  return SITE_LANGUAGES.find((item) => item.id === language)?.shortLabel || "PT";
+}
+
 function getNotificationIcon(type: NotificationType) {
   if (type === "card_collected" || type === "card_won") return <Sparkles size={16} />;
   if (type === "level_up") return <Trophy size={16} />;
@@ -85,13 +134,20 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [collectionInitialCardId, setCollectionInitialCardId] = useState<string | null>(null);
   const [collectionInitialCreatorId, setCollectionInitialCreatorId] = useState<string | null>(null);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [language, setLanguage] = useState<SiteLanguage>("pt");
   const notificationBoxRef = useRef<HTMLDivElement | null>(null);
+  const languageBoxRef = useRef<HTMLDivElement | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications]
   );
+
+  useEffect(() => {
+    setLanguage(getInitialLanguage());
+  }, []);
 
   useEffect(() => {
     async function getUser() {
@@ -239,6 +295,13 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       ) {
         setNotificationsOpen(false);
       }
+
+      if (
+        languageBoxRef.current &&
+        !languageBoxRef.current.contains(event.target as Node)
+      ) {
+        setLanguageOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -364,6 +427,23 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     setAccountOpen(true);
   }
 
+  function handleLanguageChange(nextLanguage: SiteLanguage) {
+    setLanguage(nextLanguage);
+    setLanguageOpen(false);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("creator-nexus-language", nextLanguage);
+
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:language-changed", {
+          detail: {
+            language: nextLanguage,
+          },
+        })
+      );
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setUser(null);
@@ -435,6 +515,15 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                   <LogOut size={16} />
                   Sair
                 </button>
+
+                <LanguageSwitcher
+                  language={language}
+                  open={languageOpen}
+                  boxRef={languageBoxRef}
+                  buttonSize="mobile"
+                  onToggle={() => setLanguageOpen((current) => !current)}
+                  onChange={handleLanguageChange}
+                />
               </div>
             ) : (
               <button
@@ -504,6 +593,15 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 <LogOut size={18} />
                 Sair
               </button>
+
+              <LanguageSwitcher
+                language={language}
+                open={languageOpen}
+                boxRef={languageBoxRef}
+                buttonSize="desktop"
+                onToggle={() => setLanguageOpen((current) => !current)}
+                onChange={handleLanguageChange}
+              />
             </div>
           ) : (
             <button
@@ -547,6 +645,107 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
         }}
       />
     </>
+  );
+}
+
+
+function LanguageSwitcher({
+  language,
+  open,
+  boxRef,
+  buttonSize,
+  onToggle,
+  onChange,
+}: {
+  language: SiteLanguage;
+  open: boolean;
+  boxRef: RefObject<HTMLDivElement | null>;
+  buttonSize: "mobile" | "desktop";
+  onToggle: () => void;
+  onChange: (language: SiteLanguage) => void;
+}) {
+  const isDesktop = buttonSize === "desktop";
+
+  return (
+    <div ref={boxRef} className="relative">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onToggle();
+        }}
+        className={`relative flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
+          isDesktop ? "h-11 w-11" : "h-10 w-10"
+        }`}
+        aria-label="Alterar idioma"
+        title="Alterar idioma"
+      >
+        <Globe2 size={isDesktop ? 18 : 17} />
+
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-300 px-1 text-[10px] font-black text-black">
+          {getLanguageLabel(language)}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          onClick={(event) => event.stopPropagation()}
+          className="absolute right-0 top-[calc(100%+12px)] z-[80] w-52 overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/95 text-white shadow-[0_24px_80px_rgba(0,0,0,0.85)] backdrop-blur-2xl"
+        >
+          <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-cyan-400/15 blur-[50px]" />
+
+          <div className="relative z-10 border-b border-white/10 p-4">
+            <p className="text-sm font-black">Idioma</p>
+            <p className="mt-0.5 text-xs text-white/40">
+              Escolha o idioma do site
+            </p>
+          </div>
+
+          <div className="relative z-10 p-2">
+            {SITE_LANGUAGES.map((item) => {
+              const selected = item.id === language;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onChange(item.id);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${
+                    selected
+                      ? "bg-cyan-300/10 text-cyan-100"
+                      : "text-white/65 hover:bg-white/[0.05] hover:text-white"
+                  }`}
+                >
+                  <span>
+                    <span className="block text-sm font-bold">
+                      {item.nativeLabel}
+                    </span>
+                    <span className="block text-xs text-white/35">
+                      {item.label}
+                    </span>
+                  </span>
+
+                  <span
+                    className={`rounded-full border px-2 py-1 text-[10px] font-black ${
+                      selected
+                        ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
+                        : "border-white/10 bg-white/[0.04] text-white/40"
+                    }`}
+                  >
+                    {item.shortLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
