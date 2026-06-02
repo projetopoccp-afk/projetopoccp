@@ -17,7 +17,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("pt");
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem("creator-nexus-language");
+    if (typeof window === "undefined") return;
+
+    const savedLanguage = window.localStorage.getItem("creator-nexus-language");
 
     if (
       savedLanguage === "pt" ||
@@ -30,7 +32,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   function setLanguage(nextLanguage: Language) {
     setLanguageState(nextLanguage);
-    localStorage.setItem("creator-nexus-language", nextLanguage);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("creator-nexus-language", nextLanguage);
+    }
   }
 
   const value = useMemo(

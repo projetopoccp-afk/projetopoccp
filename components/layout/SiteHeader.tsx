@@ -523,13 +523,24 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 />
               </div>
             ) : (
-              <button
-                onClick={() => setLoginOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:hidden"
-              >
-                <User size={16} />
-                {translate(t, "login", "Entrar")}
-              </button>
+              <div className="flex items-center gap-2 md:hidden">
+                <button
+                  onClick={() => setLoginOpen(true)}
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06]"
+                >
+                  <User size={16} />
+                  {translate(t, "login", "Entrar")}
+                </button>
+
+                <LanguageSwitcher
+                  language={language}
+                  open={languageOpen}
+                  boxRef={languageBoxRef}
+                  buttonSize="mobile"
+                  onToggle={() => setLanguageOpen((current) => !current)}
+                  onChange={handleLanguageChange}
+                />
+              </div>
             )}
           </div>
 
@@ -601,13 +612,24 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               />
             </div>
           ) : (
-            <button
-              onClick={() => setLoginOpen(true)}
-              className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:flex"
-            >
-              <User size={18} />
-              Entrar
-            </button>
+            <div className="hidden items-center gap-3 md:flex">
+              <button
+                onClick={() => setLoginOpen(true)}
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06]"
+              >
+                <User size={18} />
+                {translate(t, "login", "Entrar")}
+              </button>
+
+              <LanguageSwitcher
+                language={language}
+                open={languageOpen}
+                boxRef={languageBoxRef}
+                buttonSize="desktop"
+                onToggle={() => setLanguageOpen((current) => !current)}
+                onChange={handleLanguageChange}
+              />
+            </div>
           )}
         </div>
       </header>
