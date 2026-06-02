@@ -83,8 +83,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [collectionInitialCardId, setCollectionInitialCardId] = useState<string | null>(null);
+  const [collectionInitialCreatorId, setCollectionInitialCreatorId] = useState<string | null>(null);
   const notificationBoxRef = useRef<HTMLDivElement | null>(null);
-  const openedCollectionNotificationRef = useRef<string | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
 
   const unreadCount = useMemo(
@@ -321,51 +322,20 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     const metadata = notification.metadata || {};
     const cardId = metadata.card_id || metadata.user_card_id;
     const creatorId = metadata.creator_id;
-    const creatorUsername = metadata.creator_username;
 
     if (notification.type === "card_collected" || notification.type === "card_won") {
-      const openKey = [
-        notification.id,
-        typeof cardId === "string" ? cardId : "",
-        typeof creatorId === "string" ? creatorId : "",
-      ].join(":");
-
       /*
-        Proteção contra loop:
-        quando a notificação abre uma carta, alguns componentes da coleção podem
-        recarregar e tentar consumir o mesmo evento novamente. Este ref garante
-        que o mesmo clique/notificação só dispare a abertura automática uma vez.
+        Importante:
+        antes o SiteHeader disparava um window.dispatchEvent("creator-nexus:open-collection-card").
+        Esse evento continuava sendo consumido pelo CollectionModal e podia reabrir a carta
+        infinitamente ao fechar. Agora o fluxo é controlado por props: o header guarda qual
+        carta deve abrir, passa isso para o CollectionModal e limpa esse estado assim que a
+        carta é aberta.
       */
-      if (openedCollectionNotificationRef.current === openKey) {
-        setCollectionOpen(true);
-        return;
-      }
-
-      openedCollectionNotificationRef.current = openKey;
-
-      if (openCollectionCardTimeoutRef.current) {
-        window.clearTimeout(openCollectionCardTimeoutRef.current);
-      }
-
       setAccountOpen(false);
+      setCollectionInitialCardId(typeof cardId === "string" ? cardId : null);
+      setCollectionInitialCreatorId(typeof creatorId === "string" ? creatorId : null);
       setCollectionOpen(true);
-
-      openCollectionCardTimeoutRef.current = window.setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("creator-nexus:open-collection-card", {
-            detail: {
-              notification_id: notification.id,
-              request_id: openKey,
-              card_id: typeof cardId === "string" ? cardId : undefined,
-              creator_id: typeof creatorId === "string" ? creatorId : undefined,
-              creator_username:
-                typeof creatorUsername === "string" ? creatorUsername : undefined,
-            },
-          })
-        );
-
-        openCollectionCardTimeoutRef.current = null;
-      }, 300);
 
       return;
     }
@@ -559,8 +529,16 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
       <CollectionModal
         open={collectionOpen}
+        initialCardId={collectionInitialCardId}
+        initialCreatorId={collectionInitialCreatorId}
+        onInitialCardOpened={() => {
+          setCollectionInitialCardId(null);
+          setCollectionInitialCreatorId(null);
+        }}
         onClose={() => {
           setCollectionOpen(false);
+          setCollectionInitialCardId(null);
+          setCollectionInitialCreatorId(null);
 
           if (openCollectionCardTimeoutRef.current) {
             window.clearTimeout(openCollectionCardTimeoutRef.current);

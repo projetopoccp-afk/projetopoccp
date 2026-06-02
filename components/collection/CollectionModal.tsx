@@ -402,8 +402,11 @@ function findNotificationCard(
 function getPendingNotificationCardKey(card: PendingNotificationCard | null) {
   if (!card) return null;
 
-  if (card.cardId) return `card:${card.cardId}`;
-  if (card.creatorId) return `creator:${card.creatorId}`;
+  const cardId = getPendingCardId(card);
+  const creatorId = getPendingCreatorId(card);
+
+  if (cardId) return `card:${cardId}`;
+  if (creatorId) return `creator:${creatorId}`;
 
   return null;
 }
@@ -428,6 +431,16 @@ export function CollectionModal({
     setSelectedCard(null);
     setPendingNotificationCard(null);
   }
+
+  useEffect(() => {
+    if (open) return;
+
+    setSelectedCard(null);
+    setSelectedCreator(null);
+    setPendingNotificationCard(null);
+    openedNotificationCardKeyRef.current = null;
+    lastEventCardKeyRef.current = null;
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -510,58 +523,26 @@ export function CollectionModal({
 
     const nextKey = getPendingNotificationCardKey(nextPendingCard);
 
-    if (!nextKey) {
-      openedNotificationCardKeyRef.current = null;
-      return;
-    }
+    // Importante: quando não vem initialCardId/initialCreatorId do pai,
+    // NÃO limpamos openedNotificationCardKeyRef aqui.
+    // O SiteHeader abre a carta via evento global; se limparmos esse ref a cada render,
+    // a mesma carta pode ser aberta de novo imediatamente ao fechar.
+    if (!nextKey) return;
 
-    if (openedNotificationCardKeyRef.current === nextKey) {
-      return;
-    }
+    if (openedNotificationCardKeyRef.current === nextKey) return;
 
     setPendingNotificationCard(nextPendingCard);
   }, [open, initialCardId, initialCreatorId]);
 
-  useEffect(() => {
-    function handleOpenCardFromNotification(event: Event) {
-      const customEvent = event as CustomEvent<PendingNotificationCard>;
+  /*
+    A abertura de carta vinda de notificação agora é feita apenas por props
+    (initialCardId / initialCreatorId) recebidas do SiteHeader.
 
-      const nextPendingCard = {
-        cardId: customEvent.detail?.cardId || customEvent.detail?.card_id || null,
-        creatorId:
-          customEvent.detail?.creatorId || customEvent.detail?.creator_id || null,
-      };
-
-      const nextKey = getPendingNotificationCardKey(nextPendingCard);
-
-      if (!nextKey) return;
-
-      if (lastEventCardKeyRef.current === nextKey) {
-        return;
-      }
-
-      lastEventCardKeyRef.current = nextKey;
-      setPendingNotificationCard(nextPendingCard);
-
-      window.setTimeout(() => {
-        if (lastEventCardKeyRef.current === nextKey) {
-          lastEventCardKeyRef.current = null;
-        }
-      }, 500);
-    }
-
-    window.addEventListener(
-      "creator-nexus:open-collection-card",
-      handleOpenCardFromNotification
-    );
-
-    return () => {
-      window.removeEventListener(
-        "creator-nexus:open-collection-card",
-        handleOpenCardFromNotification
-      );
-    };
-  }, []);
+    Antes este modal também escutava o evento global
+    "creator-nexus:open-collection-card". Em alguns cenários o evento ficava
+    sendo reprocessado depois de fechar a carta, causando o loop infinito.
+    Por isso removemos o listener global daqui.
+  */
 
   useEffect(() => {
     if (!open || loading || cards.length === 0 || !pendingNotificationCard) {
