@@ -104,6 +104,11 @@ const rarityStyles: Record<
     glow: string;
     text: string;
     ring: string;
+    frame: string;
+    aura: string;
+    shine: string;
+    corner: string;
+    shadow: string;
   }
 > = {
   common: {
@@ -112,27 +117,47 @@ const rarityStyles: Record<
     glow: "bg-cyan-400/25",
     text: "text-cyan-200",
     ring: "ring-cyan-200/25",
+    frame: "from-cyan-300/16 via-slate-900/10 to-cyan-900/28",
+    aura: "bg-cyan-400/18",
+    shine: "from-transparent via-cyan-100/10 to-transparent",
+    corner: "border-cyan-200/35 bg-cyan-300/10",
+    shadow: "shadow-[0_0_70px_rgba(34,211,238,0.18)]",
   },
   rare: {
-    border: "border-blue-300/35",
-    badge: "border-blue-300/30 bg-blue-300/10 text-blue-100",
-    glow: "bg-blue-500/25",
-    text: "text-blue-200",
-    ring: "ring-blue-200/30",
+    border: "border-blue-300/45",
+    badge: "border-blue-300/35 bg-blue-300/15 text-blue-100",
+    glow: "bg-blue-500/35",
+    text: "text-blue-100",
+    ring: "ring-blue-200/35",
+    frame: "from-blue-300/22 via-indigo-500/12 to-blue-950/40",
+    aura: "bg-blue-500/24",
+    shine: "from-transparent via-blue-100/18 to-transparent",
+    corner: "border-blue-200/45 bg-blue-300/15",
+    shadow: "shadow-[0_0_85px_rgba(59,130,246,0.28)]",
   },
   epic: {
-    border: "border-purple-300/40",
-    badge: "border-purple-300/35 bg-purple-300/10 text-purple-100",
-    glow: "bg-purple-500/30",
-    text: "text-purple-200",
-    ring: "ring-purple-200/35",
+    border: "border-purple-300/55",
+    badge: "border-fuchsia-300/45 bg-fuchsia-300/15 text-fuchsia-100",
+    glow: "bg-fuchsia-500/40",
+    text: "text-fuchsia-100",
+    ring: "ring-fuchsia-200/45",
+    frame: "from-fuchsia-300/25 via-purple-600/18 to-yellow-500/16",
+    aura: "bg-fuchsia-500/30",
+    shine: "from-transparent via-fuchsia-100/24 to-transparent",
+    corner: "border-fuchsia-200/55 bg-fuchsia-300/15",
+    shadow: "shadow-[0_0_100px_rgba(217,70,239,0.35)]",
   },
   legendary: {
-    border: "border-yellow-300/45",
-    badge: "border-yellow-300/40 bg-yellow-300/10 text-yellow-100",
-    glow: "bg-yellow-400/30",
-    text: "text-yellow-100",
-    ring: "ring-yellow-200/40",
+    border: "border-yellow-300/70",
+    badge: "border-yellow-200/60 bg-yellow-300/20 text-yellow-50",
+    glow: "bg-yellow-400/45",
+    text: "text-yellow-50",
+    ring: "ring-yellow-100/55",
+    frame: "from-yellow-200/28 via-orange-500/20 to-red-600/20",
+    aura: "bg-yellow-300/35",
+    shine: "from-transparent via-yellow-50/30 to-transparent",
+    corner: "border-yellow-100/70 bg-yellow-300/20",
+    shadow: "shadow-[0_0_120px_rgba(250,204,21,0.45)]",
   },
 };
 
@@ -717,13 +742,40 @@ function CollectionCardFace({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden border bg-black text-left shadow-[0_0_60px_rgba(0,0,0,0.8)] transition duration-500 hover:shadow-[0_0_90px_rgba(34,211,238,0.20)] ${style.border} ${
+      className={`group relative overflow-hidden border bg-black text-left ${style.shadow} transition duration-500 hover:scale-[1.015] ${style.border} ${
         isLarge
           ? "h-[620px] w-[410px] rounded-[34px]"
           : "h-[360px] w-[240px] rounded-[24px]"
       }`}
     >
+      <div className={`absolute inset-0 bg-gradient-to-br ${style.frame}`} />
       <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/95" />
+
+      {rarity !== "common" && (
+        <div className="pointer-events-none absolute inset-0 opacity-50 mix-blend-screen">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.22),transparent_26%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.16),transparent_24%),radial-gradient(circle_at_40%_90%,rgba(255,255,255,0.12),transparent_25%)]" />
+        </div>
+      )}
+
+      {(rarity === "epic" || rarity === "legendary") && (
+        <motion.div
+          aria-hidden
+          animate={{ opacity: [0.25, 0.85, 0.25], scale: [0.98, 1.05, 0.98] }}
+          transition={{ duration: rarity === "legendary" ? 1.7 : 2.3, repeat: Infinity, ease: "easeInOut" }}
+          className={`pointer-events-none absolute -inset-8 rounded-full blur-3xl ${style.aura}`}
+        />
+      )}
+
+      {rarity === "legendary" && (
+        <motion.div
+          aria-hidden
+          animate={{ rotate: 360 }}
+          transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+          className="pointer-events-none absolute -inset-16 opacity-40"
+        >
+          <div className="h-full w-full rounded-full bg-[conic-gradient(from_90deg,transparent,rgba(250,204,21,0.28),transparent,rgba(248,113,113,0.18),transparent)]" />
+        </motion.div>
+      )}
 
       <div className="absolute inset-0 opacity-70 transition group-hover:opacity-95">
         <div
@@ -735,7 +787,7 @@ function CollectionCardFace({
       </div>
 
       <div className="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-        <div className="absolute inset-0 translate-x-[-120%] bg-[linear-gradient(115deg,transparent_20%,rgba(255,255,255,0.12)_40%,transparent_60%)] transition-transform duration-1000 group-hover:translate-x-[120%]" />
+        <div className={`absolute inset-0 translate-x-[-120%] bg-[linear-gradient(115deg,transparent_20%,rgba(255,255,255,0.16)_40%,transparent_60%)] transition-transform duration-1000 group-hover:translate-x-[120%] ${style.shine}`} />
       </div>
 
       {imageUrl ? (
@@ -821,6 +873,19 @@ function CollectionCardFace({
           </span>
         </div>
       </div>
+
+      {rarity !== "common" && (
+        <>
+          <div className={`pointer-events-none absolute left-3 top-3 h-8 w-8 rounded-tl-2xl border-l border-t ${style.corner}`} />
+          <div className={`pointer-events-none absolute right-3 top-3 h-8 w-8 rounded-tr-2xl border-r border-t ${style.corner}`} />
+          <div className={`pointer-events-none absolute bottom-3 left-3 h-8 w-8 rounded-bl-2xl border-b border-l ${style.corner}`} />
+          <div className={`pointer-events-none absolute bottom-3 right-3 h-8 w-8 rounded-br-2xl border-b border-r ${style.corner}`} />
+        </>
+      )}
+
+      {rarity === "legendary" && (
+        <div className="pointer-events-none absolute inset-x-6 top-16 h-px bg-gradient-to-r from-transparent via-yellow-100/80 to-transparent" />
+      )}
 
       <div
         className={`pointer-events-none absolute inset-0 ring-1 ring-inset ${style.ring} ${
