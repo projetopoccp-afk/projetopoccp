@@ -96,7 +96,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           status: item.status || "offline",
           avatarUrl: item.avatar_url || "",
           bannerUrl: item.banner_url || "",
-          bio: item.bio || "Novo creator aprovado na plataforma.",
+          bio: item.bio || "Novo criador aprovado na plataforma.",
           description:
             item.description ||
             "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
@@ -403,11 +403,11 @@ function EmptyState() {
       </div>
 
       <h3 className="mt-6 text-2xl font-bold text-white">
-        No digital identities detected
+        Não identificamos nenhuma identidade correspondente à sua busca.
       </h3>
 
       <p className="mt-3 max-w-md text-sm text-white/50">
-        Try searching by creator name, category, rarity, platform or tags.
+        Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.
       </p>
     </div>
   );

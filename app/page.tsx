@@ -39,11 +39,11 @@ export default function HomePage() {
       <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
         <div className="mx-auto flex flex-col items-center text-center">
           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
-            Digital Reputation Platform
+            Plataforma de Reputação Digital
           </div>
 
           <p className="mt-4 max-w-xl text-sm text-white/50">
-            Discover legendary creators through living digital cards.
+            Descubra criadores lendários por meio de cartas digitais.
           </p>
         </div>
       </section>
