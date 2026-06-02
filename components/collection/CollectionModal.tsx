@@ -438,6 +438,7 @@ export function CollectionModal({
   onInitialCardOpened,
 }: CollectionModalProps) {
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
   const [cards, setCards] = useState<UserCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
