@@ -254,7 +254,7 @@ export function AccountModal({
                       </span>
 
                       <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                        {accountStats.cards} {translate(t, "cards", "cartas")}
+                        {accountStats.cards} {translate(t, "cards", "cards")}
                       </span>
 
                       {profile?.is_admin && (
