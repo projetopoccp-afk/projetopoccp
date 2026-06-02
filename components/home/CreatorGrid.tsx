@@ -16,6 +16,15 @@ type CreatorWithMeta = Creator & {
   trendingScore: number;
 };
 
+const RARITY_SHOWCASE_CYCLE = [
+  { rarity: "common", level: 1 },
+  { rarity: "rare", level: 2 },
+  { rarity: "epic", level: 3 },
+  { rarity: "legendary", level: 5 },
+] as const;
+
+const RARITY_SHOWCASE_INTERVAL = 2200;
+
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
 
@@ -313,10 +322,11 @@ function CreatorSection({
       </div>
 
       <div className="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {creators.map((creator) => (
-          <CreatorCard
+        {creators.map((creator, index) => (
+          <AnimatedRarityCreatorCard
             key={`${title}-${creator.id}`}
             creator={creator}
+            index={index}
             onClick={onOpenCreator}
           />
         ))}
@@ -324,6 +334,54 @@ function CreatorSection({
     </div>
   );
 }
+
+function AnimatedRarityCreatorCard({
+  creator,
+  index,
+  onClick,
+}: {
+  creator: CreatorWithMeta;
+  index: number;
+  onClick: (creator: Creator) => void;
+}) {
+  const [rarityIndex, setRarityIndex] = useState(index % RARITY_SHOWCASE_CYCLE.length);
+
+  useEffect(() => {
+    const startDelay = index * 280;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const timeoutId = window.setTimeout(() => {
+      setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
+
+      intervalId = window.setInterval(() => {
+        setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
+      }, RARITY_SHOWCASE_INTERVAL);
+    }, startDelay);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [index]);
+
+  const showcase = RARITY_SHOWCASE_CYCLE[rarityIndex];
+
+  const showcasedCreator: CreatorWithMeta = {
+    ...creator,
+    rarity: showcase.rarity,
+    level: showcase.level,
+  };
+
+  return (
+    <div className="transition duration-500 ease-out">
+      <CreatorCard creator={showcasedCreator} onClick={onClick} />
+    </div>
+  );
+}
+
 
 function EmptyState() {
   return (
