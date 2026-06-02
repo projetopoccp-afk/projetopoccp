@@ -61,6 +61,34 @@ export const translations = {
     copied: "Copiado!",
     shareCardText:
       "🃏 Eu conquistei a carta {nickname} ({rarity}) no Creator Nexus",
+
+    close: "Fechar",
+    myAccount: "Minha Conta",
+    noUsername: "sem_username",
+    level: "Nível",
+    cards: "cartas",
+    adminPanel: "Painel Admin",
+    open: "Abrir",
+    soon: "Em breve",
+    myBadges: "Minhas Badges",
+    missions: "Missões",
+    packs: "Pacotes",
+    requestCreatorProfile: "Solicitar perfil de criador",
+    startRequest: "Começar solicitação",
+    logoutAccount: "Sair da conta",
+
+    profileCardDescription:
+      "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus.",
+    collectionCardDescription:
+      "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção.",
+    badgesCardDescription:
+      "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos.",
+    missionsCardDescription:
+      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus.",
+    packsCardDescription:
+      "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas.",
+    requestCreatorProfileDescription:
+      "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação.",
   },
 
   en: {
@@ -125,6 +153,34 @@ export const translations = {
     copied: "Copied!",
     shareCardText:
       "🃏 I earned the {nickname} card ({rarity}) on Creator Nexus",
+
+    close: "Close",
+    myAccount: "My Account",
+    noUsername: "no_username",
+    level: "Level",
+    cards: "cards",
+    adminPanel: "Admin Panel",
+    open: "Open",
+    soon: "Soon",
+    myBadges: "My Badges",
+    missions: "Missions",
+    packs: "Packs",
+    requestCreatorProfile: "Request creator profile",
+    startRequest: "Start request",
+    logoutAccount: "Log out",
+
+    profileCardDescription:
+      "View your level, XP, progress, badges, and activity inside Creator Nexus.",
+    collectionCardDescription:
+      "Access your collected cards, rarities, favorite creators, and collection progress.",
+    badgesCardDescription:
+      "Special achievements for following creators, sharing profiles, and completing goals.",
+    missionsCardDescription:
+      "Complete challenges to earn packs, special cards, and Nexus rewards.",
+    packsCardDescription:
+      "Open daily packs, mission packs, and event packs to unlock new cards.",
+    requestCreatorProfileDescription:
+      "Submit your data, social links, and proof of channel ownership to enter the approval queue.",
   },
 
   es: {
@@ -189,6 +245,34 @@ export const translations = {
     copied: "¡Copiado!",
     shareCardText:
       "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
+
+    close: "Cerrar",
+    myAccount: "Mi Cuenta",
+    noUsername: "sin_usuario",
+    level: "Nivel",
+    cards: "cartas",
+    adminPanel: "Panel Admin",
+    open: "Abrir",
+    soon: "Pronto",
+    myBadges: "Mis Insignias",
+    missions: "Misiones",
+    packs: "Paquetes",
+    requestCreatorProfile: "Solicitar perfil de creador",
+    startRequest: "Iniciar solicitud",
+    logoutAccount: "Cerrar sesión",
+
+    profileCardDescription:
+      "Consulta tu nivel, XP, progreso, insignias y actividad dentro de Creator Nexus.",
+    collectionCardDescription:
+      "Accede a tus cartas obtenidas, rarezas, creadores favoritos y progreso de colección.",
+    badgesCardDescription:
+      "Logros especiales por seguir creadores, compartir perfiles y completar objetivos.",
+    missionsCardDescription:
+      "Completa desafíos para ganar paquetes, cartas especiales y recompensas del Nexus.",
+    packsCardDescription:
+      "Abre paquetes diarios, paquetes de misión y eventos para desbloquear nuevas cartas.",
+    requestCreatorProfileDescription:
+      "Envía tus datos, redes sociales y prueba de propiedad del canal para entrar en la cola de aprobación.",
   },
 } as const;
 
