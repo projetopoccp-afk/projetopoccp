@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, Package, Sparkles, X } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import {
   getUserPacks,
   openUserPack,
@@ -19,6 +21,8 @@ type PacksModalProps = {
 type OpeningStep = "idle" | "opening" | "revealed";
 
 export function PacksModal({ open, onClose }: PacksModalProps) {
+  const { t } = useLanguage();
+
   const [loading, setLoading] = useState(false);
   const [packs, setPacks] = useState<UserPack[]>([]);
   const [selectedPack, setSelectedPack] = useState<UserPack | null>(null);
@@ -96,9 +100,15 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
   }
 
   const packCountLabel = useMemo(() => {
-    if (packs.length === 1) return "1 pacote disponível";
-    return `${packs.length} pacotes disponíveis`;
-  }, [packs.length]);
+    if (packs.length === 1) {
+      return translate(t, "packsModalPackCountSingular", "1 pack available");
+    }
+
+    return translate(t, "packsModalPackCountPlural", "{count} packs available").replace(
+      "{count}",
+      String(packs.length)
+    );
+  }, [packs.length, t]);
 
   return (
     <AnimatePresence>
@@ -126,7 +136,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
               type="button"
               onClick={onClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar pacotes"
+              aria-label={translate(t, "packsModalCloseAria", "Close packs")}
             >
               <X size={18} />
             </button>
@@ -134,7 +144,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
             <div className="relative z-10 flex h-full min-h-0 w-full flex-col p-6 md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-pink-300/20 bg-pink-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-pink-100">
                 <Package size={14} />
-                Pacotes
+                {translate(t, "packsModalBadge", "Packs")}
               </div>
 
               <div className="mt-8 grid min-h-0 flex-1 gap-8 lg:grid-cols-[1fr_1.05fr] lg:items-stretch">
@@ -142,12 +152,15 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                   <div className="shrink-0 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div>
                       <h2 className="text-3xl font-black md:text-5xl">
-                        Abrir Pacotes
+                        {translate(t, "packsModalTitle", "Open Packs")}
                       </h2>
 
                       <p className="mt-4 text-sm leading-relaxed text-white/50">
-                        Escolha um pacote, rasgue o envelope Nexus e revele uma
-                        carta para sua coleção.
+                        {translate(
+                          t,
+                          "packsModalDescription",
+                          "Choose a pack, tear open the Nexus envelope and reveal a card for your collection."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -156,25 +169,32 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <Gift className="text-yellow-100" size={20} />
-                        <p className="font-bold">Inventário de pacotes</p>
+                        <p className="font-bold">
+                          {translate(t, "packsModalInventoryTitle", "Pack inventory")}
+                        </p>
                       </div>
 
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/50">
-                        {loading ? "Carregando..." : packCountLabel}
+                        {loading
+                          ? translate(t, "packsModalLoading", "Loading...")
+                          : packCountLabel}
                       </span>
                     </div>
 
                     <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {loading && (
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                          Buscando seus pacotes...
+                          {translate(t, "packsModalSearching", "Searching your packs...")}
                         </div>
                       )}
 
                       {!loading && packs.length === 0 && (
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                          Você ainda não tem pacotes. Complete missões para
-                          receber novos pacotes.
+                          {translate(
+                            t,
+                            "packsModalEmpty",
+                            "You do not have any packs yet. Complete missions to receive new packs."
+                          )}
                         </div>
                       )}
 
@@ -215,6 +235,8 @@ function PackInventoryItem({
   disabled: boolean;
   onOpen: () => void;
 }) {
+  const { t } = useLanguage();
+
   const packInfo = pack.packs;
   const rarity = packInfo?.rarity || "common";
 
@@ -231,12 +253,16 @@ function PackInventoryItem({
           </div>
 
           <div>
-            <h3 className="font-black">{packInfo?.name || "Pacote"}</h3>
+            <h3 className="font-black">
+              {packInfo?.name || translate(t, "packsModalDefaultPackName", "Pack")}
+            </h3>
             <p className="mt-1 text-xs text-white/45">
-              {packInfo?.description || "Pacote disponível para abertura."}
+              {packInfo?.description ||
+                translate(t, "packsModalDefaultPackDescription", "Pack available to open.")}
             </p>
             <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-white/30">
-              origem: {pack.source || "sistema"}
+              {translate(t, "packsModalOriginLabel", "source")}: {" "}
+              {pack.source || translate(t, "packsModalSystemSource", "system")}
             </p>
           </div>
         </div>
@@ -247,7 +273,7 @@ function PackInventoryItem({
           onClick={onOpen}
           className="w-fit rounded-full bg-pink-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
-          Abrir pacote
+          {translate(t, "packsModalOpenPackButton", "Open pack")}
         </button>
       </div>
     </div>
@@ -265,7 +291,10 @@ function PackOpeningStage({
   openingResult: PackOpeningResult | null;
   onReset: () => void;
 }) {
-  const packName = selectedPack?.packs?.name || "Pacote Nexus";
+  const { t } = useLanguage();
+
+  const packName =
+    selectedPack?.packs?.name || translate(t, "packsModalDefaultNexusPack", "Nexus Pack");
   const revealed = openingStep === "revealed" && openingResult;
 
   return (
@@ -284,10 +313,14 @@ function PackOpeningStage({
             >
               <IdlePack />
               <p className="mt-6 text-sm font-bold text-white/70">
-                Selecione um pacote para começar.
+                {translate(t, "packsModalIdleTitle", "Select a pack to begin.")}
               </p>
               <p className="mt-1 text-xs text-white/35">
-                A carta será adicionada automaticamente à sua coleção.
+                {translate(
+                  t,
+                  "packsModalIdleDescription",
+                  "The card will be automatically added to your collection."
+                )}
               </p>
             </motion.div>
           )}
@@ -322,15 +355,31 @@ function PackOpeningStage({
                 className="mt-6"
               >
                 <p className="text-xs uppercase tracking-[0.35em] text-pink-100">
-                  {openingResult.duplicate ? "Carta repetida" : "Carta revelada"}
+                  {openingResult.duplicate
+                    ? translate(t, "packsModalDuplicateCard", "Duplicate card")
+                    : translate(t, "packsModalRevealedCard", "Revealed card")}
                 </p>
                 <h3 className="mt-2 text-2xl font-black capitalize">
                   {openingResult.creatorName || openingResult.rarity}
                 </h3>
                 <p className="mt-2 max-w-sm text-sm text-white/45">
                   {openingResult.duplicate
-                    ? `Você já tinha a carta ${openingResult.creatorName || "desse creator"} nessa raridade. Ela foi convertida em +${openingResult.duplicateXp || 0} XP.`
-                    : `Você recebeu uma carta ${openingResult.rarity}. Ela foi enviada para sua coleção e o XP foi contabilizado.`}
+                    ? translate(
+                        t,
+                        "packsModalDuplicateDescription",
+                        "You already had the card {creator} in this rarity. It was converted into +{xp} XP."
+                      )
+                        .replace(
+                          "{creator}",
+                          openingResult.creatorName ||
+                            translate(t, "packsModalThisCreator", "this creator")
+                        )
+                        .replace("{xp}", String(openingResult.duplicateXp || 0))
+                    : translate(
+                        t,
+                        "packsModalReceivedDescription",
+                        "You received a {rarity} card. It was sent to your collection and the XP was counted."
+                      ).replace("{rarity}", openingResult.rarity)}
                 </p>
               </motion.div>
             </motion.div>
@@ -344,10 +393,14 @@ function PackOpeningStage({
               className="rounded-3xl border border-red-300/20 bg-red-300/10 p-6 text-center"
             >
               <p className="font-bold text-red-100">
-                Não foi possível abrir o pacote.
+                {translate(t, "packsModalOpenErrorTitle", "Could not open the pack.")}
               </p>
               <p className="mt-2 text-sm text-white/45">
-                Tente novamente em alguns instantes.
+                {translate(
+                  t,
+                  "packsModalOpenErrorDescription",
+                  "Try again in a few moments."
+                )}
               </p>
             </motion.div>
           )}
@@ -357,10 +410,14 @@ function PackOpeningStage({
       <div className="mt-5 flex w-full items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-white/35">
-            Animação
+            {translate(t, "packsModalAnimationLabel", "Animation")}
           </p>
           <p className="mt-1 text-sm text-white/60">
-            pacote rasgando → brilho → carta saindo
+            {translate(
+              t,
+              "packsModalAnimationDescription",
+              "pack tearing → glow → card coming out"
+            )}
           </p>
         </div>
 
@@ -370,7 +427,7 @@ function PackOpeningStage({
           disabled={openingStep === "opening" || openingStep === "idle"}
           className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-sm font-bold text-white/60 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Abrir outro
+          {translate(t, "packsModalOpenAnother", "Open another")}
         </button>
       </div>
     </div>
@@ -404,6 +461,8 @@ function IdlePack() {
 }
 
 function TearingPack({ packName }: { packName: string }) {
+  const { t } = useLanguage();
+
   return (
     <div className="relative h-72 w-56">
       <motion.div
@@ -442,7 +501,7 @@ function TearingPack({ packName }: { packName: string }) {
         <div className="absolute inset-3 rounded-[16px] border border-white/10 bg-white/[0.04]" />
         <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-4 text-center">
           <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white/60">
-            Revelando
+            {translate(t, "packsModalRevealing", "Revealing")}
           </span>
         </div>
       </motion.div>
@@ -456,7 +515,10 @@ function TearingPack({ packName }: { packName: string }) {
 
       <div className="absolute -bottom-12 left-1/2 w-72 -translate-x-1/2 text-center">
         <p className="text-xs uppercase tracking-[0.25em] text-pink-100">
-          Rasgando {packName}
+          {translate(t, "packsModalTearingPack", "Tearing {packName}").replace(
+            "{packName}",
+            packName
+          )}
         </p>
       </div>
     </div>
@@ -464,6 +526,8 @@ function TearingPack({ packName }: { packName: string }) {
 }
 
 function RevealedCard({ rarity }: { rarity: string }) {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       animate={{ y: [0, -6, 0] }}
@@ -490,7 +554,9 @@ function RevealedCard({ rarity }: { rarity: string }) {
           <Package size={42} className="text-white/50" />
         </div>
 
-        <p className="mt-4 text-center text-sm font-black">Nova Carta</p>
+        <p className="mt-4 text-center text-sm font-black">
+          {translate(t, "packsModalNewCard", "New Card")}
+        </p>
       </div>
     </motion.div>
   );
