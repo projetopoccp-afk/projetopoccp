@@ -1,9 +1,9 @@
-export function translate(
-  t: (key: string) => string,
-  key: string,
+export function translate<Key extends string>(
+  t: (key: Key) => string,
+  key: Key,
   fallback: string
 ) {
-  const value = t(key as never);
+  const value = t(key);
 
   if (!value || value === key) {
     return fallback;
