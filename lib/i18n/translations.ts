@@ -276,6 +276,8 @@ export const translations = {
     collectionPageBadge: "Minha Coleção",
     collectionPageLoading: "Carregando coleção...",
     collectionPageTitle: "Suas cartas do Nexus",
+    collectionPageDescription:
+      "Aqui ficarão todas as cartas de creators que você conquistar por follows, eventos e recompensas especiais.",
     creatorPopupAvatarPreviewAlt: "Prévia do avatar",
     creatorPopupBack: "Voltar",
     creatorPopupBannerPreviewAlt: "Prévia do banner",
@@ -635,6 +637,8 @@ export const translations = {
     collectionPageBadge: "My Collection",
     collectionPageLoading: "Loading collection...",
     collectionPageTitle: "Your Nexus cards",
+    collectionPageDescription:
+      "All creator cards you earn through follows, events, and special rewards will appear here.",
     creatorPopupAvatarPreviewAlt: "Avatar preview",
     creatorPopupBack: "Back",
     creatorPopupBannerPreviewAlt: "Banner preview",
@@ -994,6 +998,8 @@ export const translations = {
     collectionPageBadge: "Mi Colección",
     collectionPageLoading: "Cargando colección...",
     collectionPageTitle: "Tus cartas del Nexus",
+    collectionPageDescription:
+      "Aquí aparecerán todas las cartas de creators que conquistes por follows, eventos y recompensas especiales.",
     creatorPopupAvatarPreviewAlt: "Vista previa del avatar",
     creatorPopupBack: "Volver",
     creatorPopupBannerPreviewAlt: "Vista previa del banner",
