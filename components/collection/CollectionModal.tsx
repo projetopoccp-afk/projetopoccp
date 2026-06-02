@@ -124,28 +124,28 @@ const rarityStyles: Record<
     shadow: "shadow-[0_0_70px_rgba(34,211,238,0.18)]",
   },
   rare: {
-    border: "border-blue-300/45",
-    badge: "border-blue-300/35 bg-blue-300/15 text-blue-100",
-    glow: "bg-blue-500/35",
-    text: "text-blue-100",
-    ring: "ring-blue-200/35",
-    frame: "from-blue-300/22 via-indigo-500/12 to-blue-950/40",
-    aura: "bg-blue-500/24",
-    shine: "from-transparent via-blue-100/18 to-transparent",
-    corner: "border-blue-200/45 bg-blue-300/15",
-    shadow: "shadow-[0_0_85px_rgba(59,130,246,0.28)]",
+    border: "border-sky-300/60",
+    badge: "border-sky-300/45 bg-sky-300/15 text-sky-100",
+    glow: "bg-sky-400/36",
+    text: "text-sky-100",
+    ring: "ring-sky-200/45",
+    frame: "from-sky-300/22 via-cyan-400/10 to-blue-950/38",
+    aura: "bg-sky-400/24",
+    shine: "from-transparent via-sky-100/18 to-transparent",
+    corner: "border-sky-200/45 bg-sky-300/15",
+    shadow: "shadow-[0_0_90px_rgba(56,189,248,0.34)]",
   },
   epic: {
-    border: "border-purple-300/55",
-    badge: "border-fuchsia-300/45 bg-fuchsia-300/15 text-fuchsia-100",
-    glow: "bg-fuchsia-500/40",
+    border: "border-fuchsia-300/70",
+    badge: "border-fuchsia-300/55 bg-fuchsia-300/18 text-fuchsia-100",
+    glow: "bg-fuchsia-500/44",
     text: "text-fuchsia-100",
-    ring: "ring-fuchsia-200/45",
-    frame: "from-fuchsia-300/25 via-purple-600/18 to-yellow-500/16",
-    aura: "bg-fuchsia-500/30",
+    ring: "ring-fuchsia-200/55",
+    frame: "from-fuchsia-400/26 via-purple-700/20 to-pink-500/12",
+    aura: "bg-fuchsia-500/34",
     shine: "from-transparent via-fuchsia-100/24 to-transparent",
     corner: "border-fuchsia-200/55 bg-fuchsia-300/15",
-    shadow: "shadow-[0_0_100px_rgba(217,70,239,0.35)]",
+    shadow: "shadow-[0_0_110px_rgba(217,70,239,0.44)]",
   },
   legendary: {
     border: "border-yellow-300/70",
@@ -173,61 +173,63 @@ const rarityNeonStyles: Record<
   }
 > = {
   common: {
-    outerAura: "bg-cyan-400/18 blur-2xl opacity-55",
-    pulseAura: "bg-cyan-300/12",
-    energyOverlay: "bg-[radial-gradient(circle_at_50%_8%,rgba(34,211,238,0.16),transparent_34%)]",
-    staticOverlay: "bg-[linear-gradient(135deg,rgba(34,211,238,0.14),transparent_38%,rgba(34,211,238,0.08))]",
+    outerAura: "bg-cyan-400/16 blur-2xl opacity-55",
+    pulseAura: "bg-cyan-300/10",
+    energyOverlay:
+      "bg-[radial-gradient(circle_at_50%_50%,rgba(34,211,238,0.16),transparent_45%),radial-gradient(circle_at_50%_16%,rgba(103,232,249,0.12),transparent_36%),radial-gradient(circle_at_50%_86%,rgba(34,211,238,0.10),transparent_38%)]",
+    staticOverlay:
+      "bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.14),transparent_58%)]",
     borderGlow: {
       boxShadow:
-        "0 0 0 1px rgba(103,232,249,.55), 0 0 18px rgba(34,211,238,.45), 0 0 46px rgba(34,211,238,.18)",
+        "0 0 0 1px rgba(103,232,249,.55), 0 0 16px rgba(34,211,238,.42), 0 0 34px rgba(34,211,238,.16)",
     },
     badgeGlow: {
-      boxShadow: "0 0 18px rgba(34,211,238,.32)",
+      boxShadow: "0 0 16px rgba(34,211,238,.28)",
     },
   },
   rare: {
-    outerAura: "bg-blue-500/36 blur-3xl opacity-90",
-    pulseAura: "bg-blue-400/24",
+    outerAura: "bg-sky-400/34 blur-[34px] opacity-95",
+    pulseAura: "bg-sky-300/20",
     energyOverlay:
-      "bg-[radial-gradient(circle_at_22%_18%,rgba(96,165,250,0.38),transparent_32%),radial-gradient(circle_at_82%_75%,rgba(34,211,238,0.22),transparent_30%)]",
+      "bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.32),transparent_48%),radial-gradient(circle_at_50%_18%,rgba(125,211,252,0.22),transparent_34%),radial-gradient(circle_at_50%_84%,rgba(14,165,233,0.22),transparent_36%)]",
     staticOverlay:
-      "bg-[linear-gradient(135deg,rgba(96,165,250,0.28),transparent_36%,rgba(34,211,238,0.18))]",
+      "bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.26),transparent_55%),linear-gradient(180deg,rgba(125,211,252,0.10),transparent_42%,rgba(14,165,233,0.12))]",
     borderGlow: {
       boxShadow:
-        "0 0 0 1px rgba(147,197,253,.75), 0 0 26px rgba(59,130,246,.78), 0 0 76px rgba(37,99,235,.42), inset 0 0 24px rgba(59,130,246,.22)",
+        "0 0 0 1px rgba(125,211,252,.82), 0 0 26px rgba(56,189,248,.82), 0 0 72px rgba(14,165,233,.44), inset 0 0 20px rgba(56,189,248,.18)",
     },
     badgeGlow: {
-      boxShadow: "0 0 24px rgba(96,165,250,.55)",
+      boxShadow: "0 0 24px rgba(56,189,248,.62)",
     },
   },
   epic: {
-    outerAura: "bg-fuchsia-500/48 blur-[38px] opacity-100",
-    pulseAura: "bg-fuchsia-400/34",
+    outerAura: "bg-fuchsia-500/46 blur-[42px] opacity-100",
+    pulseAura: "bg-fuchsia-400/28",
     energyOverlay:
-      "bg-[radial-gradient(circle_at_20%_16%,rgba(217,70,239,0.45),transparent_34%),radial-gradient(circle_at_80%_72%,rgba(168,85,247,0.34),transparent_32%),linear-gradient(115deg,transparent,rgba(236,72,153,0.20),transparent)]",
+      "bg-[radial-gradient(circle_at_50%_50%,rgba(217,70,239,0.40),transparent_48%),radial-gradient(circle_at_50%_18%,rgba(244,114,182,0.24),transparent_34%),radial-gradient(circle_at_50%_84%,rgba(126,34,206,0.28),transparent_36%)]",
     staticOverlay:
-      "bg-[linear-gradient(135deg,rgba(217,70,239,0.34),transparent_35%,rgba(168,85,247,0.25))]",
+      "bg-[radial-gradient(circle_at_center,rgba(217,70,239,0.34),transparent_56%),linear-gradient(180deg,rgba(244,114,182,0.12),transparent_42%,rgba(126,34,206,0.16))]",
     borderGlow: {
       boxShadow:
-        "0 0 0 1px rgba(240,171,252,.86), 0 0 34px rgba(217,70,239,.95), 0 0 95px rgba(168,85,247,.62), inset 0 0 30px rgba(217,70,239,.28)",
+        "0 0 0 1px rgba(240,171,252,.95), 0 0 36px rgba(217,70,239,.98), 0 0 105px rgba(192,38,211,.68), inset 0 0 26px rgba(217,70,239,.26)",
     },
     badgeGlow: {
-      boxShadow: "0 0 30px rgba(217,70,239,.75)",
+      boxShadow: "0 0 32px rgba(217,70,239,.80)",
     },
   },
   legendary: {
-    outerAura: "bg-yellow-400/54 blur-[44px] opacity-100",
-    pulseAura: "bg-yellow-300/38",
+    outerAura: "bg-amber-400/54 blur-[48px] opacity-100",
+    pulseAura: "bg-amber-300/34",
     energyOverlay:
-      "bg-[radial-gradient(circle_at_18%_18%,rgba(250,204,21,0.52),transparent_34%),radial-gradient(circle_at_80%_70%,rgba(248,113,113,0.38),transparent_34%),linear-gradient(115deg,transparent,rgba(251,191,36,0.26),transparent)]",
+      "bg-[radial-gradient(circle_at_50%_50%,rgba(250,204,21,0.44),transparent_48%),radial-gradient(circle_at_50%_18%,rgba(254,240,138,0.28),transparent_34%),radial-gradient(circle_at_50%_84%,rgba(248,113,113,0.28),transparent_36%)]",
     staticOverlay:
-      "bg-[linear-gradient(135deg,rgba(250,204,21,0.42),transparent_34%,rgba(248,113,113,0.30))]",
+      "bg-[radial-gradient(circle_at_center,rgba(250,204,21,0.38),transparent_56%),linear-gradient(180deg,rgba(254,240,138,0.12),transparent_42%,rgba(248,113,113,0.16))]",
     borderGlow: {
       boxShadow:
-        "0 0 0 1px rgba(254,240,138,.95), 0 0 42px rgba(250,204,21,1), 0 0 120px rgba(249,115,22,.72), inset 0 0 34px rgba(250,204,21,.34)",
+        "0 0 0 1px rgba(254,240,138,.98), 0 0 44px rgba(250,204,21,1), 0 0 128px rgba(249,115,22,.74), inset 0 0 30px rgba(250,204,21,.32)",
     },
     badgeGlow: {
-      boxShadow: "0 0 34px rgba(250,204,21,.85)",
+      boxShadow: "0 0 36px rgba(250,204,21,.90)",
     },
   },
 };
@@ -869,17 +871,17 @@ function CollectionCardFace({
         </motion.div>
       )}
 
-      <div className="absolute inset-0 opacity-70 transition group-hover:opacity-95">
+      <div className="pointer-events-none absolute inset-0 opacity-75 transition group-hover:opacity-95">
         <div
-          className={`absolute -top-20 left-10 h-44 w-44 rounded-full blur-2xl ${style.glow}`}
+          className={`absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${style.glow}`}
         />
         <div
-          className={`absolute bottom-0 right-0 h-48 w-48 rounded-full blur-2xl ${style.glow}`}
+          className={`absolute left-1/2 top-1/2 h-[42%] w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl ${style.glow}`}
         />
       </div>
 
-      <div className="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-        <div className={`absolute inset-0 translate-x-[-120%] bg-[linear-gradient(115deg,transparent_20%,rgba(255,255,255,0.16)_40%,transparent_60%)] transition-transform duration-1000 group-hover:translate-x-[120%] ${style.shine}`} />
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-35">
+        <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.16),transparent_58%)] ${style.shine}`} />
       </div>
 
       {imageUrl ? (
@@ -911,11 +913,11 @@ function CollectionCardFace({
         aria-hidden
         animate={{
           opacity:
-            rarity === "common" ? [0.18, 0.32, 0.18] : [0.35, 0.86, 0.35],
-          x: ["-8%", "8%", "-8%"],
+            rarity === "common" ? [0.20, 0.34, 0.20] : [0.42, 0.78, 0.42],
+          scale: [1, 1.035, 1],
         }}
         transition={{
-          duration: rarity === "legendary" ? 2 : rarity === "epic" ? 2.4 : 3,
+          duration: rarity === "legendary" ? 2.8 : rarity === "epic" ? 3.2 : rarity === "rare" ? 3.6 : 4.2,
           repeat: Infinity,
           ease: "easeInOut",
         }}
