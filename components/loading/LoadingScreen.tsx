@@ -84,7 +84,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.7, duration: 1.8, repeat: Infinity }}
           className="mt-4 text-sm text-white/45"
         >
-          Sincronizando creators, cartas e conquistas...
+          Sincronizando perfis, cartas e conquistas...
         </motion.p>
 
         <div className="mt-8 h-2 w-full max-w-xs overflow-hidden rounded-full border border-white/10 bg-white/5">
