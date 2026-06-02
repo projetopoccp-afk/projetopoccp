@@ -348,7 +348,7 @@ function AnimatedRarityCreatorCard({
 
   useEffect(() => {
     const startDelay = index * 280;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let intervalId: number | null = null;
 
     const timeoutId = window.setTimeout(() => {
       setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
@@ -361,7 +361,7 @@ function AnimatedRarityCreatorCard({
     return () => {
       window.clearTimeout(timeoutId);
 
-      if (intervalId) {
+      if (intervalId !== null) {
         window.clearInterval(intervalId);
       }
     };
