@@ -169,8 +169,8 @@ async function getRandomCreatorForPack() {
     Se sua tabela creators não tiver essa coluna/valor, nenhum creator era encontrado
     e o pacote falhava com "Não foi possível abrir o pacote".
   */
-  const { data, error } = await supabase
-    .from("creators")
+  const { data: creators, error: creatorsError } = await supabase
+    .from("creator_profiles")
     .select("id, nickname, username, avatar_url")
     .limit(100);
 
