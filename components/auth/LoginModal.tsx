@@ -2,6 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
 type LoginModalProps = {
@@ -10,6 +12,8 @@ type LoginModalProps = {
 };
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
+  const { t } = useLanguage();
+
   return (
     <AnimatePresence>
       {open && (
@@ -23,7 +27,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           <button
             onClick={onClose}
             className="absolute inset-0"
-            aria-label="Fechar login"
+            aria-label={translate(t, "loginModalCloseLoginAria", "Fechar login")}
           />
 
           <motion.div
@@ -39,80 +43,98 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <button
               onClick={onClose}
               className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar"
+              aria-label={translate(t, "close", "Fechar")}
             >
               <X size={18} />
             </button>
 
             <div className="relative z-10">
               <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                Creator Access
+                {translate(t, "loginModalBadge", "Creator Access")}
               </div>
 
               <h2 className="mt-6 text-3xl font-black leading-tight">
-                Entre no seu perfil digital
+                {translate(t, "loginModalTitle", "Entre no seu perfil digital")}
               </h2>
 
               <p className="mt-3 text-sm text-white/55">
-                Faça login para criar seu perfil, evoluir seu card,
-                desbloquear achievements e participar da reputação digital.
+                {translate(
+                  t,
+                  "loginModalDescription",
+                  "Faça login para criar seu perfil, evoluir seu card, desbloquear achievements e participar da reputação digital."
+                )}
               </p>
 
               <div className="mt-8 space-y-3">
                 <button
-  onClick={async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "discord",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-  }}
-  className="w-full rounded-2xl border border-indigo-300/20 bg-indigo-400/10 px-5 py-4 text-left transition hover:bg-indigo-400/20"
->
-  <p className="font-bold text-white">
-    Continuar com Discord
-  </p>
+                  onClick={async () => {
+                    await supabase.auth.signInWithOAuth({
+                      provider: "discord",
+                      options: {
+                        redirectTo: window.location.origin,
+                      },
+                    });
+                  }}
+                  className="w-full rounded-2xl border border-indigo-300/20 bg-indigo-400/10 px-5 py-4 text-left transition hover:bg-indigo-400/20"
+                >
+                  <p className="font-bold text-white">
+                    {translate(t, "loginModalContinueDiscord", "Continuar com Discord")}
+                  </p>
 
-  <p className="mt-1 text-xs text-white/45">
-    Ideal para creators, comunidades e servidores.
-  </p>
-</button>
+                  <p className="mt-1 text-xs text-white/45">
+                    {translate(
+                      t,
+                      "loginModalDiscordDescription",
+                      "Ideal para creators, comunidades e servidores."
+                    )}
+                  </p>
+                </button>
 
                 <button
-  onClick={async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-  }}
-  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:bg-white/[0.08]"
->
-  <p className="font-bold text-white">
-    Continuar com Google
-  </p>
+                  onClick={async () => {
+                    await supabase.auth.signInWithOAuth({
+                      provider: "google",
+                      options: {
+                        redirectTo: window.location.origin,
+                      },
+                    });
+                  }}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:bg-white/[0.08]"
+                >
+                  <p className="font-bold text-white">
+                    {translate(t, "loginModalContinueGoogle", "Continuar com Google")}
+                  </p>
 
-  <p className="mt-1 text-xs text-white/45">
-    Acesso rápido para criar ou gerenciar seu perfil.
-  </p>
-</button>
+                  <p className="mt-1 text-xs text-white/45">
+                    {translate(
+                      t,
+                      "loginModalGoogleDescription",
+                      "Acesso rápido para criar ou gerenciar seu perfil."
+                    )}
+                  </p>
+                </button>
               </div>
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs uppercase tracking-[0.25em] text-white/35">
-                  Creator onboarding
+                  {translate(t, "loginModalOnboardingLabel", "Creator onboarding")}
                 </p>
 
                 <p className="mt-2 text-sm text-white/55">
-                  Novos perfis passam por uma etapa de pré-cadastro e aprovação
-                  para manter a plataforma segura, autêntica e premium.
+                  {translate(
+                    t,
+                    "loginModalOnboardingDescription",
+                    "Novos perfis passam por uma etapa de pré-cadastro e aprovação para manter a plataforma segura, autêntica e premium."
+                  )}
                 </p>
               </div>
 
               <p className="mt-6 text-center text-xs text-white/35">
-                Login real será conectado ao Supabase Auth na próxima etapa.
+                {translate(
+                  t,
+                  "loginModalSupabaseNotice",
+                  "Login real será conectado ao Supabase Auth na próxima etapa."
+                )}
               </p>
             </div>
           </motion.div>

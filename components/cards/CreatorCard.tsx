@@ -2,8 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
-import { getRarityLabel } from "@/lib/rarity";
 import { rarityStyles } from "@/lib/rarity";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { Creator } from "@/types/creator";
 import { TiltCard } from "./TiltCard";
 
@@ -243,7 +244,27 @@ function particleShapeClass(shape: ParticleShape) {
   return `creator-particle-${shape}`;
 }
 
+function getTranslatedRarityLabel(
+  t: (key: keyof typeof import("@/lib/i18n/translations").translations.pt) => string,
+  rarity: CardRarity
+) {
+  if (rarity === "legendary") {
+    return translate(t, "creatorCardRarityLegendary", "Legendary");
+  }
+
+  if (rarity === "epic") {
+    return translate(t, "creatorCardRarityEpic", "Epic");
+  }
+
+  if (rarity === "rare") {
+    return translate(t, "creatorCardRarityRare", "Rare");
+  }
+
+  return translate(t, "creatorCardRarityCommon", "Common");
+}
+
 export function CreatorCard({ creator, onClick }: CreatorCardProps) {
+  const { t } = useLanguage();
   const rarity = rarityStyles[creator.rarity];
   const internalRarity = normalizeRarity(creator.rarity);
   const config = RARITY_VISUALS[internalRarity];
@@ -259,7 +280,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           onClick={() => onClick(creator)}
           style={createRarityStyle(config)}
           className={`creator-card-shell ${config.className} group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border bg-black text-left transition duration-500`}
-          aria-label={`Abrir carta de ${creator.nickname}`}
+          aria-label={`${translate(t, "creatorCardOpenAria", "Open card for")} ${creator.nickname}`}
         >
           <img
             src={creator.avatarUrl}
@@ -303,11 +324,11 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <div
             className={`absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
           >
-            {getRarityLabel(creator.rarity)}
+            {getTranslatedRarityLabel(t, internalRarity)}
           </div>
 
           <div className="absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
-            Lv. {creator.level}
+            {translate(t, "creatorCardLevelPrefix", "Lv.")} {creator.level}
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 z-20 p-4">

@@ -244,6 +244,30 @@ export const translations = {
     creatorGridNewCards: "Cartas Novas",
     creatorGridEmptyTitle: "Não identificamos nenhuma identidade correspondente à sua busca.",
     creatorGridEmptyDescription: "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.",
+
+    loginModalCloseLoginAria: "Fechar login",
+    loginModalBadge: "Acesso Creator",
+    loginModalTitle: "Entre no seu perfil digital",
+    loginModalDescription:
+      "Faça login para criar seu perfil, evoluir seu card, desbloquear achievements e participar da reputação digital.",
+    loginModalContinueDiscord: "Continuar com Discord",
+    loginModalDiscordDescription:
+      "Ideal para creators, comunidades e servidores.",
+    loginModalContinueGoogle: "Continuar com Google",
+    loginModalGoogleDescription:
+      "Acesso rápido para criar ou gerenciar seu perfil.",
+    loginModalOnboardingLabel: "Cadastro Creator",
+    loginModalOnboardingDescription:
+      "Novos perfis passam por uma etapa de pré-cadastro e aprovação para manter a plataforma segura, autêntica e premium.",
+    loginModalSupabaseNotice:
+      "Login real será conectado ao Supabase Auth na próxima etapa.",
+
+    creatorCardOpenAria: "Abrir perfil do creator",
+    creatorCardLevelPrefix: "Nível",
+    creatorCardRarityCommon: "Comum",
+    creatorCardRarityRare: "Raro",
+    creatorCardRarityEpic: "Épico",
+    creatorCardRarityLegendary: "Lendário",
 },
 
   en: {
@@ -491,6 +515,30 @@ export const translations = {
     creatorGridNewCards: "New Cards",
     creatorGridEmptyTitle: "We could not identify any identity matching your search.",
     creatorGridEmptyDescription: "Try searching by creator name, category, rarity, platform, or tags.",
+
+    loginModalCloseLoginAria: "Close login",
+    loginModalBadge: "Creator Access",
+    loginModalTitle: "Access your digital profile",
+    loginModalDescription:
+      "Sign in to create your profile, evolve your card, unlock achievements and participate in the digital reputation system.",
+    loginModalContinueDiscord: "Continue with Discord",
+    loginModalDiscordDescription:
+      "Ideal for creators, communities and servers.",
+    loginModalContinueGoogle: "Continue with Google",
+    loginModalGoogleDescription:
+      "Quick access to create or manage your profile.",
+    loginModalOnboardingLabel: "Creator Onboarding",
+    loginModalOnboardingDescription:
+      "New profiles go through a pre-registration and approval stage to keep the platform safe, authentic and premium.",
+    loginModalSupabaseNotice:
+      "Real login will be connected to Supabase Auth in the next stage.",
+
+    creatorCardOpenAria: "Open creator profile",
+    creatorCardLevelPrefix: "Level",
+    creatorCardRarityCommon: "Common",
+    creatorCardRarityRare: "Rare",
+    creatorCardRarityEpic: "Epic",
+    creatorCardRarityLegendary: "Legendary",
 },
 
   es: {
@@ -738,6 +786,30 @@ export const translations = {
     creatorGridNewCards: "Cartas Nuevas",
     creatorGridEmptyTitle: "No identificamos ninguna identidad que coincida con tu búsqueda.",
     creatorGridEmptyDescription: "Intenta buscar por nombre del creador, categoría, rareza, plataforma o tags.",
+
+    loginModalCloseLoginAria: "Cerrar acceso",
+    loginModalBadge: "Acceso Creator",
+    loginModalTitle: "Accede a tu perfil digital",
+    loginModalDescription:
+      "Inicia sesión para crear tu perfil, evolucionar tu carta, desbloquear logros y participar en el sistema de reputación digital.",
+    loginModalContinueDiscord: "Continuar con Discord",
+    loginModalDiscordDescription:
+      "Ideal para creadores, comunidades y servidores.",
+    loginModalContinueGoogle: "Continuar con Google",
+    loginModalGoogleDescription:
+      "Acceso rápido para crear o administrar tu perfil.",
+    loginModalOnboardingLabel: "Registro Creator",
+    loginModalOnboardingDescription:
+      "Los nuevos perfiles pasan por una etapa de preinscripción y aprobación para mantener la plataforma segura, auténtica y premium.",
+    loginModalSupabaseNotice:
+      "El inicio de sesión real se conectará con Supabase Auth en la próxima etapa.",
+
+    creatorCardOpenAria: "Abrir perfil del creator",
+    creatorCardLevelPrefix: "Nivel",
+    creatorCardRarityCommon: "Común",
+    creatorCardRarityRare: "Raro",
+    creatorCardRarityEpic: "Épico",
+    creatorCardRarityLegendary: "Legendario",
 },
 } as const;
 
