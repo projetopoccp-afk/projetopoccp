@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-
-import { SupabaseTest } from "@/components/debug/SupabaseTest";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { CreatorGrid } from "@/components/home/CreatorGrid";
@@ -49,8 +47,7 @@ export default function HomePage() {
       </section>
 
       <CreatorGrid search={search} />
-
-      <SupabaseTest />
+      
     </main>
   );
 }
