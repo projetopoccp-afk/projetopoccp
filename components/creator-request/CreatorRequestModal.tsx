@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, ExternalLink, ImagePlus, Send, X } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
 type CreatorRequestModalProps = {
@@ -64,6 +66,8 @@ export function CreatorRequestModal({
   email,
   onClose,
 }: CreatorRequestModalProps) {
+  const { t } = useLanguage();
+
   const [nickname, setNickname] = useState("");
   const [username, setUsername] = useState("");
   const [verificationPlatform, setVerificationPlatform] = useState("youtube");
@@ -198,16 +202,19 @@ export function CreatorRequestModal({
             </button>
 
             <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-              Creator Request
+              {translate(t, "creatorRequestModalBadge", "Creator Request")}
             </div>
 
             {success ? (
               <div className="mt-8 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-6">
-                <h2 className="text-2xl font-black">Solicitação enviada!</h2>
+                <h2 className="text-2xl font-black">{translate(t, "creatorRequestModalSuccessTitle", "Solicitação enviada!")}</h2>
 
                 <p className="mt-3 text-white/60">
-                  Sua solicitação entrou na fila de análise. Agora coloque o
-                  código abaixo na bio/descrição da plataforma escolhida:
+                  {translate(
+                    t,
+                    "creatorRequestModalSuccessDescription",
+                    "Sua solicitação entrou na fila de análise. Agora coloque o código abaixo na bio/descrição da plataforma escolhida:"
+                  )}
                 </p>
 
                 <div className="mt-5 rounded-2xl bg-black/40 p-4 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
@@ -217,32 +224,34 @@ export function CreatorRequestModal({
             ) : (
               <>
                 <h2 className="mt-6 text-3xl font-black">
-                  Solicitar perfil de criador
+                  {translate(t, "creatorRequestModalTitle", "Solicitar perfil de criador")}
                 </h2>
 
                 <p className="mt-3 text-sm text-white/55">
-                  Preencha o básico para entrar na fila de aprovação. Após ser
-                  aprovado, você poderá completar categorias, redes,
-                  estatísticas e momentos em destaque.
+                  {translate(
+                    t,
+                    "creatorRequestModalDescription",
+                    "Preencha o básico para entrar na fila de aprovação. Após ser aprovado, você poderá completar categorias, redes, estatísticas e momentos em destaque."
+                  )}
                 </p>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <input
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
-                    placeholder="Nickname do criador"
+                    placeholder={translate(t, "creatorRequestModalNicknamePlaceholder", "Nickname do criador")}
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-cyan-300/40"
                   />
 
                   <input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Username único"
+                    placeholder={translate(t, "creatorRequestModalUsernamePlaceholder", "Username único")}
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-cyan-300/40"
                   />
                 </div>
 
-                <h3 className="mt-8 font-bold">Verificação do criador</h3>
+                <h3 className="mt-8 font-bold">{translate(t, "creatorRequestModalVerificationTitle", "Verificação do criador")}</h3>
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
                   <select
@@ -260,14 +269,14 @@ export function CreatorRequestModal({
                   <input
                     value={verificationUrl}
                     onChange={(e) => setVerificationUrl(e.target.value)}
-                    placeholder="Link do canal ou perfil principal"
+                    placeholder={translate(t, "creatorRequestModalVerificationUrlPlaceholder", "Link do canal ou perfil principal")}
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan-300/40"
                   />
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-                    Código de verificação
+                    {translate(t, "creatorRequestModalVerificationCodeLabel", "Código de verificação")}
                   </p>
 
                   <p className="mt-2 text-xl font-black tracking-[0.25em]">
@@ -275,16 +284,22 @@ export function CreatorRequestModal({
                   </p>
 
                   <p className="mt-2 text-sm text-white/50">
-                    Coloque esse código temporariamente na bio, descrição ou
-                    sobre da plataforma usada para verificação.
+                    {translate(
+                    t,
+                    "creatorRequestModalVerificationCodeDescription",
+                    "Coloque esse código temporariamente na bio, descrição ou sobre da plataforma usada para verificação."
+                  )}
                   </p>
                 </div>
 
-                <h3 className="mt-8 font-bold">Imagem do card</h3>
+                <h3 className="mt-8 font-bold">{translate(t, "creatorRequestModalCardImageTitle", "Imagem do card")}</h3>
 
                 <p className="mt-2 text-sm text-white/45">
-                  Use uma imagem vertical em proporção 2:3. Recomendado:
-                  1024x1536. Não use texto, logo, moldura ou watermark.
+                  {translate(
+                    t,
+                    "creatorRequestModalCardImageDescription",
+                    "Use uma imagem vertical em proporção 2:3. Recomendado: 1024x1536. Não use texto, logo, moldura ou watermark."
+                  )}
                 </p>
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -294,13 +309,15 @@ export function CreatorRequestModal({
                       setCardImageUrl(e.target.value);
                       setImageSource("external_url");
                     }}
-                    placeholder="Cole o link da imagem"
+                    placeholder={translate(t, "creatorRequestModalImageUrlPlaceholder", "Cole o link da imagem")}
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan-300/40"
                   />
 
                   <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
                     <ImagePlus size={18} />
-                    {uploading ? "Enviando..." : "Enviar imagem"}
+                    {uploading
+                      ? translate(t, "creatorRequestModalUploading", "Enviando...")
+                      : translate(t, "creatorRequestModalUploadImage", "Enviar imagem")}
                     <input
                       type="file"
                       accept="image/*"
@@ -320,7 +337,7 @@ export function CreatorRequestModal({
                   <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
                     <img
                       src={cardImageUrl}
-                      alt="Prévia da imagem do card"
+                      alt={translate(t, "creatorRequestModalImagePreviewAlt", "Prévia da imagem do card")}
                       className="max-h-72 w-full object-cover"
                     />
                   </div>
@@ -330,11 +347,14 @@ export function CreatorRequestModal({
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h4 className="font-bold">
-                        Prompt para transformar sua foto
+                        {translate(t, "creatorRequestModalPromptTitle", "Prompt para transformar sua foto")}
                       </h4>
                       <p className="mt-1 text-xs text-white/45">
-                        Envie uma foto sua no ChatGPT e cole este prompt para
-                        adaptar a imagem ao estilo do card.
+                        {translate(
+                          t,
+                          "creatorRequestModalPromptDescription",
+                          "Envie uma foto sua no ChatGPT e cole este prompt para adaptar a imagem ao estilo do card."
+                        )}
                       </p>
                     </div>
 
@@ -346,12 +366,12 @@ export function CreatorRequestModal({
                         {promptCopied ? (
                           <>
                             <Check size={14} />
-                            Copiado!
+                            {translate(t, "creatorRequestModalCopied", "Copiado!")}
                           </>
                         ) : (
                           <>
                             <Copy size={14} />
-                            Copiar
+                            {translate(t, "creatorRequestModalCopy", "Copiar")}
                           </>
                         )}
                       </button>
@@ -362,7 +382,7 @@ export function CreatorRequestModal({
                         className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100 transition hover:bg-cyan-300/20"
                       >
                         <ExternalLink size={14} />
-                        Abrir ChatGPT
+                        {translate(t, "creatorRequestModalOpenChatGPT", "Abrir ChatGPT")}
                       </a>
                     </div>
                   </div>
@@ -385,7 +405,9 @@ export function CreatorRequestModal({
                   className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={16} />
-                  {loading ? "Enviando..." : "Enviar para análise"}
+                  {loading
+                    ? translate(t, "creatorRequestModalSubmitting", "Enviando...")
+                    : translate(t, "creatorRequestModalSubmit", "Enviar para análise")}
                 </button>
               </>
             )}

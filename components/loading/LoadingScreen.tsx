@@ -3,7 +3,12 @@
 import { motion } from "framer-motion";
 import { Sparkles, UserRound } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
+
 export function LoadingScreen() {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 1 }}
@@ -75,7 +80,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.35 }}
           className="mt-4 text-3xl font-black tracking-tight md:text-5xl"
         >
-          Preparando seu universo
+          {translate(t, "loadingScreenTitle", "Preparando seu universo")}
         </motion.h1>
 
         <motion.p
@@ -84,7 +89,11 @@ export function LoadingScreen() {
           transition={{ delay: 0.7, duration: 1.8, repeat: Infinity }}
           className="mt-4 text-sm text-white/45"
         >
-          Sincronizando perfis, cartas e conquistas...
+          {translate(
+            t,
+            "loadingScreenDescription",
+            "Sincronizando perfis, cartas e conquistas..."
+          )}
         </motion.p>
 
         <div className="mt-8 h-2 w-full max-w-xs overflow-hidden rounded-full border border-white/10 bg-white/5">

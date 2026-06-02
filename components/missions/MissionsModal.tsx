@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Gift, Target, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { createUserNotification } from "@/lib/notifications/user-notifications";
@@ -37,6 +39,8 @@ type MissionsModalProps = {
 };
 
 export function MissionsModal({ open, onClose }: MissionsModalProps) {
+  const { t } = useLanguage();
+
   const [loading, setLoading] = useState(false);
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [missions, setMissions] = useState<MissionWithProgress[]>([]);
@@ -159,8 +163,14 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
     await createUserNotification({
       type: "mission_completed",
-      title: "Missão concluída!",
-      message: `Você concluiu "${mission.title}" e recebeu ${mission.reward_xp} XP.`,
+      title: translate(t, "missionsModalNotificationTitle", "Missão concluída!"),
+      message: translate(
+        t,
+        "missionsModalNotificationMessage",
+        `Você concluiu "${mission.title}" e recebeu ${mission.reward_xp} XP.`
+      )
+        .replace("{missionTitle}", mission.title)
+        .replace("{rewardXp}", String(mission.reward_xp)),
       metadata: {
         mission_id: mission.id,
         reward_xp: mission.reward_xp,
@@ -203,7 +213,7 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
               type="button"
               onClick={onClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar missões"
+              aria-label={translate(t, "missionsModalCloseAria", "Fechar missões")}
             >
               <X size={18} />
             </button>
@@ -211,23 +221,26 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
             <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-emerald-100">
                 <Target size={14} />
-                Missões
+                {translate(t, "missionsModalBadge", "Missões")}
               </div>
 
               <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-3xl font-black md:text-5xl">
-                    Desafios do Nexus
+                    {translate(t, "missionsModalTitle", "Desafios do Nexus")}
                   </h2>
                   <p className="mt-3 max-w-2xl text-sm text-white/50">
-                    Complete objetivos, ganhe XP e desbloqueie recompensas para
-                    evoluir sua conta.
+                    {translate(
+                      t,
+                      "missionsModalDescription",
+                      "Complete objetivos, ganhe XP e desbloqueie recompensas para evoluir sua conta."
+                    )}
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-white/40">
-                    Progresso
+                    {translate(t, "missionsModalProgressLabel", "Progresso")}
                   </p>
                   <p className="mt-1 text-2xl font-black">
                     {completedCount}/{missions.length}
@@ -238,13 +251,13 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
               <div className="mt-8 grid gap-4">
                 {loading && (
                   <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    Carregando missões...
+                    {translate(t, "missionsModalLoading", "Carregando missões...")}
                   </div>
                 )}
 
                 {!loading && missions.length === 0 && (
                   <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    Nenhuma missão ativa por enquanto.
+                    {translate(t, "missionsModalEmpty", "Nenhuma missão ativa por enquanto.")}
                   </div>
                 )}
 
@@ -296,7 +309,9 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                               </div>
 
                               <p className="mt-2 text-xs text-white/40">
-                                {progress}/{mission.target_amount} concluído
+                                {translate(t, "missionsModalProgressCount", "{progress}/{target} concluído")
+                                  .replace("{progress}", String(progress))
+                                  .replace("{target}", String(mission.target_amount))}
                               </p>
                             </div>
                           </div>
@@ -314,12 +329,12 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                               className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 disabled:hover:scale-100"
                             >
                               {claiming
-                                ? "Resgatando..."
+                                ? translate(t, "missionsModalClaiming", "Resgatando...")
                                 : claimed
-                                  ? "Resgatado"
+                                  ? translate(t, "missionsModalClaimed", "Resgatado")
                                   : completed
-                                    ? "Resgatar"
-                                    : "Em progresso"}
+                                    ? translate(t, "missionsModalClaim", "Resgatar")
+                                    : translate(t, "missionsModalInProgress", "Em progresso")}
                             </button>
                           </div>
                         </div>
