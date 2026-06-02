@@ -722,14 +722,13 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const actionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
     setActionLoading(actionId);
 
-    const { error } = await supabase.from("user_cards").insert({
-      user_id: selectedCardUserId,
-      creator_id: selectedCardCreatorId,
-      rarity: finalRarity,
-      source:
+    const { error } = await supabase.rpc("grant_user_card", {
+      p_target_user_id: selectedCardUserId,
+      p_creator_id: selectedCardCreatorId,
+      p_rarity: finalRarity,
+      p_source:
         selectedGrantRarity === "random" ? "admin_random_grant" : "admin_grant",
-      obtained_at: new Date().toISOString(),
-      seen_at: null,
+      p_selected_rarity: selectedGrantRarity,
     });
 
     if (error) {
@@ -737,25 +736,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       alert(error.message);
       return;
     }
-
-    await createAdminLog({
-      action:
-        selectedGrantRarity === "random"
-          ? "grant_random_card_to_user"
-          : "grant_card_to_user",
-      targetType: "user_card",
-      targetId: selectedCardUserId,
-      metadata: {
-        target_user_id: selectedCardUserId,
-        target_user_email: selectedUser.email,
-        target_user_username: selectedUser.username,
-        creator_id: selectedCardCreatorId,
-        creator_nickname: selectedCreator.nickname,
-        creator_username: selectedCreator.username,
-        selected_rarity: selectedGrantRarity,
-        delivered_rarity: finalRarity,
-      },
-    });
 
     setActionLoading(null);
     await loadLogs();
