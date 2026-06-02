@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
 
 type AdminPanelModalProps = {
@@ -28,21 +29,57 @@ type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
-const ADMIN_TABS: { id: Tab; label: string }[] = [
-  { id: "requests", label: "Solicitações" },
-  { id: "users", label: "Usuários" },
-  { id: "creators", label: "Perfis" },
-  { id: "cards", label: "Gerenciar Cartas" },
-  { id: "claims", label: "Reivindicações" },
-  { id: "logs", label: "Atividades" },
+const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
+  { id: "requests", labelKey: "adminRequests", fallback: "Solicitações" },
+  { id: "users", labelKey: "adminUsers", fallback: "Usuários" },
+  { id: "creators", labelKey: "adminProfiles", fallback: "Perfis" },
+  { id: "cards", labelKey: "adminManageCards", fallback: "Gerenciar Cartas" },
+  { id: "claims", labelKey: "adminClaims", fallback: "Reivindicações" },
+  { id: "logs", labelKey: "adminActivities", fallback: "Atividades" },
 ];
 
-const GRANT_RARITIES: { id: GrantRarity; label: string; description: string }[] = [
-  { id: "common", label: "Comum", description: "Prata metálico" },
-  { id: "rare", label: "Raro", description: "Azul claro elétrico" },
-  { id: "epic", label: "Épico", description: "Violeta arcano" },
-  { id: "legendary", label: "Lendário", description: "Ouro celestial" },
-  { id: "random", label: "Aleatório", description: "Sorteia entre as 4 raridades" },
+const GRANT_RARITIES: {
+  id: GrantRarity;
+  labelKey: string;
+  fallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
+}[] = [
+  {
+    id: "common",
+    labelKey: "common",
+    fallback: "Comum",
+    descriptionKey: "adminRarityCommonDescription",
+    descriptionFallback: "Prata metálico",
+  },
+  {
+    id: "rare",
+    labelKey: "rare",
+    fallback: "Raro",
+    descriptionKey: "adminRarityRareDescription",
+    descriptionFallback: "Azul claro elétrico",
+  },
+  {
+    id: "epic",
+    labelKey: "epic",
+    fallback: "Épico",
+    descriptionKey: "adminRarityEpicDescription",
+    descriptionFallback: "Violeta arcano",
+  },
+  {
+    id: "legendary",
+    labelKey: "legendary",
+    fallback: "Lendário",
+    descriptionKey: "adminRarityLegendaryDescription",
+    descriptionFallback: "Ouro celestial",
+  },
+  {
+    id: "random",
+    labelKey: "adminRandom",
+    fallback: "Aleatório",
+    descriptionKey: "adminRarityRandomDescription",
+    descriptionFallback: "Sorteia entre as 4 raridades",
+  },
 ];
 
 const RARITY_LEVEL: Record<Exclude<GrantRarity, "random">, number> = {
@@ -61,8 +98,30 @@ function rollRandomRarity(): Exclude<GrantRarity, "random"> {
   return "legendary";
 }
 
-function getGrantRarityLabel(rarity: GrantRarity | string) {
-  return GRANT_RARITIES.find((item) => item.id === rarity)?.label || rarity;
+type TranslateFunction = (key: any) => string;
+
+function translate(t: TranslateFunction, key: string, fallback: string) {
+  const value = t(key);
+
+  return value && value !== key ? value : fallback;
+}
+
+function getDateLocale(language: string) {
+  if (language === "en") return "en-US";
+  if (language === "es") return "es-ES";
+
+  return "pt-BR";
+}
+
+function getGrantRarityLabel(
+  rarity: GrantRarity | string,
+  t: TranslateFunction,
+) {
+  const rarityOption = GRANT_RARITIES.find((item) => item.id === rarity);
+
+  if (!rarityOption) return rarity;
+
+  return translate(t, rarityOption.labelKey, rarityOption.fallback);
 }
 
 type CreatorRequest = {
@@ -131,6 +190,8 @@ type AdminLog = {
 };
 
 export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
+  const { language, t } = useLanguage();
+  const dateLocale = getDateLocale(language);
   const [activeTab, setActiveTab] = useState<Tab>("requests");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -149,17 +210,18 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [cardUserSearch, setCardUserSearch] = useState("");
   const [selectedCardCreatorId, setSelectedCardCreatorId] = useState("");
   const [selectedCardUserId, setSelectedCardUserId] = useState("");
-  const [selectedGrantRarity, setSelectedGrantRarity] = useState<GrantRarity>("common");
+  const [selectedGrantRarity, setSelectedGrantRarity] =
+    useState<GrantRarity>("common");
 
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
-    {}
+    {},
   );
   const [expandedCreators, setExpandedCreators] = useState<
     Record<string, boolean>
   >({});
-  const [expandedClaims, setExpandedClaims] = useState<
-    Record<string, boolean>
-  >({});
+  const [expandedClaims, setExpandedClaims] = useState<Record<string, boolean>>(
+    {},
+  );
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
 
   async function getCurrentUserId() {
@@ -208,7 +270,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const { data } = await supabase
       .from("profiles")
       .select(
-        "id, email, display_name, username, avatar_url, is_admin, created_at"
+        "id, email, display_name, username, avatar_url, is_admin, created_at",
       )
       .order("created_at", { ascending: false });
 
@@ -219,7 +281,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const { data } = await supabase
       .from("creator_profiles")
       .select(
-        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at, share_count, trending_score"
+        "id, user_id, nickname, username, title, category, avatar_url, is_public, is_verified, owner_status, created_at, share_count, trending_score",
       )
       .order("created_at", { ascending: false });
 
@@ -243,7 +305,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           share_count: creator.share_count || 0,
           trending_score: creator.trending_score || 0,
         };
-      })
+      }),
     );
 
     setCreators(creatorsWithStats);
@@ -335,7 +397,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     if (profileError || !creatorProfile) {
       setActionLoading(null);
-      alert(profileError?.message || "Erro ao criar o perfil do criador.");
+      alert(
+        profileError?.message ||
+          translate(
+            t,
+            "adminCreateCreatorProfileError",
+            "Erro ao criar o perfil do criador.",
+          ),
+      );
       return;
     }
 
@@ -692,25 +761,42 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
   }
 
-
   async function grantCardToUser() {
     if (!selectedCardCreatorId) {
-      alert("Selecione um creator/carta primeiro.");
+      alert(
+        translate(
+          t,
+          "adminSelectCreatorCardFirst",
+          "Selecione um creator/carta primeiro.",
+        ),
+      );
       return;
     }
 
     if (!selectedCardUserId) {
-      alert("Selecione o usuário que vai receber a carta.");
+      alert(
+        translate(
+          t,
+          "adminSelectCardRecipient",
+          "Selecione o usuário que vai receber a carta.",
+        ),
+      );
       return;
     }
 
     const selectedCreator = creators.find(
-      (creator) => creator.id === selectedCardCreatorId
+      (creator) => creator.id === selectedCardCreatorId,
     );
     const selectedUser = users.find((user) => user.id === selectedCardUserId);
 
     if (!selectedCreator || !selectedUser) {
-      alert("Creator ou usuário não encontrado.");
+      alert(
+        translate(
+          t,
+          "adminCreatorOrUserNotFound",
+          "Creator ou usuário não encontrado.",
+        ),
+      );
       return;
     }
 
@@ -741,11 +827,20 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
 
     alert(
-      `Carta enviada! ${selectedCreator.nickname} (${getGrantRarityLabel(
-        finalRarity
-      )}) foi entregue para ${
-        selectedUser.display_name || selectedUser.username || selectedUser.email
-      }.`
+      translate(
+        t,
+        "adminCardSentSuccess",
+        "Carta enviada! {creator} ({rarity}) foi entregue para {user}.",
+      )
+        .replace("{creator}", selectedCreator.nickname)
+        .replace("{rarity}", getGrantRarityLabel(finalRarity, t))
+        .replace(
+          "{user}",
+          selectedUser.display_name ||
+            selectedUser.username ||
+            selectedUser.email ||
+            translate(t, "user", "Usuário"),
+        ),
     );
   }
 
@@ -799,7 +894,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     return searchableText.includes(search);
   });
-
 
   const filteredCardCreators = creators.filter((creator) => {
     const search = cardCreatorSearch.toLowerCase().trim();
@@ -869,7 +963,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           <button
             onClick={onClose}
             className="absolute inset-0"
-            aria-label="Fechar painel admin"
+            aria-label={translate(t, "adminClosePanel", "Fechar painel admin")}
           />
 
           <motion.div
@@ -882,20 +976,26 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             <button
               onClick={onClose}
               className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar"
+              aria-label={translate(t, "close", "Fechar")}
             >
               <X size={18} />
             </button>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-yellow-100">
               <ShieldCheck size={14} />
-              Admin Panel
+              {translate(t, "adminPanelBadge", "Admin Panel")}
             </div>
 
-            <h2 className="mt-6 text-3xl font-black">Painel Admin</h2>
+            <h2 className="mt-6 text-3xl font-black">
+              {translate(t, "adminPanelTitle", "Painel Admin")}
+            </h2>
 
             <p className="mt-2 text-sm text-white/50">
-              Gerencie solicitações, usuários, creators, reivindicações e atividades.
+              {translate(
+                t,
+                "adminPanelDescription",
+                "Gerencie solicitações, usuários, creators, reivindicações e atividades.",
+              )}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -909,21 +1009,27 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
                   }`}
                 >
-                  {tab.label}
+                  {translate(t, tab.labelKey, tab.fallback)}
                 </button>
               ))}
             </div>
 
             {loading && (
               <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-                Carregando painel...
+                {translate(t, "adminPanelLoading", "Carregando painel...")}
               </div>
             )}
 
             {!loading && activeTab === "requests" && (
               <div className="mt-8 grid gap-5">
                 {requests.length === 0 && (
-                  <EmptyBox text="Nenhuma solicitação pendente." />
+                  <EmptyBox
+                    text={translate(
+                      t,
+                      "adminNoPendingRequests",
+                      "Nenhuma solicitação pendente.",
+                    )}
+                  />
                 )}
 
                 {requests.map((request) => (
@@ -940,7 +1046,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         />
                       ) : (
                         <div className="flex h-64 items-center justify-center text-white/30">
-                          Sem imagem
+                          {translate(t, "noImage", "Sem imagem")}
                         </div>
                       )}
                     </div>
@@ -957,12 +1063,15 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
                         <InfoBox
-                          label="Plataforma"
-                          value={request.verification_platform || "Não informado"}
+                          label={translate(t, "platform", "Plataforma")}
+                          value={
+                            request.verification_platform ||
+                            translate(t, "notInformed", "Não informado")
+                          }
                         />
 
                         <InfoBox
-                          label="Código"
+                          label={translate(t, "code", "Código")}
                           value={request.verification_code}
                           highlight
                         />
@@ -975,7 +1084,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 hover:bg-cyan-300/20"
                         >
                           <ExternalLink size={16} />
-                          Abrir canal/perfil
+                          {translate(
+                            t,
+                            "adminOpenChannelProfile",
+                            "Abrir canal/perfil",
+                          )}
                         </a>
                       )}
 
@@ -987,8 +1100,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         >
                           <Check size={16} />
                           {actionLoading === request.id
-                            ? "Aprovando..."
-                            : "Aprovar"}
+                            ? translate(t, "approving", "Aprovando...")
+                            : translate(t, "approve", "Aprovar")}
                         </button>
 
                         <button
@@ -998,8 +1111,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         >
                           <X size={16} />
                           {actionLoading === request.id
-                            ? "Processando..."
-                            : "Rejeitar"}
+                            ? translate(t, "processing", "Processando...")
+                            : translate(t, "reject", "Rejeitar")}
                         </button>
                       </div>
                     </div>
@@ -1013,12 +1126,22 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 <SearchInput
                   value={userSearch}
                   onChange={setUserSearch}
-                  placeholder="Buscar por nome, username ou email..."
+                  placeholder={translate(
+                    t,
+                    "adminSearchUserPlaceholder",
+                    "Buscar por nome, username ou email...",
+                  )}
                 />
 
                 <div className="mt-5 grid gap-4">
                   {filteredUsers.length === 0 && (
-                    <EmptyBox text="Nenhum usuário encontrado." />
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoUsersFound",
+                        "Nenhum usuário encontrado.",
+                      )}
+                    />
                   )}
 
                   {filteredUsers.map((profile) => (
@@ -1026,11 +1149,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       key={profile.id}
                       className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <UserInfo profile={profile} />
+                      <UserInfo profile={profile} t={t} />
 
                       <div className="flex flex-wrap items-center gap-3">
                         {profile.is_admin && (
-                          <StatusPill label="Admin" tone="yellow" />
+                          <StatusPill
+                            label={translate(t, "admin", "Admin")}
+                            tone="yellow"
+                          />
                         )}
 
                         <button
@@ -1042,7 +1168,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               : "bg-cyan-300 text-black hover:scale-105"
                           }`}
                         >
-                          {profile.is_admin ? "Remover Admin" : "Tornar Admin"}
+                          {profile.is_admin
+                            ? translate(t, "adminRemoveAdmin", "Remover Admin")
+                            : translate(t, "adminMakeAdmin", "Tornar Admin")}
                         </button>
                       </div>
                     </div>
@@ -1056,12 +1184,22 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 <SearchInput
                   value={creatorSearch}
                   onChange={setCreatorSearch}
-                  placeholder="Buscar por creator, dono, email ou username..."
+                  placeholder={translate(
+                    t,
+                    "adminSearchCreatorPlaceholder",
+                    "Buscar por creator, dono, email ou username...",
+                  )}
                 />
 
                 <div className="mt-5 grid gap-4">
                   {filteredCreators.length === 0 && (
-                    <EmptyBox text="Nenhum creator encontrado." />
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoCreatorsFound",
+                        "Nenhum creator encontrado.",
+                      )}
+                    />
                   )}
 
                   {filteredCreators.map((creator) => {
@@ -1086,7 +1224,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                  Sem imagem
+                                  {translate(t, "noImage", "Sem imagem")}
                                 </div>
                               )}
                             </div>
@@ -1107,37 +1245,39 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               </p>
 
                               <p className="mt-1 text-xs text-white/35">
-                                Dono:{" "}
+                                {translate(t, "owner", "Dono")}:{" "}
                                 {owner
-                                  ? owner.email || owner.display_name || "Sem email"
-                                  : "Sem dono"}
+                                  ? owner.email ||
+                                    owner.display_name ||
+                                    translate(t, "noEmail", "Sem email")
+                                  : translate(t, "noOwner", "Sem dono")}
                               </p>
 
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <StatusPill
                                   label={`👁 ${Number(
-                                    creator.views_count || 0
-                                  ).toLocaleString("pt-BR")}`}
+                                    creator.views_count || 0,
+                                  ).toLocaleString(dateLocale)}`}
                                   tone="cyan"
                                 />
 
                                 <StatusPill
                                   label={`👥 ${Number(
-                                    creator.followers_count || 0
-                                  ).toLocaleString("pt-BR")}`}
+                                    creator.followers_count || 0,
+                                  ).toLocaleString(dateLocale)}`}
                                 />
 
                                 <StatusPill
                                   label={`🔗 ${Number(
-                                    creator.share_count || 0
-                                  ).toLocaleString("pt-BR")}`}
+                                    creator.share_count || 0,
+                                  ).toLocaleString(dateLocale)}`}
                                   tone="yellow"
                                 />
 
                                 <StatusPill
                                   label={`🔥 ${Number(
-                                    creator.trending_score || 0
-                                  ).toLocaleString("pt-BR")}`}
+                                    creator.trending_score || 0,
+                                  ).toLocaleString(dateLocale)}`}
                                   tone="yellow"
                                 />
                               </div>
@@ -1147,21 +1287,27 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <div className="flex flex-wrap items-center gap-2 md:justify-end">
                             <StatusPill
                               label={
-                                creator.user_id ? "👤 Reivindicado" : "👤 Sem dono"
+                                creator.user_id
+                                  ? `👤 ${translate(t, "claimed", "Reivindicado")}`
+                                  : `👤 ${translate(t, "noOwner", "Sem dono")}`
                               }
                             />
 
                             <StatusPill
                               label={
                                 creator.is_verified
-                                  ? "✓ Verificado"
-                                  : "○ Não verificado"
+                                  ? `✓ ${translate(t, "verified", "Verificado")}`
+                                  : `○ ${translate(t, "notVerified", "Não verificado")}`
                               }
                               tone={creator.is_verified ? "yellow" : "default"}
                             />
 
                             <StatusPill
-                              label={creator.is_public ? "🌐 Público" : "🔒 Oculto"}
+                              label={
+                                creator.is_public
+                                  ? `🌐 ${translate(t, "public", "Público")}`
+                                  : `🔒 ${translate(t, "hidden", "Oculto")}`
+                              }
                               tone={creator.is_public ? "cyan" : "default"}
                             />
 
@@ -1177,12 +1323,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               {isExpanded ? (
                                 <>
                                   <ChevronUp size={16} />
-                                  Recolher
+                                  {translate(t, "collapse", "Recolher")}
                                 </>
                               ) : (
                                 <>
                                   <ChevronDown size={16} />
-                                  Expandir
+                                  {translate(t, "expand", "Expandir")}
                                 </>
                               )}
                             </button>
@@ -1194,12 +1340,19 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                             <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
                               <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
                                 <h4 className="font-bold text-white">
-                                  Gerenciamento do proprietário
+                                  {translate(
+                                    t,
+                                    "adminOwnerManagement",
+                                    "Gerenciamento do proprietário",
+                                  )}
                                 </h4>
 
                                 <p className="mt-2 text-sm text-white/45">
-                                  Atribua este perfil a um usuário logado ou remova
-                                  o dono atual.
+                                  {translate(
+                                    t,
+                                    "adminOwnerManagementDescription",
+                                    "Atribua este perfil a um usuário logado ou remova o dono atual.",
+                                  )}
                                 </p>
 
                                 <select
@@ -1212,11 +1365,15 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                   }
                                   className="mt-4 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
                                 >
-                                  <option value="">Sem dono</option>
+                                  <option value="">
+                                    {translate(t, "noOwner", "Sem dono")}
+                                  </option>
 
                                   {users.map((user) => (
                                     <option key={user.id} value={user.id}>
-                                      {user.email || user.display_name || user.id}
+                                      {user.email ||
+                                        user.display_name ||
+                                        user.id}
                                     </option>
                                   ))}
                                 </select>
@@ -1224,12 +1381,19 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 <div className="mt-4 flex flex-wrap gap-3">
                                   <button
                                     onClick={() =>
-                                      changeCreatorOwner(creator, selectedOwnerId)
+                                      changeCreatorOwner(
+                                        creator,
+                                        selectedOwnerId,
+                                      )
                                     }
                                     disabled={actionLoading === creator.id}
                                     className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
                                   >
-                                    Atribuir proprietário
+                                    {translate(
+                                      t,
+                                      "adminAssignOwner",
+                                      "Atribuir proprietário",
+                                    )}
                                   </button>
 
                                   <button
@@ -1240,19 +1404,30 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                     }
                                     className="rounded-full border border-red-300/20 bg-red-300/10 px-5 py-2 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
                                   >
-                                    Remover dono
+                                    {translate(
+                                      t,
+                                      "adminRemoveOwner",
+                                      "Remover dono",
+                                    )}
                                   </button>
                                 </div>
                               </div>
 
                               <div className="rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
                                 <h4 className="font-bold text-white">
-                                  Ações rápidas
+                                  {translate(
+                                    t,
+                                    "adminQuickActions",
+                                    "Ações rápidas",
+                                  )}
                                 </h4>
 
                                 <p className="mt-2 text-sm text-white/45">
-                                  Controle visibilidade e validação pública do
-                                  creator.
+                                  {translate(
+                                    t,
+                                    "adminQuickActionsDescription",
+                                    "Controle visibilidade e validação pública do creator.",
+                                  )}
                                 </p>
 
                                 <div className="mt-4 flex flex-wrap gap-3">
@@ -1264,8 +1439,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                     className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 disabled:opacity-40"
                                   >
                                     {creator.is_verified
-                                      ? "Remover verificação"
-                                      : "Verificar perfil"}
+                                      ? translate(
+                                          t,
+                                          "adminRemoveVerification",
+                                          "Remover verificação",
+                                        )
+                                      : translate(
+                                          t,
+                                          "adminVerifyProfile",
+                                          "Verificar perfil",
+                                        )}
                                   </button>
 
                                   <button
@@ -1276,12 +1459,20 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                     {creator.is_public ? (
                                       <>
                                         <EyeOff size={16} />
-                                        Ocultar perfil
+                                        {translate(
+                                          t,
+                                          "adminHideProfile",
+                                          "Ocultar perfil",
+                                        )}
                                       </>
                                     ) : (
                                       <>
                                         <Eye size={16} />
-                                        Publicar perfil
+                                        {translate(
+                                          t,
+                                          "adminPublishProfile",
+                                          "Publicar perfil",
+                                        )}
                                       </>
                                     )}
                                   </button>
@@ -1290,40 +1481,50 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                             </div>
 
                             <div className="grid gap-3 border-t border-white/10 bg-black/20 p-5 text-sm text-white/45 sm:grid-cols-3 lg:grid-cols-6">
-                              <SmallInfo label="ID" value={creator.id} />
                               <SmallInfo
-                                label="Criado em"
+                                label={translate(t, "id", "ID")}
+                                value={creator.id}
+                              />
+                              <SmallInfo
+                                label={translate(t, "createdAt", "Criado em")}
                                 value={new Date(
-                                  creator.created_at
-                                ).toLocaleDateString("pt-BR")}
+                                  creator.created_at,
+                                ).toLocaleDateString(dateLocale)}
                               />
                               <SmallInfo
-                                label="Categoria"
-                                value={creator.category || "Creator"}
+                                label={translate(t, "category", "Categoria")}
+                                value={
+                                  creator.category ||
+                                  translate(t, "creator", "Creator")
+                                }
                               />
                               <SmallInfo
-                                label="Views"
+                                label={translate(t, "views", "Views")}
                                 value={Number(
-                                  creator.views_count || 0
-                                ).toLocaleString("pt-BR")}
+                                  creator.views_count || 0,
+                                ).toLocaleString(dateLocale)}
                               />
                               <SmallInfo
-                                label="Seguidores"
+                                label={translate(t, "followers", "Seguidores")}
                                 value={Number(
-                                  creator.followers_count || 0
-                                ).toLocaleString("pt-BR")}
+                                  creator.followers_count || 0,
+                                ).toLocaleString(dateLocale)}
                               />
                               <SmallInfo
-                                label="Compartilhamentos"
+                                label={translate(
+                                  t,
+                                  "shares",
+                                  "Compartilhamentos",
+                                )}
                                 value={Number(
-                                  creator.share_count || 0
-                                ).toLocaleString("pt-BR")}
+                                  creator.share_count || 0,
+                                ).toLocaleString(dateLocale)}
                               />
                               <SmallInfo
                                 label="Trending"
                                 value={Number(
-                                  creator.trending_score || 0
-                                ).toLocaleString("pt-BR")}
+                                  creator.trending_score || 0,
+                                ).toLocaleString(dateLocale)}
                               />
                             </div>
                           </>
@@ -1345,10 +1546,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                     <div>
                       <h3 className="text-xl font-black text-white">
-                        Gerenciar Cartas
+                        {translate(t, "adminManageCards", "Gerenciar Cartas")}
                       </h3>
                       <p className="mt-1 text-sm text-white/50">
-                        Escolha uma carta de creator, selecione o usuário e envie uma raridade específica ou aleatória.
+                        {translate(
+                          t,
+                          "adminManageCardsDescription",
+                          "Escolha uma carta de creator, selecione o usuário e envie uma raridade específica ou aleatória.",
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1356,22 +1561,38 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                 <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                    <h4 className="font-black text-white">1. Escolher carta</h4>
+                    <h4 className="font-black text-white">
+                      {translate(t, "adminChooseCardStep", "1. Escolher carta")}
+                    </h4>
                     <p className="mt-1 text-sm text-white/45">
-                      Pesquise pelo nome do creator, username, categoria ou dono.
+                      {translate(
+                        t,
+                        "adminChooseCardDescription",
+                        "Pesquise pelo nome do creator, username, categoria ou dono.",
+                      )}
                     </p>
 
                     <div className="mt-4">
                       <SearchInput
                         value={cardCreatorSearch}
                         onChange={setCardCreatorSearch}
-                        placeholder="Buscar creator/carta..."
+                        placeholder={translate(
+                          t,
+                          "adminSearchCardPlaceholder",
+                          "Buscar creator/carta...",
+                        )}
                       />
                     </div>
 
                     <div className="mt-4 grid max-h-[420px] gap-3 overflow-y-auto pr-1">
                       {filteredCardCreators.length === 0 && (
-                        <EmptyBox text="Nenhuma carta encontrada." />
+                        <EmptyBox
+                          text={translate(
+                            t,
+                            "adminNoCardsFound",
+                            "Nenhuma carta encontrada.",
+                          )}
+                        />
                       )}
 
                       {filteredCardCreators.map((creator) => {
@@ -1398,7 +1619,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                  Sem imagem
+                                  {translate(t, "noImage", "Sem imagem")}
                                 </div>
                               )}
                             </div>
@@ -1411,12 +1632,18 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 @{creator.username}
                               </p>
                               <p className="mt-1 truncate text-xs text-white/40">
-                                Dono: {owner?.email || owner?.username || "Sem dono"}
+                                {translate(t, "owner", "Dono")}:{" "}
+                                {owner?.email ||
+                                  owner?.username ||
+                                  translate(t, "noOwner", "Sem dono")}
                               </p>
                             </div>
 
                             {selected && (
-                              <Check size={18} className="shrink-0 text-cyan-200" />
+                              <Check
+                                size={18}
+                                className="shrink-0 text-cyan-200"
+                              />
                             )}
                           </button>
                         );
@@ -1426,22 +1653,42 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                   <div className="space-y-5">
                     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                      <h4 className="font-black text-white">2. Escolher usuário</h4>
+                      <h4 className="font-black text-white">
+                        {translate(
+                          t,
+                          "adminChooseUserStep",
+                          "2. Escolher usuário",
+                        )}
+                      </h4>
                       <p className="mt-1 text-sm text-white/45">
-                        Pesquise por nome, username ou email.
+                        {translate(
+                          t,
+                          "adminChooseUserDescription",
+                          "Pesquise por nome, username ou email.",
+                        )}
                       </p>
 
                       <div className="mt-4">
                         <SearchInput
                           value={cardUserSearch}
                           onChange={setCardUserSearch}
-                          placeholder="Buscar usuário..."
+                          placeholder={translate(
+                            t,
+                            "adminSearchUserShortPlaceholder",
+                            "Buscar usuário...",
+                          )}
                         />
                       </div>
 
                       <div className="mt-4 grid max-h-[260px] gap-3 overflow-y-auto pr-1">
                         {filteredCardUsers.length === 0 && (
-                          <EmptyBox text="Nenhum usuário encontrado." />
+                          <EmptyBox
+                            text={translate(
+                              t,
+                              "adminNoUsersFound",
+                              "Nenhum usuário encontrado.",
+                            )}
+                          />
                         )}
 
                         {filteredCardUsers.map((profile) => {
@@ -1458,7 +1705,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                   : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
                               }`}
                             >
-                              <UserInfo profile={profile} />
+                              <UserInfo profile={profile} t={t} />
                               {selected && (
                                 <Check
                                   size={18}
@@ -1472,17 +1719,26 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                     </div>
 
                     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                      <h4 className="font-black text-white">3. Escolher raridade</h4>
+                      <h4 className="font-black text-white">
+                        {translate(
+                          t,
+                          "adminChooseRarityStep",
+                          "3. Escolher raridade",
+                        )}
+                      </h4>
 
                       <div className="mt-4 grid grid-cols-2 gap-3">
                         {GRANT_RARITIES.map((rarityOption) => {
-                          const selected = selectedGrantRarity === rarityOption.id;
+                          const selected =
+                            selectedGrantRarity === rarityOption.id;
 
                           return (
                             <button
                               key={rarityOption.id}
                               type="button"
-                              onClick={() => setSelectedGrantRarity(rarityOption.id)}
+                              onClick={() =>
+                                setSelectedGrantRarity(rarityOption.id)
+                              }
                               className={`rounded-2xl border p-3 text-left transition ${
                                 selected
                                   ? "border-yellow-300/60 bg-yellow-300/10"
@@ -1490,10 +1746,18 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               }`}
                             >
                               <p className="font-bold text-white">
-                                {rarityOption.label}
+                                {translate(
+                                  t,
+                                  rarityOption.labelKey,
+                                  rarityOption.fallback,
+                                )}
                               </p>
                               <p className="mt-1 text-xs text-white/40">
-                                {rarityOption.description}
+                                {translate(
+                                  t,
+                                  rarityOption.descriptionKey,
+                                  rarityOption.descriptionFallback,
+                                )}
                               </p>
                             </button>
                           );
@@ -1502,29 +1766,38 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                       <div className="mt-5 rounded-3xl border border-white/10 bg-black/25 p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-white/35">
-                          Resumo
+                          {translate(t, "summary", "Resumo")}
                         </p>
 
                         <div className="mt-3 space-y-2 text-sm text-white/65">
                           <p>
-                            Carta:{" "}
+                            {translate(t, "card", "Carta")}:{" "}
                             <span className="font-bold text-white">
-                              {selectedCardCreator?.nickname || "Nenhuma selecionada"}
+                              {selectedCardCreator?.nickname ||
+                                translate(
+                                  t,
+                                  "noneSelectedFeminine",
+                                  "Nenhuma selecionada",
+                                )}
                             </span>
                           </p>
                           <p>
-                            Usuário:{" "}
+                            {translate(t, "user", "Usuário")}:{" "}
                             <span className="font-bold text-white">
                               {selectedCardUser?.display_name ||
                                 selectedCardUser?.username ||
                                 selectedCardUser?.email ||
-                                "Nenhum selecionado"}
+                                translate(
+                                  t,
+                                  "noneSelectedMasculine",
+                                  "Nenhum selecionado",
+                                )}
                             </span>
                           </p>
                           <p>
-                            Raridade:{" "}
+                            {translate(t, "rarity", "Raridade")}:{" "}
                             <span className="font-bold text-white">
-                              {getGrantRarityLabel(selectedGrantRarity)}
+                              {getGrantRarityLabel(selectedGrantRarity, t)}
                             </span>
                           </p>
                         </div>
@@ -1541,8 +1814,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         className="mt-5 w-full rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {actionLoading === grantActionId
-                          ? "Enviando carta..."
-                          : "Enviar carta para usuário"}
+                          ? translate(
+                              t,
+                              "adminSendingCard",
+                              "Enviando carta...",
+                            )
+                          : translate(
+                              t,
+                              "adminSendCardToUser",
+                              "Enviar carta para usuário",
+                            )}
                       </button>
                     </div>
                   </div>
@@ -1555,12 +1836,22 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 <SearchInput
                   value={claimSearch}
                   onChange={setClaimSearch}
-                  placeholder="Buscar reivindicações por criador, usuário, email ou código..."
+                  placeholder={translate(
+                    t,
+                    "adminSearchClaimPlaceholder",
+                    "Buscar reivindicações por criador, usuário, email ou código...",
+                  )}
                 />
 
                 <div className="mt-5 grid gap-4">
                   {filteredClaims.length === 0 && (
-                    <EmptyBox text="Nenhuma reivindicação pendente." />
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoPendingClaims",
+                        "Nenhuma reivindicação pendente.",
+                      )}
+                    />
                   )}
 
                   {filteredClaims.map((claim) => {
@@ -1584,33 +1875,47 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                  Sem imagem
+                                  {translate(t, "noImage", "Sem imagem")}
                                 </div>
                               )}
                             </div>
 
                             <div>
                               <h3 className="text-xl font-black text-white">
-                                {creator?.nickname || "Creator não encontrado"}
+                                {creator?.nickname ||
+                                  translate(
+                                    t,
+                                    "creatorNotFound",
+                                    "Creator não encontrado",
+                                  )}
                               </h3>
 
                               <p className="text-sm text-white/45">
-                                @{creator?.username || "sem_username"}
+                                @
+                                {creator?.username ||
+                                  translate(t, "noUsername", "sem_username")}
                               </p>
 
                               <p className="mt-1 text-xs text-white/35">
-                                Reivindicado por:{" "}
+                                {translate(t, "claimedBy", "Reivindicado por")}:{" "}
                                 {claimant
                                   ? claimant.email ||
                                     claimant.display_name ||
-                                    "sem email"
+                                    translate(t, "noEmailLower", "sem email")
                                   : claim.user_id}
                               </p>
                             </div>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                            <StatusPill label="Pending claim" tone="yellow" />
+                            <StatusPill
+                              label={translate(
+                                t,
+                                "pendingClaim",
+                                "Pending claim",
+                              )}
+                              tone="yellow"
+                            />
 
                             <StatusPill
                               label={claim.verification_platform}
@@ -1629,12 +1934,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               {isExpanded ? (
                                 <>
                                   <ChevronUp size={16} />
-                                  Recolher
+                                  {translate(t, "collapse", "Recolher")}
                                 </>
                               ) : (
                                 <>
                                   <ChevronDown size={16} />
-                                  Expandir
+                                  {translate(t, "expand", "Expandir")}
                                 </>
                               )}
                             </button>
@@ -1645,21 +1950,29 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <>
                             <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
                               <InfoBox
-                                label="Código"
+                                label={translate(t, "code", "Código")}
                                 value={claim.verification_code}
                                 highlight
                               />
 
                               <InfoBox
-                                label="Solicitado em"
+                                label={translate(
+                                  t,
+                                  "requestedAt",
+                                  "Solicitado em",
+                                )}
                                 value={new Date(
-                                  claim.created_at
-                                ).toLocaleString("pt-BR")}
+                                  claim.created_at,
+                                ).toLocaleString(dateLocale)}
                               />
 
                               <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
                                 <p className="text-xs text-white/40">
-                                  URL de verificação
+                                  {translate(
+                                    t,
+                                    "verificationUrl",
+                                    "URL de verificação",
+                                  )}
                                 </p>
 
                                 <a
@@ -1681,8 +1994,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               >
                                 <Check size={16} />
                                 {actionLoading === claim.id
-                                  ? "Aprovando..."
-                                  : "Aprovar reivindicação"}
+                                  ? translate(t, "approving", "Aprovando...")
+                                  : translate(
+                                      t,
+                                      "adminApproveClaim",
+                                      "Aprovar reivindicação",
+                                    )}
                               </button>
 
                               <button
@@ -1692,8 +2009,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               >
                                 <X size={16} />
                                 {actionLoading === claim.id
-                                  ? "Processando..."
-                                  : "Rejeitar"}
+                                  ? translate(t, "processing", "Processando...")
+                                  : translate(t, "reject", "Rejeitar")}
                               </button>
                             </div>
                           </>
@@ -1710,12 +2027,22 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 <SearchInput
                   value={logSearch}
                   onChange={setLogSearch}
-                  placeholder="Buscar logs por ação, usuário ou metadata..."
+                  placeholder={translate(
+                    t,
+                    "adminSearchLogsPlaceholder",
+                    "Buscar logs por ação, usuário ou metadata...",
+                  )}
                 />
 
                 <div className="mt-5 grid gap-3">
                   {filteredLogs.length === 0 && (
-                    <EmptyBox text="Nenhum log encontrado." />
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoLogsFound",
+                        "Nenhum log encontrado.",
+                      )}
+                    />
                   )}
 
                   {filteredLogs.map((log) => {
@@ -1735,20 +2062,24 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                             </p>
 
                             <p className="mt-1 text-sm text-white/45">
-                              Admin:{" "}
+                              {translate(t, "admin", "Admin")}:{" "}
                               {admin
                                 ? admin.email || admin.display_name
-                                : log.admin_id || "Sistema"}
+                                : log.admin_id ||
+                                  translate(t, "system", "Sistema")}
                             </p>
 
                             <p className="text-sm text-white/35">
-                              Target: {log.target_type}
+                              {translate(t, "target", "Target")}:{" "}
+                              {log.target_type}
                             </p>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/50">
-                              {new Date(log.created_at).toLocaleString("pt-BR")}
+                              {new Date(log.created_at).toLocaleString(
+                                dateLocale,
+                              )}
                             </span>
 
                             <button
@@ -1763,12 +2094,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                               {isExpanded ? (
                                 <>
                                   <ChevronUp size={16} />
-                                  Recolher
+                                  {translate(t, "collapse", "Recolher")}
                                 </>
                               ) : (
                                 <>
                                   <ChevronDown size={16} />
-                                  Expandir
+                                  {translate(t, "expand", "Expandir")}
                                 </>
                               )}
                             </button>
@@ -1779,7 +2110,10 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <div className="border-t border-white/10 bg-black/20 p-5">
                             <SmallInfo
                               label="Target ID"
-                              value={log.target_id || "sem target"}
+                              value={
+                                log.target_id ||
+                                translate(t, "noTarget", "sem target")
+                              }
                             />
 
                             <pre className="no-scrollbar mt-4 max-h-48 overflow-y-auto rounded-2xl bg-black/30 p-3 text-xs text-white/45">
@@ -1826,14 +2160,20 @@ function SearchInput({
   );
 }
 
-function UserInfo({ profile }: { profile: ProfileUser }) {
+function UserInfo({
+  profile,
+  t,
+}: {
+  profile: ProfileUser;
+  t: TranslateFunction;
+}) {
   return (
     <div className="flex items-center gap-4">
       <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
         {profile.avatar_url ? (
           <img
             src={profile.avatar_url}
-            alt={profile.display_name || "Avatar"}
+            alt={profile.display_name || translate(t, "avatar", "Avatar")}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -1843,13 +2183,15 @@ function UserInfo({ profile }: { profile: ProfileUser }) {
 
       <div>
         <p className="font-bold text-white">
-          {profile.display_name || "Sem nome"}
+          {profile.display_name || translate(t, "noName", "Sem nome")}
         </p>
 
-        <p className="text-sm text-white/45">{profile.email || "sem email"}</p>
+        <p className="text-sm text-white/45">
+          {profile.email || translate(t, "noEmailLower", "sem email")}
+        </p>
 
         <p className="text-xs text-white/35">
-          @{profile.username || "sem_username"}
+          @{profile.username || translate(t, "noUsername", "sem_username")}
         </p>
       </div>
     </div>

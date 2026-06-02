@@ -68,6 +68,26 @@ function getTranslatedRarityLabel(rarity: string, t: TranslateFunction) {
   return translate(t, rarity.toLowerCase(), getRarityLabel(rarity));
 }
 
+function normalizeRarity(rarity: string) {
+  return rarity.toLowerCase().trim();
+}
+
+function formatCountLabel(
+  t: TranslateFunction,
+  count: number,
+  singularKey: string,
+  singularFallback: string,
+  pluralKey: string,
+  pluralFallback: string
+) {
+  const template =
+    count === 1
+      ? translate(t, singularKey, singularFallback)
+      : translate(t, pluralKey, pluralFallback);
+
+  return template.replace("{count}", String(count));
+}
+
 function getLevelProgress(xp: number, level: number) {
   const safeLevel = Math.max(1, level);
   const currentLevelXp = Math.pow(safeLevel - 1, 2) * 100;
@@ -196,14 +216,22 @@ export function UserProfileModal({
 
   const stats = useMemo(() => {
     const total = cards.length;
-    const rare = cards.filter((card) => card.rarity === "rare").length;
-    const epic = cards.filter((card) => card.rarity === "epic").length;
+    const common = cards.filter(
+      (card) => normalizeRarity(card.rarity) === "common"
+    ).length;
+    const rare = cards.filter(
+      (card) => normalizeRarity(card.rarity) === "rare"
+    ).length;
+    const epic = cards.filter(
+      (card) => normalizeRarity(card.rarity) === "epic"
+    ).length;
     const legendary = cards.filter(
-      (card) => card.rarity === "legendary"
+      (card) => normalizeRarity(card.rarity) === "legendary"
     ).length;
 
     return {
       total,
+      common,
       rare,
       epic,
       legendary,
@@ -292,13 +320,20 @@ export function UserProfileModal({
                     </span>
 
                     <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                      {stats.total} {translate(t, "cards", "cartas")}
+                      {formatCountLabel(
+                        t,
+                        stats.total,
+                        "cardsCountSingular",
+                        "{count} carta",
+                        "cardsCountPlural",
+                        "{count} cartas"
+                      )}
                     </span>
 
                     {profile?.is_admin && (
                       <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
                         <ShieldCheck size={14} />
-                        Admin
+                        {translate(t, "admin", "Admin")}
                       </span>
                     )}
                   </div>
@@ -376,10 +411,10 @@ export function UserProfileModal({
                 />
 
                 <ProfileStatCard
-                  icon={<Crown size={18} />}
-                  label={translate(t, "legendaryPlural", "Lendárias")}
-                  value={loading ? "..." : String(stats.legendary)}
-                  tone="pink"
+                  icon={<Sparkles size={18} />}
+                  label={translate(t, "commonPlural", "Comuns")}
+                  value={loading ? "..." : String(stats.common)}
+                  tone="cyan"
                 />
               </div>
 
@@ -425,8 +460,14 @@ export function UserProfileModal({
                         {translate(t, "badges", "Badges")}
                       </p>
                       <p className="text-sm text-white/45">
-                        {stats.badges}{" "}
-                        {translate(t, "unlockedAchievement", "conquista desbloqueada")}
+                        {formatCountLabel(
+                          t,
+                          stats.badges,
+                          "unlockedAchievementSingular",
+                          "{count} conquista desbloqueada",
+                          "unlockedAchievementPlural",
+                          "{count} conquistas desbloqueadas"
+                        )}
                       </p>
                     </div>
                   </div>
