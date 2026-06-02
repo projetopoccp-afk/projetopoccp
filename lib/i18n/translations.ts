@@ -1209,4 +1209,7 @@ export type LanguageCode = keyof typeof translations;
     missionsModalClaimed: "Reclamada",
     missionsModalClaim: "Reclamar",
     missionsModalInProgress: "En progreso",
+  },
+} as const;
 
+export type LanguageCode = keyof typeof translations;
