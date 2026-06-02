@@ -53,25 +53,25 @@ type SiteLanguage = "pt" | "en" | "es";
 
 const SITE_LANGUAGES: {
   id: SiteLanguage;
-  label: string;
+  labelKey: "languagePortuguese" | "languageEnglish" | "languageSpanish";
   shortLabel: string;
   nativeLabel: string;
 }[] = [
   {
     id: "pt",
-    label: "Português",
+    labelKey: "languagePortuguese",
     shortLabel: "PT",
     nativeLabel: "Português",
   },
   {
     id: "en",
-    label: "Inglês",
+    labelKey: "languageEnglish",
     shortLabel: "EN",
     nativeLabel: "English",
   },
   {
     id: "es",
-    label: "Espanhol",
+    labelKey: "languageSpanish",
     shortLabel: "ES",
     nativeLabel: "Español",
   },
@@ -99,8 +99,23 @@ function getNotificationTone(type: NotificationType) {
   return "border-white/10 bg-white/[0.04] text-white";
 }
 
-function formatNotificationDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
+type TranslateFunction = (key: any) => string;
+
+function translate(t: TranslateFunction, key: string, fallback: string) {
+  const value = t(key);
+
+  return value && value !== key ? value : fallback;
+}
+
+function getDateLocale(language: SiteLanguage) {
+  if (language === "en") return "en-US";
+  if (language === "es") return "es-ES";
+
+  return "pt-BR";
+}
+
+function formatNotificationDate(date: string, language: SiteLanguage) {
+  return new Intl.DateTimeFormat(getDateLocale(language), {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -123,7 +138,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const languageBoxRef = useRef<HTMLDivElement | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
 
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
@@ -462,7 +477,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                       setNotificationsOpen((current) => !current);
                     }}
                     className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
-                    aria-label="Abrir notificações"
+                    aria-label={translate(t, "openNotifications", "Abrir notificações")}
                   >
                     <Bell size={17} />
 
@@ -487,7 +502,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                   onClick={() => setAccountOpen(true)}
                   className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
                 >
-                  Conta
+                  {translate(t, "account", "Conta")}
                 </button>
 
                 <button
@@ -495,7 +510,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                   className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
                 >
                   <LogOut size={16} />
-                  Sair
+                  {translate(t, "logout", "Sair")}
                 </button>
 
                 <LanguageSwitcher
@@ -513,7 +528,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06] md:hidden"
               >
                 <User size={16} />
-                Entrar
+                {translate(t, "login", "Entrar")}
               </button>
             )}
           </div>
@@ -533,7 +548,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                     setNotificationsOpen((current) => !current);
                   }}
                   className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
-                  aria-label="Abrir notificações"
+                  aria-label={translate(t, "openNotifications", "Abrir notificações")}
                 >
                   <Bell size={18} />
 
@@ -557,14 +572,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               <button
                 onClick={() => setAccountOpen(true)}
                 className="group rounded-2xl px-2 py-1 text-right transition hover:bg-white/[0.04]"
-                title="Clique para abrir o painel"
+                title={translate(t, "openPanel", "{translate(t, "openPanel", "Clique para abrir o painel")}")}
               >
                 <p className="text-sm font-semibold text-white transition group-hover:text-cyan-200">
                   {displayName}
                 </p>
 
                 <p className="text-xs text-cyan-100/55 transition group-hover:text-cyan-100">
-                  Clique para abrir o painel
+                  {translate(t, "openPanel", "Clique para abrir o painel")}
                 </p>
               </button>
 
@@ -573,7 +588,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
               >
                 <LogOut size={18} />
-                Sair
+                {translate(t, "logout", "Sair")}
               </button>
 
               <LanguageSwitcher
@@ -647,6 +662,7 @@ function LanguageSwitcher({
   onChange: (language: SiteLanguage) => void;
 }) {
   const isDesktop = buttonSize === "desktop";
+  const { t } = useLanguage();
 
   return (
     <div ref={boxRef} className="relative">
@@ -660,8 +676,8 @@ function LanguageSwitcher({
         className={`relative flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
           isDesktop ? "h-11 w-11" : "h-10 w-10"
         }`}
-        aria-label="Alterar idioma"
-        title="Alterar idioma"
+        aria-label={translate(t, "changeLanguage", "Alterar idioma")}
+        title={translate(t, "changeLanguage", "Alterar idioma")}
       >
         <Globe2 size={isDesktop ? 18 : 17} />
 
@@ -678,9 +694,9 @@ function LanguageSwitcher({
           <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-cyan-400/15 blur-[50px]" />
 
           <div className="relative z-10 border-b border-white/10 p-4">
-            <p className="text-sm font-black">Idioma</p>
+            <p className="text-sm font-black">{translate(t, "language", "Idioma")}</p>
             <p className="mt-0.5 text-xs text-white/40">
-              Escolha o idioma do site
+              {translate(t, "chooseSiteLanguage", "Escolha o idioma do site")}
             </p>
           </div>
 
@@ -708,7 +724,7 @@ function LanguageSwitcher({
                       {item.nativeLabel}
                     </span>
                     <span className="block text-xs text-white/35">
-                      {item.label}
+                      {translate(t, item.labelKey, item.nativeLabel)}
                     </span>
                   </span>
 
@@ -746,6 +762,8 @@ function NotificationsPopover({
   onMarkAllAsRead: () => void;
   onNotificationClick: (notification: UserNotification) => void;
 }) {
+  const { language, t } = useLanguage();
+
   if (!open) return null;
 
   return (
@@ -758,11 +776,14 @@ function NotificationsPopover({
 
       <div className="relative z-10 flex items-center justify-between border-b border-white/10 p-4">
         <div>
-          <p className="text-sm font-black">Notificações</p>
+          <p className="text-sm font-black">{translate(t, "notifications", "Notificações")}</p>
           <p className="mt-0.5 text-xs text-white/40">
             {unreadCount > 0
-              ? `${unreadCount} nova${unreadCount > 1 ? "s" : ""}`
-              : "Tudo em dia"}
+              ? translate(t, "newNotificationsCount", "{count} nova(s)").replace(
+                  "{count}",
+                  String(unreadCount)
+                )
+              : translate(t, "allCaughtUp", "Tudo em dia")}
           </p>
         </div>
 
@@ -777,7 +798,7 @@ function NotificationsPopover({
               }}
               className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
             >
-              Ler todas
+              {translate(t, "markAllRead", "Ler todas")}
             </button>
           )}
 
@@ -789,7 +810,7 @@ function NotificationsPopover({
               onClose();
             }}
             className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-white/55 transition hover:bg-white/10 hover:text-white"
-            aria-label="Fechar notificações"
+            aria-label={translate(t, "closeNotifications", "Fechar notificações")}
           >
             <X size={14} />
           </button>
@@ -835,7 +856,7 @@ function NotificationsPopover({
                 )}
 
                 <p className="mt-2 text-[11px] text-white/30">
-                  {formatNotificationDate(notification.created_at)}
+                  {formatNotificationDate(notification.created_at, language)}
                 </p>
               </div>
 
@@ -852,12 +873,15 @@ function NotificationsPopover({
             </div>
 
             <p className="mt-4 text-sm font-bold text-white">
-              Sem notificações por enquanto
+              {translate(t, "noNotificationsTitle", "Sem notificações por enquanto")}
             </p>
 
             <p className="mt-1 text-xs leading-relaxed text-white/40">
-              Quando você ganhar cartas, pacotes, badges ou subir de nível,
-              tudo aparecerá aqui.
+              {translate(
+                t,
+                "noNotificationsDescription",
+                "Quando você ganhar cartas, pacotes, badges ou subir de nível, tudo aparecerá aqui."
+              )}
             </p>
           </div>
         )}
