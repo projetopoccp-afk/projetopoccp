@@ -84,6 +84,8 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const notificationBoxRef = useRef<HTMLDivElement | null>(null);
+  const openedCollectionNotificationRef = useRef<string | null>(null);
+  const openCollectionCardTimeoutRef = useRef<number | null>(null);
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
@@ -245,6 +247,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (openCollectionCardTimeoutRef.current) {
+        window.clearTimeout(openCollectionCardTimeoutRef.current);
+      }
+    };
+  }, []);
+
   async function loadNotifications(userId: string) {
     const { data, error } = await supabase
       .from("user_notifications")
@@ -314,13 +324,38 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     const creatorUsername = metadata.creator_username;
 
     if (notification.type === "card_collected" || notification.type === "card_won") {
+      const openKey = [
+        notification.id,
+        typeof cardId === "string" ? cardId : "",
+        typeof creatorId === "string" ? creatorId : "",
+      ].join(":");
+
+      /*
+        Proteção contra loop:
+        quando a notificação abre uma carta, alguns componentes da coleção podem
+        recarregar e tentar consumir o mesmo evento novamente. Este ref garante
+        que o mesmo clique/notificação só dispare a abertura automática uma vez.
+      */
+      if (openedCollectionNotificationRef.current === openKey) {
+        setCollectionOpen(true);
+        return;
+      }
+
+      openedCollectionNotificationRef.current = openKey;
+
+      if (openCollectionCardTimeoutRef.current) {
+        window.clearTimeout(openCollectionCardTimeoutRef.current);
+      }
+
       setAccountOpen(false);
       setCollectionOpen(true);
 
-      window.setTimeout(() => {
+      openCollectionCardTimeoutRef.current = window.setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent("creator-nexus:open-collection-card", {
             detail: {
+              notification_id: notification.id,
+              request_id: openKey,
               card_id: typeof cardId === "string" ? cardId : undefined,
               creator_id: typeof creatorId === "string" ? creatorId : undefined,
               creator_username:
@@ -328,7 +363,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
             },
           })
         );
-      }, 250);
+
+        openCollectionCardTimeoutRef.current = null;
+      }, 300);
 
       return;
     }
@@ -522,7 +559,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
 
       <CollectionModal
         open={collectionOpen}
-        onClose={() => setCollectionOpen(false)}
+        onClose={() => {
+          setCollectionOpen(false);
+
+          if (openCollectionCardTimeoutRef.current) {
+            window.clearTimeout(openCollectionCardTimeoutRef.current);
+            openCollectionCardTimeoutRef.current = null;
+          }
+        }}
       />
     </>
   );
