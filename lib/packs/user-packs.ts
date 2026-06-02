@@ -163,13 +163,7 @@ function getXpEventByRarity(rarity: string): UserXpEventType {
 }
 
 async function getRandomCreatorForPack() {
-  /*
-    Importante:
-    A versão anterior filtrava creators por status = "approved".
-    Se sua tabela creators não tiver essa coluna/valor, nenhum creator era encontrado
-    e o pacote falhava com "Não foi possível abrir o pacote".
-  */
-  const { data: creators, error: creatorsError } = await supabase
+  const { data, error } = await supabase
     .from("creator_profiles")
     .select("id, nickname, username, avatar_url")
     .limit(100);
@@ -184,8 +178,8 @@ async function getRandomCreatorForPack() {
     return null;
   }
 
-  const creators = data as CreatorForPack[];
-  return creators[Math.floor(Math.random() * creators.length)];
+  const creatorList = data as CreatorForPack[];
+  return creatorList[Math.floor(Math.random() * creatorList.length)];
 }
 
 export async function openUserPack(userPackId: string) {
