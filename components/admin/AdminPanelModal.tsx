@@ -29,6 +29,13 @@ type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
+type AdminPackType =
+  | "common_pack"
+  | "rare_pack"
+  | "epic_pack"
+  | "legendary_pack"
+  | "random_pack";
+
 const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "requests", labelKey: "adminRequests", fallback: "Solicitações" },
   { id: "users", labelKey: "adminUsers", fallback: "Usuários" },
@@ -82,6 +89,50 @@ const GRANT_RARITIES: {
   },
 ];
 
+const ADMIN_PACK_TYPES: {
+  id: AdminPackType;
+  labelKey: string;
+  fallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
+}[] = [
+  {
+    id: "random_pack",
+    labelKey: "adminRandomPack",
+    fallback: "Pacote Aleatório",
+    descriptionKey: "adminRandomPackDescription",
+    descriptionFallback: "Sorteia cartas entre todas as raridades.",
+  },
+  {
+    id: "common_pack",
+    labelKey: "adminCommonPack",
+    fallback: "Pacote Comum",
+    descriptionKey: "adminCommonPackDescription",
+    descriptionFallback: "Pacote base com maior chance de cartas comuns.",
+  },
+  {
+    id: "rare_pack",
+    labelKey: "adminRarePack",
+    fallback: "Pacote Raro",
+    descriptionKey: "adminRarePackDescription",
+    descriptionFallback: "Pacote com maior chance de cartas raras.",
+  },
+  {
+    id: "epic_pack",
+    labelKey: "adminEpicPack",
+    fallback: "Pacote Épico",
+    descriptionKey: "adminEpicPackDescription",
+    descriptionFallback: "Pacote com maior chance de cartas épicas.",
+  },
+  {
+    id: "legendary_pack",
+    labelKey: "adminLegendaryPack",
+    fallback: "Pacote Lendário",
+    descriptionKey: "adminLegendaryPackDescription",
+    descriptionFallback: "Pacote premium com chance elevada de carta lendária.",
+  },
+];
+
 const RARITY_LEVEL: Record<Exclude<GrantRarity, "random">, number> = {
   common: 1,
   rare: 2,
@@ -122,6 +173,14 @@ function getGrantRarityLabel(
   if (!rarityOption) return rarity;
 
   return translate(t, rarityOption.labelKey, rarityOption.fallback);
+}
+
+function getAdminPackLabel(packType: AdminPackType | string, t: TranslateFunction) {
+  const packOption = ADMIN_PACK_TYPES.find((item) => item.id === packType);
+
+  if (!packOption) return packType;
+
+  return translate(t, packOption.labelKey, packOption.fallback);
 }
 
 type CreatorRequest = {
@@ -212,6 +271,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [selectedCardUserId, setSelectedCardUserId] = useState("");
   const [selectedGrantRarity, setSelectedGrantRarity] =
     useState<GrantRarity>("common");
+  const [selectedAdminPackType, setSelectedAdminPackType] =
+    useState<AdminPackType>("random_pack");
 
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
     {},
@@ -844,6 +905,97 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     );
   }
 
+  async function grantPackToUser() {
+    if (!selectedCardUserId) {
+      alert(
+        translate(
+          t,
+          "adminSelectPackRecipient",
+          "Selecione o usuário que vai receber o pacote.",
+        ),
+      );
+      return;
+    }
+
+    const selectedUser = users.find((user) => user.id === selectedCardUserId);
+
+    if (!selectedUser) {
+      alert(translate(t, "adminUserNotFound", "Usuário não encontrado."));
+      return;
+    }
+
+    const actionId = `grant-pack-${selectedAdminPackType}-${selectedCardUserId}`;
+    setActionLoading(actionId);
+
+    const { data: pack, error: packError } = await supabase
+      .from("packs")
+      .select("id, name, pack_type")
+      .eq("pack_type", selectedAdminPackType)
+      .eq("is_active", true)
+      .single();
+
+    if (packError || !pack) {
+      setActionLoading(null);
+      alert(
+        packError?.message ||
+          translate(
+            t,
+            "adminPackNotFound",
+            "Pacote não encontrado ou inativo no banco de dados.",
+          ),
+      );
+      return;
+    }
+
+    const { data: userPack, error } = await supabase
+      .from("user_packs")
+      .insert({
+        user_id: selectedCardUserId,
+        pack_id: pack.id,
+        source: "admin_grant",
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "grant_user_pack",
+      targetType: "user_pack",
+      targetId: userPack?.id || pack.id,
+      metadata: {
+        target_user_id: selectedCardUserId,
+        target_user_email: selectedUser.email,
+        pack_id: pack.id,
+        pack_name: pack.name,
+        pack_type: selectedAdminPackType,
+      },
+    });
+
+    setActionLoading(null);
+    await loadLogs();
+
+    alert(
+      translate(
+        t,
+        "adminPackSentSuccess",
+        "Pacote enviado! {pack} foi entregue para {user}.",
+      )
+        .replace("{pack}", getAdminPackLabel(selectedAdminPackType, t))
+        .replace(
+          "{user}",
+          selectedUser.display_name ||
+            selectedUser.username ||
+            selectedUser.email ||
+            translate(t, "user", "Usuário"),
+        ),
+    );
+  }
+
   const filteredUsers = users.filter((user) => {
     const search = userSearch.toLowerCase().trim();
 
@@ -931,6 +1083,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     users.find((user) => user.id === selectedCardUserId) || null;
 
   const grantActionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
+  const grantPackActionId = `grant-pack-${selectedAdminPackType}-${selectedCardUserId}`;
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
@@ -1552,7 +1705,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         {translate(
                           t,
                           "adminManageCardsDescription",
-                          "Escolha uma carta de creator, selecione o usuário e envie uma raridade específica ou aleatória.",
+                          "Escolha uma carta específica ou entregue pacotes de qualquer raridade, incluindo pacote aleatório.",
                         )}
                       </p>
                     </div>
@@ -1827,6 +1980,99 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                <div className="rounded-[28px] border border-purple-300/15 bg-purple-300/[0.04] p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-300/20 bg-purple-300/10 text-purple-100">
+                      <Package size={20} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-black text-white">
+                        {translate(t, "adminSendPackTitle", "Enviar pacote")}
+                      </h3>
+                      <p className="mt-1 text-sm text-white/50">
+                        {translate(
+                          t,
+                          "adminSendPackDescription",
+                          "Selecione um usuário e entregue um pacote comum, raro, épico, lendário ou aleatório.",
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    {ADMIN_PACK_TYPES.map((packOption) => {
+                      const selected = selectedAdminPackType === packOption.id;
+
+                      return (
+                        <button
+                          key={packOption.id}
+                          type="button"
+                          onClick={() => setSelectedAdminPackType(packOption.id)}
+                          className={`rounded-3xl border p-4 text-left transition ${
+                            selected
+                              ? "border-purple-300/60 bg-purple-300/10"
+                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-purple-100">
+                            <Package size={20} />
+                          </div>
+                          <p className="font-black text-white">
+                            {translate(t, packOption.labelKey, packOption.fallback)}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {translate(
+                              t,
+                              packOption.descriptionKey,
+                              packOption.descriptionFallback,
+                            )}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-5 rounded-3xl border border-white/10 bg-black/25 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/35">
+                      {translate(t, "summary", "Resumo")}
+                    </p>
+
+                    <div className="mt-3 space-y-2 text-sm text-white/65">
+                      <p>
+                        {translate(t, "pack", "Pacote")}: {" "}
+                        <span className="font-bold text-white">
+                          {getAdminPackLabel(selectedAdminPackType, t)}
+                        </span>
+                      </p>
+                      <p>
+                        {translate(t, "user", "Usuário")}: {" "}
+                        <span className="font-bold text-white">
+                          {selectedCardUser?.display_name ||
+                            selectedCardUser?.username ||
+                            selectedCardUser?.email ||
+                            translate(
+                              t,
+                              "noneSelectedMasculine",
+                              "Nenhum selecionado",
+                            )}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={grantPackToUser}
+                    disabled={!selectedCardUserId || actionLoading === grantPackActionId}
+                    className="mt-5 w-full rounded-full bg-purple-300 px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {actionLoading === grantPackActionId
+                      ? translate(t, "adminSendingPack", "Enviando pacote...")
+                      : translate(t, "adminSendPackToUser", "Enviar pacote para usuário")}
+                  </button>
                 </div>
               </div>
             )}
