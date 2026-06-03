@@ -143,18 +143,6 @@ function getPlatformLabel(platform: string) {
   return PLATFORM_LABELS[normalizedPlatform] || platform;
 }
 
-function tr(
-  t: unknown,
-  key: string,
-  fallback: string
-) {
-  return translate(
-    t as Parameters<typeof translate>[0],
-    key as Parameters<typeof translate>[1],
-    fallback
-  );
-}
-
 export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const { t } = useLanguage();
 
@@ -291,26 +279,26 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const nickname =
     profile?.nickname ||
     decodedUsername ||
-    tr(t, "creatorProfileFallbackName", "Criador Cardpoc");
+    translate(t, "creatorProfileFallbackName", "Criador Cardpoc");
   const title =
     profile?.title ||
-    tr(t, "creatorProfileDefaultTitle", "Criador de conteúdo");
+    translate(t, "creatorProfileDefaultTitle", "Criador de conteúdo");
   const category =
     profile?.category ||
-    tr(t, "creatorProfileDefaultCategory", "Criador");
+    translate(t, "creatorProfileDefaultCategory", "Criador");
   const faction =
     profile?.faction ||
-    tr(t, "creatorProfileDefaultFaction", "Cardpoc");
+    translate(t, "creatorProfileDefaultFaction", "Cardpoc");
   const bio =
     profile?.bio ||
-    tr(
+    translate(
       t,
       "creatorProfileDefaultBio",
       "Perfil público de criador aprovado no Cardpoc."
     );
   const description =
     profile?.description ||
-    tr(
+    translate(
       t,
       "creatorProfileDefaultDescription",
       "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc."
@@ -327,7 +315,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center">
           <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm text-white/70 shadow-2xl shadow-cyan-500/10">
             <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />
-            {tr(t, "creatorProfileLoading", "Carregando perfil do criador...")}
+            {translate(t, "creatorProfileLoading", "Carregando perfil do criador...")}
           </div>
         </div>
       </main>
@@ -343,7 +331,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
           </div>
 
           <h1 className="mt-6 text-3xl font-black tracking-tight md:text-5xl">
-            {tr(t, "creatorProfileNotFoundTitle", "Criador não encontrado")}
+            {translate(t, "creatorProfileNotFoundTitle", "Criador não encontrado")}
           </h1>
 
           <p className="mt-4 max-w-xl text-sm leading-7 text-white/60 md:text-base">
@@ -359,7 +347,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             className="mt-8 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
           >
             <ArrowLeft className="h-4 w-4" />
-            {tr(t, "creatorProfileBackHome", "Voltar para o Cardpoc")}
+            {translate(t, "creatorProfileBackHome", "Voltar para o Cardpoc")}
           </Link>
         </div>
       </main>
@@ -388,20 +376,20 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 transition hover:border-cyan-300/30 hover:text-cyan-100"
           >
             <ArrowLeft className="h-4 w-4" />
-            {tr(t, "creatorProfileExploreCreators", "Explorar criadores")}
+            {translate(t, "creatorProfileExploreCreators", "Explorar criadores")}
           </Link>
 
           <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100">
-                  {tr(t, "creatorProfilePublicProfile", "Perfil público")}
+                  {translate(t, "creatorProfilePublicProfile", "Perfil público")}
                 </span>
 
                 {profile.is_verified ? (
                   <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-yellow-100">
                     <ShieldCheck className="h-3.5 w-3.5" />
-                    {tr(t, "creatorProfileVerified", "Verificado")}
+                    {translate(t, "creatorProfileVerified", "Verificado")}
                   </span>
                 ) : null}
 
@@ -462,7 +450,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-5">
                   <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-100/80">
-                    {tr(t, "creatorProfileCardLabel", "Carta Cardpoc")}
+                    {translate(t, "creatorProfileCardLabel", "Carta Cardpoc")}
                   </p>
                   <p className="mt-1 text-2xl font-black">{nickname}</p>
                 </div>
@@ -475,7 +463,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
               >
                 <Star className="h-4 w-4" />
-                {tr(t, "creatorProfileViewShareCard", "Ver carta compartilhável")}
+                {translate(t, "creatorProfileViewShareCard", "Ver carta compartilhável")}
               </a>
             </div>
           </div>
@@ -485,21 +473,21 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-3">
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {tr(t, "creatorProfileViews", "Visualizações")}
+            {translate(t, "creatorProfileViews", "Visualizações")}
           </p>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.views)}</p>
         </div>
 
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {tr(t, "creatorProfileFollowers", "Seguidores")}
+            {translate(t, "creatorProfileFollowers", "Seguidores")}
           </p>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.followers)}</p>
         </div>
 
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {tr(t, "creatorProfileShares", "Compartilhamentos")}
+            {translate(t, "creatorProfileShares", "Compartilhamentos")}
           </p>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.shares)}</p>
         </div>
@@ -511,7 +499,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             <div className="flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-cyan-200" />
               <h2 className="text-2xl font-black tracking-tight">
-                {tr(t, "creatorProfileAboutTitle", "Sobre o criador")}
+                {translate(t, "creatorProfileAboutTitle", "Sobre o criador")}
               </h2>
             </div>
 
@@ -524,7 +512,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             <div className="flex items-center gap-3">
               <PlayCircle className="h-5 w-5 text-fuchsia-200" />
               <h2 className="text-2xl font-black tracking-tight">
-                {tr(t, "creatorProfileFeaturedClips", "Clipes em destaque")}
+                {translate(t, "creatorProfileFeaturedClips", "Clipes em destaque")}
               </h2>
             </div>
 
@@ -565,7 +553,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </div>
             ) : (
               <p className="mt-5 text-sm leading-7 text-white/50">
-                {tr(
+                {translate(
                   t,
                   "creatorProfileNoClips",
                   "Este criador ainda não possui clipes públicos em destaque."
@@ -580,7 +568,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             <div className="flex items-center gap-3">
               <Globe2 className="h-5 w-5 text-cyan-200" />
               <h2 className="text-xl font-black tracking-tight">
-                {tr(t, "creatorProfileSocialLinks", "Redes sociais")}
+                {translate(t, "creatorProfileSocialLinks", "Redes sociais")}
               </h2>
             </div>
 
@@ -601,7 +589,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </div>
             ) : (
               <p className="mt-5 text-sm leading-7 text-white/50">
-                {tr(
+                {translate(
                   t,
                   "creatorProfileNoSocialLinks",
                   "As redes sociais deste criador ainda não foram adicionadas."
@@ -614,37 +602,37 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-fuchsia-200" />
               <h2 className="text-xl font-black tracking-tight">
-                {tr(t, "creatorProfileCardStats", "Carta do criador")}
+                {translate(t, "creatorProfileCardStats", "Carta do criador")}
               </h2>
             </div>
 
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
                 <span className="text-white/45">
-                  {tr(t, "creatorProfileCardRarity", "Raridade")}
+                  {translate(t, "creatorProfileCardRarity", "Raridade")}
                 </span>
                 <strong>{getRarityLabel(rarity)}</strong>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
                 <span className="text-white/45">
-                  {tr(t, "creatorProfileCardRank", "Rank")}
+                  {translate(t, "creatorProfileCardRank", "Rank")}
                 </span>
                 <strong>
-                  {card?.rank || tr(t, "creatorProfileDefaultRank", "Bronze")}
+                  {card?.rank || translate(t, "creatorProfileDefaultRank", "Bronze")}
                 </strong>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
                 <span className="text-white/45">
-                  {tr(t, "creatorProfileCardLevel", "Nível")}
+                  {translate(t, "creatorProfileCardLevel", "Nível")}
                 </span>
                 <strong>{card?.level || 1}</strong>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
                 <span className="text-white/45">
-                  {tr(t, "creatorProfileCardPower", "Poder")}
+                  {translate(t, "creatorProfileCardPower", "Poder")}
                 </span>
                 <strong>{formatNumber(card?.power_score || 0)}</strong>
               </div>

@@ -41,14 +41,14 @@ export const translations = {
       "Quando você ganhar cartas, pacotes, badges ou subir de nível, tudo aparecerá aqui.",
 
     closeCollection: "Fechar coleção",
-    collectionTitle: "Suas cartas do Cardpoc",
+    collectionTitle: "Suas cartas do Nexus",
     collectionDescription:
       "Aqui ficam as cartas de criadores conquistadas por follows, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui.",
     total: "Total",
     loadingCollection: "Carregando coleção...",
     emptyCollectionTitle: "Coleção vazia por enquanto",
     emptyCollectionDescription:
-      "Em breve você poderá conquistar cartas seguindo criadores, abrindo pacotes e completando missões dentro do Cardpoc.",
+      "Em breve você poderá conquistar cartas seguindo criadores, abrindo pacotes e completando missões dentro do Creator Nexus.",
 
     card: "Carta",
     creatorCard: "Carta do Criador",
@@ -60,7 +60,7 @@ export const translations = {
     shareCard: "Compartilhar carta",
     copied: "Copiado!",
     shareCardText:
-      "🃏 Eu conquistei a carta {nickname} ({rarity}) no Cardpoc",
+      "🃏 Eu conquistei a carta {nickname} ({rarity}) no Creator Nexus",
 
     close: "Fechar",
     myAccount: "Minha Conta",
@@ -85,13 +85,13 @@ export const translations = {
     logoutConfirmClose: "Fechar confirmação",
 
     profileCardDescription:
-      "Veja seu nível, XP, progresso, badges e atividade dentro do Cardpoc.",
+      "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus.",
     collectionCardDescription:
       "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção.",
     badgesCardDescription:
       "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos.",
     missionsCardDescription:
-      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Cardpoc.",
+      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus.",
     packsCardDescription:
       "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas.",
     requestCreatorProfileDescription:
@@ -110,7 +110,7 @@ export const translations = {
     unlockedAchievement: "conquista desbloqueada",
     firstCard: "Primeira Carta",
     firstCardDescription:
-      "Você conquistou sua primeira carta no Cardpoc.",
+      "Você conquistou sua primeira carta no Nexus.",
     badgesEmptyDescription:
       "Suas badges aparecerão aqui quando você completar objetivos.",
     recentActivity: "Atividade recente",
@@ -277,11 +277,11 @@ export const translations = {
     back: "Voltar",
     collectionDefaultAura: "Aura de Origem",
     collectionDefaultEvolutionStage: "Estágio 1",
-    collectionDefaultFaction: "Cardpoc",
+    collectionDefaultFaction: "Creator Nexus",
     collectionDefaultTitle: "Criador Digital",
     collectionPageBadge: "Minha Coleção",
     collectionPageLoading: "Carregando coleção...",
-    collectionPageTitle: "Suas cartas do Cardpoc",
+    collectionPageTitle: "Suas cartas do Nexus",
     collectionPageDescription:
       "Aqui ficarão todas as cartas de criadores que você conquistar por follows, eventos e recompensas especiais.",
     creatorPopupAvatarPreviewAlt: "Prévia do avatar",
@@ -349,7 +349,7 @@ export const translations = {
     creatorPopupShare: "Compartilhar",
     creatorPopupShareBadge: "Compartilhar Perfil",
     creatorPopupShareDescriptionPrefix: "Compartilhe o perfil de",
-    creatorPopupShareDescriptionSuffix: "usando o link com preview do Cardpoc.",
+    creatorPopupShareDescriptionSuffix: "usando o link com preview do Creator Nexus.",
     creatorPopupShares: "Compartilhamentos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link do",
     creatorPopupSocialLinksDescription: "Adicione os links oficiais do criador.",
@@ -415,7 +415,7 @@ export const translations = {
     missionsModalNotificationMessage: "Sua recompensa foi adicionada à sua conta.",
     missionsModalBadge: "Missões",
     missionsModalTitle: "Central de Missões",
-    missionsModalDescription: "Complete missões para ganhar recompensas e evoluir sua presença no Cardpoc.",
+    missionsModalDescription: "Complete missões para ganhar recompensas e evoluir sua presença no Nexus.",
     missionsModalProgressLabel: "Progresso",
     missionsModalLoading: "Carregando missões...",
     missionsModalEmpty: "Nenhuma missão disponível no momento.",
@@ -434,12 +434,12 @@ export const translations = {
     packsModalLoading: "Carregando packs...",
     packsModalSearching: "Buscando seus packs...",
     packsModalEmpty: "Você ainda não possui packs disponíveis.",
-    packsModalDefaultPackName: "Pack Cardpoc",
+    packsModalDefaultPackName: "Pack Nexus",
     packsModalDefaultPackDescription: "Um pack especial com cartas de criadores.",
     packsModalOriginLabel: "Origem",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
-    packsModalDefaultNexusPack: "Pack Cardpoc",
+    packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Escolha um pack",
     packsModalIdleDescription: "Selecione um pack do seu inventário para iniciar a abertura.",
     packsModalDuplicateCard: "Carta duplicada",
@@ -485,7 +485,7 @@ export const translations = {
     creatorPopupPlatformKick: "Kick",
     missionFirstFollowTitle: "Primeiro follow",
     missionBeginnerCollectorTitle: "Colecionador iniciante",
-    missionSocialNexusTitle: "Social Cardpoc",
+    missionSocialNexusTitle: "Social Nexus",
     missionCardHunterTitle: "Caçador de cartas",
     missionFirstFollowDescription: "Siga seu primeiro criador.",
     missionBeginnerCollectorDescription: "Conquiste 3 cartas.",
@@ -536,6 +536,36 @@ export const translations = {
     adminSendingReward: "Enviando...",
     adminSendGiveaway: "Enviar giveaway",
     adminSendReward: "Enviar",
+
+    creatorProfileFallbackName: "Criador Cardpoc",
+    creatorProfileDefaultTitle: "Criador de conteúdo",
+    creatorProfileDefaultCategory: "Criador",
+    creatorProfileDefaultFaction: "Cardpoc",
+    creatorProfileDefaultBio: "Perfil público de criador aprovado no Cardpoc.",
+    creatorProfileDefaultDescription: "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc.",
+    creatorProfileLoading: "Carregando perfil do criador...",
+    creatorProfileNotFoundTitle: "Criador não encontrado",
+    creatorProfileNotFoundDescription: "Este perfil ainda não está público ou não existe no Cardpoc.",
+    creatorProfileBackHome: "Voltar para o Cardpoc",
+    creatorProfileExploreCreators: "Explorar criadores",
+    creatorProfilePublicProfile: "Perfil público",
+    creatorProfileVerified: "Verificado",
+    creatorProfileCardLabel: "Carta Cardpoc",
+    creatorProfileViewShareCard: "Ver carta compartilhável",
+    creatorProfileViews: "Visualizações",
+    creatorProfileFollowers: "Seguidores",
+    creatorProfileShares: "Compartilhamentos",
+    creatorProfileAboutTitle: "Sobre o criador",
+    creatorProfileFeaturedClips: "Clipes em destaque",
+    creatorProfileNoClips: "Este criador ainda não possui clipes públicos em destaque.",
+    creatorProfileSocialLinks: "Redes sociais",
+    creatorProfileNoSocialLinks: "As redes sociais deste criador ainda não foram adicionadas.",
+    creatorProfileCardStats: "Carta do criador",
+    creatorProfileCardRarity: "Raridade",
+    creatorProfileCardRank: "Rank",
+    creatorProfileCardLevel: "Nível",
+    creatorProfileCardPower: "Poder",
+    creatorProfileDefaultRank: "Bronze",
     type: "Tipo",
     quantity: "Quantidade",
     recipient: "Destinatário",
@@ -583,14 +613,14 @@ export const translations = {
       "When you earn cards, packs, badges, or level up, everything will appear here.",
 
     closeCollection: "Close collection",
-    collectionTitle: "Your Cardpoc cards",
+    collectionTitle: "Your Nexus cards",
     collectionDescription:
       "Here are the creator cards you earned through follows, packs, missions, and events. Card notifications can open a specific card directly here.",
     total: "Total",
     loadingCollection: "Loading collection...",
     emptyCollectionTitle: "Your collection is empty for now",
     emptyCollectionDescription:
-      "Soon you will be able to earn cards by following creators, opening packs, and completing missions inside Cardpoc.",
+      "Soon you will be able to earn cards by following creators, opening packs, and completing missions inside Creator Nexus.",
 
     card: "Card",
     creatorCard: "Creator Card",
@@ -602,7 +632,7 @@ export const translations = {
     shareCard: "Share card",
     copied: "Copied!",
     shareCardText:
-      "🃏 I earned the {nickname} card ({rarity}) on Cardpoc",
+      "🃏 I earned the {nickname} card ({rarity}) on Creator Nexus",
 
     close: "Close",
     myAccount: "My Account",
@@ -627,13 +657,13 @@ export const translations = {
     logoutConfirmClose: "Close confirmation",
 
     profileCardDescription:
-      "View your level, XP, progress, badges, and activity inside Cardpoc.",
+      "View your level, XP, progress, badges, and activity inside Creator Nexus.",
     collectionCardDescription:
       "Access your collected cards, rarities, favorite creators, and collection progress.",
     badgesCardDescription:
       "Special achievements for following creators, sharing profiles, and completing goals.",
     missionsCardDescription:
-      "Complete challenges to earn packs, special cards, and Cardpoc rewards.",
+      "Complete challenges to earn packs, special cards, and Nexus rewards.",
     packsCardDescription:
       "Open daily packs, mission packs, and event packs to unlock new cards.",
     requestCreatorProfileDescription:
@@ -652,7 +682,7 @@ export const translations = {
     unlockedAchievement: "unlocked achievement",
     firstCard: "First Card",
     firstCardDescription:
-      "You earned your first card in Cardpoc.",
+      "You earned your first card in the Nexus.",
     badgesEmptyDescription:
       "Your badges will appear here when you complete objectives.",
     recentActivity: "Recent activity",
@@ -819,11 +849,11 @@ export const translations = {
     back: "Back",
     collectionDefaultAura: "Origin Aura",
     collectionDefaultEvolutionStage: "Stage 1",
-    collectionDefaultFaction: "Cardpoc",
+    collectionDefaultFaction: "Creator Nexus",
     collectionDefaultTitle: "Digital Creator",
     collectionPageBadge: "My Collection",
     collectionPageLoading: "Loading collection...",
-    collectionPageTitle: "Your Cardpoc cards",
+    collectionPageTitle: "Your Nexus cards",
     collectionPageDescription:
       "All creator cards you earn through follows, events, and special rewards will appear here.",
     creatorPopupAvatarPreviewAlt: "Avatar preview",
@@ -891,7 +921,7 @@ export const translations = {
     creatorPopupShare: "Share",
     creatorPopupShareBadge: "Share Profile",
     creatorPopupShareDescriptionPrefix: "Share the profile of",
-    creatorPopupShareDescriptionSuffix: "using the Cardpoc preview link.",
+    creatorPopupShareDescriptionSuffix: "using the Creator Nexus preview link.",
     creatorPopupShares: "Shares",
     creatorPopupSocialLinkPlaceholderPrefix: "Link to",
     creatorPopupSocialLinksDescription: "Add the creator's official links.",
@@ -957,7 +987,7 @@ export const translations = {
     missionsModalNotificationMessage: "Your reward has been added to your account.",
     missionsModalBadge: "Missions",
     missionsModalTitle: "Mission Center",
-    missionsModalDescription: "Complete missions to earn rewards and evolve your presence in Cardpoc.",
+    missionsModalDescription: "Complete missions to earn rewards and evolve your presence in the Nexus.",
     missionsModalProgressLabel: "Progress",
     missionsModalLoading: "Loading missions...",
     missionsModalEmpty: "No missions available right now.",
@@ -976,12 +1006,12 @@ export const translations = {
     packsModalLoading: "Loading packs...",
     packsModalSearching: "Searching your packs...",
     packsModalEmpty: "You do not have any packs available yet.",
-    packsModalDefaultPackName: "Cardpoc Pack",
+    packsModalDefaultPackName: "Nexus Pack",
     packsModalDefaultPackDescription: "A special pack with creator cards.",
     packsModalOriginLabel: "Origin",
     packsModalSystemSource: "System",
     packsModalOpenPackButton: "Open pack",
-    packsModalDefaultNexusPack: "Cardpoc Pack",
+    packsModalDefaultNexusPack: "Nexus Pack",
     packsModalIdleTitle: "Choose a pack",
     packsModalIdleDescription: "Select a pack from your inventory to start opening it.",
     packsModalDuplicateCard: "Duplicate card",
@@ -1027,7 +1057,7 @@ export const translations = {
     creatorPopupPlatformKick: "Kick",
     missionFirstFollowTitle: "First follow",
     missionBeginnerCollectorTitle: "Beginner collector",
-    missionSocialNexusTitle: "Social Cardpoc",
+    missionSocialNexusTitle: "Social Nexus",
     missionCardHunterTitle: "Card hunter",
     missionFirstFollowDescription: "Follow your first creator.",
     missionBeginnerCollectorDescription: "Collect 3 cards.",
@@ -1125,14 +1155,14 @@ export const translations = {
       "Cuando ganes cartas, paquetes, insignias o subas de nivel, todo aparecerá aquí.",
 
     closeCollection: "Cerrar colección",
-    collectionTitle: "Tus cartas de Cardpoc",
+    collectionTitle: "Tus cartas del Nexus",
     collectionDescription:
       "Aquí están las cartas de creadores que ganaste mediante follows, paquetes, misiones y eventos. Las notificaciones de carta pueden abrir una carta específica directamente aquí.",
     total: "Total",
     loadingCollection: "Cargando colección...",
     emptyCollectionTitle: "Tu colección está vacía por ahora",
     emptyCollectionDescription:
-      "Pronto podrás ganar cartas siguiendo creadores, abriendo paquetes y completando misiones dentro de Cardpoc.",
+      "Pronto podrás ganar cartas siguiendo creadores, abriendo paquetes y completando misiones dentro de Creator Nexus.",
 
     card: "Carta",
     creatorCard: "Carta del Creador",
@@ -1144,7 +1174,7 @@ export const translations = {
     shareCard: "Compartir carta",
     copied: "¡Copiado!",
     shareCardText:
-      "🃏 Conseguí la carta {nickname} ({rarity}) en Cardpoc",
+      "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
 
     close: "Cerrar",
     myAccount: "Mi Cuenta",
@@ -1169,13 +1199,13 @@ export const translations = {
     logoutConfirmClose: "Cerrar confirmación",
 
     profileCardDescription:
-      "Consulta tu nivel, XP, progreso, insignias y actividad dentro de Cardpoc.",
+      "Consulta tu nivel, XP, progreso, insignias y actividad dentro de Creator Nexus.",
     collectionCardDescription:
       "Accede a tus cartas obtenidas, rarezas, creadores favoritos y progreso de colección.",
     badgesCardDescription:
       "Logros especiales por seguir creadores, compartir perfiles y completar objetivos.",
     missionsCardDescription:
-      "Completa desafíos para ganar paquetes, cartas especiales y recompensas de Cardpoc.",
+      "Completa desafíos para ganar paquetes, cartas especiales y recompensas del Nexus.",
     packsCardDescription:
       "Abre paquetes diarios, paquetes de misión y eventos para desbloquear nuevas cartas.",
     requestCreatorProfileDescription:
@@ -1194,7 +1224,7 @@ export const translations = {
     unlockedAchievement: "logro desbloqueado",
     firstCard: "Primera Carta",
     firstCardDescription:
-      "Conseguiste tu primera carta en Cardpoc.",
+      "Conseguiste tu primera carta en el Nexus.",
     badgesEmptyDescription:
       "Tus insignias aparecerán aquí cuando completes objetivos.",
     recentActivity: "Actividad reciente",
@@ -1361,11 +1391,11 @@ export const translations = {
     back: "Volver",
     collectionDefaultAura: "Aura de Origen",
     collectionDefaultEvolutionStage: "Etapa 1",
-    collectionDefaultFaction: "Cardpoc",
+    collectionDefaultFaction: "Creator Nexus",
     collectionDefaultTitle: "Creador Digital",
     collectionPageBadge: "Mi Colección",
     collectionPageLoading: "Cargando colección...",
-    collectionPageTitle: "Tus cartas de Cardpoc",
+    collectionPageTitle: "Tus cartas del Nexus",
     collectionPageDescription:
       "Aquí aparecerán todas las cartas de creadores que conquistes por follows, eventos y recompensas especiales.",
     creatorPopupAvatarPreviewAlt: "Vista previa del avatar",
@@ -1433,7 +1463,7 @@ export const translations = {
     creatorPopupShare: "Compartir",
     creatorPopupShareBadge: "Compartir Perfil",
     creatorPopupShareDescriptionPrefix: "Comparte el perfil de",
-    creatorPopupShareDescriptionSuffix: "usando el link con vista previa de Cardpoc.",
+    creatorPopupShareDescriptionSuffix: "usando el link con vista previa de Creator Nexus.",
     creatorPopupShares: "Compartidos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link de",
     creatorPopupSocialLinksDescription: "Agrega los links oficiales del creador.",
@@ -1499,7 +1529,7 @@ export const translations = {
     missionsModalNotificationMessage: "Tu recompensa fue agregada a tu cuenta.",
     missionsModalBadge: "Misiones",
     missionsModalTitle: "Centro de Misiones",
-    missionsModalDescription: "Completa misiones para ganar recompensas y evolucionar tu presencia en Cardpoc.",
+    missionsModalDescription: "Completa misiones para ganar recompensas y evolucionar tu presencia en Nexus.",
     missionsModalProgressLabel: "Progreso",
     missionsModalLoading: "Cargando misiones...",
     missionsModalEmpty: "No hay misiones disponibles en este momento.",
@@ -1518,12 +1548,12 @@ export const translations = {
     packsModalLoading: "Cargando packs...",
     packsModalSearching: "Buscando tus packs...",
     packsModalEmpty: "Todavía no tienes packs disponibles.",
-    packsModalDefaultPackName: "Pack Cardpoc",
+    packsModalDefaultPackName: "Pack Nexus",
     packsModalDefaultPackDescription: "Un pack especial con cartas de creadores.",
     packsModalOriginLabel: "Origen",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
-    packsModalDefaultNexusPack: "Pack Cardpoc",
+    packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Elige un pack",
     packsModalIdleDescription: "Selecciona un pack de tu inventario para iniciar la apertura.",
     packsModalDuplicateCard: "Carta duplicada",
@@ -1569,7 +1599,7 @@ export const translations = {
     creatorPopupPlatformKick: "Kick",
     missionFirstFollowTitle: "Primer follow",
     missionBeginnerCollectorTitle: "Coleccionista principiante",
-    missionSocialNexusTitle: "Social Cardpoc",
+    missionSocialNexusTitle: "Social Nexus",
     missionCardHunterTitle: "Cazador de cartas",
     missionFirstFollowDescription: "Sigue a tu primer creador.",
     missionBeginnerCollectorDescription: "Consigue 3 cartas.",
