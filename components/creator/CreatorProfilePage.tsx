@@ -303,14 +303,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     tr(t, "creatorProfileDefaultFaction", "Cardpoc");
   const bio =
     profile?.bio ||
-    translate(
+    tr(
       t,
       "creatorProfileDefaultBio",
       "Perfil público de criador aprovado no Cardpoc."
     );
   const description =
     profile?.description ||
-    translate(
+    tr(
       t,
       "creatorProfileDefaultDescription",
       "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc."
@@ -565,7 +565,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </div>
             ) : (
               <p className="mt-5 text-sm leading-7 text-white/50">
-                {translate(
+                {tr(
                   t,
                   "creatorProfileNoClips",
                   "Este criador ainda não possui clipes públicos em destaque."
@@ -601,7 +601,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </div>
             ) : (
               <p className="mt-5 text-sm leading-7 text-white/50">
-                {translate(
+                {tr(
                   t,
                   "creatorProfileNoSocialLinks",
                   "As redes sociais deste criador ainda não foram adicionadas."
