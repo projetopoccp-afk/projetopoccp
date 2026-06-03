@@ -153,6 +153,54 @@ function getPlatformFallbackUrl(platform: string, username: string) {
 
 const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
+const CREATOR_LEVEL_SCORE_STEP = 250;
+const CREATOR_LEVEL_MAX = 999;
+
+function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
+  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+
+  const twitchFollowers = twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
+  const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
+  const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
+
+  return twitchFollowers + kickFollowers + youtubeSubscribers;
+}
+
+function calculateCreatorCardProgress({
+  views,
+  followers,
+  shares,
+  externalReach,
+}: {
+  views: number;
+  followers: number;
+  shares: number;
+  externalReach: number;
+}) {
+  const safeViews = Math.max(0, Math.floor(views || 0));
+  const safeFollowers = Math.max(0, Math.floor(followers || 0));
+  const safeShares = Math.max(0, Math.floor(shares || 0));
+  const safeExternalReach = Math.max(0, Math.floor(externalReach || 0));
+
+  const powerScore =
+    safeViews +
+    safeFollowers * 100 +
+    safeShares * 50 +
+    Math.floor(safeExternalReach / 100);
+
+  const level = Math.min(
+    CREATOR_LEVEL_MAX,
+    Math.max(1, Math.floor(powerScore / CREATOR_LEVEL_SCORE_STEP) + 1)
+  );
+
+  return {
+    powerScore,
+    level,
+  };
+}
+
 
 type NotificationType =
   | "card_unlocked"
@@ -275,6 +323,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [youtubeChannels, setYoutubeChannels] = useState<string[]>([""]);
   const [clips, setClips] = useState<AutoClip[]>([]);
   const [clipsLoading, setClipsLoading] = useState(false);
+  const [creatorCardLevel, setCreatorCardLevel] = useState(creator?.level || 1);
+  const [syncedCardProgressKey, setSyncedCardProgressKey] = useState("");
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -326,6 +376,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setClaimUrl("");
     setShareOpen(false);
     setLiveStatus({});
+    setCreatorCardLevel(creator.level || 1);
+    setSyncedCardProgressKey("");
 
     setNickname(creator.nickname);
     setTitle(creator.title || "");
@@ -569,6 +621,77 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       cancelled = true;
     };
   }, [creator, socials.twitch, socials.kick, youtubeChannels]);
+
+  useEffect(() => {
+    if (!creator) return;
+
+    const twitchUsername = extractPlatformUsername("twitch", socials.twitch || "");
+    const kickUsername = extractPlatformUsername("kick", socials.kick || "");
+    const hasYoutubeChannels = youtubeChannels.some((url) => url.trim().length > 0);
+    const hasExternalTargets = Boolean(twitchUsername || kickUsername || hasYoutubeChannels);
+
+    if (hasExternalTargets && Object.keys(liveStatus).length === 0) {
+      return;
+    }
+
+    if (liveStatusLoading) {
+      return;
+    }
+
+    const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
+    const { powerScore, level } = calculateCreatorCardProgress({
+      views: viewCount,
+      followers: followerCount,
+      shares: shareCount,
+      externalReach,
+    });
+
+    setCreatorCardLevel(level);
+
+    const progressKey = `${creator.id}:${powerScore}:${level}`;
+
+    if (syncedCardProgressKey === progressKey) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncCreatorCardProgress() {
+      const { error } = await supabase
+        .from("creator_cards")
+        .update({
+          power_score: powerScore,
+          level,
+        })
+        .eq("creator_id", creator.id);
+
+      if (error) {
+        console.error("Erro ao atualizar level da carta do criador:", error);
+        return;
+      }
+
+      if (!cancelled) {
+        setSyncedCardProgressKey(progressKey);
+      }
+    }
+
+    syncCreatorCardProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    creator,
+    viewCount,
+    followerCount,
+    shareCount,
+    liveStatus,
+    liveStatusLoading,
+    socials.twitch,
+    socials.kick,
+    youtubeChannels,
+    syncedCardProgressKey,
+  ]);
 
   useEffect(() => {
     if (!creator) {
@@ -1096,7 +1219,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             </div>
 
             <div className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1 text-xs text-cyan-100 backdrop-blur">
-              {translate(t, "creatorPopupLevelPrefix", "Lv.")} {creator.level}
+              {translate(t, "creatorPopupLevelPrefix", "Lv.")} {creatorCardLevel}
             </div>
 
             <div className="absolute bottom-6 left-6 right-6">
