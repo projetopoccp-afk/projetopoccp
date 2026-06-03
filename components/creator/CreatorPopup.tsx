@@ -391,19 +391,21 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     async function loadCreatorData() {
       if (!creator) return;
 
+      const creatorId = creator.id;
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       const viewerId = user?.id || null;
 
-      const viewKey = `creator-view:${creator.id}:${viewerId || "guest"}`;
+      const viewKey = `creator-view:${creatorId}:${viewerId || "guest"}`;
       const lastViewAt = Number(localStorage.getItem(viewKey) || 0);
       const now = Date.now();
 
       if (!lastViewAt || now - lastViewAt > VIEW_INTERVAL_MS) {
         const { error: viewError } = await supabase.from("creator_views").insert({
-          creator_id: creator.id,
+          creator_id: creatorId,
           viewer_id: viewerId,
         });
 
@@ -425,7 +427,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       const { data: creatorStats } = await supabase
         .from("creator_profiles")
         .select("share_count")
-        .eq("id", creator.id)
+        .eq("id", creatorId)
         .maybeSingle();
 
       setViewCount(views || 0);
@@ -436,7 +438,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         const { data: followData } = await supabase
           .from("creator_followers")
           .select("id")
-          .eq("creator_id", creator.id)
+          .eq("creator_id", creatorId)
           .eq("user_id", viewerId)
           .maybeSingle();
 
@@ -650,7 +652,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     setCreatorCardLevel(level);
 
-    const progressKey = `${creator.id}:${powerScore}:${level}`;
+    const progressKey = `${creatorId}:${powerScore}:${level}`;
 
     if (syncedCardProgressKey === progressKey) {
       return;
@@ -847,7 +849,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           userId: user.id,
           eventType: "share_profile",
           metadata: {
-            creator_id: creator.id,
+            creator_id: creatorId,
             creator_username: creator.username,
             creator_nickname: creator.nickname,
             shared_at: new Date().toISOString(),
@@ -855,7 +857,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         });
 
         await updateMissionProgress("share_profile", 1, {
-          creator_id: creator.id,
+          creator_id: creatorId,
           creator_username: creator.username,
           creator_nickname: creator.nickname,
         });
@@ -887,7 +889,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       const { error } = await supabase
         .from("creator_followers")
         .delete()
-        .eq("creator_id", creator.id)
+        .eq("creator_id", creatorId)
         .eq("user_id", user.id);
 
       if (error) {
@@ -903,7 +905,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     }
 
     const { error } = await supabase.from("creator_followers").insert({
-      creator_id: creator.id,
+      creator_id: creatorId,
       user_id: user.id,
     });
 
@@ -914,7 +916,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     }
 
     const followAlreadyRewarded = await hasXpEvent(user.id, "follow_creator", {
-      creator_id: creator.id,
+      creator_id: creatorId,
     });
 
     if (!followAlreadyRewarded) {
@@ -922,7 +924,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         userId: user.id,
         eventType: "follow_creator",
         metadata: {
-          creator_id: creator.id,
+          creator_id: creatorId,
           creator_username: creator.username,
           creator_nickname: creator.nickname,
         },
@@ -934,7 +936,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         title: `${translate(t, "creatorPopupFollowNotificationPrefix", "Você seguiu")} ${creator.nickname}`,
         message: translate(t, "creatorPopupFollowXpMessage", "Você ganhou XP por seguir um creator."),
         metadata: {
-          creator_id: creator.id,
+          creator_id: creatorId,
           creator_username: creator.username,
           creator_nickname: creator.nickname,
         },
@@ -945,7 +947,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     console.log("MISSÃO FOLLOW: follow salvo, atualizando progresso");
 
     await updateMissionProgress("follow_creator", 1, {
-      creator_id: creator.id,
+      creator_id: creatorId,
       creator_username: creator.username,
       creator_nickname: creator.nickname,
     });
@@ -953,7 +955,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     const { data: existingCard } = await supabase
       .from("user_cards")
       .select("id")
-      .eq("creator_id", creator.id)
+      .eq("creator_id", creatorId)
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -961,7 +963,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       const { data: newCard, error: cardError } = await supabase
         .from("user_cards")
         .insert({
-          creator_id: creator.id,
+          creator_id: creatorId,
           user_id: user.id,
           rarity: "common",
           source: "follow",
@@ -976,7 +978,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           userId: user.id,
           eventType: "collect_common_card",
           metadata: {
-            creator_id: creator.id,
+            creator_id: creatorId,
             creator_username: creator.username,
             creator_nickname: creator.nickname,
             card_id: newCard.id,
@@ -991,7 +993,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           title: "Nova carta conquistada!",
           message: `${translate(t, "creatorPopupCardNotificationPrefix", "Você ganhou a carta de")} ${creator.nickname}.`,
           metadata: {
-            creator_id: creator.id,
+            creator_id: creatorId,
             creator_username: creator.username,
             creator_nickname: creator.nickname,
             card_id: newCard.id,
@@ -1001,7 +1003,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         });
 
         await updateMissionProgress("collect_card", 1, {
-          creator_id: creator.id,
+          creator_id: creatorId,
           creator_username: creator.username,
           creator_nickname: creator.nickname,
           card_id: newCard.id,
@@ -1076,7 +1078,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         tags,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", creator.id);
+      .eq("id", creatorId);
 
     if (profileError) {
       setSaving(false);
@@ -1090,7 +1092,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       ...Object.entries(socials)
         .filter(([platform, url]) => platform !== "youtube" && url.trim().length > 0)
         .map(([platform, url]) => ({
-          creator_id: creator.id,
+          creator_id: creatorId,
           platform,
           url,
         })),
@@ -1098,7 +1100,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         .map((url) => url.trim())
         .filter(Boolean)
         .map((url) => ({
-          creator_id: creator.id,
+          creator_id: creatorId,
           platform: "youtube",
           url,
         })),
@@ -1135,7 +1137,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setClaimSending(true);
 
     const { error } = await supabase.from("creator_claims").insert({
-      creator_id: creator.id,
+      creator_id: creatorId,
       user_id: currentUserId,
       verification_platform: claimPlatform,
       verification_url: claimUrl,
