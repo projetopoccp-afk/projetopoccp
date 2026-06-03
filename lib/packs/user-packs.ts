@@ -48,6 +48,16 @@ type CreatorForPack = {
 };
 
 export async function getUserPacks() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("Erro ao buscar usuário para listar pacotes:", userError);
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("user_packs")
     .select(
@@ -64,6 +74,7 @@ export async function getUserPacks() {
       )
     `,
     )
+    .eq("user_id", user.id)
     .is("opened_at", null)
     .order("created_at", { ascending: false });
 
@@ -263,7 +274,7 @@ export async function openUserPack(userPackId: string) {
     .eq("id", userPackId)
     .eq("user_id", user.id)
     .is("opened_at", null)
-    .single();
+    .maybeSingle();
 
   if (userPackError || !userPack) {
     console.error("Erro ao buscar pacote do usuário:", userPackError);
