@@ -928,6 +928,15 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         });
 
         if (error) {
+          const isDuplicateCardError =
+            error.code === "23505" ||
+            error.message.toLowerCase().includes("duplicate key") ||
+            error.message.toLowerCase().includes("user_cards_unique");
+
+          if (isDuplicateCardError) {
+            continue;
+          }
+
           setActionLoading(null);
           alert(error.message);
           return;
@@ -1014,23 +1023,26 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       return;
     }
 
-    const rows = targetUsers.flatMap((targetUser) =>
-      Array.from({ length: quantity }, () => ({
-        user_id: targetUser.id,
-        pack_id: pack.id,
-        source: adminRewardTarget === "all_users" ? "admin_giveaway" : "admin_grant",
-      })),
-    );
+    const grantedPackIds: string[] = [];
 
-    const { data: userPacks, error } = await supabase
-      .from("user_packs")
-      .insert(rows)
-      .select("id");
+    for (const targetUser of targetUsers) {
+      for (let index = 0; index < quantity; index += 1) {
+        const { data: grantedPackId, error } = await supabase.rpc("grant_user_pack", {
+          p_target_user_id: targetUser.id,
+          p_pack_id: pack.id,
+          p_source: adminRewardTarget === "all_users" ? "admin_giveaway" : "admin_grant",
+        });
 
-    if (error) {
-      setActionLoading(null);
-      alert(error.message);
-      return;
+        if (error) {
+          setActionLoading(null);
+          alert(error.message);
+          return;
+        }
+
+        if (grantedPackId) {
+          grantedPackIds.push(String(grantedPackId));
+        }
+      }
     }
 
     await createAdminLog({
@@ -1039,7 +1051,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       targetId:
         adminRewardTarget === "all_users"
           ? null
-          : userPacks?.[0]?.id || pack.id,
+          : grantedPackIds[0] || pack.id,
       metadata: {
         target_user_id: adminRewardTarget === "user" ? selectedCardUserId : null,
         target_user_email: adminRewardTarget === "user" ? targetUsers[0]?.email : null,
