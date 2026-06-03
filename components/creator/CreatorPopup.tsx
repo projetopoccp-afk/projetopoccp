@@ -1785,7 +1785,7 @@ function ViewPanel({
       <div className="mt-8 pb-10">
         <h4 className="font-bold">{translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}</h4>
 
-        <div className="mt-3 flex flex-wrap gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           {Object.entries(socials)
             .filter(([, url]) => url.trim().length > 0)
             .map(([platform, url]) => {
@@ -1800,31 +1800,31 @@ function ViewPanel({
                   href={platformUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className={`rounded-2xl border px-4 py-3 text-sm transition hover:scale-105 ${
+                  className={`flex h-[104px] min-w-0 flex-col justify-center rounded-2xl border px-4 py-3 text-sm transition hover:scale-105 ${
                     isPlatformLive
                       ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
                       : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
                   }`}
                 >
-                  <span className="block font-bold uppercase tracking-[0.18em]">
+                  <span className="block truncate font-bold uppercase tracking-[0.18em]">
                     {platform}
                   </span>
 
-                  {isTwitch && (
-                    <span className="mt-1 block text-xs text-white/55">
-                      {liveStatusLoading && !platformLiveStatus
+                  <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
+                    {isTwitch
+                      ? liveStatusLoading && !platformLiveStatus
                         ? "Checking live..."
                         : isPlatformLive
                           ? `LIVE • ${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
-                          : "Offline"}
-                    </span>
-                  )}
+                          : "Offline"
+                      : " "}
+                  </span>
 
-                  {isTwitch && isPlatformLive && platformLiveStatus?.gameName && (
-                    <span className="mt-1 block max-w-[180px] truncate text-xs text-white/40">
-                      {platformLiveStatus.gameName}
-                    </span>
-                  )}
+                  <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
+                    {isTwitch && isPlatformLive && platformLiveStatus?.gameName
+                      ? platformLiveStatus.gameName
+                      : " "}
+                  </span>
                 </a>
               );
             })}
