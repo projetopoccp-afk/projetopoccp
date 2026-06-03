@@ -198,6 +198,161 @@ async function getKickLiveStatus(
   };
 }
 
+function normalizeYouTubeUsername(username: string) {
+  const value = username.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  if (!value.startsWith("http")) {
+    return value
+      .replace(/^@/, "")
+      .replace(/^youtube\.com\//i, "")
+      .replace(/^www\.youtube\.com\//i, "")
+      .replace(/^c\//i, "")
+      .replace(/^channel\//i, "")
+      .replace(/^user\//i, "")
+      .replace(/^@/, "")
+      .split("?")[0]
+      .split("/")[0]
+      .trim();
+  }
+
+  try {
+    const url = new URL(value);
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    if (pathParts[0] === "channel" && pathParts[1]) {
+      return pathParts[1];
+    }
+
+    if ((pathParts[0] === "c" || pathParts[0] === "user") && pathParts[1]) {
+      return pathParts[1].replace(/^@/, "");
+    }
+
+    if (pathParts[0]) {
+      return pathParts[0].replace(/^@/, "");
+    }
+
+    return "";
+  } catch {
+    return value.replace(/^@/, "");
+  }
+}
+
+function getYouTubeFallbackUrl(username: string) {
+  const cleanUsername = normalizeYouTubeUsername(username);
+
+  if (!cleanUsername) {
+    return "https://www.youtube.com";
+  }
+
+  if (cleanUsername.startsWith("UC")) {
+    return `https://www.youtube.com/channel/${cleanUsername}`;
+  }
+
+  return `https://www.youtube.com/${cleanUsername}`;
+}
+
+async function fetchYouTubeChannelByHandle(username: string, apiKey: string) {
+  const cleanUsername = normalizeYouTubeUsername(username);
+
+  if (!cleanUsername || cleanUsername.startsWith("UC")) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    part: "snippet,statistics",
+    forHandle: cleanUsername,
+    key: apiKey,
+  });
+
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?${params.toString()}`,
+    {
+      next: {
+        revalidate: 3600,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Erro YouTube forHandle:", data);
+    throw new Error("Erro ao buscar dados do YouTube por handle");
+  }
+
+  return data.items?.[0] ?? null;
+}
+
+async function fetchYouTubeChannelById(channelId: string, apiKey: string) {
+  const params = new URLSearchParams({
+    part: "snippet,statistics",
+    id: channelId,
+    key: apiKey,
+  });
+
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?${params.toString()}`,
+    {
+      next: {
+        revalidate: 3600,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Erro YouTube channelId:", data);
+    throw new Error("Erro ao buscar dados do YouTube por channelId");
+  }
+
+  return data.items?.[0] ?? null;
+}
+
+async function searchYouTubeChannel(username: string, apiKey: string) {
+  const cleanUsername = normalizeYouTubeUsername(username);
+
+  if (!cleanUsername) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    part: "snippet",
+    type: "channel",
+    maxResults: "1",
+    q: cleanUsername,
+    key: apiKey,
+  });
+
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?${params.toString()}`,
+    {
+      next: {
+        revalidate: 3600,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Erro YouTube search:", data);
+    throw new Error("Erro ao pesquisar canal no YouTube");
+  }
+
+  const channelId = data.items?.[0]?.snippet?.channelId;
+
+  if (!channelId) {
+    return null;
+  }
+
+  return fetchYouTubeChannelById(channelId, apiKey);
+}
+
 async function getYouTubeChannelStatus(
   username: string
 ): Promise<LiveStatusResponse> {
@@ -207,31 +362,21 @@ async function getYouTubeChannelStatus(
     throw new Error("YOUTUBE_API_KEY não configurada");
   }
 
-  const cleanUsername = username.replace("@", "");
+  const cleanUsername = normalizeYouTubeUsername(username);
 
-  const params = new URLSearchParams({
-    part: "snippet,statistics",
-    forHandle: cleanUsername,
-    key: apiKey,
-  });
+  let channel = null;
 
-  const youtubeResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/channels?${params.toString()}`,
-    {
-      next: {
-        revalidate: 3600,
-      },
-    }
-  );
-
-  const youtubeData = await youtubeResponse.json();
-
-  if (!youtubeResponse.ok) {
-    console.error("Erro YouTube:", youtubeData);
-    throw new Error("Erro ao buscar dados do YouTube");
+  if (cleanUsername.startsWith("UC")) {
+    channel = await fetchYouTubeChannelById(cleanUsername, apiKey);
   }
 
-  const channel = youtubeData.items?.[0];
+  if (!channel) {
+    channel = await fetchYouTubeChannelByHandle(cleanUsername, apiKey);
+  }
+
+  if (!channel) {
+    channel = await searchYouTubeChannel(cleanUsername, apiKey);
+  }
 
   if (!channel) {
     return {
@@ -240,11 +385,12 @@ async function getYouTubeChannelStatus(
       isLive: false,
       subscriberCount: 0,
       externalCount: 0,
-      url: `https://www.youtube.com/${cleanUsername}`,
+      url: getYouTubeFallbackUrl(username),
     };
   }
 
   const subscriberCount = Number(channel.statistics?.subscriberCount ?? 0);
+  const channelId = channel.id as string;
 
   return {
     platform: "youtube",
@@ -256,7 +402,9 @@ async function getYouTubeChannelStatus(
     viewCount: Number(channel.statistics?.viewCount ?? 0),
     videoCount: Number(channel.statistics?.videoCount ?? 0),
     externalCount: subscriberCount,
-    url: `https://www.youtube.com/@${cleanUsername}`,
+    url: channelId
+      ? `https://www.youtube.com/channel/${channelId}`
+      : getYouTubeFallbackUrl(username),
   };
 }
 
@@ -298,6 +446,10 @@ export async function GET(request: NextRequest) {
       {
         isLive: false,
         externalCount: 0,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido na API",
       },
       {
         status: 500,
