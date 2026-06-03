@@ -17,13 +17,15 @@ export async function GET(
 
   const { data } = await supabase
     .from("creator_profiles")
-    .select("nickname, username, category, avatar_url")
+    .select("nickname, username, title, category, is_verified, avatar_url, rarity")
     .ilike("username", username)
     .maybeSingle();
 
-  const nickname = data?.nickname || "Creator Nexus";
+  const nickname = data?.nickname || "Cardpoc";
   const creatorUsername = data?.username || username;
-  const category = data?.category || "Creator";
+  const title = data?.title || "Criador de Conteúdo";
+  const category = data?.category || "Criador de Conteúdo";
+  const rarity = String(data?.rarity || "common").toUpperCase();
   const initials = nickname.slice(0, 2).toUpperCase();
 
   const origin = new URL(request.url).origin;
@@ -36,112 +38,87 @@ export async function GET(
           width: "1200px",
           height: "630px",
           background:
-            "radial-gradient(circle at top left, rgba(34,211,238,0.22), transparent 34%), radial-gradient(circle at bottom right, rgba(168,85,247,0.28), transparent 38%), #020617",
+            "radial-gradient(circle at top left, rgba(34,211,238,0.32), transparent 34%), radial-gradient(circle at bottom right, rgba(168,85,247,0.30), transparent 38%), #020617",
+          color: "white",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          padding: "56px",
           fontFamily: "Arial",
-          color: "white",
         }}
       >
         <div
           style={{
-            width: "390px",
-            height: "560px",
-            borderRadius: "42px",
-            border: "2px solid rgba(103,232,249,0.45)",
-            background: "#020617",
-            overflow: "hidden",
-            position: "relative",
-            boxShadow: "0 0 80px rgba(34,211,238,0.22)",
+            width: "100%",
+            height: "100%",
             display: "flex",
+            border: "2px solid rgba(255,255,255,0.14)",
+            borderRadius: "42px",
+            background: "rgba(255,255,255,0.045)",
+            padding: "42px",
           }}
         >
-          {data?.avatar_url ? (
-            <img
-              src={avatarProxyUrl}
-              width={390}
-              height={560}
-              style={{
-                objectFit: "cover",
-                width: "390px",
-                height: "560px",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "390px",
-                height: "560px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "96px",
-                fontWeight: 900,
-                color: "#cffafe",
-                background:
-                  "linear-gradient(160deg, rgba(34,211,238,0.22), rgba(168,85,247,0.18), rgba(0,0,0,0.9))",
-              }}
-            >
-              {initials}
-            </div>
-          )}
-
           <div
             style={{
-              position: "absolute",
-              inset: 0,
+              width: "300px",
+              height: "420px",
+              borderRadius: "34px",
+              border: "2px solid rgba(34,211,238,0.35)",
               background:
-                "linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.25), transparent)",
-            }}
-          />
-
-          <div
-            style={{
-              position: "absolute",
-              top: "28px",
-              left: "28px",
+                "linear-gradient(160deg, rgba(34,211,238,0.22), rgba(168,85,247,0.18), rgba(0,0,0,0.9))",
               display: "flex",
-              border: "1px solid rgba(103,232,249,0.45)",
-              background: "rgba(8,47,73,0.72)",
-              color: "#cffafe",
-              borderRadius: "999px",
-              padding: "7px 16px",
-              fontSize: "14px",
-              fontWeight: 900,
-              letterSpacing: "5px",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
             }}
           >
-            COMMON
+            {data?.avatar_url ? (
+              <img
+                src={avatarProxyUrl}
+                width={300}
+                height={420}
+                style={{
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: "92px",
+                  fontWeight: 900,
+                  color: "#cffafe",
+                }}
+              >
+                {initials}
+              </div>
+            )}
           </div>
 
           <div
             style={{
-              position: "absolute",
-              left: "32px",
-              right: "32px",
-              bottom: "34px",
+              flex: 1,
+              marginLeft: "54px",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
             }}
           >
             <div
               style={{
                 display: "flex",
-                color: "#cffafe",
-                fontSize: "15px",
-                fontWeight: 900,
-                letterSpacing: "6px",
+                color: "#67e8f9",
+                fontSize: "25px",
+                letterSpacing: "8px",
               }}
             >
-              CARTA DO CREATOR
+              CARDPOC
             </div>
 
             <div
               style={{
                 display: "flex",
-                marginTop: "16px",
-                fontSize: "38px",
+                marginTop: "28px",
+                fontSize: "82px",
                 lineHeight: 1,
                 fontWeight: 900,
               }}
@@ -152,9 +129,21 @@ export async function GET(
             <div
               style={{
                 display: "flex",
-                marginTop: "12px",
-                fontSize: "20px",
-                color: "#cbd5e1",
+                marginTop: "18px",
+                fontSize: "36px",
+                color: "#cffafe",
+                fontWeight: 700,
+              }}
+            >
+              {title}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                marginTop: "18px",
+                fontSize: "30px",
+                color: "#94a3b8",
               }}
             >
               @{creatorUsername}
@@ -163,12 +152,66 @@ export async function GET(
             <div
               style={{
                 display: "flex",
-                marginTop: "22px",
-                fontSize: "17px",
-                color: "#e0f2fe",
+                gap: "16px",
+                marginTop: "40px",
               }}
             >
-              {category}
+              <div
+                style={{
+                  display: "flex",
+                  padding: "14px 24px",
+                  borderRadius: "999px",
+                  background: "rgba(34,211,238,0.18)",
+                  border: "1px solid rgba(34,211,238,0.38)",
+                  color: "#cffafe",
+                  fontSize: "24px",
+                }}
+              >
+                {category}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  padding: "14px 24px",
+                  borderRadius: "999px",
+                  background: "rgba(168,85,247,0.18)",
+                  border: "1px solid rgba(168,85,247,0.38)",
+                  color: "#f5d0fe",
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  letterSpacing: "3px",
+                }}
+              >
+                {rarity}
+              </div>
+
+              {data?.is_verified && (
+                <div
+                  style={{
+                    display: "flex",
+                    padding: "14px 24px",
+                    borderRadius: "999px",
+                    background: "rgba(250,204,21,0.18)",
+                    border: "1px solid rgba(250,204,21,0.38)",
+                    color: "#fef9c3",
+                    fontSize: "24px",
+                  }}
+                >
+                  Verificado
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                marginTop: "42px",
+                fontSize: "24px",
+                color: "rgba(255,255,255,0.72)",
+              }}
+            >
+              Collectible creator reputation cards.
             </div>
           </div>
         </div>

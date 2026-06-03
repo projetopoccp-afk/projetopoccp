@@ -334,7 +334,7 @@ async function addXpAndNotifyLevelUp({
       userId,
       type: "level_up",
       title: `Você chegou ao nível ${result.new_level}!`,
-      message: "Seu perfil evoluiu no Creator Nexus.",
+      message: "Seu perfil evoluiu no Cardpoc.",
       metadata: {
         ...metadata,
         previous_level: previousLevel,
@@ -836,7 +836,7 @@ export function CreatorPopup({
     const url = getCreatorShareUrl();
     const encodedUrl = encodeURIComponent(url);
     const encodedText = encodeURIComponent(
-      `Confira ${creator.nickname} no Creator Nexus ✦`
+      `Confira ${creator.nickname} no Cardpoc ✦`
     );
 
     const shareLinks: Record<string, string> = {
@@ -1487,7 +1487,7 @@ export function CreatorPopup({
               <p className="mt-2 text-sm text-white/50">
                 {translate(t, "creatorPopupShareDescriptionPrefix", "Compartilhe o perfil de")}{" "}
                 {creator.nickname}{" "}
-                {translate(t, "creatorPopupShareDescriptionSuffix", "usando o link com preview do Creator Nexus.")}
+                {translate(t, "creatorPopupShareDescriptionSuffix", "usando o link com preview do Cardpoc.")}
               </p>
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/45">
