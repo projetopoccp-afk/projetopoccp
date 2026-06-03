@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, Package, Sparkles, X } from "lucide-react";
-import { CreatorCard } from "./CreatorCard";
+import { CreatorCard } from "@/components/cards/CreatorCard";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
