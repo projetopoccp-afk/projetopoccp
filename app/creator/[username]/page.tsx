@@ -1,4 +1,4 @@
-import HomePage from "@/app/page";
+import { CreatorProfilePage } from "@/components/creator/CreatorProfilePage";
 import type { Metadata } from "next";
 
 const SITE_NAME = "Cardpoc";
@@ -100,7 +100,7 @@ export default async function CreatorUsernamePage({ params }: PageProps) {
         }}
       />
 
-      <HomePage />
+      <CreatorProfilePage username={username} />
     </>
   );
 }
