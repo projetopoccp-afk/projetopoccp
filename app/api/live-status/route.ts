@@ -327,7 +327,7 @@ async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) 
         },
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; CreatorNexusBot/1.0; +https://creatornexus.app)",
+            "Mozilla/5.0 (compatible; CardpocBot/1.0; +https://www.cardpoc.com)"
         },
         redirect: "follow",
       });

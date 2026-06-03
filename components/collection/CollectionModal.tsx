@@ -734,9 +734,9 @@ function buildCreatorFromCard(card: UserCard): Creator | null {
     id: profile.id,
     ownerId: profile.user_id || "",
     username: profile.username || "creator",
-    nickname: profile.nickname || "Creator Nexus",
+    nickname: profile.nickname || "Cardpoc",
     title: profile.title || "Digital Creator",
-    faction: profile.faction || "Creator Nexus",
+    faction: profile.faction || "Cardpoc",
     category: profile.category || "Creator",
     mainPlatform: "youtube",
     status: (profile.status as Creator["status"]) || "offline",
@@ -803,7 +803,7 @@ function EmptyCollection() {
         {translate(
           t,
           "emptyCollectionDescription",
-          "Em breve você poderá conquistar cartas seguindo creators, abrindo pacotes e completando missões dentro do Creator Nexus."
+          "Em breve você poderá conquistar cartas seguindo creators, abrindo pacotes e completando missões dentro do Cardpoc."
         )}
       </p>
     </div>
@@ -840,7 +840,7 @@ function CollectionCardShowcase({
 
   const creator = card.creator_profiles;
   const username = creator?.username || "creator";
-  const nickname = creator?.nickname || "Creator Nexus";
+  const nickname = creator?.nickname || "Cardpoc";
   const rarity = getRarityLabel(card.rarity, t);
   const xp = getCardXp(card.rarity);
 
@@ -855,7 +855,7 @@ function CollectionCardShowcase({
     const text = translate(
       t,
       "shareCardText",
-      `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Creator Nexus`
+      `🃏 Eu conquistei a carta ${nickname} (${rarity}) no Cardpoc`
     )
       .replace("{nickname}", nickname)
       .replace("{rarity}", rarity);
@@ -967,7 +967,7 @@ function CollectionCardFace({
   const { language, t } = useLanguage();
   const creator = card.creator_profiles;
   const imageUrl = creator?.avatar_url || creator?.banner_url || "";
-  const nickname = creator?.nickname || "Creator Nexus";
+  const nickname = creator?.nickname || "Cardpoc";
   const username = creator?.username || "creator";
   const rarity = card.rarity || "common";
   const style = rarityStyles[rarity] || rarityStyles.common;

@@ -285,7 +285,7 @@ export function AccountModal({
                     description={translate(
                       t,
                       "profileCardDescription",
-                      "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus."
+                      "Veja seu nível, XP, progresso, badges e atividade dentro do Cardpoc."
                     )}
                     buttonLabel={translate(t, "open", "Abrir")}
                     variant="cyan"

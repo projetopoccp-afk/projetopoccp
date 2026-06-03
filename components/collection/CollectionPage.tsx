@@ -60,7 +60,7 @@ export function CollectionPage() {
               translate(t, "collectionDefaultTitle", "Digital Creator"),
             faction:
               profile.faction ||
-              translate(t, "collectionDefaultFaction", "Creator Nexus"),
+              translate(t, "collectionDefaultFaction", "Cardpoc"),
             category: profile.category || translate(t, "creator", "Creator"),
             mainPlatform: "youtube",
             status: profile.status || "offline",
