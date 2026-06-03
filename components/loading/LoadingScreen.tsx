@@ -71,7 +71,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.2 }}
           className="mt-8 text-xs uppercase tracking-[0.45em] text-cyan-100"
         >
-          Creator Nexus
+          Card POC
         </motion.p>
 
         <motion.h1
