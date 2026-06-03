@@ -467,26 +467,37 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
           <div className="flex items-center justify-between gap-3">
             <a
               href="/"
-              className="group flex items-center gap-3"
+              className="group relative flex items-center gap-3 rounded-3xl border border-white/0 px-1 py-1 transition hover:border-cyan-300/10 hover:bg-white/[0.025]"
               aria-label="Cardpoc"
             >
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.08] shadow-[0_0_35px_rgba(34,211,238,0.22)] transition group-hover:border-cyan-200/50 group-hover:bg-cyan-300/[0.12]">
-                <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.95)]" />
-                <div className="absolute inset-2 rounded-xl border border-white/10 bg-black/30" />
+              <div className="pointer-events-none absolute -inset-2 rounded-[2rem] bg-cyan-300/[0.03] opacity-0 blur-xl transition group-hover:opacity-100" />
 
-                <span className="relative text-[11px] font-black uppercase tracking-[-0.08em] text-white">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-cyan-300/25 bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.24),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.015))] shadow-[0_0_34px_rgba(34,211,238,0.18)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-cyan-200/55 group-hover:shadow-[0_0_44px_rgba(34,211,238,0.28)]">
+                <div className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.95)]" />
+                <div className="absolute inset-1.5 rounded-[1rem] border border-white/10 bg-black/35" />
+                <div className="absolute left-2 top-2 h-2 w-2 rounded-full border border-cyan-200/35" />
+                <div className="absolute bottom-2 right-2 h-2 w-2 rounded-full border border-fuchsia-200/25" />
+
+                <span className="relative rounded-lg border border-white/10 bg-black/35 px-1.5 py-1 text-[10px] font-black uppercase tracking-[-0.04em] text-white shadow-[0_0_18px_rgba(34,211,238,0.18)]">
                   CP
                 </span>
               </div>
 
-              <h1 className="flex flex-col leading-none">
-                <span className="text-[11px] font-black uppercase tracking-[0.34em] text-white sm:text-sm sm:tracking-[0.42em]">
-                  Card
-                </span>
-                <span className="-mt-0.5 translate-x-4 bg-gradient-to-r from-cyan-200 via-white to-fuchsia-200 bg-clip-text text-[17px] font-black uppercase tracking-[0.2em] text-transparent sm:text-[22px] sm:tracking-[0.26em]">
-                  Poc
-                </span>
-              </h1>
+              <div className="relative flex min-w-[118px] flex-col leading-none sm:min-w-[146px]">
+                <div className="flex items-center gap-2">
+                  <span className="h-px w-4 bg-cyan-300/60 shadow-[0_0_12px_rgba(34,211,238,0.75)]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.34em] text-white/95 sm:text-[12px] sm:tracking-[0.44em]">
+                    Card
+                  </span>
+                </div>
+
+                <div className="-mt-0.5 flex items-center gap-2 pl-4 sm:pl-5">
+                  <span className="bg-gradient-to-r from-cyan-200 via-white to-fuchsia-200 bg-clip-text text-[18px] font-black uppercase tracking-[0.18em] text-transparent drop-shadow-[0_0_14px_rgba(34,211,238,0.26)] sm:text-[23px] sm:tracking-[0.24em]">
+                    Poc
+                  </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-200 shadow-[0_0_14px_rgba(217,70,239,0.75)]" />
+                </div>
+              </div>
             </a>
 
             {user ? (
