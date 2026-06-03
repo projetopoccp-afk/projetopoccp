@@ -2,20 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Gift,
-  History,
-  Search,
-  ShieldCheck,
-  UserCog,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff, Gift, History, Search, ShieldCheck, UserCog, X, , Package } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
