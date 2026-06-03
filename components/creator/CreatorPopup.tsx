@@ -39,6 +39,8 @@ const clipPlatforms = ["youtube", "twitch", "tiktok", "kick"];
 type SocialForm = Record<string, string>;
 
 type LiveStatus = {
+  platform?: string;
+  username?: string;
   isLive: boolean;
   title?: string;
   viewerCount?: number;
@@ -46,6 +48,11 @@ type LiveStatus = {
   startedAt?: string;
   thumbnail?: string;
   url?: string;
+  followerCount?: number;
+  subscriberCount?: number;
+  viewCount?: number;
+  videoCount?: number;
+  externalCount?: number;
 };
 
 type LiveStatusMap = Partial<Record<string, LiveStatus>>;
@@ -88,6 +95,25 @@ function extractPlatformUsername(platform: string, url: string) {
       return "";
     }
 
+    if (
+      normalizedPlatform === "youtube" &&
+      !host.includes("youtube.com") &&
+      !host.includes("youtu.be")
+    ) {
+      return "";
+    }
+
+    if (normalizedPlatform === "youtube") {
+      const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+      const handle = pathParts.find((part) => part.startsWith("@"));
+
+      if (handle) {
+        return handle.replace("@", "").trim();
+      }
+
+      return pathParts[0]?.replace("@", "").trim() || "";
+    }
+
     const username = parsedUrl.pathname
       .split("/")
       .filter(Boolean)[0]
@@ -101,6 +127,9 @@ function extractPlatformUsername(platform: string, url: string) {
       .replace(/^www\./i, "")
       .replace(/^twitch\.tv\//i, "")
       .replace(/^kick\.com\//i, "")
+      .replace(/^youtube\.com\/@?/i, "")
+      .replace(/^youtube\.com\//i, "")
+      .replace(/^youtu\.be\//i, "")
       .split(/[/?#]/)[0]
       .replace("@", "")
       .trim();
@@ -115,8 +144,14 @@ function getPlatformLiveStatus(
 }
 
 function getPlatformFallbackUrl(platform: string, username: string) {
-  if (platform.toLowerCase() === "kick") {
+  const normalizedPlatform = platform.toLowerCase();
+
+  if (normalizedPlatform === "kick") {
     return `https://kick.com/${username}`;
+  }
+
+  if (normalizedPlatform === "youtube") {
+    return `https://www.youtube.com/@${username.replace("@", "")}`;
   }
 
   return `https://twitch.tv/${username}`;
@@ -478,7 +513,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    const livePlatforms = ["twitch", "kick"] as const;
+    const livePlatforms = ["twitch", "kick", "youtube"] as const;
 
     const targets = livePlatforms
       .map((platform) => {
@@ -560,7 +595,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     return () => {
       cancelled = true;
     };
-  }, [creator, socials.twitch, socials.kick]);
+  }, [creator, socials.twitch, socials.kick, socials.youtube]);
 
   function getCreatorShareUrl() {
     if (!creator) return "";
@@ -984,6 +1019,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const isPreparingCreator = preparedCreatorId !== creator.id;
   const twitchLiveStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickLiveStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
   const isLiveOnAnyPlatform = Boolean(
     twitchLiveStatus?.isLive || kickLiveStatus?.isLive
   );
@@ -1727,6 +1763,14 @@ function ViewPanel({
   liveStatusLoading: boolean;
 }) {
   const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
+  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+
+  const twitchFollowers = twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
+  const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
+  const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
+  const externalTotal = twitchFollowers + kickFollowers + youtubeSubscribers;
 
   return (
     <>
@@ -1748,9 +1792,10 @@ function ViewPanel({
         </p>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <InfoCard label={translate(t, "creatorPopupViews", "Views")} value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores do site")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label={translate(t, "creatorPopupExternalReach", "Alcance externo")} value={externalTotal.toLocaleString("pt-BR")} color="text-emerald-200" />
         <InfoCard label={translate(t, "creatorPopupShares", "Compartilhamentos")} value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
       </div>
 
@@ -1840,8 +1885,18 @@ function ViewPanel({
               const supportsLiveStatus =
                 normalizedPlatform === "twitch" ||
                 normalizedPlatform === "kick";
+              const supportsExternalCount =
+                normalizedPlatform === "twitch" ||
+                normalizedPlatform === "kick" ||
+                normalizedPlatform === "youtube";
               const isPlatformLive = Boolean(platformLiveStatus?.isLive);
               const platformUrl = platformLiveStatus?.url || url;
+              const platformExternalCount =
+                normalizedPlatform === "youtube"
+                  ? platformLiveStatus?.subscriberCount ?? platformLiveStatus?.externalCount ?? 0
+                  : platformLiveStatus?.followerCount ?? platformLiveStatus?.externalCount ?? 0;
+              const platformExternalLabel =
+                normalizedPlatform === "youtube" ? "inscritos" : "seguidores";
 
               return (
                 <a
@@ -1866,15 +1921,19 @@ function ViewPanel({
                         : isPlatformLive
                           ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
                           : "Offline"
-                      : " "}
+                      : supportsExternalCount && liveStatusLoading && !platformLiveStatus
+                        ? "Carregando..."
+                        : " "}
                   </span>
 
                   <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                    {supportsLiveStatus &&
-                    isPlatformLive &&
-                    platformLiveStatus?.gameName
-                      ? platformLiveStatus.gameName
-                      : " "}
+                    {supportsExternalCount && platformLiveStatus
+                      ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                      : supportsLiveStatus &&
+                        isPlatformLive &&
+                        platformLiveStatus?.gameName
+                        ? platformLiveStatus.gameName
+                        : " "}
                   </span>
                 </a>
               );
