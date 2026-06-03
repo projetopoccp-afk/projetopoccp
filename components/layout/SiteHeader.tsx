@@ -465,11 +465,27 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/50 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:h-20 md:flex-row md:items-center md:justify-between md:gap-6 md:px-6 md:py-0">
           <div className="flex items-center justify-between gap-3">
-            <a href="/" className="flex items-center gap-3">
-              <div className="h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.9)]" />
+            <a
+              href="/"
+              className="group flex items-center gap-3"
+              aria-label="Cardpoc"
+            >
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.08] shadow-[0_0_35px_rgba(34,211,238,0.22)] transition group-hover:border-cyan-200/50 group-hover:bg-cyan-300/[0.12]">
+                <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.95)]" />
+                <div className="absolute inset-2 rounded-xl border border-white/10 bg-black/30" />
 
-              <h1 className="text-sm font-black uppercase tracking-[0.25em] text-white sm:text-lg sm:tracking-[0.3em]">
-                Creator Nexus
+                <span className="relative text-[11px] font-black uppercase tracking-[-0.08em] text-white">
+                  CP
+                </span>
+              </div>
+
+              <h1 className="flex flex-col leading-none">
+                <span className="text-[11px] font-black uppercase tracking-[0.34em] text-white sm:text-sm sm:tracking-[0.42em]">
+                  Card
+                </span>
+                <span className="-mt-0.5 translate-x-4 bg-gradient-to-r from-cyan-200 via-white to-fuchsia-200 bg-clip-text text-[17px] font-black uppercase tracking-[0.2em] text-transparent sm:text-[22px] sm:tracking-[0.26em]">
+                  Poc
+                </span>
               </h1>
             </a>
 
