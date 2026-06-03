@@ -634,7 +634,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   title:
                     youtubeChannels.filter((channel) => channel.trim().length > 0)
                       .length > 1
-                      ? `${youtubeChannels.filter((channel) => channel.trim().length > 0).length} canais`
+                      ? `${youtubeChannels.filter((channel) => channel.trim().length > 0).length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
                       : result.status.title,
                 };
 
@@ -1618,7 +1618,7 @@ function EditPanel({
                 onClick={addYoutubeChannel}
                 className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
               >
-                + Adicionar canal
+                {translate(t, "creatorPopupAddYoutubeChannel", "+ Add channel")}
               </button>
             </div>
 
@@ -1639,7 +1639,7 @@ function EditPanel({
                       type="button"
                       onClick={() => removeYoutubeChannel(index)}
                       className="shrink-0 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20"
-                      aria-label="Remover canal do YouTube"
+                      aria-label={translate(t, "creatorPopupRemoveYoutubeChannel", "Remove YouTube channel")}
                     >
                       ×
                     </button>
@@ -1942,7 +1942,7 @@ function ViewPanel({
 
     return {
       url: channelStatus?.url || url,
-      title: channelStatus?.title || `Canal ${index + 1}`,
+      title: channelStatus?.title || `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`,
       thumbnail: channelStatus?.thumbnail,
       subscriberCount:
         channelStatus?.subscriberCount ?? channelStatus?.externalCount ?? 0,
@@ -2078,7 +2078,9 @@ function ViewPanel({
                   ? platformLiveStatus?.subscriberCount ?? platformLiveStatus?.externalCount ?? 0
                   : platformLiveStatus?.followerCount ?? platformLiveStatus?.externalCount ?? 0;
               const platformExternalLabel =
-                normalizedPlatform === "youtube" ? "inscritos" : "seguidores";
+                normalizedPlatform === "youtube"
+                  ? translate(t, "creatorPopupYoutubeSubscribers", "subscribers")
+                  : translate(t, "creatorPopupFollowersLabel", "followers");
 
               if (normalizedPlatform === "youtube") {
                 return (
@@ -2103,9 +2105,9 @@ function ViewPanel({
 
                     <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
                       {liveStatusLoading && !platformLiveStatus
-                        ? "Carregando..."
+                        ? translate(t, "creatorPopupLoading", "Loading...")
                         : visibleYoutubeChannels.length > 1
-                          ? `${visibleYoutubeChannels.length} canais`
+                          ? `${visibleYoutubeChannels.length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
                           : " "}
                     </span>
 
@@ -2140,12 +2142,12 @@ function ViewPanel({
                   <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
                     {supportsLiveStatus
                       ? liveStatusLoading && !platformLiveStatus
-                        ? "Checking live..."
+                        ? translate(t, "creatorPopupCheckingLive", "Checking live...")
                         : isPlatformLive
-                          ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
-                          : "Offline"
+                          ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} ${translate(t, "creatorPopupViewers", "viewers")}`
+                          : translate(t, "creatorPopupStatusOffline", "Offline")
                       : supportsExternalCount && liveStatusLoading && !platformLiveStatus
-                        ? "Carregando..."
+                        ? translate(t, "creatorPopupLoading", "Loading...")
                         : " "}
                   </span>
 
@@ -2169,7 +2171,7 @@ function ViewPanel({
           <button
             className="absolute inset-0"
             onClick={() => setYoutubeChannelsOpen(false)}
-            aria-label="Fechar canais do YouTube"
+            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Close YouTube channels")}
           />
 
           <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
@@ -2182,11 +2184,11 @@ function ViewPanel({
               </p>
 
               <h3 className="mt-3 text-2xl font-black">
-                Canais do YouTube
+                {translate(t, "creatorPopupYoutubeChannelsTitle", "YouTube Channels")}
               </h3>
 
               <p className="mt-2 text-sm text-white/45">
-                Escolha qual canal deseja abrir.
+                {translate(t, "creatorPopupYoutubeChannelsDescription", "Choose which channel you want to open.")}
               </p>
 
               <div className="mt-5 grid gap-3">
@@ -2216,7 +2218,7 @@ function ViewPanel({
                       </p>
 
                       <p className="text-sm text-white/45">
-                        {channel.subscriberCount.toLocaleString("pt-BR")} inscritos
+                        {channel.subscriberCount.toLocaleString("pt-BR")} {translate(t, "creatorPopupYoutubeSubscribers", "subscribers")}
                       </p>
                     </div>
                   </a>
@@ -2227,7 +2229,7 @@ function ViewPanel({
                 onClick={() => setYoutubeChannelsOpen(false)}
                 className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
               >
-                Fechar
+                {translate(t, "creatorPopupClose", "Close")}
               </button>
             </div>
           </div>
