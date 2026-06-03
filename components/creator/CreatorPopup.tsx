@@ -14,6 +14,7 @@ import { translate } from "@/lib/i18n/translate";
 type CreatorPopupProps = {
   creator: Creator | null;
   onClose: () => void;
+  onCreatorUpdated?: (creator: Creator) => void;
 };
 
 const statusLabel = {
@@ -346,7 +347,11 @@ async function addXpAndNotifyLevelUp({
   return result;
 }
 
-export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
+export function CreatorPopup({
+  creator,
+  onClose,
+  onCreatorUpdated,
+}: CreatorPopupProps) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -1157,6 +1162,20 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         return;
       }
     }
+
+    const updatedCreator: Creator = {
+      ...creator,
+      nickname,
+      title,
+      category,
+      bio,
+      description,
+      avatarUrl,
+      bannerUrl,
+      tags,
+    };
+
+    onCreatorUpdated?.(updatedCreator);
 
     setSaving(false);
     setEditMode(false);
