@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+type SocialPlatform = "twitch" | "kick" | "youtube";
+
 type LiveStatusResponse = {
-  platform: "twitch" | "kick";
+  platform: SocialPlatform;
   username: string;
   isLive: boolean;
   title?: string;
@@ -10,6 +12,11 @@ type LiveStatusResponse = {
   startedAt?: string;
   thumbnail?: string;
   url: string;
+
+  followerCount?: number;
+  subscriberCount?: number;
+  viewCount?: number;
+  videoCount?: number;
 };
 
 async function getTwitchAccessToken() {
@@ -26,7 +33,6 @@ async function getTwitchAccessToken() {
   });
 
   const data = await response.json();
-
   return data.access_token;
 }
 
@@ -44,7 +50,6 @@ async function getKickAccessToken() {
   });
 
   const data = await response.json();
-
   return data.access_token;
 }
 
@@ -134,10 +139,68 @@ async function getKickLiveStatus(
   };
 }
 
+async function getYouTubeChannelStatus(
+  username: string
+): Promise<LiveStatusResponse> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("YOUTUBE_API_KEY não configurada");
+  }
+
+  const cleanUsername = username.replace("@", "");
+
+  const params = new URLSearchParams({
+    part: "snippet,statistics",
+    forHandle: cleanUsername,
+    key: apiKey,
+  });
+
+  const youtubeResponse = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?${params.toString()}`,
+    {
+      next: {
+        revalidate: 3600,
+      },
+    }
+  );
+
+  const youtubeData = await youtubeResponse.json();
+
+  if (!youtubeResponse.ok) {
+    console.error("Erro YouTube:", youtubeData);
+    throw new Error("Erro ao buscar dados do YouTube");
+  }
+
+  const channel = youtubeData.items?.[0];
+
+  if (!channel) {
+    return {
+      platform: "youtube",
+      username,
+      isLive: false,
+      url: `https://www.youtube.com/@${cleanUsername}`,
+    };
+  }
+
+  return {
+    platform: "youtube",
+    username: channel.snippet?.title || username,
+    isLive: false,
+    title: channel.snippet?.title,
+    thumbnail: channel.snippet?.thumbnails?.high?.url,
+    subscriberCount: Number(channel.statistics?.subscriberCount ?? 0),
+    viewCount: Number(channel.statistics?.viewCount ?? 0),
+    videoCount: Number(channel.statistics?.videoCount ?? 0),
+    url: `https://www.youtube.com/@${cleanUsername}`,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const platform =
-      request.nextUrl.searchParams.get("platform") || "twitch";
+      (request.nextUrl.searchParams.get("platform") as SocialPlatform) ||
+      "twitch";
 
     const username = request.nextUrl.searchParams.get("username");
 
@@ -154,12 +217,15 @@ export async function GET(request: NextRequest) {
 
     if (platform === "kick") {
       const status = await getKickLiveStatus(username);
+      return NextResponse.json(status);
+    }
 
+    if (platform === "youtube") {
+      const status = await getYouTubeChannelStatus(username);
       return NextResponse.json(status);
     }
 
     const status = await getTwitchLiveStatus(username);
-
     return NextResponse.json(status);
   } catch (error) {
     console.error(error);
