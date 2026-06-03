@@ -11,43 +11,9 @@ import { Creator } from "@/types/creator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 
-
-function normalizeCreatorTags(tags: unknown): string[] {
-  if (Array.isArray(tags)) {
-    return tags
-      .map((tag) => String(tag).trim())
-      .filter(Boolean);
-  }
-
-  if (typeof tags !== "string") return [];
-
-  const trimmed = tags.trim();
-
-  if (!trimmed) return [];
-
-  try {
-    const parsed = JSON.parse(trimmed);
-
-    if (Array.isArray(parsed)) {
-      return parsed
-        .map((tag) => String(tag).trim())
-        .filter(Boolean);
-    }
-  } catch {
-    // Fallback below for comma-separated values.
-  }
-
-  return trimmed
-    .replace(/^\[|\]$/g, "")
-    .split(",")
-    .map((tag) => tag.replace(/"/g, "").trim())
-    .filter(Boolean);
-}
-
 type CreatorPopupProps = {
   creator: Creator | null;
   onClose: () => void;
-  onCreatorUpdated?: (creator: Creator) => void;
 };
 
 const statusLabel = {
@@ -89,6 +55,51 @@ type LiveStatus = {
 };
 
 type LiveStatusMap = Partial<Record<string, LiveStatus>>;
+
+type VisibleYoutubeChannel = {
+  url: string;
+  originalIndex: number;
+  username: string;
+};
+
+function getNormalizedYoutubeChannels(channels: string[]): VisibleYoutubeChannel[] {
+  const seen = new Set<string>();
+
+  return channels
+    .map((rawUrl, originalIndex) => {
+      const url = String(rawUrl || "").trim();
+      const username = extractPlatformUsername("youtube", url);
+
+      return {
+        url,
+        originalIndex,
+        username,
+      };
+    })
+    .filter((channel) => channel.url.length > 0 && channel.username.length > 0)
+    .filter((channel) => {
+      const key = `${channel.username.toLowerCase()}::${channel.url.toLowerCase()}`;
+
+      if (seen.has(key)) return false;
+
+      seen.add(key);
+      return true;
+    });
+}
+
+function getYoutubeChannelFallbackTitle(
+  channel: VisibleYoutubeChannel,
+  fallbackLabel: string
+) {
+  const username = channel.username.replace(/^@/, "").trim();
+
+  if (username.length > 0) {
+    return username.startsWith("UC") ? fallbackLabel : `@${username}`;
+  }
+
+  return fallbackLabel;
+}
+
 
 type AutoClip = {
   id: string;
@@ -335,11 +346,7 @@ async function addXpAndNotifyLevelUp({
   return result;
 }
 
-export function CreatorPopup({
-  creator,
-  onClose,
-  onCreatorUpdated,
-}: CreatorPopupProps) {
+export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -426,7 +433,7 @@ export function CreatorPopup({
     setDescription(creator.description || "");
     setAvatarUrl(creator.avatarUrl || "");
     setBannerUrl(creator.bannerUrl || "");
-    setTagsText(normalizeCreatorTags(creator.tags).join(", "));
+    setTagsText((creator.tags || []).join(", "));
 
     async function loadCreatorData() {
       if (!creator) return;
@@ -552,18 +559,12 @@ export function CreatorPopup({
           };
         })
         .filter((target) => target.username.length > 0),
-      ...youtubeChannels
-        .map((url, index) => {
-          const username = extractPlatformUsername("youtube", url);
-
-          return {
-            platform: "youtube" as const,
-            username,
-            url,
-            index,
-          };
-        })
-        .filter((target) => target.username.length > 0),
+      ...getNormalizedYoutubeChannels(youtubeChannels).map((channel) => ({
+        platform: "youtube" as const,
+        username: channel.username,
+        url: channel.url,
+        index: channel.originalIndex,
+      })),
     ];
 
     if (targets.length === 0) {
@@ -635,9 +636,8 @@ export function CreatorPopup({
                   subscriberCount: currentSubscriberCount + nextSubscriberCount,
                   externalCount: currentSubscriberCount + nextSubscriberCount,
                   title:
-                    youtubeChannels.filter((channel) => channel.trim().length > 0)
-                      .length > 1
-                      ? `${youtubeChannels.filter((channel) => channel.trim().length > 0).length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
+                    getNormalizedYoutubeChannels(youtubeChannels).length > 1
+                      ? `${getNormalizedYoutubeChannels(youtubeChannels).length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
                       : result.status.title,
                 };
 
@@ -669,7 +669,7 @@ export function CreatorPopup({
 
     const twitchUsername = extractPlatformUsername("twitch", socials.twitch || "");
     const kickUsername = extractPlatformUsername("kick", socials.kick || "");
-    const hasYoutubeChannels = youtubeChannels.some((url) => url.trim().length > 0);
+    const hasYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels).length > 0;
     const hasExternalTargets = Boolean(twitchUsername || kickUsername || hasYoutubeChannels);
 
     if (hasExternalTargets && Object.keys(liveStatus).length === 0) {
@@ -745,9 +745,9 @@ export function CreatorPopup({
 
     const twitchUsername = extractPlatformUsername("twitch", socials.twitch || "");
     const kickUsername = extractPlatformUsername("kick", socials.kick || "");
-    const youtubeUrls = youtubeChannels
-      .map((url) => url.trim())
-      .filter(Boolean);
+    const youtubeUrls = getNormalizedYoutubeChannels(youtubeChannels).map(
+      (channel) => channel.url
+    );
 
     if (!twitchUsername && !kickUsername && youtubeUrls.length === 0) {
       setClips([]);
@@ -1157,20 +1157,6 @@ export function CreatorPopup({
         return;
       }
     }
-
-    const updatedCreator: Creator = {
-      ...creator,
-      nickname,
-      title,
-      category,
-      bio,
-      description,
-      avatarUrl,
-      bannerUrl,
-      tags,
-    };
-
-    onCreatorUpdated?.(updatedCreator);
 
     setSaving(false);
     setEditMode(false);
@@ -1978,16 +1964,22 @@ function ViewPanel({
   const externalTotal = twitchFollowers + kickFollowers + youtubeSubscribers;
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
 
-  const visibleYoutubeChannels = youtubeChannels.filter(
-    (url) => url.trim().length > 0
-  );
+  const visibleYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels);
 
-  const youtubeChannelItems = visibleYoutubeChannels.map((url, index) => {
-    const channelStatus = getPlatformLiveStatus(liveStatus, `youtube:${index}`);
+  const youtubeChannelItems = visibleYoutubeChannels.map((channel, index) => {
+    const channelStatus = getPlatformLiveStatus(
+      liveStatus,
+      `youtube:${channel.originalIndex}`
+    );
+
+    const fallbackTitle = getYoutubeChannelFallbackTitle(
+      channel,
+      `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`
+    );
 
     return {
-      url: channelStatus?.url || url,
-      title: channelStatus?.title || `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`,
+      url: channelStatus?.url || channel.url,
+      title: channelStatus?.title || fallbackTitle,
       thumbnail: channelStatus?.thumbnail,
       subscriberCount:
         channelStatus?.subscriberCount ?? channelStatus?.externalCount ?? 0,
@@ -2132,8 +2124,8 @@ function ViewPanel({
             ...Object.entries(socials).filter(
               ([platform, url]) => platform !== "youtube" && url.trim().length > 0
             ),
-            ...(youtubeChannels.filter((url) => url.trim().length > 0).length > 0
-              ? [["youtube", youtubeChannels[0]] as [string, string]]
+            ...(visibleYoutubeChannels.length > 0
+              ? [["youtube", visibleYoutubeChannels[0].url] as [string, string]]
               : []),
           ].map(([platform, url]) => {
               const normalizedPlatform = platform.toLowerCase();
@@ -2211,8 +2203,8 @@ function ViewPanel({
                 >
                   <span className="block truncate font-bold uppercase tracking-[0.18em]">
                     {normalizedPlatform === "youtube" &&
-                    youtubeChannels.filter((channel) => channel.trim().length > 0).length > 1
-                      ? `YOUTUBE (${youtubeChannels.filter((channel) => channel.trim().length > 0).length})`
+                    visibleYoutubeChannels.length > 1
+                      ? `YOUTUBE (${visibleYoutubeChannels.length})`
                       : platform}
                   </span>
 
