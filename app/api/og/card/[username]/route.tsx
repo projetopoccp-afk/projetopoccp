@@ -17,9 +17,14 @@ export async function GET(
 
   const { data } = await supabase
     .from("creator_profiles")
-    .select("nickname, username, title, category, is_verified, avatar_url, rarity")
-    .ilike("username", username)
-    .maybeSingle();
+    .select(
+      "nickname, username, title, category, is_verified, avatar_url, rarity"
+    )
+    .eq("username", username)
+    .single();
+
+  console.log("OG USERNAME:", username);
+  console.log("OG DATA:", data);
 
   const nickname = data?.nickname || "Cardpoc";
   const creatorUsername = data?.username || username;
