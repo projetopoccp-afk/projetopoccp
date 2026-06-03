@@ -415,12 +415,12 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       const { count: views } = await supabase
         .from("creator_views")
         .select("id", { count: "exact", head: true })
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creatorId);
 
       const { count: followers } = await supabase
         .from("creator_followers")
         .select("id", { count: "exact", head: true })
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creatorId);
 
       const { data: creatorStats } = await supabase
         .from("creator_profiles")
@@ -448,7 +448,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       const { data: socialData } = await supabase
         .from("creator_social_links")
         .select("platform, url")
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creatorId);
 
       const nextSocials: SocialForm = {};
       const nextYoutubeChannels: string[] = [];
@@ -638,6 +638,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
+    const creatorId = creator.id;
+
     const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
     const { powerScore, level } = calculateCreatorCardProgress({
       views: viewCount,
@@ -663,7 +665,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           power_score: powerScore,
           level,
         })
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creatorId);
 
       if (error) {
         console.error("Erro ao atualizar level da carta do criador:", error);
@@ -1082,7 +1084,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    await supabase.from("creator_social_links").delete().eq("creator_id", creator.id);
+    await supabase.from("creator_social_links").delete().eq("creator_id", creatorId);
 
     const socialRows = [
       ...Object.entries(socials)
