@@ -144,11 +144,15 @@ function getPlatformLabel(platform: string) {
 }
 
 function tr(
-  t: Parameters<typeof translate>[0],
+  t: unknown,
   key: string,
   fallback: string
 ) {
-  return translate(t, key as Parameters<typeof translate>[1], fallback);
+  return translate(
+    t as Parameters<typeof translate>[0],
+    key as Parameters<typeof translate>[1],
+    fallback
+  );
 }
 
 export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
