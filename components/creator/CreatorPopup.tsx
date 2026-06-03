@@ -1815,7 +1815,7 @@ function ViewPanel({
                       ? liveStatusLoading && !platformLiveStatus
                         ? "Checking live..."
                         : isPlatformLive
-                          ? `LIVE • ${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
+                          ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
                           : "Offline"
                       : " "}
                   </span>
