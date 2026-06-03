@@ -354,6 +354,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     creator && currentUserId && !creator.ownerId && !isOwner
   );
 
+  const creatorId = creator?.id ?? "";
+
   useEffect(() => {
     async function loadUser() {
       const {
