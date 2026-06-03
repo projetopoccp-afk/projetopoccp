@@ -66,7 +66,8 @@ const emptyClip = (): ClipForm => ({
   description: "",
 });
 
-function extractTwitchUsername(url: string) {
+function extractPlatformUsername(platform: string, url: string) {
+  const normalizedPlatform = platform.toLowerCase();
   const normalizedUrl = url.trim();
 
   if (!normalizedUrl) return "";
@@ -79,7 +80,11 @@ function extractTwitchUsername(url: string) {
     const parsedUrl = new URL(withProtocol);
     const host = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
 
-    if (!host.includes("twitch.tv")) {
+    if (normalizedPlatform === "twitch" && !host.includes("twitch.tv")) {
+      return "";
+    }
+
+    if (normalizedPlatform === "kick" && !host.includes("kick.com")) {
       return "";
     }
 
@@ -95,6 +100,7 @@ function extractTwitchUsername(url: string) {
       .replace(/^https?:\/\//i, "")
       .replace(/^www\./i, "")
       .replace(/^twitch\.tv\//i, "")
+      .replace(/^kick\.com\//i, "")
       .split(/[/?#]/)[0]
       .replace("@", "")
       .trim();
@@ -106,6 +112,14 @@ function getPlatformLiveStatus(
   platform: string
 ) {
   return liveStatus[platform.toLowerCase()];
+}
+
+function getPlatformFallbackUrl(platform: string, username: string) {
+  if (platform.toLowerCase() === "kick") {
+    return `https://kick.com/${username}`;
+  }
+
+  return `https://twitch.tv/${username}`;
 }
 
 const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -459,54 +473,80 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   }, [creator]);
 
   useEffect(() => {
-    const twitchUrl = socials.twitch || "";
-    const twitchUsername = extractTwitchUsername(twitchUrl);
+    if (!creator) {
+      setLiveStatus({});
+      return;
+    }
 
-    if (!creator || !twitchUsername) {
-      setLiveStatus((current) => {
-        const { twitch, ...rest } = current;
+    const livePlatforms = ["twitch", "kick"] as const;
 
-        return rest;
-      });
+    const targets = livePlatforms
+      .map((platform) => {
+        const url = socials[platform] || "";
+        const username = extractPlatformUsername(platform, url);
+
+        return {
+          platform,
+          username,
+        };
+      })
+      .filter((target) => target.username.length > 0);
+
+    if (targets.length === 0) {
+      setLiveStatus({});
       return;
     }
 
     let cancelled = false;
 
-    async function loadTwitchLiveStatus() {
+    async function loadLiveStatuses() {
       setLiveStatusLoading(true);
 
       try {
-        const response = await fetch(
-          `/api/live-status?username=${encodeURIComponent(twitchUsername)}`
+        const results = await Promise.all(
+          targets.map(async ({ platform, username }) => {
+            try {
+              const response = await fetch(
+                `/api/live-status?platform=${platform}&username=${encodeURIComponent(username)}`
+              );
+
+              if (!response.ok) {
+                throw new Error(`Unable to load ${platform} live status.`);
+              }
+
+              const data: LiveStatus = await response.json();
+
+              return {
+                platform,
+                status: {
+                  ...data,
+                  url: data.url || getPlatformFallbackUrl(platform, username),
+                },
+              };
+            } catch (error) {
+              console.error(`Erro ao carregar status da ${platform}:`, error);
+
+              return {
+                platform,
+                status: {
+                  platform,
+                  username,
+                  isLive: false,
+                  url: getPlatformFallbackUrl(platform, username),
+                },
+              };
+            }
+          })
         );
 
-        if (!response.ok) {
-          throw new Error("Unable to load Twitch live status.");
-        }
-
-        const data: LiveStatus = await response.json();
-
         if (!cancelled) {
-          setLiveStatus((current) => ({
-            ...current,
-            twitch: {
-              ...data,
-              url: data.url || `https://twitch.tv/${twitchUsername}`,
-            },
-          }));
-        }
-      } catch (error) {
-        console.error("Erro ao carregar status da Twitch:", error);
+          setLiveStatus(
+            results.reduce<LiveStatusMap>((accumulator, result) => {
+              accumulator[result.platform] = result.status;
 
-        if (!cancelled) {
-          setLiveStatus((current) => ({
-            ...current,
-            twitch: {
-              isLive: false,
-              url: `https://twitch.tv/${twitchUsername}`,
-            },
-          }));
+              return accumulator;
+            }, {})
+          );
         }
       } finally {
         if (!cancelled) {
@@ -515,12 +555,12 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       }
     }
 
-    loadTwitchLiveStatus();
+    loadLiveStatuses();
 
     return () => {
       cancelled = true;
     };
-  }, [creator, socials.twitch]);
+  }, [creator, socials.twitch, socials.kick]);
 
   function getCreatorShareUrl() {
     if (!creator) return "";
@@ -943,7 +983,10 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
   const isPreparingCreator = preparedCreatorId !== creator.id;
   const twitchLiveStatus = getPlatformLiveStatus(liveStatus, "twitch");
-  const isLiveOnAnyPlatform = Boolean(twitchLiveStatus?.isLive);
+  const kickLiveStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const isLiveOnAnyPlatform = Boolean(
+    twitchLiveStatus?.isLive || kickLiveStatus?.isLive
+  );
   const displayedStatus = isLiveOnAnyPlatform ? "live" : creator.status;
 
   function getTranslatedStatusLabel(status: keyof typeof statusLabel) {
@@ -1789,8 +1832,14 @@ function ViewPanel({
           {Object.entries(socials)
             .filter(([, url]) => url.trim().length > 0)
             .map(([platform, url]) => {
-              const platformLiveStatus = getPlatformLiveStatus(liveStatus, platform);
-              const isTwitch = platform.toLowerCase() === "twitch";
+              const normalizedPlatform = platform.toLowerCase();
+              const platformLiveStatus = getPlatformLiveStatus(
+                liveStatus,
+                normalizedPlatform
+              );
+              const supportsLiveStatus =
+                normalizedPlatform === "twitch" ||
+                normalizedPlatform === "kick";
               const isPlatformLive = Boolean(platformLiveStatus?.isLive);
               const platformUrl = platformLiveStatus?.url || url;
 
@@ -1811,7 +1860,7 @@ function ViewPanel({
                   </span>
 
                   <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
-                    {isTwitch
+                    {supportsLiveStatus
                       ? liveStatusLoading && !platformLiveStatus
                         ? "Checking live..."
                         : isPlatformLive
@@ -1821,7 +1870,9 @@ function ViewPanel({
                   </span>
 
                   <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                    {isTwitch && isPlatformLive && platformLiveStatus?.gameName
+                    {supportsLiveStatus &&
+                    isPlatformLive &&
+                    platformLiveStatus?.gameName
                       ? platformLiveStatus.gameName
                       : " "}
                   </span>
