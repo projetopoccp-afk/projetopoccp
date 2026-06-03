@@ -144,41 +144,29 @@ async function getTwitchLiveStatus(
 async function getKickLiveStatus(
   username: string
 ): Promise<LiveStatusResponse> {
-  const accessToken = await getKickAccessToken();
-
   const kickResponse = await fetch(
-    `https://api.kick.com/public/v1/channels?slug=${encodeURIComponent(
-      username
-    )}`,
+    `https://kick.com/api/v2/channels/${encodeURIComponent(username)}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
       cache: "no-store",
     }
   );
 
-  const kickData = await kickResponse.json();
-  const channel = kickData.data?.[0];
+  const channel = await kickResponse.json();
 
-  const stream = channel?.stream;
-  const category = channel?.category;
+  const livestream = channel?.livestream;
 
-  const followerCount = Number(
-    channel?.followers_count ??
-      channel?.follower_count ??
-      channel?.followersCount ??
-      channel?.followerCount ??
-      0
-  );
+  const followerCount = Number(channel?.followers_count ?? 0);
 
-  if (!channel || !stream?.is_live) {
+  if (!livestream?.is_live) {
     return {
       platform: "kick",
       username,
       isLive: false,
       followerCount,
       externalCount: followerCount,
+      thumbnail:
+        channel?.user?.profile_pic ||
+        channel?.banner_image?.url,
       url: `https://kick.com/${username}`,
     };
   }
@@ -187,14 +175,16 @@ async function getKickLiveStatus(
     platform: "kick",
     username,
     isLive: true,
-    title: channel.stream_title,
-    viewerCount: stream.viewer_count,
-    gameName: category?.name,
-    startedAt: stream.start_time,
-    thumbnail: category?.thumbnail,
+    title: livestream?.session_title,
+    viewerCount: livestream?.viewer_count,
+    gameName: livestream?.categories?.[0]?.name,
+    startedAt: livestream?.start_time,
+    thumbnail:
+      livestream?.categories?.[0]?.banner?.url ||
+      channel?.banner_image?.url,
     followerCount,
     externalCount: followerCount,
-    url: stream.url || `https://kick.com/${username}`,
+    url: `https://kick.com/${username}`,
   };
 }
 
