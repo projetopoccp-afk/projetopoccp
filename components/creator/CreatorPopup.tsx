@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Pencil, Save, Send, UserCheck, UserPlus } from "lucide-react";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
@@ -1923,6 +1923,33 @@ function ViewPanel({
   liveStatusLoading: boolean;
 }) {
   const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
+  const [clipPage, setClipPage] = useState(0);
+  const clipsPerPage = 3;
+  const totalClipPages = Math.ceil(visibleClips.length / clipsPerPage);
+  const hasClipCarousel = visibleClips.length > clipsPerPage;
+  const visibleCarouselClips = visibleClips.slice(
+    clipPage * clipsPerPage,
+    clipPage * clipsPerPage + clipsPerPage
+  );
+
+  useEffect(() => {
+    if (clipPage > Math.max(totalClipPages - 1, 0)) {
+      setClipPage(0);
+    }
+  }, [clipPage, totalClipPages]);
+
+  function goToPreviousClips() {
+    setClipPage((current) =>
+      current === 0 ? Math.max(totalClipPages - 1, 0) : current - 1
+    );
+  }
+
+  function goToNextClips() {
+    setClipPage((current) =>
+      current >= totalClipPages - 1 ? 0 : current + 1
+    );
+  }
+
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
@@ -1997,25 +2024,52 @@ function ViewPanel({
 
       {visibleClips.length > 0 && (
         <div className="mt-8">
-          <h4 className="font-bold">{translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}</h4>
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="font-bold">
+              {translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}
+            </h4>
+
+            {hasClipCarousel && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPreviousClips}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                  aria-label={translate(t, "creatorPopupPreviousClips", "Clips anteriores")}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToNextClips}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                  aria-label={translate(t, "creatorPopupNextClips", "Próximos clips")}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {visibleClips.map((clip, index) => {
+            {visibleCarouselClips.map((clip, index) => {
               const previewThumbnail =
                 clip.thumbnailUrl || getClipPreviewThumbnail(clip.url);
 
               return (
                 <a
-                  key={`${clip.url}-${index}`}
+                  key={`${clip.url}-${clipPage}-${index}`}
                   href={clip.url}
                   target="_blank"
+                  rel="noreferrer"
                   className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
                 >
                   <div className="aspect-video bg-black/40">
                     {previewThumbnail ? (
                       <img
                         src={previewThumbnail}
-                        alt={clip.title || "Clip"}
+                        alt={clip.title || translate(t, "creatorPopupClipAlt", "Clip")}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                     ) : (
