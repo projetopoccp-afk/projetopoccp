@@ -72,24 +72,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const creators = await getPublicCreatorsForSitemap();
 
-  const creatorUrls: MetadataRoute.Sitemap = creators
-    .map((creator) => {
-      const username = creator.username
-        ? normalizeCreatorUsername(creator.username)
-        : "";
+  const creatorUrls: MetadataRoute.Sitemap = creators.flatMap((creator) => {
+    const username = creator.username
+      ? normalizeCreatorUsername(creator.username)
+      : "";
 
-      if (!username) {
-        return null;
-      }
+    if (!username) {
+      return [];
+    }
 
-      return {
+    return [
+      {
         url: buildCreatorUrl(username),
         lastModified: creator.created_at ? new Date(creator.created_at) : now,
         changeFrequency: "weekly" as const,
         priority: 0.8,
-      };
-    })
-    .filter((item): item is MetadataRoute.Sitemap[number] => Boolean(item));
+      },
+    ];
+  });
 
   return [
     {
