@@ -15,8 +15,60 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creator Nexus",
-  description: "Plataforma de Reputação Digital",
+  metadataBase: new URL("https://www.cardpoc.com"),
+
+  title: {
+    default: "Cardpoc",
+    template: "%s | Cardpoc",
+  },
+
+  description:
+    "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings, reputação, conquistas e métricas exclusivas.",
+
+  keywords: [
+    "Cardpoc",
+    "criadores de conteúdo",
+    "streamers",
+    "youtubers",
+    "cartas digitais",
+    "colecionáveis",
+    "ranking de criadores",
+    "creator economy",
+    "gaming",
+    "twitch",
+    "youtube",
+    "kick",
+  ],
+
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://www.cardpoc.com",
+    siteName: "Cardpoc",
+    title: "Cardpoc",
+    description:
+      "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings e reputação.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Cardpoc",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Cardpoc",
+    description:
+      "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais.",
+    images: ["/og-image.jpg"],
+  },
+
+  alternates: {
+    canonical: "https://www.cardpoc.com",
+  },
 };
 
 export default function RootLayout({
