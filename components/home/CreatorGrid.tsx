@@ -27,25 +27,21 @@ const RARITY_SHOWCASE_CYCLE = [
 
 const RARITY_SHOWCASE_INTERVAL = 8500;
 
-function normalizeCreatorTags(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
+function normalizeCreatorTags(tags: unknown): string[] {
+  if (Array.isArray(tags)) {
+    return tags
       .map((tag) => String(tag).trim())
       .filter(Boolean);
   }
 
-  if (typeof value !== "string") {
-    return [];
-  }
+  if (typeof tags !== "string") return [];
 
-  const rawValue = value.trim();
+  const trimmed = tags.trim();
 
-  if (!rawValue) {
-    return [];
-  }
+  if (!trimmed) return [];
 
   try {
-    const parsed = JSON.parse(rawValue);
+    const parsed = JSON.parse(trimmed);
 
     if (Array.isArray(parsed)) {
       return parsed
@@ -53,15 +49,16 @@ function normalizeCreatorTags(value: unknown): string[] {
         .filter(Boolean);
     }
   } catch {
-    // Mantém compatibilidade com tags antigas salvas como texto separado por vírgula.
+    // Fallback below for comma-separated values.
   }
 
-  return rawValue
+  return trimmed
     .replace(/^\[|\]$/g, "")
     .split(",")
-    .map((tag) => tag.replace(/^['"]|['"]$/g, "").trim())
+    .map((tag) => tag.replace(/"/g, "").trim())
     .filter(Boolean);
 }
+
 
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
@@ -260,6 +257,31 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     }
   }
 
+
+  function handleCreatorUpdated(updatedCreator: Creator) {
+    setCreators((currentCreators) =>
+      currentCreators.map((creator) =>
+        creator.id === updatedCreator.id
+          ? {
+              ...creator,
+              ...updatedCreator,
+              createdAt: creator.createdAt,
+              trendingScore: creator.trendingScore,
+            }
+          : creator
+      )
+    );
+
+    setSelectedCreator((currentCreator) =>
+      currentCreator?.id === updatedCreator.id
+        ? {
+            ...currentCreator,
+            ...updatedCreator,
+          }
+        : currentCreator
+    );
+  }
+
   const normalizedSearch = search.toLowerCase().trim();
   const hasSearch = normalizedSearch.length > 0;
 
@@ -275,7 +297,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       creator.title,
       creator.faction,
       creator.status,
-      ...normalizeCreatorTags(creator.tags),
+      ...creator.tags,
     ]
       .join(" ")
       .toLowerCase();
@@ -341,7 +363,11 @@ export function CreatorGrid({ search }: CreatorGridProps) {
         {!loading && hasSearch && filteredCreators.length === 0 && <EmptyState />}
       </section>
 
-      <CreatorPopup creator={selectedCreator} onClose={handleCloseCreator} />
+      <CreatorPopup
+        creator={selectedCreator}
+        onClose={handleCloseCreator}
+        onCreatorUpdated={handleCreatorUpdated}
+      />
     </>
   );
 }

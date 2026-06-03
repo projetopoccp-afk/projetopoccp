@@ -14,43 +14,8 @@ import { translate } from "@/lib/i18n/translate";
 type CreatorPopupProps = {
   creator: Creator | null;
   onClose: () => void;
+  onCreatorUpdated?: (creator: Creator) => void;
 };
-
-function normalizeCreatorTags(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((tag) => String(tag).trim())
-      .filter(Boolean);
-  }
-
-  if (typeof value !== "string") {
-    return [];
-  }
-
-  const rawValue = value.trim();
-
-  if (!rawValue) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue);
-
-    if (Array.isArray(parsed)) {
-      return parsed
-        .map((tag) => String(tag).trim())
-        .filter(Boolean);
-    }
-  } catch {
-    // Mantém compatibilidade com tags antigas salvas como texto separado por vírgula.
-  }
-
-  return rawValue
-    .replace(/^\[|\]$/g, "")
-    .split(",")
-    .map((tag) => tag.replace(/^['"]|['"]$/g, "").trim())
-    .filter(Boolean);
-}
 
 const statusLabel = {
   online: "Online",
@@ -337,7 +302,11 @@ async function addXpAndNotifyLevelUp({
   return result;
 }
 
-export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
+export function CreatorPopup({
+  creator,
+  onClose,
+  onCreatorUpdated,
+}: CreatorPopupProps) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -1098,7 +1067,10 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     setSaving(true);
 
-    const tags = normalizeCreatorTags(tagsText);
+    const tags = tagsText
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
 
     const { error: profileError } = await supabase
       .from("creator_profiles")
@@ -1152,6 +1124,20 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         return;
       }
     }
+
+    const updatedCreator: Creator = {
+      ...creator,
+      nickname,
+      title,
+      category,
+      bio,
+      description,
+      avatarUrl,
+      bannerUrl,
+      tags,
+    };
+
+    onCreatorUpdated?.(updatedCreator);
 
     setSaving(false);
     setEditMode(false);
@@ -2006,7 +1992,10 @@ function ViewPanel({
         <h4 className="font-bold">{translate(t, "creatorPopupTags", "Tags")}</h4>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {normalizeCreatorTags(tagsText)
+          {tagsText
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
             .map((tag) => (
               <span
                 key={tag}
