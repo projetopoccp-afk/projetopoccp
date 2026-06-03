@@ -19,10 +19,10 @@ type CreatorWithMeta = Creator & {
 };
 
 const RARITY_SHOWCASE_CYCLE = [
-  { rarity: "common", level: 1 },
-  { rarity: "rare", level: 2 },
-  { rarity: "epic", level: 3 },
-  { rarity: "legendary", level: 5 },
+  { rarity: "common" },
+  { rarity: "rare" },
+  { rarity: "epic" },
+  { rarity: "legendary" },
 ] as const;
 
 const RARITY_SHOWCASE_INTERVAL = 8500;
@@ -403,7 +403,7 @@ function AnimatedRarityCreatorCard({
   const showcasedCreator: CreatorWithMeta = {
     ...creator,
     rarity: showcase.rarity,
-    level: showcase.level,
+    level: creator.level || 1,
   };
 
   return (
