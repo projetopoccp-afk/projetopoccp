@@ -38,6 +38,18 @@ const clipPlatforms = ["youtube", "twitch", "tiktok", "kick"];
 
 type SocialForm = Record<string, string>;
 
+type LiveStatus = {
+  isLive: boolean;
+  title?: string;
+  viewerCount?: number;
+  gameName?: string;
+  startedAt?: string;
+  thumbnail?: string;
+  url?: string;
+};
+
+type LiveStatusMap = Partial<Record<string, LiveStatus>>;
+
 type ClipForm = {
   title: string;
   platform: string;
@@ -53,6 +65,48 @@ const emptyClip = (): ClipForm => ({
   thumbnailUrl: "",
   description: "",
 });
+
+function extractTwitchUsername(url: string) {
+  const normalizedUrl = url.trim();
+
+  if (!normalizedUrl) return "";
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(normalizedUrl)
+      ? normalizedUrl
+      : `https://${normalizedUrl}`;
+
+    const parsedUrl = new URL(withProtocol);
+    const host = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
+
+    if (!host.includes("twitch.tv")) {
+      return "";
+    }
+
+    const username = parsedUrl.pathname
+      .split("/")
+      .filter(Boolean)[0]
+      ?.replace("@", "")
+      .trim();
+
+    return username || "";
+  } catch {
+    return normalizedUrl
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/^twitch\.tv\//i, "")
+      .split(/[/?#]/)[0]
+      .replace("@", "")
+      .trim();
+  }
+}
+
+function getPlatformLiveStatus(
+  liveStatus: LiveStatusMap,
+  platform: string
+) {
+  return liveStatus[platform.toLowerCase()];
+}
 
 const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -252,6 +306,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [shareCount, setShareCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatusMap>({});
+  const [liveStatusLoading, setLiveStatusLoading] = useState(false);
 
   const [claimPlatform, setClaimPlatform] = useState("youtube");
   const [claimUrl, setClaimUrl] = useState("");
@@ -291,6 +347,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setClaimSuccess(false);
     setClaimUrl("");
     setShareOpen(false);
+    setLiveStatus({});
 
     setNickname(creator.nickname);
     setTitle(creator.title || "");
@@ -400,6 +457,70 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     loadCreatorData();
   }, [creator]);
+
+  useEffect(() => {
+    const twitchUrl = socials.twitch || "";
+    const twitchUsername = extractTwitchUsername(twitchUrl);
+
+    if (!creator || !twitchUsername) {
+      setLiveStatus((current) => {
+        const { twitch, ...rest } = current;
+
+        return rest;
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadTwitchLiveStatus() {
+      setLiveStatusLoading(true);
+
+      try {
+        const response = await fetch(
+          `/api/live-status?username=${encodeURIComponent(twitchUsername)}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to load Twitch live status.");
+        }
+
+        const data: LiveStatus = await response.json();
+
+        if (!cancelled) {
+          setLiveStatus((current) => ({
+            ...current,
+            twitch: {
+              ...data,
+              url: data.url || `https://twitch.tv/${twitchUsername}`,
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar status da Twitch:", error);
+
+        if (!cancelled) {
+          setLiveStatus((current) => ({
+            ...current,
+            twitch: {
+              isLive: false,
+              url: `https://twitch.tv/${twitchUsername}`,
+            },
+          }));
+        }
+      } finally {
+        if (!cancelled) {
+          setLiveStatusLoading(false);
+        }
+      }
+    }
+
+    loadTwitchLiveStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [creator, socials.twitch]);
 
   function getCreatorShareUrl() {
     if (!creator) return "";
@@ -821,6 +942,9 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   if (!creator) return null;
 
   const isPreparingCreator = preparedCreatorId !== creator.id;
+  const twitchLiveStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const isLiveOnAnyPlatform = Boolean(twitchLiveStatus?.isLive);
+  const displayedStatus = isLiveOnAnyPlatform ? "live" : creator.status;
 
   function getTranslatedStatusLabel(status: keyof typeof statusLabel) {
     if (status === "online") return translate(t, "creatorPopupStatusOnline", "Online");
@@ -883,9 +1007,25 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
             </div>
 
             <div className="absolute bottom-6 left-6 right-6">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100 backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-                {getTranslatedStatusLabel(creator.status)}
+              <div
+                className={`mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs backdrop-blur ${
+                  displayedStatus === "live"
+                    ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+                    : displayedStatus === "offline"
+                      ? "border-white/10 bg-white/[0.04] text-white/55"
+                      : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    displayedStatus === "live"
+                      ? "bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]"
+                      : displayedStatus === "offline"
+                        ? "bg-white/35"
+                        : "bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.8)]"
+                  }`}
+                />
+                {getTranslatedStatusLabel(displayedStatus)}
               </div>
 
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
@@ -1021,6 +1161,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   viewCount={viewCount}
   followerCount={followerCount}
   shareCount={shareCount}
+  liveStatus={liveStatus}
+  liveStatusLoading={liveStatusLoading}
 />
               )}
             </div>
@@ -1524,6 +1666,8 @@ function ViewPanel({
   viewCount,
   followerCount,
   shareCount,
+  liveStatus,
+  liveStatusLoading,
 }: {
   t: (key: any) => string;
   creator: Creator;
@@ -1536,6 +1680,8 @@ function ViewPanel({
   viewCount: number;
   followerCount: number;
   shareCount: number;
+  liveStatus: LiveStatusMap;
+  liveStatusLoading: boolean;
 }) {
   const visibleClips = clips.filter((clip) => clip.url.trim().length > 0);
 
@@ -1642,16 +1788,46 @@ function ViewPanel({
         <div className="mt-3 flex flex-wrap gap-3">
           {Object.entries(socials)
             .filter(([, url]) => url.trim().length > 0)
-            .map(([platform, url]) => (
-              <a
-                key={platform}
-                href={url}
-                target="_blank"
-                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
-              >
-                {platform}
-              </a>
-            ))}
+            .map(([platform, url]) => {
+              const platformLiveStatus = getPlatformLiveStatus(liveStatus, platform);
+              const isTwitch = platform.toLowerCase() === "twitch";
+              const isPlatformLive = Boolean(platformLiveStatus?.isLive);
+              const platformUrl = platformLiveStatus?.url || url;
+
+              return (
+                <a
+                  key={platform}
+                  href={platformUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`rounded-2xl border px-4 py-3 text-sm transition hover:scale-105 ${
+                    isPlatformLive
+                      ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
+                      : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
+                  }`}
+                >
+                  <span className="block font-bold uppercase tracking-[0.18em]">
+                    {platform}
+                  </span>
+
+                  {isTwitch && (
+                    <span className="mt-1 block text-xs text-white/55">
+                      {liveStatusLoading && !platformLiveStatus
+                        ? "Checking live..."
+                        : isPlatformLive
+                          ? `LIVE • ${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} viewers`
+                          : "Offline"}
+                    </span>
+                  )}
+
+                  {isTwitch && isPlatformLive && platformLiveStatus?.gameName && (
+                    <span className="mt-1 block max-w-[180px] truncate text-xs text-white/40">
+                      {platformLiveStatus.gameName}
+                    </span>
+                  )}
+                </a>
+              );
+            })}
         </div>
       </div>
     </>
