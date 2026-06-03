@@ -151,7 +151,7 @@ function getPlatformFallbackUrl(platform: string, username: string) {
   }
 
   if (normalizedPlatform === "youtube") {
-    return `https://www.youtube.com/@${username.replace("@", "")}`;
+    return `https://www.youtube.com/${username.replace("@", "")}`;
   }
 
   return `https://twitch.tv/${username}`;
@@ -341,6 +341,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   const [bannerUrl, setBannerUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [socials, setSocials] = useState<SocialForm>({});
+  const [youtubeChannels, setYoutubeChannels] = useState<string[]>([""]);
   const [clips, setClips] = useState<ClipForm[]>([
     emptyClip(),
     emptyClip(),
@@ -470,16 +471,31 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         .eq("creator_id", creator.id);
 
       const nextSocials: SocialForm = {};
+      const nextYoutubeChannels: string[] = [];
 
       socialPlatforms.forEach((platform) => {
         nextSocials[platform] = "";
       });
 
       socialData?.forEach((item: any) => {
-        nextSocials[item.platform] = item.url;
+        const platform = String(item.platform || "").toLowerCase();
+        const url = String(item.url || "");
+
+        if (platform === "youtube") {
+          if (url.trim().length > 0) {
+            nextYoutubeChannels.push(url);
+          }
+
+          return;
+        }
+
+        nextSocials[platform] = url;
       });
 
+      nextSocials.youtube = nextYoutubeChannels[0] || "";
+
       setSocials(nextSocials);
+      setYoutubeChannels(nextYoutubeChannels.length > 0 ? nextYoutubeChannels : [""]);
 
       const { data: clipData } = await supabase
         .from("creator_featured_moments")
@@ -513,19 +529,39 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
       return;
     }
 
-    const livePlatforms = ["twitch", "kick", "youtube"] as const;
+    const liveTargets = ["twitch", "kick"] as const;
 
-    const targets = livePlatforms
-      .map((platform) => {
-        const url = socials[platform] || "";
-        const username = extractPlatformUsername(platform, url);
+    const targets: Array<{
+      platform: "twitch" | "kick" | "youtube";
+      username: string;
+      url?: string;
+      index?: number;
+    }> = [
+      ...liveTargets
+        .map((platform) => {
+          const url = socials[platform] || "";
+          const username = extractPlatformUsername(platform, url);
 
-        return {
-          platform,
-          username,
-        };
-      })
-      .filter((target) => target.username.length > 0);
+          return {
+            platform,
+            username,
+            url,
+          };
+        })
+        .filter((target) => target.username.length > 0),
+      ...youtubeChannels
+        .map((url, index) => {
+          const username = extractPlatformUsername("youtube", url);
+
+          return {
+            platform: "youtube" as const,
+            username,
+            url,
+            index,
+          };
+        })
+        .filter((target) => target.username.length > 0),
+    ];
 
     if (targets.length === 0) {
       setLiveStatus({});
@@ -539,7 +575,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
       try {
         const results = await Promise.all(
-          targets.map(async ({ platform, username }) => {
+          targets.map(async ({ platform, username, index }) => {
             try {
               const response = await fetch(
                 `/api/live-status?platform=${platform}&username=${encodeURIComponent(username)}`
@@ -553,6 +589,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
               return {
                 platform,
+                index,
                 status: {
                   ...data,
                   url: data.url || getPlatformFallbackUrl(platform, username),
@@ -563,6 +600,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
               return {
                 platform,
+                index,
                 status: {
                   platform,
                   username,
@@ -577,6 +615,30 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
         if (!cancelled) {
           setLiveStatus(
             results.reduce<LiveStatusMap>((accumulator, result) => {
+              if (result.platform === "youtube") {
+                const currentYoutube = accumulator.youtube;
+                const currentSubscriberCount =
+                  currentYoutube?.subscriberCount ?? currentYoutube?.externalCount ?? 0;
+                const nextSubscriberCount =
+                  result.status.subscriberCount ?? result.status.externalCount ?? 0;
+
+                accumulator.youtube = {
+                  platform: "youtube",
+                  username: "youtube",
+                  isLive: false,
+                  url: currentYoutube?.url || result.status.url,
+                  subscriberCount: currentSubscriberCount + nextSubscriberCount,
+                  externalCount: currentSubscriberCount + nextSubscriberCount,
+                  title:
+                    youtubeChannels.filter((channel) => channel.trim().length > 0)
+                      .length > 1
+                      ? `${youtubeChannels.filter((channel) => channel.trim().length > 0).length} canais`
+                      : result.status.title,
+                };
+
+                return accumulator;
+              }
+
               accumulator[result.platform] = result.status;
 
               return accumulator;
@@ -595,7 +657,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     return () => {
       cancelled = true;
     };
-  }, [creator, socials.twitch, socials.kick, socials.youtube]);
+  }, [creator, socials.twitch, socials.kick, youtubeChannels]);
 
   function getCreatorShareUrl() {
     if (!creator) return "";
@@ -920,13 +982,23 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     await supabase.from("creator_social_links").delete().eq("creator_id", creator.id);
 
-    const socialRows = Object.entries(socials)
-      .filter(([, url]) => url.trim().length > 0)
-      .map(([platform, url]) => ({
-        creator_id: creator.id,
-        platform,
-        url,
-      }));
+    const socialRows = [
+      ...Object.entries(socials)
+        .filter(([platform, url]) => platform !== "youtube" && url.trim().length > 0)
+        .map(([platform, url]) => ({
+          creator_id: creator.id,
+          platform,
+          url,
+        })),
+      ...youtubeChannels
+        .map((url) => url.trim())
+        .filter(Boolean)
+        .map((url) => ({
+          creator_id: creator.id,
+          platform: "youtube",
+          url,
+        })),
+    ];
 
     if (socialRows.length > 0) {
       const { error: socialError } = await supabase
@@ -1219,6 +1291,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
                   setTagsText={setTagsText}
                   socials={socials}
                   setSocials={setSocials}
+                  youtubeChannels={youtubeChannels}
+                  setYoutubeChannels={setYoutubeChannels}
                   clips={clips}
                   setClips={setClips}
                   uploadingAvatar={uploadingAvatar}
@@ -1236,6 +1310,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
   description={description}
   tagsText={tagsText}
   socials={socials}
+  youtubeChannels={youtubeChannels}
   clips={clips}
   viewCount={viewCount}
   followerCount={followerCount}
@@ -1364,6 +1439,8 @@ function EditPanel({
   setTagsText,
   socials,
   setSocials,
+  youtubeChannels,
+  setYoutubeChannels,
   clips,
   setClips,
   uploadingAvatar,
@@ -1391,6 +1468,8 @@ function EditPanel({
   setTagsText: (value: string) => void;
   socials: SocialForm;
   setSocials: React.Dispatch<React.SetStateAction<SocialForm>>;
+  youtubeChannels: string[];
+  setYoutubeChannels: React.Dispatch<React.SetStateAction<string[]>>;
   clips: ClipForm[];
   setClips: React.Dispatch<React.SetStateAction<ClipForm[]>>;
   uploadingAvatar: boolean;
@@ -1407,6 +1486,39 @@ function EditPanel({
         clipIndex === index ? { ...clip, [field]: value } : clip
       )
     );
+  }
+
+  function updateYoutubeChannel(index: number, value: string) {
+    setYoutubeChannels((current) =>
+      current.map((channel, channelIndex) =>
+        channelIndex === index ? value : channel
+      )
+    );
+
+    if (index === 0) {
+      setSocials((current) => ({
+        ...current,
+        youtube: value,
+      }));
+    }
+  }
+
+  function addYoutubeChannel() {
+    setYoutubeChannels((current) => [...current, ""]);
+  }
+
+  function removeYoutubeChannel(index: number) {
+    setYoutubeChannels((current) => {
+      const nextChannels = current.filter((_, channelIndex) => channelIndex !== index);
+      const safeChannels = nextChannels.length > 0 ? nextChannels : [""];
+
+      setSocials((currentSocials) => ({
+        ...currentSocials,
+        youtube: safeChannels[0] || "",
+      }));
+
+      return safeChannels;
+    });
   }
 
   return (
@@ -1493,20 +1605,64 @@ function EditPanel({
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {socialPlatforms.map((platform) => (
-            <EditInput
-              key={platform}
-              label={platform}
-              value={socials[platform] || ""}
-              onChange={(value) =>
-                setSocials((current) => ({
-                  ...current,
-                  [platform]: value,
-                }))
-              }
-              placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} ${platform}`}
-            />
-          ))}
+          <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-black/15 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/35">
+                youtube
+              </p>
+
+              <button
+                type="button"
+                onClick={addYoutubeChannel}
+                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              >
+                + Adicionar canal
+              </button>
+            </div>
+
+            <div className="mt-3 grid gap-3">
+              {youtubeChannels.map((channelUrl, index) => (
+                <div key={`youtube-channel-${index}`} className="flex gap-2">
+                  <input
+                    value={channelUrl}
+                    onChange={(event) =>
+                      updateYoutubeChannel(index, event.target.value)
+                    }
+                    placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} youtube ${index + 1}`}
+                    className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                  />
+
+                  {youtubeChannels.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeYoutubeChannel(index)}
+                      className="shrink-0 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20"
+                      aria-label="Remover canal do YouTube"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {socialPlatforms
+            .filter((platform) => platform !== "youtube")
+            .map((platform) => (
+              <EditInput
+                key={platform}
+                label={platform}
+                value={socials[platform] || ""}
+                onChange={(value) =>
+                  setSocials((current) => ({
+                    ...current,
+                    [platform]: value,
+                  }))
+                }
+                placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} ${platform}`}
+              />
+            ))}
         </div>
       </div>
 
@@ -1741,6 +1897,7 @@ function ViewPanel({
   description,
   tagsText,
   socials,
+  youtubeChannels,
   clips,
   viewCount,
   followerCount,
@@ -1755,6 +1912,7 @@ function ViewPanel({
   description: string;
   tagsText: string;
   socials: SocialForm;
+  youtubeChannels: string[];
   clips: ClipForm[];
   viewCount: number;
   followerCount: number;
@@ -1874,9 +2032,14 @@ function ViewPanel({
         <h4 className="font-bold">{translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}</h4>
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          {Object.entries(socials)
-            .filter(([, url]) => url.trim().length > 0)
-            .map(([platform, url]) => {
+          {[
+            ...Object.entries(socials).filter(
+              ([platform, url]) => platform !== "youtube" && url.trim().length > 0
+            ),
+            ...(youtubeChannels.filter((url) => url.trim().length > 0).length > 0
+              ? [["youtube", youtubeChannels[0]] as [string, string]]
+              : []),
+          ].map(([platform, url]) => {
               const normalizedPlatform = platform.toLowerCase();
               const platformLiveStatus = getPlatformLiveStatus(
                 liveStatus,
@@ -1911,7 +2074,10 @@ function ViewPanel({
                   }`}
                 >
                   <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                    {platform}
+                    {normalizedPlatform === "youtube" &&
+                    youtubeChannels.filter((channel) => channel.trim().length > 0).length > 1
+                      ? `YOUTUBE (${youtubeChannels.filter((channel) => channel.trim().length > 0).length})`
+                      : platform}
                   </span>
 
                   <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
