@@ -27,6 +27,42 @@ const RARITY_SHOWCASE_CYCLE = [
 
 const RARITY_SHOWCASE_INTERVAL = 8500;
 
+function normalizeCreatorTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((tag) => String(tag).trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const rawValue = value.trim();
+
+  if (!rawValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((tag) => String(tag).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Mantém compatibilidade com tags antigas salvas como texto separado por vírgula.
+  }
+
+  return rawValue
+    .replace(/^\[|\]$/g, "")
+    .split(",")
+    .map((tag) => tag.replace(/^['"]|['"]$/g, "").trim())
+    .filter(Boolean);
+}
+
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
 
@@ -113,7 +149,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
               "creatorGridDefaultDescription",
               "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve."
             ),
-          tags: item.tags || [],
+          tags: normalizeCreatorTags(item.tags),
           rank: card?.rank || "Bronze",
           rarity: card?.rarity || "common",
           aura: card?.aura || "Origin Aura",
@@ -239,7 +275,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       creator.title,
       creator.faction,
       creator.status,
-      ...creator.tags,
+      ...normalizeCreatorTags(creator.tags),
     ]
       .join(" ")
       .toLowerCase();

@@ -16,6 +16,42 @@ type CreatorPopupProps = {
   onClose: () => void;
 };
 
+function normalizeCreatorTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((tag) => String(tag).trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const rawValue = value.trim();
+
+  if (!rawValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((tag) => String(tag).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Mantém compatibilidade com tags antigas salvas como texto separado por vírgula.
+  }
+
+  return rawValue
+    .replace(/^\[|\]$/g, "")
+    .split(",")
+    .map((tag) => tag.replace(/^['"]|['"]$/g, "").trim())
+    .filter(Boolean);
+}
+
 const statusLabel = {
   online: "Online",
   offline: "Offline",
@@ -388,7 +424,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
     setDescription(creator.description || "");
     setAvatarUrl(creator.avatarUrl || "");
     setBannerUrl(creator.bannerUrl || "");
-    setTagsText((creator.tags || []).join(", "));
+    setTagsText(normalizeCreatorTags(creator.tags).join(", "));
 
     async function loadCreatorData() {
       if (!creator) return;
@@ -1062,10 +1098,7 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
 
     setSaving(true);
 
-    const tags = tagsText
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
+    const tags = normalizeCreatorTags(tagsText);
 
     const { error: profileError } = await supabase
       .from("creator_profiles")
@@ -1973,10 +2006,7 @@ function ViewPanel({
         <h4 className="font-bold">{translate(t, "creatorPopupTags", "Tags")}</h4>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {tagsText
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
+          {normalizeCreatorTags(tagsText)
             .map((tag) => (
               <span
                 key={tag}
