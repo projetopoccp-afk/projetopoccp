@@ -227,12 +227,24 @@ function normalizeYouTubeUsername(username: string) {
 }
 
 function getYouTubeFallbackUrl(username: string) {
-  const cleanUsername = normalizeYouTubeUsername(username);
+  const value = username.trim();
+
+  if (!value) return "https://www.youtube.com";
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  const cleanUsername = normalizeYouTubeUsername(value);
 
   if (!cleanUsername) return "https://www.youtube.com";
 
   if (cleanUsername.startsWith("UC")) {
     return `https://www.youtube.com/channel/${cleanUsername}`;
+  }
+
+  if (cleanUsername.startsWith("@")) {
+    return `https://www.youtube.com/${cleanUsername}`;
   }
 
   return `https://www.youtube.com/${cleanUsername}`;
@@ -294,6 +306,82 @@ async function fetchYouTubeChannelById(channelId: string, apiKey: string) {
   return data.items?.[0] ?? null;
 }
 
+
+async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) {
+  const cleanUsername = normalizeYouTubeUsername(username);
+
+  if (!cleanUsername || cleanUsername.startsWith("UC")) return null;
+
+  const candidates = [
+    getYouTubeFallbackUrl(cleanUsername),
+    `https://www.youtube.com/${cleanUsername}`,
+    `https://www.youtube.com/c/${cleanUsername}`,
+    `https://www.youtube.com/user/${cleanUsername}`,
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const response = await fetch(candidate, {
+        next: {
+          revalidate: 3600,
+        },
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; CreatorNexusBot/1.0; +https://creatornexus.app)",
+        },
+        redirect: "follow",
+      });
+
+      if (!response.ok) continue;
+
+      const finalUrl = response.url || candidate;
+      const html = await response.text();
+
+      const channelIdMatch =
+        html.match(/"channelId"\s*:\s*"(UC[^"]+)"/) ||
+        html.match(/"externalId"\s*:\s*"(UC[^"]+)"/) ||
+        html.match(/<meta[^>]+itemprop=["']channelId["'][^>]+content=["'](UC[^"']+)["']/i) ||
+        html.match(/<meta[^>]+content=["'](UC[^"']+)["'][^>]+itemprop=["']channelId["']/i) ||
+        finalUrl.match(/\/channel\/(UC[^/?#]+)/i);
+
+      if (channelIdMatch?.[1]) {
+        const channelById = await fetchYouTubeChannelById(channelIdMatch[1], apiKey);
+
+        if (channelById) return channelById;
+      }
+
+      const canonicalMatch =
+        html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ||
+        html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i) ||
+        finalUrl.match(/(https?:\/\/(?:www\.)?youtube\.com\/@[^/?#]+)/i);
+
+      const canonicalUrl = canonicalMatch?.[1];
+
+      if (canonicalUrl) {
+        const handleMatch = canonicalUrl.match(/youtube\.com\/@([^/?#]+)/i);
+
+        if (handleMatch?.[1]) {
+          const channelByHandle = await fetchYouTubeChannelByHandle(handleMatch[1], apiKey);
+
+          if (channelByHandle) return channelByHandle;
+        }
+
+        const canonicalChannelMatch = canonicalUrl.match(/youtube\.com\/channel\/(UC[^/?#]+)/i);
+
+        if (canonicalChannelMatch?.[1]) {
+          const channelById = await fetchYouTubeChannelById(canonicalChannelMatch[1], apiKey);
+
+          if (channelById) return channelById;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao resolver URL customizada do YouTube:", error);
+    }
+  }
+
+  return null;
+}
+
 async function searchYouTubeChannel(username: string, apiKey: string) {
   const cleanUsername = normalizeYouTubeUsername(username);
 
@@ -352,6 +440,10 @@ async function getYouTubeChannelStatus(
   }
 
   if (!channel) {
+    channel = await fetchYouTubeChannelByCustomUrl(cleanUsername, apiKey);
+  }
+
+  if (!channel) {
     channel = await searchYouTubeChannel(cleanUsername, apiKey);
   }
 
@@ -360,6 +452,7 @@ async function getYouTubeChannelStatus(
       platform: "youtube",
       username,
       isLive: false,
+      title: username,
       subscriberCount: 0,
       externalCount: 0,
       url: getYouTubeFallbackUrl(username),
