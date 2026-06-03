@@ -616,6 +616,8 @@ export function CreatorPopup({ creator, onClose }: CreatorPopupProps) {
           setLiveStatus(
             results.reduce<LiveStatusMap>((accumulator, result) => {
               if (result.platform === "youtube") {
+                accumulator[`youtube:${result.index ?? 0}`] = result.status;
+
                 const currentYoutube = accumulator.youtube;
                 const currentSubscriberCount =
                   currentYoutube?.subscriberCount ?? currentYoutube?.externalCount ?? 0;
@@ -1929,6 +1931,23 @@ function ViewPanel({
   const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
   const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
   const externalTotal = twitchFollowers + kickFollowers + youtubeSubscribers;
+  const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
+
+  const visibleYoutubeChannels = youtubeChannels.filter(
+    (url) => url.trim().length > 0
+  );
+
+  const youtubeChannelItems = visibleYoutubeChannels.map((url, index) => {
+    const channelStatus = getPlatformLiveStatus(liveStatus, `youtube:${index}`);
+
+    return {
+      url: channelStatus?.url || url,
+      title: channelStatus?.title || `Canal ${index + 1}`,
+      thumbnail: channelStatus?.thumbnail,
+      subscriberCount:
+        channelStatus?.subscriberCount ?? channelStatus?.externalCount ?? 0,
+    };
+  });
 
   return (
     <>
@@ -2061,6 +2080,44 @@ function ViewPanel({
               const platformExternalLabel =
                 normalizedPlatform === "youtube" ? "inscritos" : "seguidores";
 
+              if (normalizedPlatform === "youtube") {
+                return (
+                  <button
+                    key={platform}
+                    type="button"
+                    onClick={() => {
+                      if (visibleYoutubeChannels.length > 1) {
+                        setYoutubeChannelsOpen(true);
+                        return;
+                      }
+
+                      window.open(platformUrl, "_blank", "noopener,noreferrer");
+                    }}
+                    className="flex h-[104px] min-w-0 flex-col justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-left text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
+                  >
+                    <span className="block truncate font-bold uppercase tracking-[0.18em]">
+                      {visibleYoutubeChannels.length > 1
+                        ? `YOUTUBE (${visibleYoutubeChannels.length})`
+                        : "youtube"}
+                    </span>
+
+                    <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
+                      {liveStatusLoading && !platformLiveStatus
+                        ? "Carregando..."
+                        : visibleYoutubeChannels.length > 1
+                          ? `${visibleYoutubeChannels.length} canais`
+                          : " "}
+                    </span>
+
+                    <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
+                      {platformLiveStatus
+                        ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                        : " "}
+                    </span>
+                  </button>
+                );
+              }
+
               return (
                 <a
                   key={platform}
@@ -2106,6 +2163,76 @@ function ViewPanel({
             })}
         </div>
       </div>
+
+      {youtubeChannelsOpen && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
+          <button
+            className="absolute inset-0"
+            onClick={() => setYoutubeChannelsOpen(false)}
+            aria-label="Fechar canais do YouTube"
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
+            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
+            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
+
+            <div className="relative z-10">
+              <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">
+                YouTube
+              </p>
+
+              <h3 className="mt-3 text-2xl font-black">
+                Canais do YouTube
+              </h3>
+
+              <p className="mt-2 text-sm text-white/45">
+                Escolha qual canal deseja abrir.
+              </p>
+
+              <div className="mt-5 grid gap-3">
+                {youtubeChannelItems.map((channel, index) => (
+                  <a
+                    key={`${channel.url}-${index}`}
+                    href={channel.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
+                  >
+                    {channel.thumbnail ? (
+                      <img
+                        src={channel.thumbnail}
+                        alt={channel.title}
+                        className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-300/10 text-xs font-bold text-cyan-100">
+                        YT
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-white">
+                        {channel.title}
+                      </p>
+
+                      <p className="text-sm text-white/45">
+                        {channel.subscriberCount.toLocaleString("pt-BR")} inscritos
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setYoutubeChannelsOpen(false)}
+                className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
