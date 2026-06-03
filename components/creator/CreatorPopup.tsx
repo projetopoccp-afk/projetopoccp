@@ -151,12 +151,8 @@ function getPlatformFallbackUrl(platform: string, username: string) {
   }
 
   if (normalizedPlatform === "youtube") {
-  if (username.startsWith("http")) {
-    return username;
+    return `https://www.youtube.com/@${username.replace("@", "")}`;
   }
-
-  return `https://www.youtube.com/${username.replace("@", "")}`;
-}
 
   return `https://twitch.tv/${username}`;
 }
