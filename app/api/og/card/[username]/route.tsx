@@ -18,19 +18,17 @@ export async function GET(
   const { data } = await supabase
     .from("creator_profiles")
     .select(
-      "nickname, username, title, category, is_verified, avatar_url, rarity"
+      "nickname, username, title, category, faction, is_verified, avatar_url"
     )
-    .eq("username", username)
-    .single();
+    .ilike("username", username)
+    .maybeSingle();
 
-  console.log("OG USERNAME:", username);
-  console.log("OG DATA:", data);
 
   const nickname = data?.nickname || "Cardpoc";
   const creatorUsername = data?.username || username;
   const title = data?.title || "Criador de Conteúdo";
   const category = data?.category || "Criador de Conteúdo";
-  const rarity = String(data?.rarity || "common").toUpperCase();
+  const rarity = String(data?.faction || "common").toUpperCase();
   const initials = nickname.slice(0, 2).toUpperCase();
 
   const origin = new URL(request.url).origin;
