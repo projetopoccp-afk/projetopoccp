@@ -3,17 +3,47 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";
 
+const SITE_NAME = "Cardpoc";
+const DEFAULT_CREATOR_NAME = "Cardpoc Creator";
+const DEFAULT_CREATOR_TITLE = "Digital Creator";
+const DEFAULT_CREATOR_CATEGORY = "Creator";
+const VERIFIED_LABEL = "Verified";
+const BRAND_TAGLINE = "Collectible creator reputation cards.";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+function normalizeUsername(value: string) {
+  return decodeURIComponent(value).replace("@", "").trim();
+}
+
+function getInitials(value: string) {
+  const cleanValue = value.trim();
+
+  if (!cleanValue) {
+    return "CP";
+  }
+
+  const parts = cleanValue
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  }
+
+  return cleanValue.slice(0, 2).toUpperCase();
+}
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ username: string }> }
 ) {
   const params = await context.params;
-  const username = decodeURIComponent(params.username).replace("@", "").trim();
+  const username = normalizeUsername(params.username);
 
   const { data } = await supabase
     .from("creator_profiles")
@@ -21,14 +51,15 @@ export async function GET(
     .ilike("username", username)
     .maybeSingle();
 
-  const nickname = data?.nickname || "Creator Nexus";
-  const creatorUsername = data?.username || username;
-  const title = data?.title || "Digital Creator";
-  const category = data?.category || "Creator";
-  const initials = nickname.slice(0, 2).toUpperCase();
+  const nickname = data?.nickname?.trim() || data?.username?.trim() || username || DEFAULT_CREATOR_NAME;
+  const creatorUsername = data?.username?.trim() || username;
+  const title = data?.title?.trim() || DEFAULT_CREATOR_TITLE;
+  const category = data?.category?.trim() || DEFAULT_CREATOR_CATEGORY;
+  const initials = getInitials(nickname);
 
   const origin = new URL(request.url).origin;
-  const avatarProxyUrl = `${origin}/api/og/avatar/${creatorUsername}`;
+  const encodedCreatorUsername = encodeURIComponent(creatorUsername);
+  const avatarProxyUrl = `${origin}/api/og/avatar/${encodedCreatorUsername}`;
 
   return new ImageResponse(
     (
@@ -54,6 +85,7 @@ export async function GET(
             borderRadius: "42px",
             background: "rgba(255,255,255,0.045)",
             padding: "42px",
+            boxShadow: "0 0 90px rgba(34,211,238,0.18)",
           }}
         >
           <div
@@ -68,11 +100,12 @@ export async function GET(
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
+              boxShadow: "0 0 56px rgba(34,211,238,0.24)",
             }}
           >
             {data?.avatar_url ? (
               <img
-                src="https://projetopoccp.vercel.app/api/og/avatar/teste5"
+                src={avatarProxyUrl}
                 width={300}
                 height={420}
                 style={{
@@ -86,6 +119,7 @@ export async function GET(
                   fontSize: "92px",
                   fontWeight: 900,
                   color: "#cffafe",
+                  textShadow: "0 0 28px rgba(34,211,238,0.65)",
                 }}
               >
                 {initials}
@@ -108,18 +142,20 @@ export async function GET(
                 color: "#67e8f9",
                 fontSize: "25px",
                 letterSpacing: "8px",
+                fontWeight: 800,
               }}
             >
-              CREATOR NEXUS
+              {SITE_NAME.toUpperCase()}
             </div>
 
             <div
               style={{
                 display: "flex",
                 marginTop: "28px",
-                fontSize: "82px",
+                fontSize: nickname.length > 18 ? "62px" : "82px",
                 lineHeight: 1,
                 fontWeight: 900,
+                letterSpacing: "-3px",
               }}
             >
               {nickname}
@@ -181,7 +217,7 @@ export async function GET(
                     fontSize: "24px",
                   }}
                 >
-                  Verified
+                  {VERIFIED_LABEL}
                 </div>
               )}
             </div>
@@ -194,7 +230,7 @@ export async function GET(
                 color: "rgba(255,255,255,0.72)",
               }}
             >
-              Discover legendary creators through living digital cards.
+              {BRAND_TAGLINE}
             </div>
           </div>
         </div>
