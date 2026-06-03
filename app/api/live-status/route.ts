@@ -37,23 +37,6 @@ async function getTwitchAccessToken() {
   return data.access_token;
 }
 
-async function getKickAccessToken() {
-  const response = await fetch("https://id.kick.com/oauth/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: process.env.KICK_CLIENT_ID!,
-      client_secret: process.env.KICK_CLIENT_SECRET!,
-      grant_type: "client_credentials",
-    }),
-  });
-
-  const data = await response.json();
-  return data.access_token;
-}
-
 async function getTwitchUserId(username: string, accessToken: string) {
   const response = await fetch(
     `https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`,
@@ -144,56 +127,72 @@ async function getTwitchLiveStatus(
 async function getKickLiveStatus(
   username: string
 ): Promise<LiveStatusResponse> {
+  const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
+
   const kickResponse = await fetch(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(username)}`,
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
     {
+      headers: {
+        Accept: "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+      },
       cache: "no-store",
     }
   );
 
+  if (!kickResponse.ok) {
+    console.error("Erro Kick V2:", kickResponse.status);
+
+    return {
+      platform: "kick",
+      username: cleanUsername,
+      isLive: false,
+      followerCount: 0,
+      externalCount: 0,
+      url: `https://kick.com/${cleanUsername}`,
+    };
+  }
+
   const channel = await kickResponse.json();
 
   const livestream = channel?.livestream;
-
   const followerCount = Number(channel?.followers_count ?? 0);
 
   if (!livestream?.is_live) {
     return {
       platform: "kick",
-      username,
+      username: cleanUsername,
       isLive: false,
       followerCount,
       externalCount: followerCount,
-      thumbnail:
-        channel?.user?.profile_pic ||
-        channel?.banner_image?.url,
-      url: `https://kick.com/${username}`,
+      thumbnail: channel?.user?.profile_pic || channel?.banner_image?.url,
+      url: `https://kick.com/${cleanUsername}`,
     };
   }
 
   return {
     platform: "kick",
-    username,
+    username: cleanUsername,
     isLive: true,
     title: livestream?.session_title,
-    viewerCount: livestream?.viewer_count,
+    viewerCount: Number(livestream?.viewer_count ?? 0),
     gameName: livestream?.categories?.[0]?.name,
     startedAt: livestream?.start_time,
     thumbnail:
       livestream?.categories?.[0]?.banner?.url ||
-      channel?.banner_image?.url,
+      channel?.banner_image?.url ||
+      channel?.user?.profile_pic,
     followerCount,
     externalCount: followerCount,
-    url: `https://kick.com/${username}`,
+    url: `https://kick.com/${cleanUsername}`,
   };
 }
 
 function normalizeYouTubeUsername(username: string) {
   const value = username.trim();
 
-  if (!value) {
-    return "";
-  }
+  if (!value) return "";
 
   if (!value.startsWith("http")) {
     return value
@@ -213,17 +212,13 @@ function normalizeYouTubeUsername(username: string) {
     const url = new URL(value);
     const pathParts = url.pathname.split("/").filter(Boolean);
 
-    if (pathParts[0] === "channel" && pathParts[1]) {
-      return pathParts[1];
-    }
+    if (pathParts[0] === "channel" && pathParts[1]) return pathParts[1];
 
     if ((pathParts[0] === "c" || pathParts[0] === "user") && pathParts[1]) {
       return pathParts[1].replace(/^@/, "");
     }
 
-    if (pathParts[0]) {
-      return pathParts[0].replace(/^@/, "");
-    }
+    if (pathParts[0]) return pathParts[0].replace(/^@/, "");
 
     return "";
   } catch {
@@ -234,9 +229,7 @@ function normalizeYouTubeUsername(username: string) {
 function getYouTubeFallbackUrl(username: string) {
   const cleanUsername = normalizeYouTubeUsername(username);
 
-  if (!cleanUsername) {
-    return "https://www.youtube.com";
-  }
+  if (!cleanUsername) return "https://www.youtube.com";
 
   if (cleanUsername.startsWith("UC")) {
     return `https://www.youtube.com/channel/${cleanUsername}`;
@@ -248,9 +241,7 @@ function getYouTubeFallbackUrl(username: string) {
 async function fetchYouTubeChannelByHandle(username: string, apiKey: string) {
   const cleanUsername = normalizeYouTubeUsername(username);
 
-  if (!cleanUsername || cleanUsername.startsWith("UC")) {
-    return null;
-  }
+  if (!cleanUsername || cleanUsername.startsWith("UC")) return null;
 
   const params = new URLSearchParams({
     part: "snippet,statistics",
@@ -306,9 +297,7 @@ async function fetchYouTubeChannelById(channelId: string, apiKey: string) {
 async function searchYouTubeChannel(username: string, apiKey: string) {
   const cleanUsername = normalizeYouTubeUsername(username);
 
-  if (!cleanUsername) {
-    return null;
-  }
+  if (!cleanUsername) return null;
 
   const params = new URLSearchParams({
     part: "snippet",
@@ -336,9 +325,7 @@ async function searchYouTubeChannel(username: string, apiKey: string) {
 
   const channelId = data.items?.[0]?.snippet?.channelId;
 
-  if (!channelId) {
-    return null;
-  }
+  if (!channelId) return null;
 
   return fetchYouTubeChannelById(channelId, apiKey);
 }
