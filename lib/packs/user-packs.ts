@@ -7,7 +7,8 @@ export type PackType =
   | "common_pack"
   | "rare_pack"
   | "epic_pack"
-  | "legendary_pack";
+  | "legendary_pack"
+  | "random_pack";
 
 export type UserPack = {
   id: string;
@@ -35,6 +36,8 @@ export type PackOpeningResult = {
   duplicate?: boolean;
   duplicateXp?: number;
   creatorName?: string | null;
+  creatorUsername?: string | null;
+  creatorAvatarUrl?: string | null;
 };
 
 type CreatorForPack = {
@@ -59,7 +62,7 @@ export async function getUserPacks() {
         card_count,
         reward_xp
       )
-    `
+    `,
     )
     .is("opened_at", null)
     .order("created_at", { ascending: false });
@@ -131,6 +134,13 @@ export async function giveUserPack(packType: PackType, source = "system") {
 
 function rollCardRarity(packType: PackType) {
   const roll = Math.random() * 100;
+
+  if (packType === "random_pack") {
+    if (roll < 3) return "legendary";
+    if (roll < 15) return "epic";
+    if (roll < 45) return "rare";
+    return "common";
+  }
 
   if (packType === "legendary_pack") {
     if (roll < 25) return "legendary";
@@ -245,9 +255,10 @@ export async function openUserPack(userPackId: string) {
         id,
         name,
         pack_type,
+        rarity,
         reward_xp
       )
-    `
+    `,
     )
     .eq("id", userPackId)
     .eq("user_id", user.id)
@@ -274,7 +285,8 @@ export async function openUserPack(userPackId: string) {
     return null;
   }
 
-  const creatorName = randomCreator.nickname ?? randomCreator.username ?? "Creator";
+  const creatorName =
+    randomCreator.nickname ?? randomCreator.username ?? "Creator";
   const now = new Date().toISOString();
 
   const { data: existingCard, error: existingCardError } = await supabase
@@ -304,16 +316,21 @@ export async function openUserPack(userPackId: string) {
       return null;
     }
 
-    const { error: openingError } = await supabase.from("pack_openings").insert({
-      user_id: user.id,
-      user_pack_id: userPackId,
-      creator_id: randomCreator.id,
-      card_id: existingCard.id,
-      rarity,
-    });
+    const { error: openingError } = await supabase
+      .from("pack_openings")
+      .insert({
+        user_id: user.id,
+        user_pack_id: userPackId,
+        creator_id: randomCreator.id,
+        card_id: existingCard.id,
+        rarity,
+      });
 
     if (openingError) {
-      console.error("Erro ao registrar abertura repetida do pacote:", openingError);
+      console.error(
+        "Erro ao registrar abertura repetida do pacote:",
+        openingError,
+      );
     }
 
     await addDuplicateCardXp({
@@ -361,6 +378,8 @@ export async function openUserPack(userPackId: string) {
       duplicate: true,
       duplicateXp,
       creatorName,
+      creatorUsername: randomCreator.username,
+      creatorAvatarUrl: randomCreator.avatar_url,
     } as PackOpeningResult;
   }
 
@@ -452,5 +471,7 @@ export async function openUserPack(userPackId: string) {
     rarity,
     duplicate: false,
     creatorName,
+    creatorUsername: randomCreator.username,
+    creatorAvatarUrl: randomCreator.avatar_url,
   } as PackOpeningResult;
 }

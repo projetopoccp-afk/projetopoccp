@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, Package, Sparkles, X } from "lucide-react";
+import { CreatorCard } from "./CreatorCard";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
@@ -28,7 +29,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
   const [selectedPack, setSelectedPack] = useState<UserPack | null>(null);
   const [openingStep, setOpeningStep] = useState<OpeningStep>("idle");
   const [openingResult, setOpeningResult] = useState<PackOpeningResult | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
     return () => {
       window.removeEventListener(
         "creator-nexus:packs-updated",
-        handlePacksUpdated
+        handlePacksUpdated,
       );
     };
   }, [open]);
@@ -101,16 +102,18 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
 
   const packCountLabel = useMemo(() => {
     if (packs.length === 1) {
-      return translate(t, "packsModalPackCountSingular", "{count} pack available").replace(
-        "{count}",
-        String(packs.length)
-      );
+      return translate(
+        t,
+        "packsModalPackCountSingular",
+        "{count} pack available",
+      ).replace("{count}", String(packs.length));
     }
 
-    return translate(t, "packsModalPackCountPlural", "{count} packs available").replace(
-      "{count}",
-      String(packs.length)
-    );
+    return translate(
+      t,
+      "packsModalPackCountPlural",
+      "{count} packs available",
+    ).replace("{count}", String(packs.length));
   }, [packs.length, t]);
 
   return (
@@ -162,7 +165,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                         {translate(
                           t,
                           "packsModalDescription",
-                          "Choose a pack, tear open the Nexus envelope and reveal a card for your collection."
+                          "Choose a pack, tear open the Nexus envelope and reveal a card for your collection.",
                         )}
                       </p>
                     </div>
@@ -173,7 +176,11 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                       <div className="flex items-center gap-3">
                         <Gift className="text-yellow-100" size={20} />
                         <p className="font-bold">
-                          {translate(t, "packsModalInventoryTitle", "Pack inventory")}
+                          {translate(
+                            t,
+                            "packsModalInventoryTitle",
+                            "Pack inventory",
+                          )}
                         </p>
                       </div>
 
@@ -187,7 +194,11 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                     <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {loading && (
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                          {translate(t, "packsModalSearching", "Searching your packs...")}
+                          {translate(
+                            t,
+                            "packsModalSearching",
+                            "Searching your packs...",
+                          )}
                         </div>
                       )}
 
@@ -196,7 +207,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                           {translate(
                             t,
                             "packsModalEmpty",
-                            "You do not have any packs yet. Complete missions to receive new packs."
+                            "You do not have any packs yet. Complete missions to receive new packs.",
                           )}
                         </div>
                       )}
@@ -241,42 +252,79 @@ function PackInventoryItem({
   const { t } = useLanguage();
 
   const packInfo = pack.packs;
-  const rarity = packInfo?.rarity || "common";
+  const rarity =
+    packInfo?.pack_type === "random_pack"
+      ? "random"
+      : packInfo?.rarity || "common";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${getRarityBoxClass(
-              rarity
-            )}`}
-          >
-            <Package size={22} />
-          </div>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onOpen}
+      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-4 text-left transition hover:-translate-y-1 hover:border-pink-200/30 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+      aria-label={`${translate(t, "packsModalOpenPackAria", "Open pack")}: ${getTranslatedPackName(t, pack)}`}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-300/20 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-cyan-300/10 blur-3xl" />
+      </div>
 
-          <div>
-            <h3 className="font-black">
+      <div className="relative flex items-center gap-4">
+        <MiniPack rarity={rarity} />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-black text-white">
               {getTranslatedPackName(t, pack)}
             </h3>
-            <p className="mt-1 text-xs text-white/45">
-              {getTranslatedPackDescription(t, pack)}
-            </p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-white/30">
-              {translate(t, "packsModalOriginLabel", "Origin")}: {" "}
+
+            {rarity === "random" && (
+              <span className="rounded-full border border-pink-200/20 bg-pink-200/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-pink-100">
+                {translate(t, "packsModalRandomBadge", "Random")}
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 line-clamp-2 text-xs text-white/45">
+            {getTranslatedPackDescription(t, pack)}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-[11px] uppercase tracking-[0.2em] text-white/30">
+              {translate(t, "packsModalOriginLabel", "Origin")}:{" "}
               {getTranslatedPackSource(t, pack.source)}
-            </p>
+            </span>
+
+            <span className="rounded-full bg-pink-300 px-3 py-1 text-xs font-black text-black transition group-hover:scale-105">
+              {translate(t, "packsModalClickToOpen", "Click to open")}
+            </span>
           </div>
         </div>
+      </div>
+    </button>
+  );
+}
 
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onOpen}
-          className="w-fit rounded-full bg-pink-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-        >
-          {translate(t, "packsModalOpenPackButton", "Open pack")}
-        </button>
+function MiniPack({ rarity }: { rarity: string }) {
+  return (
+    <div className="relative h-24 w-16 shrink-0">
+      <div
+        className={`absolute inset-0 rotate-[-7deg] rounded-[18px] border ${getRarityBoxClass(
+          rarity,
+        )} shadow-[0_0_30px_rgba(236,72,153,0.12)] transition group-hover:rotate-[-12deg]`}
+      />
+      <div
+        className={`absolute inset-0 rotate-[7deg] rounded-[18px] border ${getRarityBoxClass(
+          rarity,
+        )} transition group-hover:rotate-[12deg]`}
+      />
+      <div className="absolute inset-2 flex items-center justify-center rounded-[14px] border border-white/10 bg-black/45">
+        {rarity === "random" ? (
+          <Sparkles size={22} className="text-pink-100" />
+        ) : (
+          <Package size={22} />
+        )}
       </div>
     </div>
   );
@@ -322,7 +370,7 @@ function PackOpeningStage({
                 {translate(
                   t,
                   "packsModalIdleDescription",
-                  "The card will be automatically added to your collection."
+                  "The card will be automatically added to your collection.",
                 )}
               </p>
             </motion.div>
@@ -349,7 +397,7 @@ function PackOpeningStage({
               transition={{ duration: 0.45, ease: "easeOut" }}
               className="relative flex flex-col items-center text-center"
             >
-              <RevealedCard rarity={openingResult.rarity} />
+              <RevealedCard openingResult={openingResult} />
 
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -370,21 +418,25 @@ function PackOpeningStage({
                     ? translate(
                         t,
                         "packsModalDuplicateDescription",
-                        "You already had the card {creator} in this rarity. It was converted into +{xp} XP."
+                        "You already had the card {creator} in this rarity. It was converted into +{xp} XP.",
                       )
                         .replace(
                           "{creator}",
                           openingResult.creatorName ||
-                            translate(t, "packsModalThisCreator", "this creator")
+                            translate(
+                              t,
+                              "packsModalThisCreator",
+                              "this creator",
+                            ),
                         )
                         .replace("{xp}", String(openingResult.duplicateXp || 0))
                     : translate(
                         t,
                         "packsModalReceivedDescription",
-                        "You received a {rarity} card. It was sent to your collection and the XP was counted."
+                        "You received a {rarity} card. It was sent to your collection and the XP was counted.",
                       ).replace(
                         "{rarity}",
-                        getTranslatedRarityLabel(t, openingResult.rarity)
+                        getTranslatedRarityLabel(t, openingResult.rarity),
                       )}
                 </p>
               </motion.div>
@@ -399,13 +451,17 @@ function PackOpeningStage({
               className="rounded-3xl border border-red-300/20 bg-red-300/10 p-6 text-center"
             >
               <p className="font-bold text-red-100">
-                {translate(t, "packsModalOpenErrorTitle", "Could not open the pack.")}
+                {translate(
+                  t,
+                  "packsModalOpenErrorTitle",
+                  "Could not open the pack.",
+                )}
               </p>
               <p className="mt-2 text-sm text-white/45">
                 {translate(
                   t,
                   "packsModalOpenErrorDescription",
-                  "Try again in a few moments."
+                  "Try again in a few moments.",
                 )}
               </p>
             </motion.div>
@@ -422,7 +478,7 @@ function PackOpeningStage({
             {translate(
               t,
               "packsModalAnimationDescription",
-              "pack tearing → glow → card coming out"
+              "pack tearing → glow → card coming out",
             )}
           </p>
         </div>
@@ -523,7 +579,7 @@ function TearingPack({ packName }: { packName: string }) {
         <p className="text-xs uppercase tracking-[0.25em] text-pink-100">
           {translate(t, "packsModalTearingPack", "Tearing {packName}").replace(
             "{packName}",
-            packName
+            packName,
           )}
         </p>
       </div>
@@ -531,39 +587,43 @@ function TearingPack({ packName }: { packName: string }) {
   );
 }
 
-function RevealedCard({ rarity }: { rarity: string }) {
+function RevealedCard({ openingResult }: { openingResult: PackOpeningResult }) {
   const { t } = useLanguage();
+
+  const creatorForReveal = {
+    id: openingResult.creatorId,
+    nickname:
+      openingResult.creatorName ||
+      translate(t, "packsModalUnknownCreator", "Unknown creator"),
+    username: openingResult.creatorUsername || "creator",
+    avatarUrl: openingResult.creatorAvatarUrl || "/default-avatar.png",
+    rarity: openingResult.rarity,
+    level: 1,
+    category: translate(t, "packsModalCreatorCategory", "Creator"),
+    bio: openingResult.duplicate
+      ? translate(
+          t,
+          "packsModalDuplicateCardBio",
+          "Duplicate converted into XP.",
+        )
+      : translate(
+          t,
+          "packsModalRevealedCardBio",
+          "New card added to your collection.",
+        ),
+    rank: getTranslatedRarityLabel(t, openingResult.rarity),
+  };
 
   return (
     <motion.div
       animate={{ y: [0, -6, 0] }}
       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      className={`relative h-64 w-44 rounded-[28px] border p-3 shadow-[0_0_80px_rgba(255,255,255,0.16)] ${getRarityCardClass(
-        rarity
-      )}`}
+      className="scale-[0.82] sm:scale-90"
     >
-      <motion.div
-        animate={{ opacity: [0.25, 0.85, 0.25], scale: [0.9, 1.08, 0.9] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 rounded-[28px] bg-white/20 blur-2xl"
+      <CreatorCard
+        creator={creatorForReveal as any}
+        onClick={() => undefined}
       />
-
-      <div className="relative flex h-full flex-col rounded-[22px] border border-white/15 bg-black/55 p-4">
-        <div className="flex items-center justify-between">
-          <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
-            {getTranslatedRarityLabel(t, rarity)}
-          </span>
-          <Sparkles size={16} className="text-yellow-100" />
-        </div>
-
-        <div className="mt-5 flex flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-          <Package size={42} className="text-white/50" />
-        </div>
-
-        <p className="mt-4 text-center text-sm font-black">
-          {translate(t, "packsModalNewCard", "New Card")}
-        </p>
-      </div>
     </motion.div>
   );
 }
@@ -578,12 +638,21 @@ function normalizeTranslationMatch(value?: string | null) {
 
 function getTranslatedPackName(
   t: ReturnType<typeof useLanguage>["t"],
-  pack: UserPack
+  pack: UserPack,
 ) {
   const packInfo = pack.packs;
   const name = packInfo?.name || "";
   const rarity = packInfo?.rarity || "common";
   const normalizedName = normalizeTranslationMatch(name);
+
+  if (
+    packInfo?.pack_type === "random_pack" ||
+    rarity === "random" ||
+    normalizedName.includes("aleatorio") ||
+    normalizedName.includes("mystery")
+  ) {
+    return translate(t, "packsModalRandomPackName", "Mystery Pack");
+  }
 
   if (rarity === "legendary" || normalizedName.includes("lendario")) {
     return translate(t, "packsModalLegendaryPackName", "Legendary Pack");
@@ -606,12 +675,25 @@ function getTranslatedPackName(
 
 function getTranslatedPackDescription(
   t: ReturnType<typeof useLanguage>["t"],
-  pack: UserPack
+  pack: UserPack,
 ) {
   const packInfo = pack.packs;
   const description = packInfo?.description || "";
   const rarity = packInfo?.rarity || "common";
   const normalizedDescription = normalizeTranslationMatch(description);
+
+  if (
+    packInfo?.pack_type === "random_pack" ||
+    rarity === "random" ||
+    normalizedDescription.includes("aleatorio") ||
+    normalizedDescription.includes("mystery")
+  ) {
+    return translate(
+      t,
+      "packsModalRandomPackDescription",
+      "A mystery pack with a random chance for any rarity.",
+    );
+  }
 
   if (
     rarity === "legendary" ||
@@ -621,7 +703,7 @@ function getTranslatedPackDescription(
     return translate(
       t,
       "packsModalLegendaryPackDescription",
-      "A special pack with an increased chance of a legendary card."
+      "A special pack with an increased chance of a legendary card.",
     );
   }
 
@@ -629,7 +711,7 @@ function getTranslatedPackDescription(
     return translate(
       t,
       "packsModalEpicPackDescription",
-      "An enhanced pack with a higher chance of epic cards."
+      "An enhanced pack with a higher chance of epic cards.",
     );
   }
 
@@ -641,7 +723,7 @@ function getTranslatedPackDescription(
     return translate(
       t,
       "packsModalRarePackDescription",
-      "An improved pack with better chances of rare cards."
+      "An improved pack with better chances of rare cards.",
     );
   }
 
@@ -649,7 +731,7 @@ function getTranslatedPackDescription(
     return translate(
       t,
       "packsModalCommonPackDescription",
-      "A basic pack with creator cards for your collection."
+      "A basic pack with creator cards for your collection.",
     );
   }
 
@@ -661,7 +743,7 @@ function getTranslatedPackDescription(
 
 function getTranslatedPackSource(
   t: ReturnType<typeof useLanguage>["t"],
-  source?: string | null
+  source?: string | null,
 ) {
   const normalizedSource = normalizeTranslationMatch(source);
 
@@ -686,8 +768,10 @@ function getTranslatedPackSource(
 
 function getTranslatedRarityLabel(
   t: ReturnType<typeof useLanguage>["t"],
-  rarity: string
+  rarity: string,
 ) {
+  if (rarity === "random")
+    return translate(t, "packsModalRandomRarity", "Random");
   if (rarity === "legendary") return translate(t, "legendary", "Legendary");
   if (rarity === "epic") return translate(t, "epic", "Epic");
   if (rarity === "rare") return translate(t, "rare", "Rare");
@@ -697,6 +781,10 @@ function getTranslatedRarityLabel(
 }
 
 function getRarityBoxClass(rarity: string) {
+  if (rarity === "random") {
+    return "border-pink-300/30 bg-gradient-to-br from-pink-300/15 via-purple-300/10 to-cyan-300/10 text-pink-100";
+  }
+
   if (rarity === "legendary") {
     return "border-yellow-300/30 bg-yellow-300/10 text-yellow-100";
   }
