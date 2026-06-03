@@ -240,7 +240,7 @@ async function getYouTubeChannelStatus(
       isLive: false,
       subscriberCount: 0,
       externalCount: 0,
-      url: `https://www.youtube.com/@${cleanUsername}`,
+      url: `https://www.youtube.com/${cleanUsername}`,
     };
   }
 
