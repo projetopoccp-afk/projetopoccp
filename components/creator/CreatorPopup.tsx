@@ -11,6 +11,39 @@ import { Creator } from "@/types/creator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 
+
+function normalizeCreatorTags(tags: unknown): string[] {
+  if (Array.isArray(tags)) {
+    return tags
+      .map((tag) => String(tag).trim())
+      .filter(Boolean);
+  }
+
+  if (typeof tags !== "string") return [];
+
+  const trimmed = tags.trim();
+
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((tag) => String(tag).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Fallback below for comma-separated values.
+  }
+
+  return trimmed
+    .replace(/^\[|\]$/g, "")
+    .split(",")
+    .map((tag) => tag.replace(/"/g, "").trim())
+    .filter(Boolean);
+}
+
 type CreatorPopupProps = {
   creator: Creator | null;
   onClose: () => void;
