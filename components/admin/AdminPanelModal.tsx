@@ -37,6 +37,9 @@ type AdminPackType =
   | "legendary_pack"
   | "random_pack";
 
+type AdminRewardType = "card" | "pack";
+type AdminRewardTarget = "user" | "all_users";
+
 const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "requests", labelKey: "adminRequests", fallback: "Solicitações" },
   { id: "users", labelKey: "adminUsers", fallback: "Usuários" },
@@ -274,6 +277,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     useState<GrantRarity>("common");
   const [selectedAdminPackType, setSelectedAdminPackType] =
     useState<AdminPackType>("random_pack");
+  const [adminRewardType, setAdminRewardType] =
+    useState<AdminRewardType>("card");
+  const [adminRewardTarget, setAdminRewardTarget] =
+    useState<AdminRewardTarget>("user");
+  const [adminCardQuantity, setAdminCardQuantity] = useState(1);
+  const [adminPackQuantity, setAdminPackQuantity] = useState(1);
 
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
     {},
@@ -302,7 +311,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }: {
     action: string;
     targetType: string;
-    targetId: string;
+    targetId: string | null;
     metadata?: Record<string, unknown>;
   }) {
     const adminId = await getCurrentUserId();
@@ -823,24 +832,38 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
   }
 
+  function getAdminRewardTargets() {
+    if (adminRewardTarget === "all_users") {
+      return users.filter((user) => Boolean(user.id));
+    }
+
+    const selectedUser = users.find((user) => user.id === selectedCardUserId);
+
+    return selectedUser ? [selectedUser] : [];
+  }
+
+  function getSafeQuantity(value: number) {
+    if (!Number.isFinite(value)) return 1;
+
+    return Math.max(1, Math.min(100, Math.floor(value)));
+  }
+
+  function getProfileDisplayName(profile: ProfileUser) {
+    return (
+      profile.display_name ||
+      profile.username ||
+      profile.email ||
+      translate(t, "user", "Usuário")
+    );
+  }
+
   async function grantCardToUser() {
     if (!selectedCardCreatorId) {
       alert(
         translate(
           t,
           "adminSelectCreatorCardFirst",
-          "Selecione um creator/carta primeiro.",
-        ),
-      );
-      return;
-    }
-
-    if (!selectedCardUserId) {
-      alert(
-        translate(
-          t,
-          "adminSelectCardRecipient",
-          "Selecione o usuário que vai receber a carta.",
+          "Selecione um criador/carta primeiro.",
         ),
       );
       return;
@@ -849,41 +872,82 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const selectedCreator = creators.find(
       (creator) => creator.id === selectedCardCreatorId,
     );
-    const selectedUser = users.find((user) => user.id === selectedCardUserId);
 
-    if (!selectedCreator || !selectedUser) {
+    if (!selectedCreator) {
       alert(
         translate(
           t,
           "adminCreatorOrUserNotFound",
-          "Creator ou usuário não encontrado.",
+          "Criador ou usuário não encontrado.",
         ),
       );
       return;
     }
 
-    const finalRarity =
-      selectedGrantRarity === "random"
-        ? rollRandomRarity()
-        : selectedGrantRarity;
+    const targetUsers = getAdminRewardTargets();
 
-    const actionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
-    setActionLoading(actionId);
-
-    const { error } = await supabase.rpc("grant_user_card", {
-      p_target_user_id: selectedCardUserId,
-      p_creator_id: selectedCardCreatorId,
-      p_rarity: finalRarity,
-      p_source:
-        selectedGrantRarity === "random" ? "admin_random_grant" : "admin_grant",
-      p_selected_rarity: selectedGrantRarity,
-    });
-
-    if (error) {
-      setActionLoading(null);
-      alert(error.message);
+    if (targetUsers.length === 0) {
+      alert(
+        adminRewardTarget === "all_users"
+          ? translate(
+              t,
+              "adminNoUsersForGiveaway",
+              "Nenhum usuário cadastrado encontrado para o giveaway.",
+            )
+          : translate(
+              t,
+              "adminSelectCardRecipient",
+              "Selecione o usuário que vai receber a carta.",
+            ),
+      );
       return;
     }
+
+    const quantity = getSafeQuantity(adminCardQuantity);
+    const actionId = `grant-card-${selectedCardCreatorId}-${adminRewardTarget}-${selectedCardUserId || "all"}`;
+    setActionLoading(actionId);
+
+    for (const targetUser of targetUsers) {
+      for (let index = 0; index < quantity; index += 1) {
+        const finalRarity =
+          selectedGrantRarity === "random"
+            ? rollRandomRarity()
+            : selectedGrantRarity;
+
+        const { error } = await supabase.rpc("grant_user_card", {
+          p_target_user_id: targetUser.id,
+          p_creator_id: selectedCardCreatorId,
+          p_rarity: finalRarity,
+          p_source:
+            adminRewardTarget === "all_users"
+              ? "admin_giveaway"
+              : selectedGrantRarity === "random"
+                ? "admin_random_grant"
+                : "admin_grant",
+          p_selected_rarity: selectedGrantRarity,
+        });
+
+        if (error) {
+          setActionLoading(null);
+          alert(error.message);
+          return;
+        }
+      }
+    }
+
+    await createAdminLog({
+      action: adminRewardTarget === "all_users" ? "giveaway_cards" : "grant_user_card",
+      targetType: adminRewardTarget === "all_users" ? "users" : "user_card",
+      targetId: adminRewardTarget === "all_users" ? null : selectedCardUserId,
+      metadata: {
+        creator_id: selectedCreator.id,
+        creator_nickname: selectedCreator.nickname,
+        selected_rarity: selectedGrantRarity,
+        quantity,
+        target_mode: adminRewardTarget,
+        target_users_count: targetUsers.length,
+      },
+    });
 
     setActionLoading(null);
     await loadLogs();
@@ -891,41 +955,43 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     alert(
       translate(
         t,
-        "adminCardSentSuccess",
-        "Carta enviada! {creator} ({rarity}) foi entregue para {user}.",
+        adminRewardTarget === "all_users"
+          ? "adminCardsGiveawaySuccess"
+          : "adminCardSentSuccessWithQuantity",
+        adminRewardTarget === "all_users"
+          ? "Giveaway enviado! {quantity} carta(s) de {creator} foram entregues para {count} usuário(s)."
+          : "Carta enviada! {quantity}x {creator} ({rarity}) foi entregue para {user}.",
       )
+        .replace("{quantity}", String(quantity))
         .replace("{creator}", selectedCreator.nickname)
-        .replace("{rarity}", getGrantRarityLabel(finalRarity, t))
-        .replace(
-          "{user}",
-          selectedUser.display_name ||
-            selectedUser.username ||
-            selectedUser.email ||
-            translate(t, "user", "Usuário"),
-        ),
+        .replace("{rarity}", getGrantRarityLabel(selectedGrantRarity, t))
+        .replace("{count}", String(targetUsers.length))
+        .replace("{user}", targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : ""),
     );
   }
 
   async function grantPackToUser() {
-    if (!selectedCardUserId) {
+    const targetUsers = getAdminRewardTargets();
+
+    if (targetUsers.length === 0) {
       alert(
-        translate(
-          t,
-          "adminSelectPackRecipient",
-          "Selecione o usuário que vai receber o pacote.",
-        ),
+        adminRewardTarget === "all_users"
+          ? translate(
+              t,
+              "adminNoUsersForGiveaway",
+              "Nenhum usuário cadastrado encontrado para o giveaway.",
+            )
+          : translate(
+              t,
+              "adminSelectPackRecipient",
+              "Selecione o usuário que vai receber o pacote.",
+            ),
       );
       return;
     }
 
-    const selectedUser = users.find((user) => user.id === selectedCardUserId);
-
-    if (!selectedUser) {
-      alert(translate(t, "adminUserNotFound", "Usuário não encontrado."));
-      return;
-    }
-
-    const actionId = `grant-pack-${selectedAdminPackType}-${selectedCardUserId}`;
+    const quantity = getSafeQuantity(adminPackQuantity);
+    const actionId = `grant-pack-${selectedAdminPackType}-${adminRewardTarget}-${selectedCardUserId || "all"}`;
     setActionLoading(actionId);
 
     const { data: pack, error: packError } = await supabase
@@ -948,15 +1014,18 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       return;
     }
 
-    const { data: userPack, error } = await supabase
-      .from("user_packs")
-      .insert({
-        user_id: selectedCardUserId,
+    const rows = targetUsers.flatMap((targetUser) =>
+      Array.from({ length: quantity }, () => ({
+        user_id: targetUser.id,
         pack_id: pack.id,
-        source: "admin_grant",
-      })
-      .select("id")
-      .single();
+        source: adminRewardTarget === "all_users" ? "admin_giveaway" : "admin_grant",
+      })),
+    );
+
+    const { data: userPacks, error } = await supabase
+      .from("user_packs")
+      .insert(rows)
+      .select("id");
 
     if (error) {
       setActionLoading(null);
@@ -965,15 +1034,21 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     }
 
     await createAdminLog({
-      action: "grant_user_pack",
-      targetType: "user_pack",
-      targetId: userPack?.id || pack.id,
+      action: adminRewardTarget === "all_users" ? "giveaway_packs" : "grant_user_pack",
+      targetType: adminRewardTarget === "all_users" ? "users" : "user_pack",
+      targetId:
+        adminRewardTarget === "all_users"
+          ? null
+          : userPacks?.[0]?.id || pack.id,
       metadata: {
-        target_user_id: selectedCardUserId,
-        target_user_email: selectedUser.email,
+        target_user_id: adminRewardTarget === "user" ? selectedCardUserId : null,
+        target_user_email: adminRewardTarget === "user" ? targetUsers[0]?.email : null,
         pack_id: pack.id,
         pack_name: pack.name,
         pack_type: selectedAdminPackType,
+        quantity,
+        target_mode: adminRewardTarget,
+        target_users_count: targetUsers.length,
       },
     });
 
@@ -983,17 +1058,17 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     alert(
       translate(
         t,
-        "adminPackSentSuccess",
-        "Pacote enviado! {pack} foi entregue para {user}.",
+        adminRewardTarget === "all_users"
+          ? "adminPacksGiveawaySuccess"
+          : "adminPackSentSuccessWithQuantity",
+        adminRewardTarget === "all_users"
+          ? "Giveaway enviado! {quantity} pacote(s) {pack} foram entregues para {count} usuário(s)."
+          : "Pacote enviado! {quantity}x {pack} foi entregue para {user}.",
       )
+        .replace("{quantity}", String(quantity))
         .replace("{pack}", getAdminPackLabel(selectedAdminPackType, t))
-        .replace(
-          "{user}",
-          selectedUser.display_name ||
-            selectedUser.username ||
-            selectedUser.email ||
-            translate(t, "user", "Usuário"),
-        ),
+        .replace("{count}", String(targetUsers.length))
+        .replace("{user}", targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : ""),
     );
   }
 
@@ -1083,8 +1158,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const selectedCardUser =
     users.find((user) => user.id === selectedCardUserId) || null;
 
-  const grantActionId = `grant-card-${selectedCardCreatorId}-${selectedCardUserId}`;
-  const grantPackActionId = `grant-pack-${selectedAdminPackType}-${selectedCardUserId}`;
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
@@ -1693,8 +1766,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             {!loading && activeTab === "cards" && (
               <div className="mt-8 space-y-6">
                 <div className="rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
                       <Gift size={20} />
                     </div>
 
@@ -1705,240 +1778,442 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       <p className="mt-1 text-sm text-white/50">
                         {translate(
                           t,
-                          "adminManageCardsDescription",
-                          "Escolha uma carta específica ou entregue pacotes de qualquer raridade, incluindo pacote aleatório.",
+                          "adminRewardCenterDescription",
+                          "Escolha se deseja enviar carta ou pacote, defina quantidade, destinatário e envie em poucos passos.",
                         )}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-                  <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                    <h4 className="font-black text-white">
-                      {translate(t, "adminChooseCardStep", "1. Escolher carta")}
-                    </h4>
-                    <p className="mt-1 text-sm text-white/45">
-                      {translate(
-                        t,
-                        "adminChooseCardDescription",
-                        "Pesquise pelo nome do creator, username, categoria ou dono.",
-                      )}
-                    </p>
+                <div className="grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
+                  <div className="space-y-5">
+                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                      <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/50">
+                        {translate(t, "adminWhatSend", "O que deseja enviar?")}
+                      </p>
 
-                    <div className="mt-4">
-                      <SearchInput
-                        value={cardCreatorSearch}
-                        onChange={setCardCreatorSearch}
-                        placeholder={translate(
-                          t,
-                          "adminSearchCardPlaceholder",
-                          "Buscar creator/carta...",
-                        )}
-                      />
-                    </div>
-
-                    <div className="mt-4 grid max-h-[420px] gap-3 overflow-y-auto pr-1">
-                      {filteredCardCreators.length === 0 && (
-                        <EmptyBox
-                          text={translate(
-                            t,
-                            "adminNoCardsFound",
-                            "Nenhuma carta encontrada.",
-                          )}
-                        />
-                      )}
-
-                      {filteredCardCreators.map((creator) => {
-                        const selected = selectedCardCreatorId === creator.id;
-                        const owner = getOwner(creator.user_id);
-
-                        return (
-                          <button
-                            key={creator.id}
-                            type="button"
-                            onClick={() => setSelectedCardCreatorId(creator.id)}
-                            className={`flex items-center gap-4 rounded-3xl border p-4 text-left transition ${
-                              selected
-                                ? "border-cyan-300/60 bg-cyan-300/10"
-                                : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
-                            }`}
-                          >
-                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                              {creator.avatar_url ? (
-                                <img
-                                  src={creator.avatar_url}
-                                  alt={creator.nickname}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                  {translate(t, "noImage", "Sem imagem")}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <h5 className="truncate font-black text-white">
-                                {creator.nickname}
-                              </h5>
-                              <p className="truncate text-sm text-cyan-100/70">
-                                @{creator.username}
-                              </p>
-                              <p className="mt-1 truncate text-xs text-white/40">
-                                {translate(t, "owner", "Dono")}:{" "}
-                                {owner?.email ||
-                                  owner?.username ||
-                                  translate(t, "noOwner", "Sem dono")}
-                              </p>
-                            </div>
-
-                            {selected && (
-                              <Check
-                                size={18}
-                                className="shrink-0 text-cyan-200"
-                              />
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setAdminRewardType("card")}
+                          className={`rounded-3xl border p-4 text-left transition ${
+                            adminRewardType === "card"
+                              ? "border-cyan-300/60 bg-cyan-300/10"
+                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <Gift size={22} className="mb-3 text-cyan-100" />
+                          <p className="font-black text-white">
+                            {translate(t, "cards", "Cartas")}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {translate(
+                              t,
+                              "adminSendCardsShortDescription",
+                              "Entregue uma carta específica de um criador.",
                             )}
-                          </button>
-                        );
-                      })}
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setAdminRewardType("pack")}
+                          className={`rounded-3xl border p-4 text-left transition ${
+                            adminRewardType === "pack"
+                              ? "border-purple-300/60 bg-purple-300/10"
+                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <Package size={22} className="mb-3 text-purple-100" />
+                          <p className="font-black text-white">
+                            {translate(t, "packs", "Pacotes")}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {translate(
+                              t,
+                              "adminSendPacksShortDescription",
+                              "Entregue pacotes de raridade fixa ou aleatória.",
+                            )}
+                          </p>
+                        </button>
+                      </div>
                     </div>
+
+                    {adminRewardType === "card" && (
+                      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                        <h4 className="font-black text-white">
+                          {translate(t, "adminWhichCard", "Qual carta?")}
+                        </h4>
+                        <p className="mt-1 text-sm text-white/45">
+                          {translate(
+                            t,
+                            "adminChooseCardDescription",
+                            "Pesquise pelo nome do criador, username, categoria ou dono.",
+                          )}
+                        </p>
+
+                        <div className="mt-4">
+                          <SearchInput
+                            value={cardCreatorSearch}
+                            onChange={setCardCreatorSearch}
+                            placeholder={translate(
+                              t,
+                              "adminSearchCardPlaceholder",
+                              "Buscar criador/carta...",
+                            )}
+                          />
+                        </div>
+
+                        <div className="mt-4 grid max-h-[430px] gap-3 overflow-y-auto pr-1">
+                          {filteredCardCreators.length === 0 && (
+                            <EmptyBox
+                              text={translate(
+                                t,
+                                "adminNoCardsFound",
+                                "Nenhuma carta encontrada.",
+                              )}
+                            />
+                          )}
+
+                          {filteredCardCreators.map((creator) => {
+                            const selected = selectedCardCreatorId === creator.id;
+                            const owner = getOwner(creator.user_id);
+
+                            return (
+                              <button
+                                key={creator.id}
+                                type="button"
+                                onClick={() => setSelectedCardCreatorId(creator.id)}
+                                className={`flex items-center gap-4 rounded-3xl border p-4 text-left transition ${
+                                  selected
+                                    ? "border-cyan-300/60 bg-cyan-300/10"
+                                    : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                                  {creator.avatar_url ? (
+                                    <img
+                                      src={creator.avatar_url}
+                                      alt={creator.nickname}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
+                                      {translate(t, "noImage", "Sem imagem")}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <h5 className="truncate font-black text-white">
+                                    {creator.nickname}
+                                  </h5>
+                                  <p className="truncate text-sm text-cyan-100/70">
+                                    @{creator.username}
+                                  </p>
+                                  <p className="mt-1 truncate text-xs text-white/40">
+                                    {translate(t, "owner", "Dono")}: {" "}
+                                    {owner?.email ||
+                                      owner?.username ||
+                                      translate(t, "noOwner", "Sem dono")}
+                                  </p>
+                                </div>
+
+                                {selected && (
+                                  <Check size={18} className="shrink-0 text-cyan-200" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-5">
                     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
                       <h4 className="font-black text-white">
-                        {translate(
-                          t,
-                          "adminChooseUserStep",
-                          "2. Escolher usuário",
-                        )}
+                        {adminRewardType === "card"
+                          ? translate(t, "adminWhichRarity", "Qual raridade?")
+                          : translate(t, "adminWhichPack", "Qual pacote?")}
                       </h4>
-                      <p className="mt-1 text-sm text-white/45">
-                        {translate(
-                          t,
-                          "adminChooseUserDescription",
-                          "Pesquise por nome, username ou email.",
-                        )}
-                      </p>
 
-                      <div className="mt-4">
-                        <SearchInput
-                          value={cardUserSearch}
-                          onChange={setCardUserSearch}
-                          placeholder={translate(
-                            t,
-                            "adminSearchUserShortPlaceholder",
-                            "Buscar usuário...",
-                          )}
-                        />
-                      </div>
+                      {adminRewardType === "card" ? (
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          {GRANT_RARITIES.map((rarityOption) => {
+                            const selected = selectedGrantRarity === rarityOption.id;
 
-                      <div className="mt-4 grid max-h-[260px] gap-3 overflow-y-auto pr-1">
-                        {filteredCardUsers.length === 0 && (
-                          <EmptyBox
-                            text={translate(
-                              t,
-                              "adminNoUsersFound",
-                              "Nenhum usuário encontrado.",
-                            )}
-                          />
-                        )}
+                            return (
+                              <button
+                                key={rarityOption.id}
+                                type="button"
+                                onClick={() => setSelectedGrantRarity(rarityOption.id)}
+                                className={`rounded-2xl border p-3 text-left transition ${
+                                  selected
+                                    ? "border-yellow-300/60 bg-yellow-300/10"
+                                    : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                <p className="font-bold text-white">
+                                  {translate(
+                                    t,
+                                    rarityOption.labelKey,
+                                    rarityOption.fallback,
+                                  )}
+                                </p>
+                                <p className="mt-1 text-xs text-white/40">
+                                  {translate(
+                                    t,
+                                    rarityOption.descriptionKey,
+                                    rarityOption.descriptionFallback,
+                                  )}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {ADMIN_PACK_TYPES.map((packOption) => {
+                            const selected = selectedAdminPackType === packOption.id;
 
-                        {filteredCardUsers.map((profile) => {
-                          const selected = selectedCardUserId === profile.id;
-
-                          return (
-                            <button
-                              key={profile.id}
-                              type="button"
-                              onClick={() => setSelectedCardUserId(profile.id)}
-                              className={`flex items-center justify-between gap-3 rounded-3xl border p-3 text-left transition ${
-                                selected
-                                  ? "border-purple-300/60 bg-purple-300/10"
-                                  : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
-                              }`}
-                            >
-                              <UserInfo profile={profile} t={t} />
-                              {selected && (
-                                <Check
-                                  size={18}
-                                  className="shrink-0 text-purple-200"
-                                />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            return (
+                              <button
+                                key={packOption.id}
+                                type="button"
+                                onClick={() => setSelectedAdminPackType(packOption.id)}
+                                className={`rounded-3xl border p-4 text-left transition ${
+                                  selected
+                                    ? "border-purple-300/60 bg-purple-300/10"
+                                    : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-purple-100">
+                                  <Package size={20} />
+                                </div>
+                                <p className="font-black text-white">
+                                  {translate(t, packOption.labelKey, packOption.fallback)}
+                                </p>
+                                <p className="mt-1 text-xs text-white/45">
+                                  {translate(
+                                    t,
+                                    packOption.descriptionKey,
+                                    packOption.descriptionFallback,
+                                  )}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
                       <h4 className="font-black text-white">
+                        {translate(t, "adminHowMany", "Quantas?")}
+                      </h4>
+
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={adminRewardType === "card" ? adminCardQuantity : adminPackQuantity}
+                        onChange={(event) => {
+                          const value = getSafeQuantity(Number(event.target.value));
+
+                          if (adminRewardType === "card") {
+                            setAdminCardQuantity(value);
+                            return;
+                          }
+
+                          setAdminPackQuantity(value);
+                        }}
+                        className="mt-4 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50"
+                      />
+
+                      <p className="mt-2 text-xs text-white/40">
                         {translate(
                           t,
-                          "adminChooseRarityStep",
-                          "3. Escolher raridade",
+                          "adminQuantityLimitHint",
+                          "Limite de segurança: 1 a 100 por envio.",
                         )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                      <h4 className="font-black text-white">
+                        {translate(t, "adminToWho", "Para quem?")}
                       </h4>
 
                       <div className="mt-4 grid grid-cols-2 gap-3">
-                        {GRANT_RARITIES.map((rarityOption) => {
-                          const selected =
-                            selectedGrantRarity === rarityOption.id;
+                        <button
+                          type="button"
+                          onClick={() => setAdminRewardTarget("user")}
+                          className={`rounded-2xl border p-3 text-left transition ${
+                            adminRewardTarget === "user"
+                              ? "border-cyan-300/60 bg-cyan-300/10"
+                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <p className="font-bold text-white">
+                            {translate(t, "adminSpecificUser", "Usuário específico")}
+                          </p>
+                          <p className="mt-1 text-xs text-white/40">
+                            {translate(
+                              t,
+                              "adminSpecificUserDescription",
+                              "Pesquise e selecione um usuário.",
+                            )}
+                          </p>
+                        </button>
 
-                          return (
-                            <button
-                              key={rarityOption.id}
-                              type="button"
-                              onClick={() =>
-                                setSelectedGrantRarity(rarityOption.id)
-                              }
-                              className={`rounded-2xl border p-3 text-left transition ${
-                                selected
-                                  ? "border-yellow-300/60 bg-yellow-300/10"
-                                  : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
-                              }`}
-                            >
-                              <p className="font-bold text-white">
-                                {translate(
-                                  t,
-                                  rarityOption.labelKey,
-                                  rarityOption.fallback,
-                                )}
-                              </p>
-                              <p className="mt-1 text-xs text-white/40">
-                                {translate(
-                                  t,
-                                  rarityOption.descriptionKey,
-                                  rarityOption.descriptionFallback,
-                                )}
-                              </p>
-                            </button>
-                          );
-                        })}
+                        <button
+                          type="button"
+                          onClick={() => setAdminRewardTarget("all_users")}
+                          className={`rounded-2xl border p-3 text-left transition ${
+                            adminRewardTarget === "all_users"
+                              ? "border-emerald-300/60 bg-emerald-300/10"
+                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <p className="font-bold text-white">
+                            {translate(t, "adminGiveawayAllUsers", "Giveaway para todos")}
+                          </p>
+                          <p className="mt-1 text-xs text-white/40">
+                            {translate(
+                              t,
+                              "adminGiveawayAllUsersDescription",
+                              "Entrega para todos os usuários cadastrados.",
+                            )}
+                          </p>
+                        </button>
                       </div>
 
-                      <div className="mt-5 rounded-3xl border border-white/10 bg-black/25 p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/35">
-                          {translate(t, "summary", "Resumo")}
+                      {adminRewardTarget === "user" && (
+                        <>
+                          <div className="mt-4">
+                            <SearchInput
+                              value={cardUserSearch}
+                              onChange={setCardUserSearch}
+                              placeholder={translate(
+                                t,
+                                "adminSearchUserShortPlaceholder",
+                                "Buscar usuário...",
+                              )}
+                            />
+                          </div>
+
+                          <div className="mt-4 grid max-h-[260px] gap-3 overflow-y-auto pr-1">
+                            {filteredCardUsers.length === 0 && (
+                              <EmptyBox
+                                text={translate(
+                                  t,
+                                  "adminNoUsersFound",
+                                  "Nenhum usuário encontrado.",
+                                )}
+                              />
+                            )}
+
+                            {filteredCardUsers.map((profile) => {
+                              const selected = selectedCardUserId === profile.id;
+
+                              return (
+                                <button
+                                  key={profile.id}
+                                  type="button"
+                                  onClick={() => setSelectedCardUserId(profile.id)}
+                                  className={`flex items-center justify-between gap-3 rounded-3xl border p-3 text-left transition ${
+                                    selected
+                                      ? "border-purple-300/60 bg-purple-300/10"
+                                      : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
+                                  }`}
+                                >
+                                  <UserInfo profile={profile} t={t} />
+                                  {selected && (
+                                    <Check size={18} className="shrink-0 text-purple-200" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+
+                      {adminRewardTarget === "all_users" && (
+                        <div className="mt-4 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.06] p-4 text-sm text-emerald-50/75">
+                          {translate(
+                            t,
+                            "adminGiveawayLoggedUsersOnlyHint",
+                            "Este giveaway entrega automaticamente para usuários cadastrados. Visitantes sem login ainda não possuem inventário; para eles, o ideal é criar depois um giveaway público por código ou link de resgate.",
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-[28px] border border-white/10 bg-black/25 p-5">
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/35">
+                        {translate(t, "summary", "Resumo")}
+                      </p>
+
+                      <div className="mt-3 space-y-2 text-sm text-white/65">
+                        <p>
+                          {translate(t, "type", "Tipo")}: {" "}
+                          <span className="font-bold text-white">
+                            {adminRewardType === "card"
+                              ? translate(t, "cards", "Cartas")
+                              : translate(t, "packs", "Pacotes")}
+                          </span>
                         </p>
 
-                        <div className="mt-3 space-y-2 text-sm text-white/65">
+                        {adminRewardType === "card" ? (
+                          <>
+                            <p>
+                              {translate(t, "card", "Carta")}: {" "}
+                              <span className="font-bold text-white">
+                                {selectedCardCreator?.nickname ||
+                                  translate(
+                                    t,
+                                    "noneSelectedFeminine",
+                                    "Nenhuma selecionada",
+                                  )}
+                              </span>
+                            </p>
+                            <p>
+                              {translate(t, "rarity", "Raridade")}: {" "}
+                              <span className="font-bold text-white">
+                                {getGrantRarityLabel(selectedGrantRarity, t)}
+                              </span>
+                            </p>
+                          </>
+                        ) : (
                           <p>
-                            {translate(t, "card", "Carta")}:{" "}
+                            {translate(t, "pack", "Pacote")}: {" "}
                             <span className="font-bold text-white">
-                              {selectedCardCreator?.nickname ||
-                                translate(
-                                  t,
-                                  "noneSelectedFeminine",
-                                  "Nenhuma selecionada",
-                                )}
+                              {getAdminPackLabel(selectedAdminPackType, t)}
                             </span>
                           </p>
-                          <p>
-                            {translate(t, "user", "Usuário")}:{" "}
-                            <span className="font-bold text-white">
-                              {selectedCardUser?.display_name ||
+                        )}
+
+                        <p>
+                          {translate(t, "quantity", "Quantidade")}: {" "}
+                          <span className="font-bold text-white">
+                            {adminRewardType === "card"
+                              ? adminCardQuantity
+                              : adminPackQuantity}
+                          </span>
+                        </p>
+
+                        <p>
+                          {translate(t, "recipient", "Destinatário")}: {" "}
+                          <span className="font-bold text-white">
+                            {adminRewardTarget === "all_users"
+                              ? translate(
+                                  t,
+                                  "adminAllRegisteredUsers",
+                                  "Todos os usuários cadastrados",
+                                )
+                              : selectedCardUser?.display_name ||
                                 selectedCardUser?.username ||
                                 selectedCardUser?.email ||
                                 translate(
@@ -1946,134 +2221,30 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                   "noneSelectedMasculine",
                                   "Nenhum selecionado",
                                 )}
-                            </span>
-                          </p>
-                          <p>
-                            {translate(t, "rarity", "Raridade")}:{" "}
-                            <span className="font-bold text-white">
-                              {getGrantRarityLabel(selectedGrantRarity, t)}
-                            </span>
-                          </p>
-                        </div>
+                          </span>
+                        </p>
                       </div>
 
                       <button
                         type="button"
-                        onClick={grantCardToUser}
+                        onClick={adminRewardType === "card" ? grantCardToUser : grantPackToUser}
                         disabled={
-                          !selectedCardCreatorId ||
-                          !selectedCardUserId ||
-                          actionLoading === grantActionId
+                          actionLoading !== null ||
+                          (adminRewardType === "card" && !selectedCardCreatorId) ||
+                          (adminRewardTarget === "user" && !selectedCardUserId)
                         }
-                        className="mt-5 w-full rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`mt-5 w-full rounded-full px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40 ${
+                          adminRewardType === "card" ? "bg-cyan-300" : "bg-purple-300"
+                        }`}
                       >
-                        {actionLoading === grantActionId
-                          ? translate(
-                              t,
-                              "adminSendingCard",
-                              "Enviando carta...",
-                            )
-                          : translate(
-                              t,
-                              "adminSendCardToUser",
-                              "Enviar carta para usuário",
-                            )}
+                        {actionLoading
+                          ? translate(t, "adminSendingReward", "Enviando...")
+                          : adminRewardTarget === "all_users"
+                            ? translate(t, "adminSendGiveaway", "Enviar giveaway")
+                            : translate(t, "adminSendReward", "Enviar")}
                       </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="rounded-[28px] border border-purple-300/15 bg-purple-300/[0.04] p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-300/20 bg-purple-300/10 text-purple-100">
-                      <Package size={20} />
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl font-black text-white">
-                        {translate(t, "adminSendPackTitle", "Enviar pacote")}
-                      </h3>
-                      <p className="mt-1 text-sm text-white/50">
-                        {translate(
-                          t,
-                          "adminSendPackDescription",
-                          "Selecione um usuário e entregue um pacote comum, raro, épico, lendário ou aleatório.",
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                    {ADMIN_PACK_TYPES.map((packOption) => {
-                      const selected = selectedAdminPackType === packOption.id;
-
-                      return (
-                        <button
-                          key={packOption.id}
-                          type="button"
-                          onClick={() => setSelectedAdminPackType(packOption.id)}
-                          className={`rounded-3xl border p-4 text-left transition ${
-                            selected
-                              ? "border-purple-300/60 bg-purple-300/10"
-                              : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
-                          }`}
-                        >
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-purple-100">
-                            <Package size={20} />
-                          </div>
-                          <p className="font-black text-white">
-                            {translate(t, packOption.labelKey, packOption.fallback)}
-                          </p>
-                          <p className="mt-1 text-xs text-white/45">
-                            {translate(
-                              t,
-                              packOption.descriptionKey,
-                              packOption.descriptionFallback,
-                            )}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-5 rounded-3xl border border-white/10 bg-black/25 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/35">
-                      {translate(t, "summary", "Resumo")}
-                    </p>
-
-                    <div className="mt-3 space-y-2 text-sm text-white/65">
-                      <p>
-                        {translate(t, "pack", "Pacote")}: {" "}
-                        <span className="font-bold text-white">
-                          {getAdminPackLabel(selectedAdminPackType, t)}
-                        </span>
-                      </p>
-                      <p>
-                        {translate(t, "user", "Usuário")}: {" "}
-                        <span className="font-bold text-white">
-                          {selectedCardUser?.display_name ||
-                            selectedCardUser?.username ||
-                            selectedCardUser?.email ||
-                            translate(
-                              t,
-                              "noneSelectedMasculine",
-                              "Nenhum selecionado",
-                            )}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={grantPackToUser}
-                    disabled={!selectedCardUserId || actionLoading === grantPackActionId}
-                    className="mt-5 w-full rounded-full bg-purple-300 px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {actionLoading === grantPackActionId
-                      ? translate(t, "adminSendingPack", "Enviando pacote...")
-                      : translate(t, "adminSendPackToUser", "Enviar pacote para usuário")}
-                  </button>
                 </div>
               </div>
             )}
