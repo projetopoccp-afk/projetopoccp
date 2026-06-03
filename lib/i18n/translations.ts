@@ -511,12 +511,34 @@ export const translations = {
     adminSendingPack: "Enviando pacote...",
     adminSendPackToUser: "Enviar pacote para usuário",
     pack: "Pacote",
-
-
-
-
-
-
+    // Admin reward center
+    adminRewardCenterDescription: "Escolha se deseja enviar carta ou pacote, defina quantidade, destinatário e envie em poucos passos.",
+    adminWhatSend: "O que deseja enviar?",
+    adminSendCardsShortDescription: "Entregue uma carta específica de um criador.",
+    adminSendPacksShortDescription: "Entregue pacotes de raridade fixa ou aleatória.",
+    adminWhichCard: "Qual carta?",
+    adminWhichRarity: "Qual raridade?",
+    adminWhichPack: "Qual pacote?",
+    adminHowMany: "Quantas?",
+    adminQuantityLimitHint: "Limite de segurança: 1 a 100 por envio.",
+    adminToWho: "Para quem?",
+    adminSpecificUser: "Usuário específico",
+    adminSpecificUserDescription: "Pesquise e selecione um usuário.",
+    adminGiveawayAllUsers: "Giveaway para todos",
+    adminGiveawayAllUsersDescription: "Entrega para todos os usuários cadastrados.",
+    adminGiveawayLoggedUsersOnlyHint: "Este giveaway entrega automaticamente para usuários cadastrados. Visitantes sem login ainda não possuem inventário; para eles, o ideal é criar depois um giveaway público por código ou link de resgate.",
+    adminAllRegisteredUsers: "Todos os usuários cadastrados",
+    adminNoUsersForGiveaway: "Nenhum usuário cadastrado encontrado para o giveaway.",
+    adminCardsGiveawaySuccess: "Giveaway enviado! {quantity} carta(s) de {creator} foram entregues para {count} usuário(s).",
+    adminCardSentSuccessWithQuantity: "Carta enviada! {quantity}x {creator} ({rarity}) foi entregue para {user}.",
+    adminPacksGiveawaySuccess: "Giveaway enviado! {quantity} pacote(s) {pack} foram entregues para {count} usuário(s).",
+    adminPackSentSuccessWithQuantity: "Pacote enviado! {quantity}x {pack} foi entregue para {user}.",
+    adminSendingReward: "Enviando...",
+    adminSendGiveaway: "Enviar giveaway",
+    adminSendReward: "Enviar",
+    type: "Tipo",
+    quantity: "Quantidade",
+    recipient: "Destinatário",
 },
 
   en: {
@@ -1031,12 +1053,34 @@ export const translations = {
     adminSendingPack: "Sending pack...",
     adminSendPackToUser: "Send pack to user",
     pack: "Pack",
-
-
-
-
-
-
+    // Admin reward center
+    adminRewardCenterDescription: "Choose whether to send a card or a pack, set the quantity, choose the recipient, and send it in a few steps.",
+    adminWhatSend: "What do you want to send?",
+    adminSendCardsShortDescription: "Deliver a specific creator card.",
+    adminSendPacksShortDescription: "Deliver fixed-rarity or random packs.",
+    adminWhichCard: "Which card?",
+    adminWhichRarity: "Which rarity?",
+    adminWhichPack: "Which pack?",
+    adminHowMany: "How many?",
+    adminQuantityLimitHint: "Safety limit: 1 to 100 per send.",
+    adminToWho: "To whom?",
+    adminSpecificUser: "Specific user",
+    adminSpecificUserDescription: "Search and select a user.",
+    adminGiveawayAllUsers: "Giveaway to everyone",
+    adminGiveawayAllUsersDescription: "Delivers to all registered users.",
+    adminGiveawayLoggedUsersOnlyHint: "This giveaway automatically delivers to registered users. Visitors without login do not have an inventory yet; for them, the best option is to create a public giveaway later with a redeem code or link.",
+    adminAllRegisteredUsers: "All registered users",
+    adminNoUsersForGiveaway: "No registered users found for the giveaway.",
+    adminCardsGiveawaySuccess: "Giveaway sent! {quantity} card(s) from {creator} were delivered to {count} user(s).",
+    adminCardSentSuccessWithQuantity: "Card sent! {quantity}x {creator} ({rarity}) was delivered to {user}.",
+    adminPacksGiveawaySuccess: "Giveaway sent! {quantity} {pack} pack(s) were delivered to {count} user(s).",
+    adminPackSentSuccessWithQuantity: "Pack sent! {quantity}x {pack} was delivered to {user}.",
+    adminSendingReward: "Sending...",
+    adminSendGiveaway: "Send giveaway",
+    adminSendReward: "Send",
+    type: "Type",
+    quantity: "Quantity",
+    recipient: "Recipient",
 },
 
   es: {
@@ -1551,12 +1595,34 @@ export const translations = {
     adminSendingPack: "Enviando paquete...",
     adminSendPackToUser: "Enviar paquete al usuario",
     pack: "Paquete",
-
-
-
-
-
-
+    // Admin reward center
+    adminRewardCenterDescription: "Elige si deseas enviar una carta o un paquete, define la cantidad, el destinatario y envíalo en pocos pasos.",
+    adminWhatSend: "¿Qué deseas enviar?",
+    adminSendCardsShortDescription: "Entrega una carta específica de un creador.",
+    adminSendPacksShortDescription: "Entrega paquetes de rareza fija o aleatoria.",
+    adminWhichCard: "¿Qué carta?",
+    adminWhichRarity: "¿Qué rareza?",
+    adminWhichPack: "¿Qué paquete?",
+    adminHowMany: "¿Cuántos?",
+    adminQuantityLimitHint: "Límite de seguridad: 1 a 100 por envío.",
+    adminToWho: "¿Para quién?",
+    adminSpecificUser: "Usuario específico",
+    adminSpecificUserDescription: "Busca y selecciona un usuario.",
+    adminGiveawayAllUsers: "Giveaway para todos",
+    adminGiveawayAllUsersDescription: "Entrega a todos los usuarios registrados.",
+    adminGiveawayLoggedUsersOnlyHint: "Este giveaway entrega automáticamente a usuarios registrados. Los visitantes sin login todavía no tienen inventario; para ellos, lo ideal es crear después un giveaway público con código o enlace de canje.",
+    adminAllRegisteredUsers: "Todos los usuarios registrados",
+    adminNoUsersForGiveaway: "No se encontraron usuarios registrados para el giveaway.",
+    adminCardsGiveawaySuccess: "¡Giveaway enviado! {quantity} carta(s) de {creator} fueron entregadas a {count} usuario(s).",
+    adminCardSentSuccessWithQuantity: "¡Carta enviada! {quantity}x {creator} ({rarity}) fue entregada a {user}.",
+    adminPacksGiveawaySuccess: "¡Giveaway enviado! {quantity} paquete(s) {pack} fueron entregados a {count} usuario(s).",
+    adminPackSentSuccessWithQuantity: "¡Paquete enviado! {quantity}x {pack} fue entregado a {user}.",
+    adminSendingReward: "Enviando...",
+    adminSendGiveaway: "Enviar giveaway",
+    adminSendReward: "Enviar",
+    type: "Tipo",
+    quantity: "Cantidad",
+    recipient: "Destinatario",
 },
 } as const;
 
