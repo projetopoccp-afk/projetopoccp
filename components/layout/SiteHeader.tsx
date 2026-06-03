@@ -5,6 +5,7 @@ import { Bell, ChevronRight, Globe2, LogOut, Package, Sparkles, Trophy, User, X 
 import { AccountModal } from "@/components/account/AccountModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
@@ -128,6 +129,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
@@ -449,6 +451,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
     setNotificationsOpen(false);
     setAccountOpen(false);
     setCollectionOpen(false);
+    setLogoutConfirmOpen(false);
+  }
+
+  function requestLogout() {
+    setLogoutConfirmOpen(true);
   }
 
   const displayName = profile?.display_name || user?.name || "Creator";
@@ -506,7 +513,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
                 </button>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={requestLogout}
                   className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
                 >
                   <LogOut size={16} />
@@ -595,7 +602,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               </button>
 
               <button
-                onClick={handleLogout}
+                onClick={requestLogout}
                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
               >
                 <LogOut size={18} />
@@ -641,7 +648,13 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
         email={user?.email || ""}
         profile={profile}
         onClose={() => setAccountOpen(false)}
-        onLogout={handleLogout}
+        onLogout={requestLogout}
+      />
+
+      <LogoutConfirmModal
+        open={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        onConfirm={handleLogout}
       />
 
       <CollectionModal

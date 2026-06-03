@@ -77,6 +77,12 @@ export const translations = {
     requestCreatorProfile: "Solicitar perfil de criador",
     startRequest: "Começar solicitação",
     logoutAccount: "Sair da conta",
+    logoutConfirmTitle: "Deseja realmente sair?",
+    logoutConfirmDescription:
+      "Você precisará entrar novamente para acessar sua conta, coleção e notificações.",
+    logoutConfirmCancel: "Cancelar",
+    logoutConfirmAction: "Sair",
+    logoutConfirmClose: "Fechar confirmação",
 
     profileCardDescription:
       "Veja seu nível, XP, progresso, badges e atividade dentro do Creator Nexus.",
@@ -561,6 +567,12 @@ export const translations = {
     requestCreatorProfile: "Request creator profile",
     startRequest: "Start request",
     logoutAccount: "Log out",
+    logoutConfirmTitle: "Do you really want to log out?",
+    logoutConfirmDescription:
+      "You will need to log in again to access your account, collection, and notifications.",
+    logoutConfirmCancel: "Cancel",
+    logoutConfirmAction: "Log out",
+    logoutConfirmClose: "Close confirmation",
 
     profileCardDescription:
       "View your level, XP, progress, badges, and activity inside Creator Nexus.",
@@ -1045,6 +1057,12 @@ export const translations = {
     requestCreatorProfile: "Solicitar perfil de creador",
     startRequest: "Iniciar solicitud",
     logoutAccount: "Cerrar sesión",
+    logoutConfirmTitle: "¿Realmente quieres salir?",
+    logoutConfirmDescription:
+      "Tendrás que iniciar sesión nuevamente para acceder a tu cuenta, colección y notificaciones.",
+    logoutConfirmCancel: "Cancelar",
+    logoutConfirmAction: "Salir",
+    logoutConfirmClose: "Cerrar confirmación",
 
     profileCardDescription:
       "Consulta tu nivel, XP, progreso, insignias y actividad dentro de Creator Nexus.",
