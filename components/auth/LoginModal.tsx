@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
 type LoginModalProps = {
@@ -13,6 +12,12 @@ type LoginModalProps = {
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const { t } = useLanguage();
+
+  function tx(key: string, fallback: string) {
+    const value = (t as (translationKey: any) => string)(key);
+
+    return value && value !== key ? value : fallback;
+  }
 
   return (
     <AnimatePresence>
@@ -30,7 +35,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           <button
             onClick={onClose}
             className="absolute inset-0"
-            aria-label={translate(t, "loginModalCloseLoginAria", "Fechar login")}
+            aria-label={tx("loginModalCloseLoginAria", "Fechar login")}
           />
 
           <motion.div
@@ -47,7 +52,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <button
               onClick={onClose}
               className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "close", "Fechar")}
+              aria-label={tx("close", "Fechar")}
             >
               <X size={18} />
             </button>
@@ -74,7 +79,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
                 <div className="min-w-0 flex-1">
                   <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                    {translate(t, "loginModalBadge", "Acesso à coleção")}
+                    {tx("loginModalBadge", "Acesso à coleção")}
                   </div>
 
                   <div className="mt-5 flex flex-col leading-none">
@@ -96,13 +101,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               </div>
 
               <h2 className="mt-7 text-3xl font-black leading-tight sm:text-4xl">
-                {translate(t, "loginModalTitle", "Colecione criadores.")}
+                {tx("loginModalTitle", "Colecione criadores.")}
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-white/58">
-                {translate(
-                  t,
-                  "loginModalDescription",
+                {tx("loginModalDescription",
                   "Entre para ganhar cartas, abrir packs, seguir seus criadores favoritos e completar sua coleção no Cardpoc."
                 )}
               </p>
@@ -110,28 +113,28 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <div className="mt-6 grid gap-2 rounded-[22px] border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.045] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/80">
-                    {translate(t, "loginModalPillarCards", "Cartas")}
+                    {tx("loginModalPillarCards", "Cartas")}
                   </p>
                   <p className="mt-1 text-xs text-white/45">
-                    {translate(t, "loginModalPillarCardsDescription", "Ganhe e evolua")}
+                    {tx("loginModalPillarCardsDescription", "Ganhe e evolua")}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-fuchsia-300/10 bg-fuchsia-300/[0.045] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100/80">
-                    {translate(t, "loginModalPillarPacks", "Packs")}
+                    {tx("loginModalPillarPacks", "Packs")}
                   </p>
                   <p className="mt-1 text-xs text-white/45">
-                    {translate(t, "loginModalPillarPacksDescription", "Abra recompensas")}
+                    {tx("loginModalPillarPacksDescription", "Abra recompensas")}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-yellow-300/10 bg-yellow-300/[0.045] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-100/80">
-                    {translate(t, "loginModalPillarCollection", "Coleção")}
+                    {tx("loginModalPillarCollection", "Coleção")}
                   </p>
                   <p className="mt-1 text-xs text-white/45">
-                    {translate(t, "loginModalPillarCollectionDescription", "Complete sua galeria")}
+                    {tx("loginModalPillarCollectionDescription", "Complete sua galeria")}
                   </p>
                 </div>
               </div>
@@ -149,13 +152,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                   className="group w-full rounded-2xl border border-indigo-300/25 bg-indigo-400/10 px-5 py-4 text-left transition hover:border-indigo-200/45 hover:bg-indigo-400/20 hover:shadow-[0_0_28px_rgba(129,140,248,0.14)]"
                 >
                   <p className="font-bold text-white">
-                    {translate(t, "loginModalContinueDiscord", "Continuar com Discord")}
+                    {tx("loginModalContinueDiscord", "Continuar com Discord")}
                   </p>
 
                   <p className="mt-1 text-xs text-white/45 transition group-hover:text-white/60">
-                    {translate(
-                      t,
-                      "loginModalDiscordDescription",
+                    {tx("loginModalDiscordDescription",
                       "Entre com sua comunidade e continue sua coleção."
                     )}
                   </p>
@@ -173,13 +174,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                   className="group w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:shadow-[0_0_28px_rgba(34,211,238,0.10)]"
                 >
                   <p className="font-bold text-white">
-                    {translate(t, "loginModalContinueGoogle", "Continuar com Google")}
+                    {tx("loginModalContinueGoogle", "Continuar com Google")}
                   </p>
 
                   <p className="mt-1 text-xs text-white/45 transition group-hover:text-white/60">
-                    {translate(
-                      t,
-                      "loginModalGoogleDescription",
+                    {tx("loginModalGoogleDescription",
                       "Acesso rápido para seguir criadores e gerenciar sua conta."
                     )}
                   </p>
@@ -188,22 +187,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs uppercase tracking-[0.25em] text-cyan-100/45">
-                  {translate(t, "loginModalOnboardingLabel", "Criador no Cardpoc")}
+                  {tx("loginModalOnboardingLabel", "Criador no Cardpoc")}
                 </p>
 
                 <p className="mt-2 text-sm leading-6 text-white/55">
-                  {translate(
-                    t,
-                    "loginModalOnboardingDescription",
+                  {tx("loginModalOnboardingDescription",
                     "Perfis de criadores passam por curadoria para manter cartas autênticas, raridades especiais e uma coleção premium."
                   )}
                 </p>
               </div>
 
               <p className="mt-6 text-center text-xs text-white/35">
-                {translate(
-                  t,
-                  "loginModalSupabaseNotice",
+                {tx("loginModalSupabaseNotice",
                   "Seu progresso fica salvo com segurança na sua conta Cardpoc."
                 )}
               </p>

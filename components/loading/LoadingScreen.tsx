@@ -3,10 +3,15 @@
 import { motion } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { translate } from "@/lib/i18n/translate";
 
 export function LoadingScreen() {
   const { t } = useLanguage();
+
+  function tx(key: string, fallback: string) {
+    const value = (t as (translationKey: any) => string)(key);
+
+    return value && value !== key ? value : fallback;
+  }
 
   return (
     <motion.div
@@ -120,7 +125,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.38 }}
           className="mt-5 text-xs font-bold uppercase tracking-[0.32em] text-cyan-100/65"
         >
-          {translate(t, "brandTaglineShort", "Colecione criadores")}
+          {tx("brandTaglineShort", "Colecione criadores")}
         </motion.p>
 
         <motion.h1
@@ -129,7 +134,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.5 }}
           className="mt-5 text-2xl font-black tracking-tight md:text-4xl"
         >
-          {translate(t, "loadingScreenTitle", "Carregando sua coleção")}
+          {tx("loadingScreenTitle", "Carregando sua coleção")}
         </motion.h1>
 
         <motion.p
@@ -138,7 +143,7 @@ export function LoadingScreen() {
           transition={{ delay: 0.8, duration: 1.8, repeat: Infinity }}
           className="mt-4 text-sm text-white/45"
         >
-          {translate(t, "loadingScreenDescription", "Sincronizando cartas, packs e conquistas...")}
+          {tx("loadingScreenDescription", "Sincronizando cartas, packs e conquistas...")}
         </motion.p>
 
         <div className="mt-8 h-2 w-full max-w-xs overflow-hidden rounded-full border border-white/10 bg-white/5">

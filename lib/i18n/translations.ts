@@ -20,6 +20,7 @@ export const translations = {
     legendaryPlural: "Lendárias",
 
     searchCreators: "Buscar criadores...",
+    brandTaglineShort: "Colecione criadores",
     digitalReputationPlatform: "Plataforma de Reputação Digital",
     discoverCreators:
       "Descubra criadores lendários por meio de cartas digitais.",
@@ -109,8 +110,7 @@ export const translations = {
     badges: "Badges",
     unlockedAchievement: "conquista desbloqueada",
     firstCard: "Primeira Carta",
-    firstCardDescription:
-      "Você conquistou sua primeira carta no Nexus.",
+    firstCardDescription: "Você conquistou sua primeira carta no Nexus.",
     badgesEmptyDescription:
       "Suas badges aparecerão aqui quando você completar objetivos.",
     recentActivity: "Atividade recente",
@@ -227,12 +227,13 @@ export const translations = {
     code: "Código",
     rarity: "Raridade",
     reject: "Rejeitar",
-  
+
     creatorSearchPlaceholder: "Buscar criadores, ranks, tags...",
     status: "Status",
     creatorGridDefaultTitle: "Criador em Ascensão",
     creatorGridDefaultBio: "Novo criador aprovado na plataforma.",
-    creatorGridDefaultDescription: "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
+    creatorGridDefaultDescription:
+      "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
     creatorGridDefaultEvolutionStage: "Estágio 1 — Criador em Ascensão",
     creatorGridRecentlyApproved: "Aprovado recentemente",
     creatorGridOrigin: "Origem",
@@ -240,33 +241,43 @@ export const translations = {
     creatorGridStyle: "Estilo",
     creatorGridPendingCustomization: "Personalização pendente",
     creatorGridFirstAppearance: "Primeira aparição",
-    creatorGridFirstAppearanceDescription: "Este criador acabou de entrar no universo da plataforma.",
+    creatorGridFirstAppearanceDescription:
+      "Este criador acabou de entrar no universo da plataforma.",
     creatorGridCreatorApproved: "Criador Aprovado",
     creatorGridCreatorApprovedDescription: "Perfil aprovado pela moderação.",
     creatorGridLoading: "Carregando criadores...",
     creatorGridSearchResults: "Resultado da busca",
-    creatorGridSearchResultsDescription: "Criadores encontrados com base no termo pesquisado.",
+    creatorGridSearchResultsDescription:
+      "Criadores encontrados com base no termo pesquisado.",
     creatorGridFeaturedCards: "Cartas em Destaque",
     creatorGridNewCards: "Cartas Novas",
-    creatorGridEmptyTitle: "Não identificamos nenhuma identidade correspondente à sua busca.",
-    creatorGridEmptyDescription: "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.",
+    creatorGridEmptyTitle:
+      "Não identificamos nenhuma identidade correspondente à sua busca.",
+    creatorGridEmptyDescription:
+      "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags.",
 
     loginModalCloseLoginAria: "Fechar login",
-    loginModalBadge: "Acesso Criador",
-    loginModalTitle: "Entre no seu perfil digital",
+    loginModalBadge: "Acesso à coleção",
+    loginModalTitle: "Colecione criadores.",
     loginModalDescription:
-      "Faça login para criar seu perfil, evoluir seu card, desbloquear achievements e participar da reputação digital.",
+      "Entre para ganhar cartas, abrir packs, seguir seus criadores favoritos e completar sua coleção no Cardpoc.",
+    loginModalPillarCards: "Cartas",
+    loginModalPillarCardsDescription: "Ganhe e evolua",
+    loginModalPillarPacks: "Packs",
+    loginModalPillarPacksDescription: "Abra recompensas",
+    loginModalPillarCollection: "Coleção",
+    loginModalPillarCollectionDescription: "Complete sua galeria",
     loginModalContinueDiscord: "Continuar com Discord",
     loginModalDiscordDescription:
-      "Ideal para criadores, comunidades e servidores.",
+      "Entre com sua comunidade e continue sua coleção.",
     loginModalContinueGoogle: "Continuar com Google",
     loginModalGoogleDescription:
-      "Acesso rápido para criar ou gerenciar seu perfil.",
-    loginModalOnboardingLabel: "Cadastro Criador",
+      "Acesso rápido para seguir criadores e gerenciar sua conta.",
+    loginModalOnboardingLabel: "Criador no Cardpoc",
     loginModalOnboardingDescription:
-      "Novos perfis passam por uma etapa de pré-cadastro e aprovação para manter a plataforma segura, autêntica e premium.",
+      "Perfis de criadores passam por curadoria para manter cartas autênticas, raridades especiais e uma coleção premium.",
     loginModalSupabaseNotice:
-      "Login real será conectado ao Supabase Auth na próxima etapa.",
+      "Seu progresso fica salvo com segurança na sua conta Cardpoc.",
 
     creatorCardOpenAria: "Abrir perfil do criador",
     creatorCardLevelPrefix: "Nível",
@@ -289,14 +300,17 @@ export const translations = {
     creatorPopupBannerPreviewAlt: "Prévia do banner",
     creatorPopupCardNotificationPrefix: "Você ganhou a carta de",
     creatorPopupChooseFile: "Escolher arquivo",
-    creatorPopupClaimDescription: "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
+    creatorPopupClaimDescription:
+      "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
     creatorPopupClaimMine: "Este perfil é meu",
     creatorPopupClaimProfileBadge: "Reivindicar Perfil",
     creatorPopupClaimSentBadge: "Reivindicação Enviada",
-    creatorPopupClaimSentDescription: "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.",
+    creatorPopupClaimSentDescription:
+      "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.",
     creatorPopupClaimSentTitle: "Solicitação enviada",
     creatorPopupClaimUrlPlaceholder: "Link do canal ou perfil oficial",
-    creatorPopupClaimUrlRequired: "Informe o link do canal ou perfil usado para verificação.",
+    creatorPopupClaimUrlRequired:
+      "Informe o link do canal ou perfil usado para verificação.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Prévia do clip",
     creatorPopupClipTitlePlaceholder: "Melhor momento da live",
@@ -314,7 +328,8 @@ export const translations = {
     creatorPopupPreviousClips: "Clips anteriores",
     creatorPopupNextClips: "Próximos clips",
     creatorPopupClipAlt: "Clip",
-    creatorPopupFeaturedClipsDescription: "Adicione até 3 clips ou shorts para aparecerem no perfil. A capa será buscada automaticamente pelo link quando possível.",
+    creatorPopupFeaturedClipsDescription:
+      "Adicione até 3 clips ou shorts para aparecerem no perfil. A capa será buscada automaticamente pelo link quando possível.",
     creatorPopupFeaturedClipsTitle: "Clips em destaque",
     creatorPopupFeaturedClipsViewTitle: "Clips em destaque",
     creatorPopupFieldAvatarUrl: "URL do avatar",
@@ -349,10 +364,12 @@ export const translations = {
     creatorPopupShare: "Compartilhar",
     creatorPopupShareBadge: "Compartilhar Perfil",
     creatorPopupShareDescriptionPrefix: "Compartilhe o perfil de",
-    creatorPopupShareDescriptionSuffix: "usando o link com preview do Creator Nexus.",
+    creatorPopupShareDescriptionSuffix:
+      "usando o link com preview do Creator Nexus.",
     creatorPopupShares: "Compartilhamentos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link do",
-    creatorPopupSocialLinksDescription: "Adicione os links oficiais do criador.",
+    creatorPopupSocialLinksDescription:
+      "Adicione os links oficiais do criador.",
     creatorPopupSocialLinksTitle: "Redes Sociais",
     creatorPopupSocialNetworks: "Redes Sociais",
     creatorPopupStatusEvent: "Em evento",
@@ -386,15 +403,18 @@ export const translations = {
     creatorPopupRemoveYoutubeChannel: "Remover canal do YouTube",
     creatorRequestModalBadge: "Solicitação Criador",
     creatorRequestModalSuccessTitle: "Solicitação enviada",
-    creatorRequestModalSuccessDescription: "Sua solicitação foi enviada para análise.",
+    creatorRequestModalSuccessDescription:
+      "Sua solicitação foi enviada para análise.",
     creatorRequestModalTitle: "Torne-se um Criador",
-    creatorRequestModalDescription: "Envie sua solicitação para criar seu perfil.",
+    creatorRequestModalDescription:
+      "Envie sua solicitação para criar seu perfil.",
     creatorRequestModalNicknamePlaceholder: "Apelido",
     creatorRequestModalUsernamePlaceholder: "Username",
     creatorRequestModalVerificationTitle: "Verificação",
     creatorRequestModalVerificationUrlPlaceholder: "URL de verificação",
     creatorRequestModalVerificationCodeLabel: "Código",
-    creatorRequestModalVerificationCodeDescription: "Use este código para validar seu perfil.",
+    creatorRequestModalVerificationCodeDescription:
+      "Use este código para validar seu perfil.",
     creatorRequestModalCardImageTitle: "Imagem da Carta",
     creatorRequestModalCardImageDescription: "Envie uma imagem para sua carta.",
     creatorRequestModalImageUrlPlaceholder: "URL da imagem",
@@ -408,14 +428,16 @@ export const translations = {
     creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
     creatorRequestModalSubmitting: "Enviando...",
     creatorRequestModalSubmit: "Enviar solicitação",
-    loadingScreenTitle: "Preparando seu universo",
-    loadingScreenDescription: "Sincronizando perfis, cartas e conquistas...",
+    loadingScreenTitle: "Carregando sua coleção",
+    loadingScreenDescription: "Sincronizando cartas, packs e conquistas...",
     missionsModalCloseAria: "Fechar missões",
     missionsModalNotificationTitle: "Recompensa resgatada",
-    missionsModalNotificationMessage: "Sua recompensa foi adicionada à sua conta.",
+    missionsModalNotificationMessage:
+      "Sua recompensa foi adicionada à sua conta.",
     missionsModalBadge: "Missões",
     missionsModalTitle: "Central de Missões",
-    missionsModalDescription: "Complete missões para ganhar recompensas e evoluir sua presença no Nexus.",
+    missionsModalDescription:
+      "Complete missões para ganhar recompensas e evoluir sua presença no Nexus.",
     missionsModalProgressLabel: "Progresso",
     missionsModalLoading: "Carregando missões...",
     missionsModalEmpty: "Nenhuma missão disponível no momento.",
@@ -427,7 +449,8 @@ export const translations = {
     packsModalCloseAria: "Fechar packs",
     packsModalBadge: "Packs",
     packsModalTitle: "Abrir Packs",
-    packsModalDescription: "Abra seus packs para revelar novas cartas de criadores.",
+    packsModalDescription:
+      "Abra seus packs para revelar novas cartas de criadores.",
     packsModalInventoryTitle: "Inventário de Packs",
     packsModalPackCountSingular: "{count} pack disponível",
     packsModalPackCountPlural: "{count} packs disponíveis",
@@ -435,16 +458,19 @@ export const translations = {
     packsModalSearching: "Buscando seus packs...",
     packsModalEmpty: "Você ainda não possui packs disponíveis.",
     packsModalDefaultPackName: "Pack Nexus",
-    packsModalDefaultPackDescription: "Um pack especial com cartas de criadores.",
+    packsModalDefaultPackDescription:
+      "Um pack especial com cartas de criadores.",
     packsModalOriginLabel: "Origem",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
     packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Escolha um pack",
-    packsModalIdleDescription: "Selecione um pack do seu inventário para iniciar a abertura.",
+    packsModalIdleDescription:
+      "Selecione um pack do seu inventário para iniciar a abertura.",
     packsModalDuplicateCard: "Carta duplicada",
     packsModalRevealedCard: "Carta revelada",
-    packsModalDuplicateDescription: "Você já possuía esta carta, então ela foi marcada como duplicada.",
+    packsModalDuplicateDescription:
+      "Você já possuía esta carta, então ela foi marcada como duplicada.",
     packsModalThisCreator: "Este criador",
     packsModalReceivedDescription: "foi adicionado à sua coleção.",
     packsModalOpenErrorTitle: "Não foi possível abrir o pack",
@@ -463,22 +489,29 @@ export const translations = {
     packsModalDuplicateCardBio: "Duplicada convertida em XP.",
     packsModalRevealedCardBio: "Nova carta adicionada à sua coleção.",
     packsModalRandomPackName: "Pacote Misterioso",
-    packsModalRandomPackDescription: "Um pacote misterioso com chance aleatória para qualquer raridade.",
+    packsModalRandomPackDescription:
+      "Um pacote misterioso com chance aleatória para qualquer raridade.",
     packsModalRandomRarity: "Aleatória",
     homePageBadge: "Plataforma de Reputação Digital",
-    homePageDescription: "Descubra criadores lendários por meio de cartas digitais.",
+    homePageDescription:
+      "Descubra criadores lendários por meio de cartas digitais.",
     packsModalLegendaryPackName: "Pacote Lendário",
     packsModalEpicPackName: "Pacote Épico",
     packsModalRarePackName: "Pacote Raro",
     packsModalCommonPackName: "Pacote Comum",
-    packsModalLegendaryPackDescription: "Um pacote especial com chance elevada de carta lendária.",
-    packsModalEpicPackDescription: "Um pacote especial com maiores chances de carta épica.",
-    packsModalRarePackDescription: "Um pacote melhorado com maiores chances de carta rara.",
-    packsModalCommonPackDescription: "Um pacote básico com cartas de criadores.",
+    packsModalLegendaryPackDescription:
+      "Um pacote especial com chance elevada de carta lendária.",
+    packsModalEpicPackDescription:
+      "Um pacote especial com maiores chances de carta épica.",
+    packsModalRarePackDescription:
+      "Um pacote melhorado com maiores chances de carta rara.",
+    packsModalCommonPackDescription:
+      "Um pacote básico com cartas de criadores.",
     packsModalManualTestSource: "Teste manual",
     packsModalMissionSource: "Missão",
     creatorPopupAutoClipsTitle: "Clips automáticos",
-    creatorPopupAutoClipsDescription: "Os clips agora são puxados automaticamente da Twitch, Kick e YouTube Shorts com base nos links das redes sociais cadastradas.",
+    creatorPopupAutoClipsDescription:
+      "Os clips agora são puxados automaticamente da Twitch, Kick e YouTube Shorts com base nos links das redes sociais cadastradas.",
     creatorPopupClipsLoading: "Carregando clips automáticos...",
     creatorPopupPlatformYoutube: "YouTube Shorts",
     creatorPopupPlatformTwitch: "Twitch",
@@ -495,27 +528,33 @@ export const translations = {
     adminRandomPack: "Pacote Aleatório",
     adminRandomPackDescription: "Sorteia cartas entre todas as raridades.",
     adminCommonPack: "Pacote Comum",
-    adminCommonPackDescription: "Pacote base com maior chance de cartas comuns.",
+    adminCommonPackDescription:
+      "Pacote base com maior chance de cartas comuns.",
     adminRarePack: "Pacote Raro",
     adminRarePackDescription: "Pacote com maior chance de cartas raras.",
     adminEpicPack: "Pacote Épico",
     adminEpicPackDescription: "Pacote com maior chance de cartas épicas.",
     adminLegendaryPack: "Pacote Lendário",
-    adminLegendaryPackDescription: "Pacote premium com chance elevada de carta lendária.",
+    adminLegendaryPackDescription:
+      "Pacote premium com chance elevada de carta lendária.",
     adminSelectPackRecipient: "Selecione o usuário que vai receber o pacote.",
     adminUserNotFound: "Usuário não encontrado.",
     adminPackNotFound: "Pacote não encontrado ou inativo no banco de dados.",
     adminPackSentSuccess: "Pacote enviado! {pack} foi entregue para {user}.",
     adminSendPackTitle: "Enviar pacote",
-    adminSendPackDescription: "Selecione um usuário e entregue um pacote comum, raro, épico, lendário ou aleatório.",
+    adminSendPackDescription:
+      "Selecione um usuário e entregue um pacote comum, raro, épico, lendário ou aleatório.",
     adminSendingPack: "Enviando pacote...",
     adminSendPackToUser: "Enviar pacote para usuário",
     pack: "Pacote",
     // Admin reward center
-    adminRewardCenterDescription: "Escolha se deseja enviar carta ou pacote, defina quantidade, destinatário e envie em poucos passos.",
+    adminRewardCenterDescription:
+      "Escolha se deseja enviar carta ou pacote, defina quantidade, destinatário e envie em poucos passos.",
     adminWhatSend: "O que deseja enviar?",
-    adminSendCardsShortDescription: "Entregue uma carta específica de um criador.",
-    adminSendPacksShortDescription: "Entregue pacotes de raridade fixa ou aleatória.",
+    adminSendCardsShortDescription:
+      "Entregue uma carta específica de um criador.",
+    adminSendPacksShortDescription:
+      "Entregue pacotes de raridade fixa ou aleatória.",
     adminWhichCard: "Qual carta?",
     adminWhichRarity: "Qual raridade?",
     adminWhichPack: "Qual pacote?",
@@ -525,14 +564,21 @@ export const translations = {
     adminSpecificUser: "Usuário específico",
     adminSpecificUserDescription: "Pesquise e selecione um usuário.",
     adminGiveawayAllUsers: "Giveaway para todos",
-    adminGiveawayAllUsersDescription: "Entrega para todos os usuários cadastrados.",
-    adminGiveawayLoggedUsersOnlyHint: "Este giveaway entrega automaticamente para usuários cadastrados. Visitantes sem login ainda não possuem inventário; para eles, o ideal é criar depois um giveaway público por código ou link de resgate.",
+    adminGiveawayAllUsersDescription:
+      "Entrega para todos os usuários cadastrados.",
+    adminGiveawayLoggedUsersOnlyHint:
+      "Este giveaway entrega automaticamente para usuários cadastrados. Visitantes sem login ainda não possuem inventário; para eles, o ideal é criar depois um giveaway público por código ou link de resgate.",
     adminAllRegisteredUsers: "Todos os usuários cadastrados",
-    adminNoUsersForGiveaway: "Nenhum usuário cadastrado encontrado para o giveaway.",
-    adminCardsGiveawaySuccess: "Giveaway enviado! {quantity} carta(s) de {creator} foram entregues para {count} usuário(s).",
-    adminCardSentSuccessWithQuantity: "Carta enviada! {quantity}x {creator} ({rarity}) foi entregue para {user}.",
-    adminPacksGiveawaySuccess: "Giveaway enviado! {quantity} pacote(s) {pack} foram entregues para {count} usuário(s).",
-    adminPackSentSuccessWithQuantity: "Pacote enviado! {quantity}x {pack} foi entregue para {user}.",
+    adminNoUsersForGiveaway:
+      "Nenhum usuário cadastrado encontrado para o giveaway.",
+    adminCardsGiveawaySuccess:
+      "Giveaway enviado! {quantity} carta(s) de {creator} foram entregues para {count} usuário(s).",
+    adminCardSentSuccessWithQuantity:
+      "Carta enviada! {quantity}x {creator} ({rarity}) foi entregue para {user}.",
+    adminPacksGiveawaySuccess:
+      "Giveaway enviado! {quantity} pacote(s) {pack} foram entregues para {count} usuário(s).",
+    adminPackSentSuccessWithQuantity:
+      "Pacote enviado! {quantity}x {pack} foi entregue para {user}.",
     adminSendingReward: "Enviando...",
     adminSendGiveaway: "Enviar giveaway",
     adminSendReward: "Enviar",
@@ -542,24 +588,34 @@ export const translations = {
     creatorProfileDefaultCategory: "Criador",
     creatorProfileDefaultFaction: "Cardpoc",
     creatorProfileDefaultBio: "Perfil público de criador aprovado no Cardpoc.",
-    creatorProfileDefaultDescription: "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc.",
+    creatorProfileDefaultDescription:
+      "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc.",
     creatorProfileLoading: "Carregando perfil do criador...",
     creatorProfileNotFoundTitle: "Criador não encontrado",
-    creatorProfileNotFoundDescription: "Este perfil ainda não está público ou não existe no Cardpoc.",
+    creatorProfileNotFoundDescription:
+      "Este perfil ainda não está público ou não existe no Cardpoc.",
     creatorProfileBackHome: "Voltar para o Cardpoc",
     creatorProfileExploreCreators: "Explorar criadores",
     creatorProfilePublicProfile: "Perfil público",
     creatorProfileVerified: "Verificado",
     creatorProfileCardLabel: "Carta Cardpoc",
     creatorProfileViewShareCard: "Ver carta compartilhável",
+    creatorProfileCopyProfileLink: "Copiar link do perfil",
+    creatorProfileProfileLinkCopied: "Link copiado",
+    creatorProfileClipSingular: "clip",
+    creatorProfileClipPlural: "clips",
+    creatorProfilePreviousClips: "Clipes anteriores",
+    creatorProfileNextClips: "Próximos clipes",
     creatorProfileViews: "Visualizações",
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartilhamentos",
     creatorProfileAboutTitle: "Sobre o criador",
     creatorProfileFeaturedClips: "Clipes em destaque",
-    creatorProfileNoClips: "Este criador ainda não possui clipes públicos em destaque.",
+    creatorProfileNoClips:
+      "Este criador ainda não possui clipes públicos em destaque.",
     creatorProfileSocialLinks: "Redes sociais",
-    creatorProfileNoSocialLinks: "As redes sociais deste criador ainda não foram adicionadas.",
+    creatorProfileNoSocialLinks:
+      "As redes sociais deste criador ainda não foram adicionadas.",
     creatorProfileCardStats: "Carta do criador",
     creatorProfileCardRarity: "Raridade",
     creatorProfileCardRank: "Rank",
@@ -580,10 +636,17 @@ export const translations = {
     creatorProfileExternalAudience: "Audiência externa",
     creatorProfileUpdatingPlatforms: "Atualizando plataformas...",
     creatorProfileLoadingClips: "Carregando clipes...",
+    creatorProfileChooseLivePlatform:
+      "Este criador está ao vivo em mais de uma plataforma. Escolha onde assistir.",
+    creatorProfileLivePlatformsTitle: "Escolha onde assistir",
+    creatorProfileLivePlatformsDescription:
+      "Este criador está online em mais de uma plataforma.",
+    creatorProfileCloseLivePlatforms: "Fechar plataformas ao vivo",
+    creatorProfileClose: "Fechar",
     type: "Tipo",
     quantity: "Quantidade",
     recipient: "Destinatário",
-},
+  },
 
   en: {
     notifications: "Notifications",
@@ -606,9 +669,9 @@ export const translations = {
     legendaryPlural: "Legendary",
 
     searchCreators: "Search creators...",
+    brandTaglineShort: "Collect creators",
     digitalReputationPlatform: "Digital Reputation Platform",
-    discoverCreators:
-      "Discover legendary creators through digital cards.",
+    discoverCreators: "Discover legendary creators through digital cards.",
 
     language: "Language",
     changeLanguage: "Change language",
@@ -695,8 +758,7 @@ export const translations = {
     badges: "Badges",
     unlockedAchievement: "unlocked achievement",
     firstCard: "First Card",
-    firstCardDescription:
-      "You earned your first card in the Nexus.",
+    firstCardDescription: "You earned your first card in the Nexus.",
     badgesEmptyDescription:
       "Your badges will appear here when you complete objectives.",
     recentActivity: "Recent activity",
@@ -813,12 +875,13 @@ export const translations = {
     code: "Code",
     rarity: "Rarity",
     reject: "Reject",
-  
+
     creatorSearchPlaceholder: "Search creators, ranks, tags...",
     status: "Status",
     creatorGridDefaultTitle: "Rising Creator",
     creatorGridDefaultBio: "New creator approved on the platform.",
-    creatorGridDefaultDescription: "This profile has been approved and can be customized by the creator soon.",
+    creatorGridDefaultDescription:
+      "This profile has been approved and can be customized by the creator soon.",
     creatorGridDefaultEvolutionStage: "Stage 1 — Rising Creator",
     creatorGridRecentlyApproved: "Recently approved",
     creatorGridOrigin: "Origin",
@@ -826,33 +889,43 @@ export const translations = {
     creatorGridStyle: "Style",
     creatorGridPendingCustomization: "Pending customization",
     creatorGridFirstAppearance: "First appearance",
-    creatorGridFirstAppearanceDescription: "This creator has just entered the platform universe.",
+    creatorGridFirstAppearanceDescription:
+      "This creator has just entered the platform universe.",
     creatorGridCreatorApproved: "Creator Approved",
     creatorGridCreatorApprovedDescription: "Profile approved by moderation.",
     creatorGridLoading: "Loading creators...",
     creatorGridSearchResults: "Search result",
-    creatorGridSearchResultsDescription: "Creators found based on the searched term.",
+    creatorGridSearchResultsDescription:
+      "Creators found based on the searched term.",
     creatorGridFeaturedCards: "Featured Cards",
     creatorGridNewCards: "New Cards",
-    creatorGridEmptyTitle: "We could not identify any identity matching your search.",
-    creatorGridEmptyDescription: "Try searching by creator name, category, rarity, platform, or tags.",
+    creatorGridEmptyTitle:
+      "We could not identify any identity matching your search.",
+    creatorGridEmptyDescription:
+      "Try searching by creator name, category, rarity, platform, or tags.",
 
     loginModalCloseLoginAria: "Close login",
-    loginModalBadge: "Creator Access",
-    loginModalTitle: "Access your digital profile",
+    loginModalBadge: "Collection Access",
+    loginModalTitle: "Collect creators.",
     loginModalDescription:
-      "Sign in to create your profile, evolve your card, unlock achievements and participate in the digital reputation system.",
+      "Sign in to earn cards, open packs, follow your favorite creators and complete your Cardpoc collection.",
+    loginModalPillarCards: "Cards",
+    loginModalPillarCardsDescription: "Earn and evolve",
+    loginModalPillarPacks: "Packs",
+    loginModalPillarPacksDescription: "Open rewards",
+    loginModalPillarCollection: "Collection",
+    loginModalPillarCollectionDescription: "Complete your gallery",
     loginModalContinueDiscord: "Continue with Discord",
     loginModalDiscordDescription:
-      "Ideal for creators, communities and servers.",
+      "Join with your community and keep building your collection.",
     loginModalContinueGoogle: "Continue with Google",
     loginModalGoogleDescription:
-      "Quick access to create or manage your profile.",
-    loginModalOnboardingLabel: "Creator Onboarding",
+      "Quick access to follow creators and manage your account.",
+    loginModalOnboardingLabel: "Creator on Cardpoc",
     loginModalOnboardingDescription:
-      "New profiles go through a pre-registration and approval stage to keep the platform safe, authentic and premium.",
+      "Creator profiles go through curation to keep cards authentic, rarities special and the collection premium.",
     loginModalSupabaseNotice:
-      "Real login will be connected to Supabase Auth in the next stage.",
+      "Your progress is safely saved to your Cardpoc account.",
 
     creatorCardOpenAria: "Open creator profile",
     creatorCardLevelPrefix: "Level",
@@ -875,14 +948,17 @@ export const translations = {
     creatorPopupBannerPreviewAlt: "Banner preview",
     creatorPopupCardNotificationPrefix: "You earned the card of",
     creatorPopupChooseFile: "Choose file",
-    creatorPopupClaimDescription: "To prove this profile belongs to you, enter an official platform and temporarily place the code below in the channel bio/description.",
+    creatorPopupClaimDescription:
+      "To prove this profile belongs to you, enter an official platform and temporarily place the code below in the channel bio/description.",
     creatorPopupClaimMine: "This profile is mine",
     creatorPopupClaimProfileBadge: "Claim Profile",
     creatorPopupClaimSentBadge: "Claim Sent",
-    creatorPopupClaimSentDescription: "Now place the code below in the bio, description, or about section of the provided platform. An administrator will review your request.",
+    creatorPopupClaimSentDescription:
+      "Now place the code below in the bio, description, or about section of the provided platform. An administrator will review your request.",
     creatorPopupClaimSentTitle: "Request sent",
     creatorPopupClaimUrlPlaceholder: "Official channel or profile link",
-    creatorPopupClaimUrlRequired: "Enter the channel or profile link used for verification.",
+    creatorPopupClaimUrlRequired:
+      "Enter the channel or profile link used for verification.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Clip preview",
     creatorPopupClipTitlePlaceholder: "Best live moment",
@@ -900,7 +976,8 @@ export const translations = {
     creatorPopupPreviousClips: "Previous clips",
     creatorPopupNextClips: "Next clips",
     creatorPopupClipAlt: "Clip",
-    creatorPopupFeaturedClipsDescription: "Add up to 3 clips or shorts to appear on the profile. The thumbnail will be fetched automatically from the link whenever possible.",
+    creatorPopupFeaturedClipsDescription:
+      "Add up to 3 clips or shorts to appear on the profile. The thumbnail will be fetched automatically from the link whenever possible.",
     creatorPopupFeaturedClipsTitle: "Featured clips",
     creatorPopupFeaturedClipsViewTitle: "Featured clips",
     creatorPopupFieldAvatarUrl: "Avatar URL",
@@ -955,7 +1032,8 @@ export const translations = {
     creatorPopupExternalReach: "External reach",
     creatorPopupYoutubeChannelsBadge: "YouTube",
     creatorPopupYoutubeChannelsTitle: "YouTube channels",
-    creatorPopupYoutubeChannelsDescription: "Choose which channel you want to open.",
+    creatorPopupYoutubeChannelsDescription:
+      "Choose which channel you want to open.",
     creatorPopupYoutubeChannelFallback: "Channel {count}",
     creatorPopupYoutubeSubscribers: "subscribers",
     creatorPopupYoutubeChannelsCountSingular: "{count} channel",
@@ -972,15 +1050,18 @@ export const translations = {
     creatorPopupRemoveYoutubeChannel: "Remove YouTube channel",
     creatorRequestModalBadge: "Creator Request",
     creatorRequestModalSuccessTitle: "Request submitted",
-    creatorRequestModalSuccessDescription: "Your request has been submitted for review.",
+    creatorRequestModalSuccessDescription:
+      "Your request has been submitted for review.",
     creatorRequestModalTitle: "Become a Creator",
-    creatorRequestModalDescription: "Submit your request to create your profile.",
+    creatorRequestModalDescription:
+      "Submit your request to create your profile.",
     creatorRequestModalNicknamePlaceholder: "Nickname",
     creatorRequestModalUsernamePlaceholder: "Username",
     creatorRequestModalVerificationTitle: "Verification",
     creatorRequestModalVerificationUrlPlaceholder: "Verification URL",
     creatorRequestModalVerificationCodeLabel: "Code",
-    creatorRequestModalVerificationCodeDescription: "Use this code to validate your profile.",
+    creatorRequestModalVerificationCodeDescription:
+      "Use this code to validate your profile.",
     creatorRequestModalCardImageTitle: "Card Image",
     creatorRequestModalCardImageDescription: "Upload an image for your card.",
     creatorRequestModalImageUrlPlaceholder: "Image URL",
@@ -994,14 +1075,17 @@ export const translations = {
     creatorRequestModalOpenChatGPT: "Open ChatGPT",
     creatorRequestModalSubmitting: "Submitting...",
     creatorRequestModalSubmit: "Submit request",
-    loadingScreenTitle: "Preparing your universe",
-    loadingScreenDescription: "Synchronizing profiles, cards and achievements...",
+    loadingScreenTitle: "Loading your collection",
+    loadingScreenDescription:
+      "Synchronizing cards, packs and achievements...",
     missionsModalCloseAria: "Close missions",
     missionsModalNotificationTitle: "Reward claimed",
-    missionsModalNotificationMessage: "Your reward has been added to your account.",
+    missionsModalNotificationMessage:
+      "Your reward has been added to your account.",
     missionsModalBadge: "Missions",
     missionsModalTitle: "Mission Center",
-    missionsModalDescription: "Complete missions to earn rewards and evolve your presence in the Nexus.",
+    missionsModalDescription:
+      "Complete missions to earn rewards and evolve your presence in the Nexus.",
     missionsModalProgressLabel: "Progress",
     missionsModalLoading: "Loading missions...",
     missionsModalEmpty: "No missions available right now.",
@@ -1027,16 +1111,19 @@ export const translations = {
     packsModalOpenPackButton: "Open pack",
     packsModalDefaultNexusPack: "Nexus Pack",
     packsModalIdleTitle: "Choose a pack",
-    packsModalIdleDescription: "Select a pack from your inventory to start opening it.",
+    packsModalIdleDescription:
+      "Select a pack from your inventory to start opening it.",
     packsModalDuplicateCard: "Duplicate card",
     packsModalRevealedCard: "Revealed card",
-    packsModalDuplicateDescription: "You already owned this card, so it was marked as duplicate.",
+    packsModalDuplicateDescription:
+      "You already owned this card, so it was marked as duplicate.",
     packsModalThisCreator: "This creator",
     packsModalReceivedDescription: "has been added to your collection.",
     packsModalOpenErrorTitle: "Could not open the pack",
     packsModalOpenErrorDescription: "Please try again in a few moments.",
     packsModalAnimationLabel: "Reveal in progress",
-    packsModalAnimationDescription: "Tearing the pack and revealing your card...",
+    packsModalAnimationDescription:
+      "Tearing the pack and revealing your card...",
     packsModalOpenAnother: "Open another pack",
     packsModalRevealing: "Revealing...",
     packsModalTearingPack: "Tearing pack...",
@@ -1049,7 +1136,8 @@ export const translations = {
     packsModalDuplicateCardBio: "Duplicate converted into XP.",
     packsModalRevealedCardBio: "New card added to your collection.",
     packsModalRandomPackName: "Mystery Pack",
-    packsModalRandomPackDescription: "A mystery pack with a random chance for any rarity.",
+    packsModalRandomPackDescription:
+      "A mystery pack with a random chance for any rarity.",
     packsModalRandomRarity: "Random",
     homePageBadge: "Digital Reputation Platform",
     homePageDescription: "Discover legendary creators through digital cards.",
@@ -1057,14 +1145,18 @@ export const translations = {
     packsModalEpicPackName: "Epic Pack",
     packsModalRarePackName: "Rare Pack",
     packsModalCommonPackName: "Common Pack",
-    packsModalLegendaryPackDescription: "A special pack with an increased chance of a legendary card.",
-    packsModalEpicPackDescription: "A special pack with better chances of an epic card.",
-    packsModalRarePackDescription: "An upgraded pack with better chances of a rare card.",
+    packsModalLegendaryPackDescription:
+      "A special pack with an increased chance of a legendary card.",
+    packsModalEpicPackDescription:
+      "A special pack with better chances of an epic card.",
+    packsModalRarePackDescription:
+      "An upgraded pack with better chances of a rare card.",
     packsModalCommonPackDescription: "A basic pack with creator cards.",
     packsModalManualTestSource: "Manual test",
     packsModalMissionSource: "Mission",
     creatorPopupAutoClipsTitle: "Automatic clips",
-    creatorPopupAutoClipsDescription: "Clips are now pulled automatically from Twitch, Kick, and YouTube Shorts based on the saved social links.",
+    creatorPopupAutoClipsDescription:
+      "Clips are now pulled automatically from Twitch, Kick, and YouTube Shorts based on the saved social links.",
     creatorPopupClipsLoading: "Loading automatic clips...",
     creatorPopupPlatformYoutube: "YouTube Shorts",
     creatorPopupPlatformTwitch: "Twitch",
@@ -1081,24 +1173,28 @@ export const translations = {
     adminRandomPack: "Random Pack",
     adminRandomPackDescription: "Draw cards from all rarities.",
     adminCommonPack: "Common Pack",
-    adminCommonPackDescription: "Basic pack with a higher chance of common cards.",
+    adminCommonPackDescription:
+      "Basic pack with a higher chance of common cards.",
     adminRarePack: "Rare Pack",
     adminRarePackDescription: "Pack with a higher chance of rare cards.",
     adminEpicPack: "Epic Pack",
     adminEpicPackDescription: "Pack with a higher chance of epic cards.",
     adminLegendaryPack: "Legendary Pack",
-    adminLegendaryPackDescription: "Premium pack with an increased chance of a legendary card.",
+    adminLegendaryPackDescription:
+      "Premium pack with an increased chance of a legendary card.",
     adminSelectPackRecipient: "Select the user who will receive the pack.",
     adminUserNotFound: "User not found.",
     adminPackNotFound: "Pack not found or inactive in the database.",
     adminPackSentSuccess: "Pack sent! {pack} was delivered to {user}.",
     adminSendPackTitle: "Send Pack",
-    adminSendPackDescription: "Select a user and deliver a common, rare, epic, legendary, or random pack.",
+    adminSendPackDescription:
+      "Select a user and deliver a common, rare, epic, legendary, or random pack.",
     adminSendingPack: "Sending pack...",
     adminSendPackToUser: "Send pack to user",
     pack: "Pack",
     // Admin reward center
-    adminRewardCenterDescription: "Choose whether to send a card or a pack, set the quantity, choose the recipient, and send it in a few steps.",
+    adminRewardCenterDescription:
+      "Choose whether to send a card or a pack, set the quantity, choose the recipient, and send it in a few steps.",
     adminWhatSend: "What do you want to send?",
     adminSendCardsShortDescription: "Deliver a specific creator card.",
     adminSendPacksShortDescription: "Deliver fixed-rarity or random packs.",
@@ -1112,13 +1208,18 @@ export const translations = {
     adminSpecificUserDescription: "Search and select a user.",
     adminGiveawayAllUsers: "Giveaway to everyone",
     adminGiveawayAllUsersDescription: "Delivers to all registered users.",
-    adminGiveawayLoggedUsersOnlyHint: "This giveaway automatically delivers to registered users. Visitors without login do not have an inventory yet; for them, the best option is to create a public giveaway later with a redeem code or link.",
+    adminGiveawayLoggedUsersOnlyHint:
+      "This giveaway automatically delivers to registered users. Visitors without login do not have an inventory yet; for them, the best option is to create a public giveaway later with a redeem code or link.",
     adminAllRegisteredUsers: "All registered users",
     adminNoUsersForGiveaway: "No registered users found for the giveaway.",
-    adminCardsGiveawaySuccess: "Giveaway sent! {quantity} card(s) from {creator} were delivered to {count} user(s).",
-    adminCardSentSuccessWithQuantity: "Card sent! {quantity}x {creator} ({rarity}) was delivered to {user}.",
-    adminPacksGiveawaySuccess: "Giveaway sent! {quantity} {pack} pack(s) were delivered to {count} user(s).",
-    adminPackSentSuccessWithQuantity: "Pack sent! {quantity}x {pack} was delivered to {user}.",
+    adminCardsGiveawaySuccess:
+      "Giveaway sent! {quantity} card(s) from {creator} were delivered to {count} user(s).",
+    adminCardSentSuccessWithQuantity:
+      "Card sent! {quantity}x {creator} ({rarity}) was delivered to {user}.",
+    adminPacksGiveawaySuccess:
+      "Giveaway sent! {quantity} {pack} pack(s) were delivered to {count} user(s).",
+    adminPackSentSuccessWithQuantity:
+      "Pack sent! {quantity}x {pack} was delivered to {user}.",
     adminSendingReward: "Sending...",
     adminSendGiveaway: "Send giveaway",
     adminSendReward: "Send",
@@ -1128,24 +1229,34 @@ export const translations = {
     creatorProfileDefaultCategory: "Creator",
     creatorProfileDefaultFaction: "Cardpoc",
     creatorProfileDefaultBio: "Public creator profile approved on Cardpoc.",
-    creatorProfileDefaultDescription: "Follow collectible cards, digital presence, social links, and featured moments from this creator on Cardpoc.",
+    creatorProfileDefaultDescription:
+      "Follow collectible cards, digital presence, social links, and featured moments from this creator on Cardpoc.",
     creatorProfileLoading: "Loading creator profile...",
     creatorProfileNotFoundTitle: "Creator not found",
-    creatorProfileNotFoundDescription: "This profile is not public yet or does not exist on Cardpoc.",
+    creatorProfileNotFoundDescription:
+      "This profile is not public yet or does not exist on Cardpoc.",
     creatorProfileBackHome: "Back to Cardpoc",
     creatorProfileExploreCreators: "Explore creators",
     creatorProfilePublicProfile: "Public profile",
     creatorProfileVerified: "Verified",
     creatorProfileCardLabel: "Cardpoc card",
     creatorProfileViewShareCard: "View shareable card",
+    creatorProfileCopyProfileLink: "Copy profile link",
+    creatorProfileProfileLinkCopied: "Link copied",
+    creatorProfileClipSingular: "clip",
+    creatorProfileClipPlural: "clips",
+    creatorProfilePreviousClips: "Previous clips",
+    creatorProfileNextClips: "Next clips",
     creatorProfileViews: "Views",
     creatorProfileFollowers: "Followers",
     creatorProfileShares: "Shares",
     creatorProfileAboutTitle: "About the creator",
     creatorProfileFeaturedClips: "Featured clips",
-    creatorProfileNoClips: "This creator does not have public featured clips yet.",
+    creatorProfileNoClips:
+      "This creator does not have public featured clips yet.",
     creatorProfileSocialLinks: "Social links",
-    creatorProfileNoSocialLinks: "This creator's social links have not been added yet.",
+    creatorProfileNoSocialLinks:
+      "This creator's social links have not been added yet.",
     creatorProfileCardStats: "Creator card",
     creatorProfileCardRarity: "Rarity",
     creatorProfileCardRank: "Rank",
@@ -1166,10 +1277,17 @@ export const translations = {
     creatorProfileExternalAudience: "External audience",
     creatorProfileUpdatingPlatforms: "Updating platforms...",
     creatorProfileLoadingClips: "Loading clips...",
+    creatorProfileChooseLivePlatform:
+      "This creator is live on more than one platform. Choose where to watch.",
+    creatorProfileLivePlatformsTitle: "Choose where to watch",
+    creatorProfileLivePlatformsDescription:
+      "This creator is online on more than one platform.",
+    creatorProfileCloseLivePlatforms: "Close live platforms",
+    creatorProfileClose: "Close",
     type: "Type",
     quantity: "Quantity",
     recipient: "Recipient",
-},
+  },
 
   es: {
     notifications: "Notificaciones",
@@ -1192,6 +1310,7 @@ export const translations = {
     legendaryPlural: "Legendarias",
 
     searchCreators: "Buscar creadores...",
+    brandTaglineShort: "Colecciona creadores",
     digitalReputationPlatform: "Plataforma de Reputación Digital",
     discoverCreators:
       "Descubre creadores legendarios mediante cartas digitales.",
@@ -1281,8 +1400,7 @@ export const translations = {
     badges: "Insignias",
     unlockedAchievement: "logro desbloqueado",
     firstCard: "Primera Carta",
-    firstCardDescription:
-      "Conseguiste tu primera carta en el Nexus.",
+    firstCardDescription: "Conseguiste tu primera carta en el Nexus.",
     badgesEmptyDescription:
       "Tus insignias aparecerán aquí cuando completes objetivos.",
     recentActivity: "Actividad reciente",
@@ -1399,12 +1517,13 @@ export const translations = {
     code: "Código",
     rarity: "Rareza",
     reject: "Rechazar",
-  
+
     creatorSearchPlaceholder: "Buscar creadores, rangos, tags...",
     status: "Estado",
     creatorGridDefaultTitle: "Creador en Ascenso",
     creatorGridDefaultBio: "Nuevo creador aprobado en la plataforma.",
-    creatorGridDefaultDescription: "Este perfil fue aprobado y podrá ser personalizado por el creador pronto.",
+    creatorGridDefaultDescription:
+      "Este perfil fue aprobado y podrá ser personalizado por el creador pronto.",
     creatorGridDefaultEvolutionStage: "Etapa 1 — Creador en Ascenso",
     creatorGridRecentlyApproved: "Aprobado recientemente",
     creatorGridOrigin: "Origen",
@@ -1412,33 +1531,43 @@ export const translations = {
     creatorGridStyle: "Estilo",
     creatorGridPendingCustomization: "Personalización pendiente",
     creatorGridFirstAppearance: "Primera aparición",
-    creatorGridFirstAppearanceDescription: "Este creador acaba de entrar en el universo de la plataforma.",
+    creatorGridFirstAppearanceDescription:
+      "Este creador acaba de entrar en el universo de la plataforma.",
     creatorGridCreatorApproved: "Creador Aprobado",
     creatorGridCreatorApprovedDescription: "Perfil aprobado por la moderación.",
     creatorGridLoading: "Cargando creadores...",
     creatorGridSearchResults: "Resultado de la búsqueda",
-    creatorGridSearchResultsDescription: "Creadores encontrados según el término buscado.",
+    creatorGridSearchResultsDescription:
+      "Creadores encontrados según el término buscado.",
     creatorGridFeaturedCards: "Cartas Destacadas",
     creatorGridNewCards: "Cartas Nuevas",
-    creatorGridEmptyTitle: "No identificamos ninguna identidad que coincida con tu búsqueda.",
-    creatorGridEmptyDescription: "Intenta buscar por nombre del creador, categoría, rareza, plataforma o tags.",
+    creatorGridEmptyTitle:
+      "No identificamos ninguna identidad que coincida con tu búsqueda.",
+    creatorGridEmptyDescription:
+      "Intenta buscar por nombre del creador, categoría, rareza, plataforma o tags.",
 
     loginModalCloseLoginAria: "Cerrar acceso",
-    loginModalBadge: "Acceso Creador",
-    loginModalTitle: "Accede a tu perfil digital",
+    loginModalBadge: "Acceso a la colección",
+    loginModalTitle: "Colecciona creadores.",
     loginModalDescription:
-      "Inicia sesión para crear tu perfil, evolucionar tu carta, desbloquear logros y participar en el sistema de reputación digital.",
+      "Inicia sesión para ganar cartas, abrir packs, seguir a tus creadores favoritos y completar tu colección en Cardpoc.",
+    loginModalPillarCards: "Cartas",
+    loginModalPillarCardsDescription: "Gana y evoluciona",
+    loginModalPillarPacks: "Packs",
+    loginModalPillarPacksDescription: "Abre recompensas",
+    loginModalPillarCollection: "Colección",
+    loginModalPillarCollectionDescription: "Completa tu galería",
     loginModalContinueDiscord: "Continuar con Discord",
     loginModalDiscordDescription:
-      "Ideal para creadores, comunidades y servidores.",
+      "Entra con tu comunidad y continúa tu colección.",
     loginModalContinueGoogle: "Continuar con Google",
     loginModalGoogleDescription:
-      "Acceso rápido para crear o administrar tu perfil.",
-    loginModalOnboardingLabel: "Registro Creador",
+      "Acceso rápido para seguir creadores y administrar tu cuenta.",
+    loginModalOnboardingLabel: "Creador en Cardpoc",
     loginModalOnboardingDescription:
-      "Los nuevos perfiles pasan por una etapa de preinscripción y aprobación para mantener la plataforma segura, auténtica y premium.",
+      "Los perfiles de creadores pasan por curaduría para mantener cartas auténticas, rarezas especiales y una colección premium.",
     loginModalSupabaseNotice:
-      "El inicio de sesión real se conectará con Supabase Auth en la próxima etapa.",
+      "Tu progreso queda guardado con seguridad en tu cuenta Cardpoc.",
 
     creatorCardOpenAria: "Abrir perfil del creador",
     creatorCardLevelPrefix: "Nivel",
@@ -1461,14 +1590,17 @@ export const translations = {
     creatorPopupBannerPreviewAlt: "Vista previa del banner",
     creatorPopupCardNotificationPrefix: "Ganaste la carta de",
     creatorPopupChooseFile: "Elegir archivo",
-    creatorPopupClaimDescription: "Para demostrar que este perfil te pertenece, informa una plataforma oficial y coloca temporalmente el código abajo en la bio/descripción del canal.",
+    creatorPopupClaimDescription:
+      "Para demostrar que este perfil te pertenece, informa una plataforma oficial y coloca temporalmente el código abajo en la bio/descripción del canal.",
     creatorPopupClaimMine: "Este perfil es mío",
     creatorPopupClaimProfileBadge: "Reclamar Perfil",
     creatorPopupClaimSentBadge: "Reclamación Enviada",
-    creatorPopupClaimSentDescription: "Ahora coloca el código abajo en la bio, descripción o sección acerca de la plataforma indicada. Un administrador revisará tu solicitud.",
+    creatorPopupClaimSentDescription:
+      "Ahora coloca el código abajo en la bio, descripción o sección acerca de la plataforma indicada. Un administrador revisará tu solicitud.",
     creatorPopupClaimSentTitle: "Solicitud enviada",
     creatorPopupClaimUrlPlaceholder: "Link del canal o perfil oficial",
-    creatorPopupClaimUrlRequired: "Informa el link del canal o perfil usado para la verificación.",
+    creatorPopupClaimUrlRequired:
+      "Informa el link del canal o perfil usado para la verificación.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Vista previa del clip",
     creatorPopupClipTitlePlaceholder: "Mejor momento del directo",
@@ -1486,7 +1618,8 @@ export const translations = {
     creatorPopupPreviousClips: "Clips anteriores",
     creatorPopupNextClips: "Próximos clips",
     creatorPopupClipAlt: "Clip",
-    creatorPopupFeaturedClipsDescription: "Agrega hasta 3 clips o shorts para que aparezcan en el perfil. La portada se buscará automáticamente desde el link cuando sea posible.",
+    creatorPopupFeaturedClipsDescription:
+      "Agrega hasta 3 clips o shorts para que aparezcan en el perfil. La portada se buscará automáticamente desde el link cuando sea posible.",
     creatorPopupFeaturedClipsTitle: "Clips destacados",
     creatorPopupFeaturedClipsViewTitle: "Clips destacados",
     creatorPopupFieldAvatarUrl: "URL del avatar",
@@ -1521,10 +1654,12 @@ export const translations = {
     creatorPopupShare: "Compartir",
     creatorPopupShareBadge: "Compartir Perfil",
     creatorPopupShareDescriptionPrefix: "Comparte el perfil de",
-    creatorPopupShareDescriptionSuffix: "usando el link con vista previa de Creator Nexus.",
+    creatorPopupShareDescriptionSuffix:
+      "usando el link con vista previa de Creator Nexus.",
     creatorPopupShares: "Compartidos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link de",
-    creatorPopupSocialLinksDescription: "Agrega los links oficiales del creador.",
+    creatorPopupSocialLinksDescription:
+      "Agrega los links oficiales del creador.",
     creatorPopupSocialLinksTitle: "Redes Sociales",
     creatorPopupSocialNetworks: "Redes Sociales",
     creatorPopupStatusEvent: "En evento",
@@ -1558,7 +1693,8 @@ export const translations = {
     creatorPopupRemoveYoutubeChannel: "Quitar canal de YouTube",
     creatorRequestModalBadge: "Solicitud Creador",
     creatorRequestModalSuccessTitle: "Solicitud enviada",
-    creatorRequestModalSuccessDescription: "Tu solicitud fue enviada para revisión.",
+    creatorRequestModalSuccessDescription:
+      "Tu solicitud fue enviada para revisión.",
     creatorRequestModalTitle: "Conviértete en Creador",
     creatorRequestModalDescription: "Envía tu solicitud para crear tu perfil.",
     creatorRequestModalNicknamePlaceholder: "Apodo",
@@ -1566,7 +1702,8 @@ export const translations = {
     creatorRequestModalVerificationTitle: "Verificación",
     creatorRequestModalVerificationUrlPlaceholder: "URL de verificación",
     creatorRequestModalVerificationCodeLabel: "Código",
-    creatorRequestModalVerificationCodeDescription: "Usa este código para validar tu perfil.",
+    creatorRequestModalVerificationCodeDescription:
+      "Usa este código para validar tu perfil.",
     creatorRequestModalCardImageTitle: "Imagen de la Carta",
     creatorRequestModalCardImageDescription: "Sube una imagen para tu carta.",
     creatorRequestModalImageUrlPlaceholder: "URL de la imagen",
@@ -1580,14 +1717,15 @@ export const translations = {
     creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
     creatorRequestModalSubmitting: "Enviando...",
     creatorRequestModalSubmit: "Enviar solicitud",
-    loadingScreenTitle: "Preparando tu universo",
-    loadingScreenDescription: "Sincronizando perfiles, cartas y logros...",
+    loadingScreenTitle: "Cargando tu colección",
+    loadingScreenDescription: "Sincronizando cartas, packs y logros...",
     missionsModalCloseAria: "Cerrar misiones",
     missionsModalNotificationTitle: "Recompensa reclamada",
     missionsModalNotificationMessage: "Tu recompensa fue agregada a tu cuenta.",
     missionsModalBadge: "Misiones",
     missionsModalTitle: "Centro de Misiones",
-    missionsModalDescription: "Completa misiones para ganar recompensas y evolucionar tu presencia en Nexus.",
+    missionsModalDescription:
+      "Completa misiones para ganar recompensas y evolucionar tu presencia en Nexus.",
     missionsModalProgressLabel: "Progreso",
     missionsModalLoading: "Cargando misiones...",
     missionsModalEmpty: "No hay misiones disponibles en este momento.",
@@ -1599,7 +1737,8 @@ export const translations = {
     packsModalCloseAria: "Cerrar packs",
     packsModalBadge: "Packs",
     packsModalTitle: "Abrir Packs",
-    packsModalDescription: "Abre tus packs para revelar nuevas cartas de creadores.",
+    packsModalDescription:
+      "Abre tus packs para revelar nuevas cartas de creadores.",
     packsModalInventoryTitle: "Inventario de Packs",
     packsModalPackCountSingular: "{count} pack disponible",
     packsModalPackCountPlural: "{count} packs disponibles",
@@ -1607,16 +1746,19 @@ export const translations = {
     packsModalSearching: "Buscando tus packs...",
     packsModalEmpty: "Todavía no tienes packs disponibles.",
     packsModalDefaultPackName: "Pack Nexus",
-    packsModalDefaultPackDescription: "Un pack especial con cartas de creadores.",
+    packsModalDefaultPackDescription:
+      "Un pack especial con cartas de creadores.",
     packsModalOriginLabel: "Origen",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
     packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Elige un pack",
-    packsModalIdleDescription: "Selecciona un pack de tu inventario para iniciar la apertura.",
+    packsModalIdleDescription:
+      "Selecciona un pack de tu inventario para iniciar la apertura.",
     packsModalDuplicateCard: "Carta duplicada",
     packsModalRevealedCard: "Carta revelada",
-    packsModalDuplicateDescription: "Ya tenías esta carta, así que fue marcada como duplicada.",
+    packsModalDuplicateDescription:
+      "Ya tenías esta carta, así que fue marcada como duplicada.",
     packsModalThisCreator: "Este creador",
     packsModalReceivedDescription: "fue agregado a tu colección.",
     packsModalOpenErrorTitle: "No se pudo abrir el pack",
@@ -1635,22 +1777,28 @@ export const translations = {
     packsModalDuplicateCardBio: "Duplicada convertida en XP.",
     packsModalRevealedCardBio: "Nueva carta agregada a tu colección.",
     packsModalRandomPackName: "Pack Misterioso",
-    packsModalRandomPackDescription: "Un pack misterioso con probabilidad aleatoria para cualquier rareza.",
+    packsModalRandomPackDescription:
+      "Un pack misterioso con probabilidad aleatoria para cualquier rareza.",
     packsModalRandomRarity: "Aleatoria",
     homePageBadge: "Plataforma de Reputación Digital",
-    homePageDescription: "Descubre creadores legendarios a través de cartas digitales.",
+    homePageDescription:
+      "Descubre creadores legendarios a través de cartas digitales.",
     packsModalLegendaryPackName: "Pack Legendario",
     packsModalEpicPackName: "Pack Épico",
     packsModalRarePackName: "Pack Raro",
     packsModalCommonPackName: "Pack Común",
-    packsModalLegendaryPackDescription: "Un pack especial con mayor probabilidad de una carta legendaria.",
-    packsModalEpicPackDescription: "Un pack especial con mejores probabilidades de una carta épica.",
-    packsModalRarePackDescription: "Un pack mejorado con mejores probabilidades de una carta rara.",
+    packsModalLegendaryPackDescription:
+      "Un pack especial con mayor probabilidad de una carta legendaria.",
+    packsModalEpicPackDescription:
+      "Un pack especial con mejores probabilidades de una carta épica.",
+    packsModalRarePackDescription:
+      "Un pack mejorado con mejores probabilidades de una carta rara.",
     packsModalCommonPackDescription: "Un pack básico con cartas de creadores.",
     packsModalManualTestSource: "Prueba manual",
     packsModalMissionSource: "Misión",
     creatorPopupAutoClipsTitle: "Clips automáticos",
-    creatorPopupAutoClipsDescription: "Los clips ahora se obtienen automáticamente de Twitch, Kick y YouTube Shorts según los enlaces sociales guardados.",
+    creatorPopupAutoClipsDescription:
+      "Los clips ahora se obtienen automáticamente de Twitch, Kick y YouTube Shorts según los enlaces sociales guardados.",
     creatorPopupClipsLoading: "Cargando clips automáticos...",
     creatorPopupPlatformYoutube: "YouTube Shorts",
     creatorPopupPlatformTwitch: "Twitch",
@@ -1667,27 +1815,34 @@ export const translations = {
     adminRandomPack: "Paquete Aleatorio",
     adminRandomPackDescription: "Sortea cartas entre todas las rarezas.",
     adminCommonPack: "Paquete Común",
-    adminCommonPackDescription: "Paquete básico con mayor probabilidad de cartas comunes.",
+    adminCommonPackDescription:
+      "Paquete básico con mayor probabilidad de cartas comunes.",
     adminRarePack: "Paquete Raro",
     adminRarePackDescription: "Paquete con mayor probabilidad de cartas raras.",
     adminEpicPack: "Paquete Épico",
-    adminEpicPackDescription: "Paquete con mayor probabilidad de cartas épicas.",
+    adminEpicPackDescription:
+      "Paquete con mayor probabilidad de cartas épicas.",
     adminLegendaryPack: "Paquete Legendario",
-    adminLegendaryPackDescription: "Paquete premium con mayor probabilidad de una carta legendaria.",
+    adminLegendaryPackDescription:
+      "Paquete premium con mayor probabilidad de una carta legendaria.",
     adminSelectPackRecipient: "Seleccione el usuario que recibirá el paquete.",
     adminUserNotFound: "Usuario no encontrado.",
     adminPackNotFound: "Paquete no encontrado o inactivo en la base de datos.",
     adminPackSentSuccess: "¡Paquete enviado! {pack} fue entregado a {user}.",
     adminSendPackTitle: "Enviar paquete",
-    adminSendPackDescription: "Seleccione un usuario y entregue un paquete común, raro, épico, legendario o aleatorio.",
+    adminSendPackDescription:
+      "Seleccione un usuario y entregue un paquete común, raro, épico, legendario o aleatorio.",
     adminSendingPack: "Enviando paquete...",
     adminSendPackToUser: "Enviar paquete al usuario",
     pack: "Paquete",
     // Admin reward center
-    adminRewardCenterDescription: "Elige si deseas enviar una carta o un paquete, define la cantidad, el destinatario y envíalo en pocos pasos.",
+    adminRewardCenterDescription:
+      "Elige si deseas enviar una carta o un paquete, define la cantidad, el destinatario y envíalo en pocos pasos.",
     adminWhatSend: "¿Qué deseas enviar?",
-    adminSendCardsShortDescription: "Entrega una carta específica de un creador.",
-    adminSendPacksShortDescription: "Entrega paquetes de rareza fija o aleatoria.",
+    adminSendCardsShortDescription:
+      "Entrega una carta específica de un creador.",
+    adminSendPacksShortDescription:
+      "Entrega paquetes de rareza fija o aleatoria.",
     adminWhichCard: "¿Qué carta?",
     adminWhichRarity: "¿Qué rareza?",
     adminWhichPack: "¿Qué paquete?",
@@ -1697,14 +1852,21 @@ export const translations = {
     adminSpecificUser: "Usuario específico",
     adminSpecificUserDescription: "Busca y selecciona un usuario.",
     adminGiveawayAllUsers: "Giveaway para todos",
-    adminGiveawayAllUsersDescription: "Entrega a todos los usuarios registrados.",
-    adminGiveawayLoggedUsersOnlyHint: "Este giveaway entrega automáticamente a usuarios registrados. Los visitantes sin login todavía no tienen inventario; para ellos, lo ideal es crear después un giveaway público con código o enlace de canje.",
+    adminGiveawayAllUsersDescription:
+      "Entrega a todos los usuarios registrados.",
+    adminGiveawayLoggedUsersOnlyHint:
+      "Este giveaway entrega automáticamente a usuarios registrados. Los visitantes sin login todavía no tienen inventario; para ellos, lo ideal es crear después un giveaway público con código o enlace de canje.",
     adminAllRegisteredUsers: "Todos los usuarios registrados",
-    adminNoUsersForGiveaway: "No se encontraron usuarios registrados para el giveaway.",
-    adminCardsGiveawaySuccess: "¡Giveaway enviado! {quantity} carta(s) de {creator} fueron entregadas a {count} usuario(s).",
-    adminCardSentSuccessWithQuantity: "¡Carta enviada! {quantity}x {creator} ({rarity}) fue entregada a {user}.",
-    adminPacksGiveawaySuccess: "¡Giveaway enviado! {quantity} paquete(s) {pack} fueron entregados a {count} usuario(s).",
-    adminPackSentSuccessWithQuantity: "¡Paquete enviado! {quantity}x {pack} fue entregado a {user}.",
+    adminNoUsersForGiveaway:
+      "No se encontraron usuarios registrados para el giveaway.",
+    adminCardsGiveawaySuccess:
+      "¡Giveaway enviado! {quantity} carta(s) de {creator} fueron entregadas a {count} usuario(s).",
+    adminCardSentSuccessWithQuantity:
+      "¡Carta enviada! {quantity}x {creator} ({rarity}) fue entregada a {user}.",
+    adminPacksGiveawaySuccess:
+      "¡Giveaway enviado! {quantity} paquete(s) {pack} fueron entregados a {count} usuario(s).",
+    adminPackSentSuccessWithQuantity:
+      "¡Paquete enviado! {quantity}x {pack} fue entregado a {user}.",
     adminSendingReward: "Enviando...",
     adminSendGiveaway: "Enviar giveaway",
     adminSendReward: "Enviar",
@@ -1714,24 +1876,34 @@ export const translations = {
     creatorProfileDefaultCategory: "Creador",
     creatorProfileDefaultFaction: "Cardpoc",
     creatorProfileDefaultBio: "Perfil público de creador aprobado en Cardpoc.",
-    creatorProfileDefaultDescription: "Sigue cartas coleccionables, presencia digital, redes sociales y momentos destacados de este creador en Cardpoc.",
+    creatorProfileDefaultDescription:
+      "Sigue cartas coleccionables, presencia digital, redes sociales y momentos destacados de este creador en Cardpoc.",
     creatorProfileLoading: "Cargando perfil del creador...",
     creatorProfileNotFoundTitle: "Creador no encontrado",
-    creatorProfileNotFoundDescription: "Este perfil aún no es público o no existe en Cardpoc.",
+    creatorProfileNotFoundDescription:
+      "Este perfil aún no es público o no existe en Cardpoc.",
     creatorProfileBackHome: "Volver a Cardpoc",
     creatorProfileExploreCreators: "Explorar creadores",
     creatorProfilePublicProfile: "Perfil público",
     creatorProfileVerified: "Verificado",
     creatorProfileCardLabel: "Carta Cardpoc",
     creatorProfileViewShareCard: "Ver carta compartible",
+    creatorProfileCopyProfileLink: "Copiar enlace del perfil",
+    creatorProfileProfileLinkCopied: "Enlace copiado",
+    creatorProfileClipSingular: "clip",
+    creatorProfileClipPlural: "clips",
+    creatorProfilePreviousClips: "Clips anteriores",
+    creatorProfileNextClips: "Siguientes clips",
     creatorProfileViews: "Visualizaciones",
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartidos",
     creatorProfileAboutTitle: "Sobre el creador",
     creatorProfileFeaturedClips: "Clips destacados",
-    creatorProfileNoClips: "Este creador aún no tiene clips públicos destacados.",
+    creatorProfileNoClips:
+      "Este creador aún no tiene clips públicos destacados.",
     creatorProfileSocialLinks: "Redes sociales",
-    creatorProfileNoSocialLinks: "Las redes sociales de este creador aún no fueron añadidas.",
+    creatorProfileNoSocialLinks:
+      "Las redes sociales de este creador aún no fueron añadidas.",
     creatorProfileCardStats: "Carta del creador",
     creatorProfileCardRarity: "Rareza",
     creatorProfileCardRank: "Rank",
@@ -1752,10 +1924,17 @@ export const translations = {
     creatorProfileExternalAudience: "Audiencia externa",
     creatorProfileUpdatingPlatforms: "Actualizando plataformas...",
     creatorProfileLoadingClips: "Cargando clips...",
+    creatorProfileChooseLivePlatform:
+      "Este creador está en vivo en más de una plataforma. Elige dónde verlo.",
+    creatorProfileLivePlatformsTitle: "Elige dónde verlo",
+    creatorProfileLivePlatformsDescription:
+      "Este creador está online en más de una plataforma.",
+    creatorProfileCloseLivePlatforms: "Cerrar plataformas en vivo",
+    creatorProfileClose: "Cerrar",
     type: "Tipo",
     quantity: "Cantidad",
     recipient: "Destinatario",
-},
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations.pt;
