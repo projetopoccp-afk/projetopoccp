@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, ImagePlus, Save, Send, UserCheck, UserPlus } from "lucide-react";
 import { getRarityLabel } from "@/lib/rarity";
@@ -1364,6 +1365,15 @@ export function CreatorPopup({
                 >
                   {translate(t, "creatorPopupShare", "Compartilhar")}
                 </button>
+
+                <Link
+                  href={`/creator/${encodeURIComponent(creator.username)}`}
+                  onClick={onClose}
+                  prefetch
+                  className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
+                >
+                  Ir para a página completa
+                </Link>
 
                 {canClaim && (
                   <button
