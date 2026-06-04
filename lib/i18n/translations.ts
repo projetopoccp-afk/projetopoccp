@@ -10,6 +10,7 @@ export const translations = {
     creatorProfileEditMediaTitle: "Mídia e links",
     creatorProfileEditSocialLinks: "Links sociais",
     creatorProfileEditAddSocialLink: "Adicionar link",
+    creatorProfileEditRemoveSocialLink: "Remover link",
 
     common: "Comum",
     rare: "Raro",
@@ -732,6 +733,7 @@ export const translations = {
     creatorProfileEditMediaTitle: "Media and links",
     creatorProfileEditSocialLinks: "Social links",
     creatorProfileEditAddSocialLink: "Add link",
+    creatorProfileEditRemoveSocialLink: "Remove link",
 
     common: "Common",
     rare: "Rare",
@@ -1449,6 +1451,7 @@ export const translations = {
     creatorProfileEditMediaTitle: "Medios y enlaces",
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
+    creatorProfileEditRemoveSocialLink: "Eliminar enlace",
 
     common: "Común",
     rare: "Raro",
