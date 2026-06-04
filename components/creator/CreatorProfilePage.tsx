@@ -25,6 +25,7 @@ import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
+import type { Creator, CreatorRank, CreatorRarity, CreatorStatus, SocialPlatform } from "@/types/creator";
 
 type CreatorProfilePageProps = {
   username: string;
@@ -307,6 +308,77 @@ function getSocialUrl(socialLinks: SocialLink[], platform: string) {
     socialLinks.find((social) => social.platform.toLowerCase() === platform)
       ?.url || ""
   );
+}
+
+function normalizeCreatorStatus(status: string | null | undefined): CreatorStatus {
+  const normalizedStatus = String(status || "offline").toLowerCase();
+
+  if (
+    normalizedStatus === "online" ||
+    normalizedStatus === "offline" ||
+    normalizedStatus === "live" ||
+    normalizedStatus === "trending" ||
+    normalizedStatus === "event"
+  ) {
+    return normalizedStatus;
+  }
+
+  return "offline";
+}
+
+function normalizeCreatorRarity(rarity: string | null | undefined): CreatorRarity {
+  const normalizedRarity = String(rarity || "common").toLowerCase();
+
+  if (
+    normalizedRarity === "common" ||
+    normalizedRarity === "rare" ||
+    normalizedRarity === "epic" ||
+    normalizedRarity === "legendary" ||
+    normalizedRarity === "mythic"
+  ) {
+    return normalizedRarity;
+  }
+
+  return "common";
+}
+
+function normalizeCreatorRank(rank: string | null | undefined): CreatorRank {
+  const normalizedRank = String(rank || "Bronze");
+
+  if (
+    normalizedRank === "Bronze" ||
+    normalizedRank === "Silver" ||
+    normalizedRank === "Gold" ||
+    normalizedRank === "Platinum" ||
+    normalizedRank === "Ascendant"
+  ) {
+    return normalizedRank;
+  }
+
+  return "Bronze";
+}
+
+function normalizeCreatorSocials(socialLinks: SocialLink[]) {
+  const allowedPlatforms = new Set<SocialPlatform>([
+    "twitch",
+    "youtube",
+    "tiktok",
+    "kick",
+    "instagram",
+    "discord",
+    "x",
+  ]);
+
+  return socialLinks
+    .map((social) => ({
+      platform: social.platform.toLowerCase(),
+      url: social.url,
+    }))
+    .filter(
+      (social): social is { platform: SocialPlatform; url: string } =>
+        allowedPlatforms.has(social.platform as SocialPlatform) &&
+        social.url.trim().length > 0
+    );
 }
 
 export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
@@ -740,7 +812,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       ? kickStatus
       : null;
 
-  const creatorForPopup = profile
+  const creatorForPopup: Creator | null = profile
     ? {
         id: profile.id,
         ownerId: profile.user_id || undefined,
@@ -750,14 +822,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         faction,
         category,
         mainPlatform: "youtube",
-        status: profile.status || "offline",
+        status: normalizeCreatorStatus(profile.status),
         avatarUrl: profile.avatar_url || "",
         bannerUrl: profile.banner_url || "",
         bio,
         description,
         tags,
-        rank: card?.rank || "Bronze",
-        rarity,
+        rank: normalizeCreatorRank(card?.rank),
+        rarity: normalizeCreatorRarity(rarity),
         aura: card?.aura || "Origin Aura",
         evolutionStage: card?.evolution_stage || "Stage 1 — Rising Creator",
         powerScore: card?.power_score || 0,
@@ -766,15 +838,13 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         followers: stats.followers,
         likes: 0,
         views: stats.views,
-        socials: socialLinks,
+        socials: normalizeCreatorSocials(socialLinks),
         traits: [],
-
-          featuredMoment: {
-            title: "",
-            description: "",
-          },
-
-          achievements: [],
+        featuredMoment: {
+          title: "",
+          description: "",
+        },
+        achievements: [],
       }
     : null;
 
