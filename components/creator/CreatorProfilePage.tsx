@@ -22,10 +22,19 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
+import { CreatorCard } from "@/components/cards/CreatorCard";
+import { GlowBackground } from "@/components/effects/GlowBackground";
+import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
-import type { Creator, CreatorRank, CreatorRarity, CreatorStatus, SocialPlatform } from "@/types/creator";
+import type {
+  Creator,
+  CreatorRank,
+  CreatorRarity,
+  CreatorStatus,
+  SocialPlatform,
+} from "@/types/creator";
 
 type CreatorProfilePageProps = {
   username: string;
@@ -151,7 +160,9 @@ function normalizeCreatorTags(tags: unknown): string[] {
     .filter(Boolean);
 }
 
-function getCreatorCard(profile: CreatorProfileRow | null): CreatorCardRow | null {
+function getCreatorCard(
+  profile: CreatorProfileRow | null,
+): CreatorCardRow | null {
   if (!profile?.creator_cards) return null;
 
   if (Array.isArray(profile.creator_cards)) {
@@ -159,14 +170,6 @@ function getCreatorCard(profile: CreatorProfileRow | null): CreatorCardRow | nul
   }
 
   return profile.creator_cards;
-}
-
-function getInitials(name: string) {
-  const cleanName = name.trim();
-
-  if (!cleanName) return "CP";
-
-  return cleanName.slice(0, 2).toUpperCase();
 }
 
 function formatNumber(value: number) {
@@ -263,7 +266,9 @@ function getPlatformLiveStatus(liveStatus: LiveStatusMap, platform: string) {
   return liveStatus[platform.toLowerCase()];
 }
 
-function getNormalizedYoutubeChannels(channels: string[]): VisibleYoutubeChannel[] {
+function getNormalizedYoutubeChannels(
+  channels: string[],
+): VisibleYoutubeChannel[] {
   const seen = new Set<string>();
 
   return channels
@@ -310,7 +315,9 @@ function getSocialUrl(socialLinks: SocialLink[], platform: string) {
   );
 }
 
-function normalizeCreatorStatus(status: string | null | undefined): CreatorStatus {
+function normalizeCreatorStatus(
+  status: string | null | undefined,
+): CreatorStatus {
   const normalizedStatus = String(status || "offline").toLowerCase();
 
   if (
@@ -326,7 +333,9 @@ function normalizeCreatorStatus(status: string | null | undefined): CreatorStatu
   return "offline";
 }
 
-function normalizeCreatorRarity(rarity: string | null | undefined): CreatorRarity {
+function normalizeCreatorRarity(
+  rarity: string | null | undefined,
+): CreatorRarity {
   const normalizedRarity = String(rarity || "common").toLowerCase();
 
   if (
@@ -377,7 +386,7 @@ function normalizeCreatorSocials(socialLinks: SocialLink[]) {
     .filter(
       (social): social is { platform: SocialPlatform; url: string } =>
         allowedPlatforms.has(social.platform as SocialPlatform) &&
-        social.url.trim().length > 0
+        social.url.trim().length > 0,
     );
 }
 
@@ -401,7 +410,9 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [editPopupOpen, setEditPopupOpen] = useState(false);
 
   const decodedUsername = useMemo(() => {
-    return decodeURIComponent(username || "").replace("@", "").trim();
+    return decodeURIComponent(username || "")
+      .replace("@", "")
+      .trim();
   }, [username]);
 
   useEffect(() => {
@@ -459,7 +470,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             level,
             power_score
           )
-        `
+        `,
         )
         .eq("is_public", true)
         .ilike("username", decodedUsername)
@@ -575,8 +586,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             try {
               const response = await fetch(
                 `/api/live-status?platform=${platform}&username=${encodeURIComponent(
-                  targetUsername
-                )}`
+                  targetUsername,
+                )}`,
               );
 
               if (!response.ok) {
@@ -607,7 +618,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 },
               };
             }
-          })
+          }),
         );
 
         if (!cancelled) {
@@ -636,7 +647,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
               accumulator[result.platform] = result.status;
               return accumulator;
-            }, {})
+            }, {}),
           );
         }
       } finally {
@@ -661,11 +672,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
     const twitchUsername = extractPlatformUsername(
       "twitch",
-      getSocialUrl(socialLinks, "twitch")
+      getSocialUrl(socialLinks, "twitch"),
     );
     const kickUsername = extractPlatformUsername(
       "kick",
-      getSocialUrl(socialLinks, "kick")
+      getSocialUrl(socialLinks, "kick"),
     );
     const youtubeUrls = socialLinks
       .filter((social) => social.platform.toLowerCase() === "youtube")
@@ -738,36 +749,42 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     profile?.category ||
     translate(t, "creatorProfileDefaultCategory", "Criador");
   const faction =
-    profile?.faction ||
-    translate(t, "creatorProfileDefaultFaction", "Cardpoc");
+    profile?.faction || translate(t, "creatorProfileDefaultFaction", "Cardpoc");
   const bio =
     profile?.bio ||
     translate(
       t,
       "creatorProfileDefaultBio",
-      "Perfil público de criador aprovado no Cardpoc."
+      "Perfil público de criador aprovado no Cardpoc.",
     );
   const description =
     profile?.description ||
     translate(
       t,
       "creatorProfileDefaultDescription",
-      "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc."
+      "Acompanhe cartas colecionáveis, presença digital, redes sociais e momentos em destaque deste criador no Cardpoc.",
     );
   const rarity = card?.rarity || "common";
   const tags = normalizeCreatorTags(profile?.tags);
-  const hiddenAutoTags = new Set(["streamer", "mmorpg", "black desert", "react"]);
+  const hiddenAutoTags = new Set([
+    "streamer",
+    "mmorpg",
+    "black desert",
+    "react",
+  ]);
   const visibleTags = tags.filter(
-    (tag) => !hiddenAutoTags.has(tag.trim().toLowerCase())
+    (tag) => !hiddenAutoTags.has(tag.trim().toLowerCase()),
   );
   const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
   const isLive = Boolean(twitchStatus?.isLive || kickStatus?.isLive);
-  const isOwner = Boolean(profile?.user_id && currentUserId === profile.user_id);
+  const isOwner = Boolean(
+    profile?.user_id && currentUserId === profile.user_id,
+  );
   const ogCardUrl = `/api/og/card/${encodeURIComponent(
-    profile?.username || decodedUsername
+    profile?.username || decodedUsername,
   )}`;
 
   const platformCounters = [
@@ -775,9 +792,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       key: "youtube",
       label: "YouTube",
       value:
-        youtubeStatus?.subscriberCount ??
-        youtubeStatus?.externalCount ??
-        0,
+        youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0,
       suffix: translate(t, "creatorProfileSubscribers", "inscritos"),
       url: youtubeStatus?.url || getSocialUrl(socialLinks, "youtube"),
       isLive: false,
@@ -785,10 +800,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     {
       key: "twitch",
       label: "Twitch",
-      value:
-        twitchStatus?.followerCount ??
-        twitchStatus?.externalCount ??
-        0,
+      value: twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0,
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: twitchStatus?.url || getSocialUrl(socialLinks, "twitch"),
       isLive: Boolean(twitchStatus?.isLive),
@@ -796,10 +808,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     {
       key: "kick",
       label: "Kick",
-      value:
-        kickStatus?.followerCount ??
-        kickStatus?.externalCount ??
-        0,
+      value: kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0,
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: kickStatus?.url || getSocialUrl(socialLinks, "kick"),
       isLive: Boolean(kickStatus?.isLive),
@@ -854,7 +863,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center">
           <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm text-white/70 shadow-2xl shadow-cyan-500/10">
             <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />
-            {translate(t, "creatorProfileLoading", "Carregando perfil do criador...")}
+            {translate(
+              t,
+              "creatorProfileLoading",
+              "Carregando perfil do criador...",
+            )}
           </div>
         </div>
       </main>
@@ -870,14 +883,18 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
           </div>
 
           <h1 className="mt-6 text-3xl font-black tracking-tight md:text-5xl">
-            {translate(t, "creatorProfileNotFoundTitle", "Criador não encontrado")}
+            {translate(
+              t,
+              "creatorProfileNotFoundTitle",
+              "Criador não encontrado",
+            )}
           </h1>
 
           <p className="mt-4 max-w-xl text-sm leading-7 text-white/60 md:text-base">
             {translate(
               t,
               "creatorProfileNotFoundDescription",
-              "Este perfil ainda não está público ou não existe no Cardpoc."
+              "Este perfil ainda não está público ou não existe no Cardpoc.",
             )}
           </p>
 
@@ -894,452 +911,465 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#020617] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      <GlowBackground />
+      <ParticleBackground />
+
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.035)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]" />
+      <div className="pointer-events-none absolute left-1/2 top-28 z-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[90px]" />
+      <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
+
       <SiteHeader search={search} onSearchChange={setSearch} />
-      <section className="relative border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.20),transparent_42%)]" />
 
-        {profile.banner_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-30"
-            style={{
-              backgroundImage: `url(${profile.banner_url})`,
-            }}
-          />
-        ) : null}
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 backdrop-blur transition hover:border-cyan-300/30 hover:text-cyan-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {translate(
+              t,
+              "creatorProfileExploreCreators",
+              "Explorar criadores",
+            )}
+          </Link>
 
-        <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/60 via-[#020617]/86 to-[#020617]" />
-
-        <div className="relative mx-auto max-w-7xl px-6 py-8 md:py-12">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 transition hover:border-cyan-300/30 hover:text-cyan-100"
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={() => setEditPopupOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
             >
-              <ArrowLeft className="h-4 w-4" />
-              {translate(t, "creatorProfileExploreCreators", "Explorar criadores")}
-            </Link>
+              <Sparkles className="h-4 w-4" />
+              {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
+            </button>
+          ) : null}
+        </div>
 
-            {isOwner ? (
-              <button
-                type="button"
-                onClick={() => setEditPopupOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 transition hover:bg-fuchsia-300/20"
-              >
-                <Sparkles className="h-4 w-4" />
-                {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
-              </button>
-            ) : null}
+        <section className="mt-8 grid gap-10 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-center">
+          <div className="flex justify-center lg:justify-start">
+            <div className="relative rounded-[2rem] border border-cyan-300/15 bg-white/[0.035] p-5 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+              <div className="absolute -inset-5 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.18),transparent_62%)] blur-2xl" />
+              {creatorForPopup ? (
+                <div className="scale-[1.06] py-3 sm:scale-[1.12] lg:scale-[1.08]">
+                  <CreatorCard
+                    creator={creatorForPopup}
+                    onClick={() => undefined}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100">
-                  {translate(t, "creatorProfilePublicProfile", "Perfil público")}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
+                {translate(t, "creatorProfilePublicProfile", "Perfil público")}
+              </span>
+
+              {isLive ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-red-300/30 bg-red-500/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-red-100 shadow-lg shadow-red-500/10">
+                  <Radio className="h-3.5 w-3.5 animate-pulse" />
+                  {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
                 </span>
-
-                {isLive ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-red-300/30 bg-red-500/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-red-100 shadow-lg shadow-red-500/10">
-                    <Radio className="h-3.5 w-3.5 animate-pulse" />
-                    {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/45">
-                    <WifiOff className="h-3.5 w-3.5" />
-                    {translate(t, "creatorProfileOffline", "Offline")}
-                  </span>
-                )}
-
-                {profile.is_verified ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-yellow-100">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    {translate(t, "creatorProfileVerified", "Verificado")}
-                  </span>
-                ) : null}
-
-                <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100">
-                  {getRarityLabel(rarity)}
+              ) : (
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/45 backdrop-blur">
+                  <WifiOff className="h-3.5 w-3.5" />
+                  {translate(t, "creatorProfileOffline", "Offline")}
                 </span>
-              </div>
+              )}
 
-              <h1 className="mt-6 max-w-4xl text-5xl font-black tracking-[-0.06em] text-white md:text-7xl">
-                {nickname}
-              </h1>
+              {profile.is_verified ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-yellow-100 backdrop-blur">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {translate(t, "creatorProfileVerified", "Verificado")}
+                </span>
+              ) : null}
 
-              <p className="mt-4 text-lg font-semibold text-cyan-100/90 md:text-2xl">
+              <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur">
+                {getRarityLabel(rarity)}
+              </span>
+            </div>
+
+            <h1 className="mt-6 max-w-4xl text-5xl font-black tracking-[-0.06em] text-white drop-shadow-[0_0_32px_rgba(34,211,238,0.16)] md:text-7xl">
+              {nickname}
+            </h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <p className="text-lg font-semibold text-cyan-100/90 md:text-2xl">
                 {title}
               </p>
-
-              <p className="mt-3 text-sm font-medium text-white/50 md:text-base">
+              <span className="text-sm font-bold text-white/38">
                 @{profile.username}
-              </p>
-
-              {heroLiveStatus ? (
-                <a
-                  href={heroLiveStatus.url || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-6 inline-flex max-w-2xl items-center gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-50 transition hover:bg-red-500/15"
-                >
-                  <Radio className="h-4 w-4 animate-pulse" />
-                  <span className="line-clamp-1">
-                    {heroLiveStatus.title ||
-                      translate(t, "creatorProfileLiveFallbackTitle", "Live em andamento")}
-                  </span>
-                  {heroLiveStatus.viewerCount ? (
-                    <span className="ml-auto whitespace-nowrap text-red-100/70">
-                      {formatNumber(heroLiveStatus.viewerCount)}{" "}
-                      {translate(t, "creatorProfileViewers", "assistindo")}
-                    </span>
-                  ) : null}
-                </a>
-              ) : null}
-
-              <p className="mt-7 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
-                {bio}
-              </p>
-
-              <div className="mt-7 flex flex-wrap gap-3">
-                <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75">
-                  {category}
-                </span>
-
-                <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75">
-                  {faction}
-                </span>
-
-                {visibleTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
+              </span>
             </div>
 
-            <div className="group perspective-[1200px]">
-              <div className="relative rounded-[2.2rem] border border-white/10 bg-white/[0.05] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur transition duration-500 group-hover:-translate-y-2 group-hover:rotate-[0.8deg] group-hover:shadow-cyan-400/20">
-                <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-cyan-400/10 blur-3xl transition duration-500 group-hover:bg-fuchsia-400/15" />
+            <p className="mt-6 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
+              {bio}
+            </p>
 
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] border border-cyan-300/25 bg-gradient-to-br from-cyan-300/20 via-fuchsia-400/10 to-black">
-                  <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_25%_15%,rgba(34,211,238,0.24),transparent_30%),radial-gradient(circle_at_80%_80%,rgba(168,85,247,0.20),transparent_35%)]" />
+            <div className="mt-7 flex flex-wrap gap-3">
+              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75 backdrop-blur">
+                {category}
+              </span>
 
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={nickname}
-                      className="relative h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="relative flex h-full w-full items-center justify-center text-7xl font-black text-cyan-100">
-                      {getInitials(nickname)}
-                    </div>
-                  )}
+              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75 backdrop-blur">
+                {faction}
+              </span>
 
-                  <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
-                    {getRarityLabel(rarity)}
-                  </div>
-
-                  <div className="absolute right-4 top-4 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100 backdrop-blur">
-                    Nv. {card?.level || 1}
-                  </div>
-
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-100/80">
-                      {translate(t, "creatorProfileCardLabel", "Carta Cardpoc")}
-                    </p>
-                    <p className="mt-1 text-3xl font-black">{nickname}</p>
-                    <p className="mt-1 text-xs font-bold text-white/55">
-                      {title}
-                    </p>
-                  </div>
-                </div>
-
-                <a
-                  href={ogCardUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+              {visibleTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85 backdrop-blur"
                 >
-                  <Star className="h-4 w-4" />
-                  {translate(t, "creatorProfileViewShareCard", "Ver carta compartilhável")}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-4">
-        <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-2 text-white/40">
-            <Eye className="h-4 w-4" />
-            <p className="text-xs font-black uppercase tracking-[0.24em]">
-              {translate(t, "creatorProfileViews", "Visualizações")}
-            </p>
-          </div>
-          <p className="mt-3 text-4xl font-black">{formatNumber(stats.views)}</p>
-        </div>
-
-        <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-2 text-white/40">
-            <UserCheck className="h-4 w-4" />
-            <p className="text-xs font-black uppercase tracking-[0.24em]">
-              {translate(t, "creatorProfileFollowers", "Seguidores")}
-            </p>
-          </div>
-          <p className="mt-3 text-4xl font-black">{formatNumber(stats.followers)}</p>
-        </div>
-
-        <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-2 text-white/40">
-            <Globe2 className="h-4 w-4" />
-            <p className="text-xs font-black uppercase tracking-[0.24em]">
-              {translate(t, "creatorProfileExternalReach", "Alcance externo")}
-            </p>
-          </div>
-          <p className="mt-3 text-4xl font-black">
-            {liveStatusLoading ? "..." : formatNumber(externalReach)}
-          </p>
-        </div>
-
-        <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-2 text-white/40">
-            <Share2 className="h-4 w-4" />
-            <p className="text-xs font-black uppercase tracking-[0.24em]">
-              {translate(t, "creatorProfileShares", "Compartilhamentos")}
-            </p>
-          </div>
-          <p className="mt-3 text-4xl font-black">{formatNumber(stats.shares)}</p>
-        </div>
-      </section>
-
-      {platformCounters.length > 0 ? (
-        <section className="mx-auto max-w-7xl px-6 pb-8">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/55">
-                  {translate(t, "creatorProfilePlatformsTitle", "Plataformas")}
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight">
-                  {translate(t, "creatorProfileExternalAudience", "Audiência externa")}
-                </h2>
-              </div>
-
-              {liveStatusLoading ? (
-                <span className="inline-flex items-center gap-2 text-sm font-bold text-white/45">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {translate(t, "creatorProfileUpdatingPlatforms", "Atualizando plataformas...")}
+                  #{tag}
                 </span>
-              ) : null}
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {platformCounters.map((platform) => (
-                <a
-                  key={platform.key}
-                  href={platform.url || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-[1.4rem] border border-white/10 bg-black/20 p-5 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
-                      {platform.label}
-                    </p>
-
-                    {platform.isLive ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
-                        <Radio className="h-3 w-3 animate-pulse" />
-                        Live
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <p className="mt-4 text-3xl font-black">
-                    {formatNumber(platform.value)}
-                  </p>
-
-                  <p className="mt-1 text-xs font-semibold text-white/45">
-                    {platform.suffix}
-                  </p>
-                </a>
               ))}
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-white/40">
+                  <Eye className="h-4 w-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
+                    {translate(t, "creatorProfileViews", "Visualizações")}
+                  </p>
+                </div>
+                <p className="mt-3 text-3xl font-black">
+                  {formatNumber(stats.views)}
+                </p>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-white/40">
+                  <UserCheck className="h-4 w-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
+                    {translate(t, "creatorProfileFollowers", "Seguidores")}
+                  </p>
+                </div>
+                <p className="mt-3 text-3xl font-black">
+                  {formatNumber(stats.followers)}
+                </p>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-white/40">
+                  <Globe2 className="h-4 w-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
+                    {translate(
+                      t,
+                      "creatorProfileExternalReach",
+                      "Alcance externo",
+                    )}
+                  </p>
+                </div>
+                <p className="mt-3 text-3xl font-black">
+                  {liveStatusLoading ? "..." : formatNumber(externalReach)}
+                </p>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-white/40">
+                  <Share2 className="h-4 w-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
+                    {translate(t, "creatorProfileShares", "Compartilhamentos")}
+                  </p>
+                </div>
+                <p className="mt-3 text-3xl font-black">
+                  {formatNumber(stats.shares)}
+                </p>
+              </div>
             </div>
           </div>
         </section>
-      ) : null}
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-14 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-6">
-          <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-8">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-cyan-200" />
-              <h2 className="text-2xl font-black tracking-tight">
-                {translate(t, "creatorProfileAboutTitle", "Sobre o criador")}
-              </h2>
-            </div>
+        {heroLiveStatus ? (
+          <a
+            href={heroLiveStatus.url || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-8 flex items-center gap-3 rounded-[1.6rem] border border-red-300/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-50 backdrop-blur-xl transition hover:bg-red-500/15"
+          >
+            <Radio className="h-5 w-5 animate-pulse" />
+            <span className="line-clamp-1">
+              {heroLiveStatus.title ||
+                translate(
+                  t,
+                  "creatorProfileLiveFallbackTitle",
+                  "Live em andamento",
+                )}
+            </span>
+            {heroLiveStatus.viewerCount ? (
+              <span className="ml-auto whitespace-nowrap text-red-100/70">
+                {formatNumber(heroLiveStatus.viewerCount)}{" "}
+                {translate(t, "creatorProfileViewers", "assistindo")}
+              </span>
+            ) : null}
+          </a>
+        ) : null}
 
-            <p className="mt-5 whitespace-pre-line text-base leading-8 text-white/68">
-              {description}
-            </p>
-          </article>
-
-          <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-8">
-            <div className="flex items-center gap-3">
-              <PlayCircle className="h-5 w-5 text-fuchsia-200" />
-              <h2 className="text-2xl font-black tracking-tight">
-                {translate(t, "creatorProfileFeaturedClips", "Clipes em destaque")}
-              </h2>
-            </div>
-
-            {clipsLoading ? (
-              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/50">
-                <Loader2 className="h-4 w-4 animate-spin text-cyan-100" />
-                {translate(t, "creatorProfileLoadingClips", "Carregando clipes...")}
+        <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-6">
+            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-8">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-cyan-200" />
+                <h2 className="text-2xl font-black tracking-tight">
+                  {translate(t, "creatorProfileAboutTitle", "Sobre o criador")}
+                </h2>
               </div>
-            ) : clips.length > 0 ? (
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {clips.map((clip) => {
-                  const thumbnail = clip.thumbnailUrl || clip.thumbnail_url;
-                  const viewCount = clip.viewCount ?? clip.view_count ?? 0;
 
-                  return (
-                    <a
-                      key={clip.id}
-                      href={clip.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/25 transition hover:border-cyan-300/30"
-                    >
-                      <div className="aspect-video bg-white/[0.04]">
-                        {thumbnail ? (
-                          <img
-                            src={thumbnail}
-                            alt={clip.title}
-                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-white/30">
-                            <PlayCircle className="h-10 w-10" />
-                          </div>
-                        )}
-                      </div>
+              <p className="mt-5 whitespace-pre-line text-base leading-8 text-white/68">
+                {description}
+              </p>
+            </article>
 
-                      <div className="p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                            {getPlatformLabel(clip.platform)}
-                          </p>
+            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <PlayCircle className="h-5 w-5 text-fuchsia-200" />
+                  <h2 className="text-2xl font-black tracking-tight">
+                    {translate(
+                      t,
+                      "creatorProfileFeaturedClips",
+                      "Clipes em destaque",
+                    )}
+                  </h2>
+                </div>
 
-                          {viewCount > 0 ? (
-                            <span className="text-xs font-bold text-white/40">
-                              {formatNumber(viewCount)}
-                            </span>
-                          ) : null}
+                {clipsLoading ? (
+                  <span className="inline-flex items-center gap-2 text-sm font-bold text-white/45">
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-100" />
+                    {translate(
+                      t,
+                      "creatorProfileLoadingClips",
+                      "Carregando clipes...",
+                    )}
+                  </span>
+                ) : null}
+              </div>
+
+              {clipsLoading ? (
+                <div className="mt-6 rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 text-sm font-bold text-white/50">
+                  {translate(
+                    t,
+                    "creatorProfileLoadingClips",
+                    "Carregando clipes...",
+                  )}
+                </div>
+              ) : clips.length > 0 ? (
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {clips.map((clip) => {
+                    const thumbnail = clip.thumbnailUrl || clip.thumbnail_url;
+                    const viewCount = clip.viewCount ?? clip.view_count ?? 0;
+
+                    return (
+                      <a
+                        key={clip.id}
+                        href={clip.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]"
+                      >
+                        <div className="aspect-video bg-white/[0.04]">
+                          {thumbnail ? (
+                            <img
+                              src={thumbnail}
+                              alt={clip.title}
+                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-white/30">
+                              <PlayCircle className="h-10 w-10" />
+                            </div>
+                          )}
                         </div>
 
-                        <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
-                          {clip.title}
-                        </h3>
+                        <div className="p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                              {getPlatformLabel(clip.platform)}
+                            </p>
+
+                            {viewCount > 0 ? (
+                              <span className="text-xs font-bold text-white/40">
+                                {formatNumber(viewCount)}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
+                            {clip.title}
+                          </h3>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-5 text-sm leading-7 text-white/50">
+                  {translate(
+                    t,
+                    "creatorProfileNoClips",
+                    "Este criador ainda não possui clipes públicos em destaque.",
+                  )}
+                </p>
+              )}
+            </article>
+          </div>
+
+          <aside className="space-y-6">
+            {platformCounters.length > 0 ? (
+              <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/55">
+                      {translate(
+                        t,
+                        "creatorProfilePlatformsTitle",
+                        "Plataformas",
+                      )}
+                    </p>
+                    <h2 className="mt-2 text-xl font-black tracking-tight">
+                      {translate(
+                        t,
+                        "creatorProfileExternalAudience",
+                        "Audiência externa",
+                      )}
+                    </h2>
+                  </div>
+
+                  {liveStatusLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-100/70" />
+                  ) : null}
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {platformCounters.map((platform) => (
+                    <a
+                      key={platform.key}
+                      href={platform.url || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-[1.3rem] border border-white/10 bg-black/25 p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
+                          {platform.label}
+                        </p>
+
+                        {platform.isLive ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
+                            <Radio className="h-3 w-3 animate-pulse" />
+                            Live
+                          </span>
+                        ) : null}
                       </div>
+
+                      <p className="mt-3 text-3xl font-black">
+                        {formatNumber(platform.value)}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-white/45">
+                        {platform.suffix}
+                      </p>
                     </a>
-                  );
-                })}
+                  ))}
+                </div>
+              </article>
+            ) : null}
+
+            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <Globe2 className="h-5 w-5 text-cyan-200" />
+                <h2 className="text-xl font-black tracking-tight">
+                  {translate(t, "creatorProfileSocialLinks", "Redes sociais")}
+                </h2>
               </div>
-            ) : (
-              <p className="mt-5 text-sm leading-7 text-white/50">
+
+              {socialLinks.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {socialLinks.map((social) => (
+                    <a
+                      key={`${social.platform}-${social.url}`}
+                      href={social.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                    >
+                      <span>{getPlatformLabel(social.platform)}</span>
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 text-sm leading-7 text-white/50">
+                  {translate(
+                    t,
+                    "creatorProfileNoSocialLinks",
+                    "As redes sociais deste criador ainda não foram adicionadas.",
+                  )}
+                </p>
+              )}
+            </article>
+
+            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-fuchsia-200" />
+                <h2 className="text-xl font-black tracking-tight">
+                  {translate(t, "creatorProfileCardStats", "Carta do criador")}
+                </h2>
+              </div>
+
+              <div className="mt-5 space-y-3 text-sm">
+                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
+                  <span className="text-white/45">
+                    {translate(t, "creatorProfileCardRarity", "Raridade")}
+                  </span>
+                  <strong>{getRarityLabel(rarity)}</strong>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
+                  <span className="text-white/45">
+                    {translate(t, "creatorProfileCardRank", "Rank")}
+                  </span>
+                  <strong>
+                    {card?.rank ||
+                      translate(t, "creatorProfileDefaultRank", "Bronze")}
+                  </strong>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
+                  <span className="text-white/45">
+                    {translate(t, "creatorProfileCardLevel", "Nível")}
+                  </span>
+                  <strong>{card?.level || 1}</strong>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
+                  <span className="text-white/45">
+                    {translate(t, "creatorProfileCardPower", "Poder")}
+                  </span>
+                  <strong>{formatNumber(card?.power_score || 0)}</strong>
+                </div>
+              </div>
+
+              <a
+                href={ogCardUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+              >
+                <Star className="h-4 w-4" />
                 {translate(
                   t,
-                  "creatorProfileNoClips",
-                  "Este criador ainda não possui clipes públicos em destaque."
+                  "creatorProfileViewShareCard",
+                  "Ver carta compartilhável",
                 )}
-              </p>
-            )}
-          </article>
-        </div>
-
-        <aside className="space-y-6">
-          <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-            <div className="flex items-center gap-3">
-              <Globe2 className="h-5 w-5 text-cyan-200" />
-              <h2 className="text-xl font-black tracking-tight">
-                {translate(t, "creatorProfileSocialLinks", "Redes sociais")}
-              </h2>
-            </div>
-
-            {socialLinks.length > 0 ? (
-              <div className="mt-5 space-y-3">
-                {socialLinks.map((social) => (
-                  <a
-                    key={`${social.platform}-${social.url}`}
-                    href={social.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
-                  >
-                    <span>{getPlatformLabel(social.platform)}</span>
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-5 text-sm leading-7 text-white/50">
-                {translate(
-                  t,
-                  "creatorProfileNoSocialLinks",
-                  "As redes sociais deste criador ainda não foram adicionadas."
-                )}
-              </p>
-            )}
-          </article>
-
-          <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-fuchsia-200" />
-              <h2 className="text-xl font-black tracking-tight">
-                {translate(t, "creatorProfileCardStats", "Carta do criador")}
-              </h2>
-            </div>
-
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                <span className="text-white/45">
-                  {translate(t, "creatorProfileCardRarity", "Raridade")}
-                </span>
-                <strong>{getRarityLabel(rarity)}</strong>
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                <span className="text-white/45">
-                  {translate(t, "creatorProfileCardRank", "Rank")}
-                </span>
-                <strong>
-                  {card?.rank || translate(t, "creatorProfileDefaultRank", "Bronze")}
-                </strong>
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                <span className="text-white/45">
-                  {translate(t, "creatorProfileCardLevel", "Nível")}
-                </span>
-                <strong>{card?.level || 1}</strong>
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                <span className="text-white/45">
-                  {translate(t, "creatorProfileCardPower", "Poder")}
-                </span>
-                <strong>{formatNumber(card?.power_score || 0)}</strong>
-              </div>
-            </div>
-          </article>
-        </aside>
-      </section>
+              </a>
+            </article>
+          </aside>
+        </section>
+      </div>
 
       {editPopupOpen && creatorForPopup ? (
         <CreatorPopup
