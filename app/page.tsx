@@ -17,13 +17,23 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    const hasSeenLoading = sessionStorage.getItem(
+      "cardpoc-initial-loading"
+    );
 
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+    if (!hasSeenLoading) {
+      setLoading(true);
 
-    return () => clearTimeout(timer);
+      const timer = setTimeout(() => {
+        setLoading(false);
+        sessionStorage.setItem(
+          "cardpoc-initial-loading",
+          "true"
+        );
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
