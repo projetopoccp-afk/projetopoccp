@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type SocialPlatform = "twitch" | "kick" | "youtube";
+type SocialPlatform = "twitch" | "kick" | "youtube" | "discord";
 
 type LiveStatusResponse = {
   platform: SocialPlatform;
@@ -18,6 +18,8 @@ type LiveStatusResponse = {
   viewCount?: number;
   videoCount?: number;
   externalCount?: number;
+  memberCount?: number;
+  onlineMemberCount?: number;
 };
 
 async function getTwitchAccessToken() {
@@ -478,6 +480,114 @@ async function getYouTubeChannelStatus(
   };
 }
 
+function normalizeDiscordInviteCode(input: string) {
+  const value = input.trim();
+
+  if (!value) return "";
+
+  try {
+    const url = new URL(value.startsWith("http") ? value : `https://${value}`);
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    if (
+      hostname === "discord.gg" ||
+      hostname === "discord.com" ||
+      hostname === "discordapp.com"
+    ) {
+      if (hostname === "discord.gg" && pathParts[0]) {
+        return pathParts[0].split("?")[0].trim();
+      }
+
+      const inviteIndex = pathParts.findIndex((part) => part === "invite");
+
+      if (inviteIndex >= 0 && pathParts[inviteIndex + 1]) {
+        return pathParts[inviteIndex + 1].split("?")[0].trim();
+      }
+    }
+  } catch {
+    // Se não for uma URL válida, trata como código puro do convite.
+  }
+
+  return value
+    .replace(/^@/, "")
+    .replace(/^discord\.gg\//i, "")
+    .replace(/^discord\.com\/invite\//i, "")
+    .replace(/^discordapp\.com\/invite\//i, "")
+    .split("?")[0]
+    .split("/")[0]
+    .trim();
+}
+
+async function getDiscordServerStatus(
+  invite: string
+): Promise<LiveStatusResponse> {
+  const inviteCode = normalizeDiscordInviteCode(invite);
+
+  if (!inviteCode) {
+    return {
+      platform: "discord",
+      username: invite,
+      isLive: false,
+      memberCount: 0,
+      onlineMemberCount: 0,
+      externalCount: 0,
+      url: "https://discord.com",
+    };
+  }
+
+  const discordResponse = await fetch(
+    `https://discord.com/api/v10/invites/${encodeURIComponent(
+      inviteCode
+    )}?with_counts=true&with_expiration=true`,
+    {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "CardpocBot/1.0 (+https://www.cardpoc.com)",
+      },
+      next: {
+        revalidate: 3600,
+      },
+    }
+  );
+
+  if (!discordResponse.ok) {
+    console.error("Erro Discord invite:", discordResponse.status);
+
+    return {
+      platform: "discord",
+      username: inviteCode,
+      isLive: false,
+      memberCount: 0,
+      onlineMemberCount: 0,
+      externalCount: 0,
+      url: `https://discord.gg/${inviteCode}`,
+    };
+  }
+
+  const data = await discordResponse.json();
+
+  const memberCount = Number(data?.approximate_member_count ?? 0);
+  const onlineMemberCount = Number(data?.approximate_presence_count ?? 0);
+  const guildName = data?.guild?.name || inviteCode;
+  const guildIcon = data?.guild?.icon
+    ? `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`
+    : undefined;
+
+  return {
+    platform: "discord",
+    username: guildName,
+    isLive: false,
+    title: guildName,
+    thumbnail: guildIcon,
+    memberCount,
+    onlineMemberCount,
+    externalCount: memberCount,
+    url: `https://discord.gg/${inviteCode}`,
+  };
+}
+
+
 export async function GET(request: NextRequest) {
   try {
     const platform =
@@ -504,6 +614,11 @@ export async function GET(request: NextRequest) {
 
     if (platform === "youtube") {
       const status = await getYouTubeChannelStatus(username);
+      return NextResponse.json(status);
+    }
+
+    if (platform === "discord") {
+      const status = await getDiscordServerStatus(username);
       return NextResponse.json(status);
     }
 
