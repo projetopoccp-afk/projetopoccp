@@ -5,13 +5,18 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ExternalLink,
+  Eye,
   Globe2,
   Loader2,
   PlayCircle,
+  Radio,
+  Share2,
   ShieldCheck,
   Sparkles,
   Star,
+  UserCheck,
   Users,
+  WifiOff,
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -49,6 +54,7 @@ type CreatorProfileRow = {
   is_verified: boolean | null;
   created_at: string | null;
   trending_score: number | null;
+  share_count?: number | null;
   creator_cards?: CreatorCardRow[] | CreatorCardRow | null;
 };
 
@@ -60,18 +66,46 @@ type SocialLink = {
 type AutoClip = {
   id: string;
   title: string;
-  platform: string;
+  platform: "youtube" | "twitch" | "kick" | string;
   url: string;
-  thumbnail_url: string | null;
-  description: string | null;
-  created_at: string | null;
-  view_count: number | null;
+  thumbnailUrl?: string | null;
+  thumbnail_url?: string | null;
+  description?: string | null;
+  createdAt?: string | null;
+  created_at?: string | null;
+  viewCount?: number | null;
+  view_count?: number | null;
 };
+
+type LiveStatus = {
+  platform?: string;
+  username?: string;
+  isLive: boolean;
+  title?: string;
+  viewerCount?: number;
+  gameName?: string;
+  startedAt?: string;
+  thumbnail?: string;
+  url?: string;
+  followerCount?: number;
+  subscriberCount?: number;
+  viewCount?: number;
+  videoCount?: number;
+  externalCount?: number;
+};
+
+type LiveStatusMap = Partial<Record<string, LiveStatus>>;
 
 type CreatorStats = {
   views: number;
   followers: number;
   shares: number;
+};
+
+type VisibleYoutubeChannel = {
+  url: string;
+  originalIndex: number;
+  username: string;
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -83,6 +117,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   discord: "Discord",
   x: "X",
 };
+
+const LIVE_PLATFORMS = ["twitch", "kick"] as const;
 
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -143,22 +179,174 @@ function getPlatformLabel(platform: string) {
   return PLATFORM_LABELS[normalizedPlatform] || platform;
 }
 
+function extractPlatformUsername(platform: string, url: string) {
+  const normalizedPlatform = platform.toLowerCase();
+  const normalizedUrl = url.trim();
+
+  if (!normalizedUrl) return "";
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(normalizedUrl)
+      ? normalizedUrl
+      : `https://${normalizedUrl}`;
+
+    const parsedUrl = new URL(withProtocol);
+    const host = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
+
+    if (normalizedPlatform === "twitch" && !host.includes("twitch.tv")) {
+      return "";
+    }
+
+    if (normalizedPlatform === "kick" && !host.includes("kick.com")) {
+      return "";
+    }
+
+    if (
+      normalizedPlatform === "youtube" &&
+      !host.includes("youtube.com") &&
+      !host.includes("youtu.be")
+    ) {
+      return "";
+    }
+
+    if (normalizedPlatform === "youtube") {
+      const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+      const handle = pathParts.find((part) => part.startsWith("@"));
+
+      if (handle) {
+        return handle.replace("@", "").trim();
+      }
+
+      return pathParts[0]?.replace("@", "").trim() || "";
+    }
+
+    const username = parsedUrl.pathname
+      .split("/")
+      .filter(Boolean)[0]
+      ?.replace("@", "")
+      .trim();
+
+    return username || "";
+  } catch {
+    return normalizedUrl
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/^twitch\.tv\//i, "")
+      .replace(/^kick\.com\//i, "")
+      .replace(/^youtube\.com\/@?/i, "")
+      .replace(/^youtube\.com\//i, "")
+      .replace(/^youtu\.be\//i, "")
+      .split(/[/?#]/)[0]
+      .replace("@", "")
+      .trim();
+  }
+}
+
+function getPlatformFallbackUrl(platform: string, username: string) {
+  const normalizedPlatform = platform.toLowerCase();
+
+  if (normalizedPlatform === "kick") {
+    return `https://kick.com/${username}`;
+  }
+
+  if (normalizedPlatform === "youtube") {
+    return `https://www.youtube.com/${username.replace("@", "")}`;
+  }
+
+  return `https://twitch.tv/${username}`;
+}
+
+function getPlatformLiveStatus(liveStatus: LiveStatusMap, platform: string) {
+  return liveStatus[platform.toLowerCase()];
+}
+
+function getNormalizedYoutubeChannels(channels: string[]): VisibleYoutubeChannel[] {
+  const seen = new Set<string>();
+
+  return channels
+    .map((rawUrl, originalIndex) => {
+      const url = String(rawUrl || "").trim();
+      const username = extractPlatformUsername("youtube", url);
+
+      return {
+        url,
+        originalIndex,
+        username,
+      };
+    })
+    .filter((channel) => channel.url.length > 0 && channel.username.length > 0)
+    .filter((channel) => {
+      const key = `${channel.username.toLowerCase()}::${channel.url.toLowerCase()}`;
+
+      if (seen.has(key)) return false;
+
+      seen.add(key);
+      return true;
+    });
+}
+
+function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
+  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+
+  const twitchFollowers =
+    twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
+  const kickFollowers =
+    kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
+  const youtubeSubscribers =
+    youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
+
+  return twitchFollowers + kickFollowers + youtubeSubscribers;
+}
+
+function getSocialUrl(socialLinks: SocialLink[], platform: string) {
+  return (
+    socialLinks.find((social) => social.platform.toLowerCase() === platform)
+      ?.url || ""
+  );
+}
+
 export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const { t } = useLanguage();
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [clips, setClips] = useState<AutoClip[]>([]);
+  const [clipsLoading, setClipsLoading] = useState(false);
   const [stats, setStats] = useState<CreatorStats>({
     views: 0,
     followers: 0,
     shares: 0,
   });
+  const [liveStatus, setLiveStatus] = useState<LiveStatusMap>({});
+  const [liveStatusLoading, setLiveStatusLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "").replace("@", "").trim();
   }, [username]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCurrentUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!cancelled) {
+        setCurrentUserId(user?.id || null);
+      }
+    }
+
+    loadCurrentUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,6 +395,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         setProfile(null);
         setSocialLinks([]);
         setClips([]);
+        setLiveStatus({});
         setStats({
           views: 0,
           followers: 0,
@@ -216,15 +405,12 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         return;
       }
 
-      const typedProfile = data as CreatorProfileRow & {
-        share_count?: number | null;
-      };
+      const typedProfile = data as CreatorProfileRow;
 
       setProfile(typedProfile);
 
       const [
         { data: socialData },
-        { data: clipData },
         { count: viewCount },
         { count: followerCount },
       ] = await Promise.all([
@@ -233,14 +419,6 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
           .select("platform, url")
           .eq("creator_id", typedProfile.id)
           .order("platform", { ascending: true }),
-        supabase
-          .from("creator_auto_clips")
-          .select(
-            "id, title, platform, url, thumbnail_url, description, created_at, view_count"
-          )
-          .eq("creator_id", typedProfile.id)
-          .order("created_at", { ascending: false })
-          .limit(6),
         supabase
           .from("creator_views")
           .select("id", { count: "exact", head: true })
@@ -254,7 +432,6 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       if (cancelled) return;
 
       setSocialLinks((socialData || []) as SocialLink[]);
-      setClips((clipData || []) as AutoClip[]);
       setStats({
         views: viewCount || 0,
         followers: followerCount || 0,
@@ -274,6 +451,204 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       cancelled = true;
     };
   }, [decodedUsername]);
+
+  useEffect(() => {
+    if (!profile) {
+      setLiveStatus({});
+      return;
+    }
+
+    const youtubeChannels = socialLinks
+      .filter((social) => social.platform.toLowerCase() === "youtube")
+      .map((social) => social.url);
+
+    const targets: Array<{
+      platform: "twitch" | "kick" | "youtube";
+      username: string;
+      index?: number;
+    }> = [
+      ...LIVE_PLATFORMS.map((platform) => {
+        const url = getSocialUrl(socialLinks, platform);
+        const platformUsername = extractPlatformUsername(platform, url);
+
+        return {
+          platform,
+          username: platformUsername,
+        };
+      }).filter((target) => target.username.length > 0),
+      ...getNormalizedYoutubeChannels(youtubeChannels).map((channel) => ({
+        platform: "youtube" as const,
+        username: channel.username,
+        index: channel.originalIndex,
+      })),
+    ];
+
+    if (targets.length === 0) {
+      setLiveStatus({});
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadLiveStatuses() {
+      setLiveStatusLoading(true);
+
+      try {
+        const results = await Promise.all(
+          targets.map(async ({ platform, username: targetUsername, index }) => {
+            try {
+              const response = await fetch(
+                `/api/live-status?platform=${platform}&username=${encodeURIComponent(
+                  targetUsername
+                )}`
+              );
+
+              if (!response.ok) {
+                throw new Error(`Unable to load ${platform} live status.`);
+              }
+
+              const data: LiveStatus = await response.json();
+
+              return {
+                platform,
+                index,
+                status: {
+                  ...data,
+                  url:
+                    data.url ||
+                    getPlatformFallbackUrl(platform, targetUsername),
+                },
+              };
+            } catch {
+              return {
+                platform,
+                index,
+                status: {
+                  platform,
+                  username: targetUsername,
+                  isLive: false,
+                  url: getPlatformFallbackUrl(platform, targetUsername),
+                },
+              };
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setLiveStatus(
+            results.reduce<LiveStatusMap>((accumulator, result) => {
+              if (result.platform === "youtube") {
+                accumulator[`youtube:${result.index ?? 0}`] = result.status;
+
+                const currentYoutube = accumulator.youtube;
+                const currentSubscriberCount =
+                  currentYoutube?.subscriberCount ??
+                  currentYoutube?.externalCount ??
+                  0;
+                const nextSubscriberCount =
+                  result.status.subscriberCount ??
+                  result.status.externalCount ??
+                  0;
+
+                accumulator.youtube =
+                  nextSubscriberCount >= currentSubscriberCount
+                    ? result.status
+                    : currentYoutube || result.status;
+
+                return accumulator;
+              }
+
+              accumulator[result.platform] = result.status;
+              return accumulator;
+            }, {})
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLiveStatusLoading(false);
+        }
+      }
+    }
+
+    loadLiveStatuses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, socialLinks]);
+
+  useEffect(() => {
+    if (!profile) {
+      setClips([]);
+      return;
+    }
+
+    const twitchUsername = extractPlatformUsername(
+      "twitch",
+      getSocialUrl(socialLinks, "twitch")
+    );
+    const kickUsername = extractPlatformUsername(
+      "kick",
+      getSocialUrl(socialLinks, "kick")
+    );
+    const youtubeUrls = socialLinks
+      .filter((social) => social.platform.toLowerCase() === "youtube")
+      .map((social) => social.url)
+      .filter(Boolean);
+
+    if (!twitchUsername && !kickUsername && youtubeUrls.length === 0) {
+      setClips([]);
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (twitchUsername) {
+      params.set("twitch", twitchUsername);
+    }
+
+    if (kickUsername) {
+      params.set("kick", kickUsername);
+    }
+
+    youtubeUrls.forEach((url) => {
+      params.append("youtube", url);
+    });
+
+    let cancelled = false;
+
+    async function loadAutoClips() {
+      setClipsLoading(true);
+
+      try {
+        const response = await fetch(`/api/creator-clips?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error("Unable to load creator clips.");
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setClips(Array.isArray(data?.clips) ? data.clips : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setClips([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setClipsLoading(false);
+        }
+      }
+    }
+
+    loadAutoClips();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, socialLinks]);
 
   const card = getCreatorCard(profile);
   const nickname =
@@ -305,9 +680,57 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     );
   const rarity = card?.rarity || "common";
   const tags = normalizeCreatorTags(profile?.tags);
+  const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
+  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const isLive = Boolean(twitchStatus?.isLive || kickStatus?.isLive);
+  const isOwner = Boolean(profile?.user_id && currentUserId === profile.user_id);
   const ogCardUrl = `/api/og/card/${encodeURIComponent(
     profile?.username || decodedUsername
   )}`;
+
+  const platformCounters = [
+    {
+      key: "youtube",
+      label: "YouTube",
+      value:
+        youtubeStatus?.subscriberCount ??
+        youtubeStatus?.externalCount ??
+        0,
+      suffix: translate(t, "creatorProfileSubscribers", "inscritos"),
+      url: youtubeStatus?.url || getSocialUrl(socialLinks, "youtube"),
+      isLive: false,
+    },
+    {
+      key: "twitch",
+      label: "Twitch",
+      value:
+        twitchStatus?.followerCount ??
+        twitchStatus?.externalCount ??
+        0,
+      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
+      url: twitchStatus?.url || getSocialUrl(socialLinks, "twitch"),
+      isLive: Boolean(twitchStatus?.isLive),
+    },
+    {
+      key: "kick",
+      label: "Kick",
+      value:
+        kickStatus?.followerCount ??
+        kickStatus?.externalCount ??
+        0,
+      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
+      url: kickStatus?.url || getSocialUrl(socialLinks, "kick"),
+      isLive: Boolean(kickStatus?.isLive),
+    },
+  ].filter((item) => item.url || item.value > 0);
+
+  const heroLiveStatus = twitchStatus?.isLive
+    ? twitchStatus
+    : kickStatus?.isLive
+      ? kickStatus
+      : null;
 
   if (loading) {
     return (
@@ -371,20 +794,44 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/60 via-[#020617]/86 to-[#020617]" />
 
         <div className="relative mx-auto max-w-7xl px-6 py-8 md:py-12">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 transition hover:border-cyan-300/30 hover:text-cyan-100"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {translate(t, "creatorProfileExploreCreators", "Explorar criadores")}
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 transition hover:border-cyan-300/30 hover:text-cyan-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {translate(t, "creatorProfileExploreCreators", "Explorar criadores")}
+            </Link>
 
-          <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+            {isOwner ? (
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 transition hover:bg-fuchsia-300/20"
+              >
+                <Sparkles className="h-4 w-4" />
+                {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
+              </Link>
+            ) : null}
+          </div>
+
+          <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100">
                   {translate(t, "creatorProfilePublicProfile", "Perfil público")}
                 </span>
+
+                {isLive ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-red-300/30 bg-red-500/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-red-100 shadow-lg shadow-red-500/10">
+                    <Radio className="h-3.5 w-3.5 animate-pulse" />
+                    {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/45">
+                    <WifiOff className="h-3.5 w-3.5" />
+                    {translate(t, "creatorProfileOffline", "Offline")}
+                  </span>
+                )}
 
                 {profile.is_verified ? (
                   <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-yellow-100">
@@ -410,6 +857,27 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 @{profile.username}
               </p>
 
+              {heroLiveStatus ? (
+                <a
+                  href={heroLiveStatus.url || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-6 inline-flex max-w-2xl items-center gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-50 transition hover:bg-red-500/15"
+                >
+                  <Radio className="h-4 w-4 animate-pulse" />
+                  <span className="line-clamp-1">
+                    {heroLiveStatus.title ||
+                      translate(t, "creatorProfileLiveFallbackTitle", "Live em andamento")}
+                  </span>
+                  {heroLiveStatus.viewerCount ? (
+                    <span className="ml-auto whitespace-nowrap text-red-100/70">
+                      {formatNumber(heroLiveStatus.viewerCount)}{" "}
+                      {translate(t, "creatorProfileViewers", "assistindo")}
+                    </span>
+                  ) : null}
+                </a>
+              ) : null}
+
               <p className="mt-7 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
                 {bio}
               </p>
@@ -434,64 +902,159 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.05] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-300/20 via-fuchsia-400/10 to-black">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={nickname}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-7xl font-black text-cyan-100">
-                    {getInitials(nickname)}
+            <div className="group perspective-[1200px]">
+              <div className="relative rounded-[2.2rem] border border-white/10 bg-white/[0.05] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur transition duration-500 group-hover:-translate-y-2 group-hover:rotate-[0.8deg] group-hover:shadow-cyan-400/20">
+                <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-cyan-400/10 blur-3xl transition duration-500 group-hover:bg-fuchsia-400/15" />
+
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] border border-cyan-300/25 bg-gradient-to-br from-cyan-300/20 via-fuchsia-400/10 to-black">
+                  <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_25%_15%,rgba(34,211,238,0.24),transparent_30%),radial-gradient(circle_at_80%_80%,rgba(168,85,247,0.20),transparent_35%)]" />
+
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={nickname}
+                      className="relative h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="relative flex h-full w-full items-center justify-center text-7xl font-black text-cyan-100">
+                      {getInitials(nickname)}
+                    </div>
+                  )}
+
+                  <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
+                    {getRarityLabel(rarity)}
                   </div>
-                )}
 
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-100/80">
-                    {translate(t, "creatorProfileCardLabel", "Carta Cardpoc")}
-                  </p>
-                  <p className="mt-1 text-2xl font-black">{nickname}</p>
+                  <div className="absolute right-4 top-4 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100 backdrop-blur">
+                    Nv. {card?.level || 1}
+                  </div>
+
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-100/80">
+                      {translate(t, "creatorProfileCardLabel", "Carta Cardpoc")}
+                    </p>
+                    <p className="mt-1 text-3xl font-black">{nickname}</p>
+                    <p className="mt-1 text-xs font-bold text-white/55">
+                      {title}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <a
-                href={ogCardUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
-              >
-                <Star className="h-4 w-4" />
-                {translate(t, "creatorProfileViewShareCard", "Ver carta compartilhável")}
-              </a>
+                <a
+                  href={ogCardUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  <Star className="h-4 w-4" />
+                  {translate(t, "creatorProfileViewShareCard", "Ver carta compartilhável")}
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-3">
+      <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-4">
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {translate(t, "creatorProfileViews", "Visualizações")}
-          </p>
+          <div className="flex items-center gap-2 text-white/40">
+            <Eye className="h-4 w-4" />
+            <p className="text-xs font-black uppercase tracking-[0.24em]">
+              {translate(t, "creatorProfileViews", "Visualizações")}
+            </p>
+          </div>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.views)}</p>
         </div>
 
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {translate(t, "creatorProfileFollowers", "Seguidores")}
-          </p>
+          <div className="flex items-center gap-2 text-white/40">
+            <UserCheck className="h-4 w-4" />
+            <p className="text-xs font-black uppercase tracking-[0.24em]">
+              {translate(t, "creatorProfileFollowers", "Seguidores")}
+            </p>
+          </div>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.followers)}</p>
         </div>
 
         <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-white/40">
-            {translate(t, "creatorProfileShares", "Compartilhamentos")}
+          <div className="flex items-center gap-2 text-white/40">
+            <Globe2 className="h-4 w-4" />
+            <p className="text-xs font-black uppercase tracking-[0.24em]">
+              {translate(t, "creatorProfileExternalReach", "Alcance externo")}
+            </p>
+          </div>
+          <p className="mt-3 text-4xl font-black">
+            {liveStatusLoading ? "..." : formatNumber(externalReach)}
           </p>
+        </div>
+
+        <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex items-center gap-2 text-white/40">
+            <Share2 className="h-4 w-4" />
+            <p className="text-xs font-black uppercase tracking-[0.24em]">
+              {translate(t, "creatorProfileShares", "Compartilhamentos")}
+            </p>
+          </div>
           <p className="mt-3 text-4xl font-black">{formatNumber(stats.shares)}</p>
         </div>
       </section>
+
+      {platformCounters.length > 0 ? (
+        <section className="mx-auto max-w-7xl px-6 pb-8">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/55">
+                  {translate(t, "creatorProfilePlatformsTitle", "Plataformas")}
+                </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight">
+                  {translate(t, "creatorProfileExternalAudience", "Audiência externa")}
+                </h2>
+              </div>
+
+              {liveStatusLoading ? (
+                <span className="inline-flex items-center gap-2 text-sm font-bold text-white/45">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {translate(t, "creatorProfileUpdatingPlatforms", "Atualizando plataformas...")}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {platformCounters.map((platform) => (
+                <a
+                  key={platform.key}
+                  href={platform.url || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-[1.4rem] border border-white/10 bg-black/20 p-5 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
+                      {platform.label}
+                    </p>
+
+                    {platform.isLive ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
+                        <Radio className="h-3 w-3 animate-pulse" />
+                        Live
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-4 text-3xl font-black">
+                    {formatNumber(platform.value)}
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold text-white/45">
+                    {platform.suffix}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-14 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
@@ -516,40 +1079,59 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </h2>
             </div>
 
-            {clips.length > 0 ? (
+            {clipsLoading ? (
+              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/50">
+                <Loader2 className="h-4 w-4 animate-spin text-cyan-100" />
+                {translate(t, "creatorProfileLoadingClips", "Carregando clipes...")}
+              </div>
+            ) : clips.length > 0 ? (
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {clips.map((clip) => (
-                  <a
-                    key={clip.id}
-                    href={clip.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/25 transition hover:border-cyan-300/30"
-                  >
-                    <div className="aspect-video bg-white/[0.04]">
-                      {clip.thumbnail_url ? (
-                        <img
-                          src={clip.thumbnail_url}
-                          alt={clip.title}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-white/30">
-                          <PlayCircle className="h-10 w-10" />
-                        </div>
-                      )}
-                    </div>
+                {clips.map((clip) => {
+                  const thumbnail = clip.thumbnailUrl || clip.thumbnail_url;
+                  const viewCount = clip.viewCount ?? clip.view_count ?? 0;
 
-                    <div className="p-4">
-                      <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                        {getPlatformLabel(clip.platform)}
-                      </p>
-                      <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
-                        {clip.title}
-                      </h3>
-                    </div>
-                  </a>
-                ))}
+                  return (
+                    <a
+                      key={clip.id}
+                      href={clip.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/25 transition hover:border-cyan-300/30"
+                    >
+                      <div className="aspect-video bg-white/[0.04]">
+                        {thumbnail ? (
+                          <img
+                            src={thumbnail}
+                            alt={clip.title}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-white/30">
+                            <PlayCircle className="h-10 w-10" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                            {getPlatformLabel(clip.platform)}
+                          </p>
+
+                          {viewCount > 0 ? (
+                            <span className="text-xs font-bold text-white/40">
+                              {formatNumber(viewCount)}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
+                          {clip.title}
+                        </h3>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-5 text-sm leading-7 text-white/50">
