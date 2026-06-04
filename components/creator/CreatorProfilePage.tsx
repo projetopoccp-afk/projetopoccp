@@ -1476,18 +1476,16 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
         <section className="mt-8 grid gap-10 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-center">
           <div className="flex justify-center lg:justify-start">
-            <div className="relative rounded-[2rem] border border-cyan-300/15 bg-white/[0.035] p-5 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
-              <div className="absolute -inset-5 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.18),transparent_62%)] blur-2xl" />
-              {creatorForCard ? (
-                <div className="scale-[1.06] py-3 sm:scale-[1.12] lg:scale-[1.08]">
-                  <CreatorCard
-                    key={`${creatorForCard.id}-${creatorForCard.rarity}`}
-                    creator={creatorForCard}
-                    onClick={() => undefined}
-                  />
-                </div>
-              ) : null}
-            </div>
+            {creatorForCard ? (
+              <div className="relative w-fit scale-[1.14] py-6 sm:scale-[1.2] lg:scale-[1.16]">
+                <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
+                <CreatorCard
+                  key={`${creatorForCard.id}-${creatorForCard.rarity}`}
+                  creator={creatorForCard}
+                  onClick={() => undefined}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="min-w-0">
