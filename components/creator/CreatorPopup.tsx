@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
-  Pencil,
   Save,
   Send,
   UserCheck,
@@ -122,6 +121,33 @@ type AutoClip = {
   createdAt?: string;
   viewCount?: number;
 };
+
+
+function isLikelyImageUrl(url: string) {
+  const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
+
+  return /\.(apng|avif|gif|jpg|jpeg|png|svg|webp)$/.test(normalizedUrl);
+}
+
+function isLikelyDirectMediaUrl(url: string) {
+  const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
+
+  return /\.(m3u8|mp4|m4v|mov|webm|mkv|avi|ts|m4a|mp3|wav|ogg)$/.test(
+    normalizedUrl,
+  );
+}
+
+function getSafeClipUrl(clip: AutoClip, socials: SocialForm) {
+  const rawUrl = (clip.url || "").trim();
+
+  if (rawUrl && !isLikelyImageUrl(rawUrl) && !isLikelyDirectMediaUrl(rawUrl)) {
+    return rawUrl;
+  }
+
+  const platformUrl = socials[String(clip.platform || "").toLowerCase()] || "";
+
+  return platformUrl.trim() || "#";
+}
 
 function extractPlatformUsername(platform: string, url: string) {
   const normalizedPlatform = platform.toLowerCase();
@@ -1433,18 +1459,6 @@ export function CreatorPopup({
 
           <div className="relative h-full overflow-hidden text-white">
             <div className="absolute right-5 top-5 z-20 flex gap-2">
-              {isOwner && (
-                <button
-                  onClick={() => setEditMode((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100 hover:bg-cyan-300/20"
-                >
-                  <Pencil size={14} />
-                  {editMode
-                    ? translate(t, "creatorPopupView", "Visualizar")
-                    : translate(t, "creatorPopupEdit", "Editar")}
-                </button>
-              )}
-
               <button
                 onClick={onClose}
                 className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
@@ -2337,11 +2351,12 @@ function ViewPanel({
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               {visibleCarouselClips.map((clip, index) => {
                 const previewThumbnail = clip.thumbnailUrl;
+                const clipHref = getSafeClipUrl(clip, socials);
 
                 return (
                   <a
                     key={`${clip.url}-${clipPage}-${index}`}
-                    href={clip.url}
+                    href={clipHref}
                     target="_blank"
                     rel="noreferrer"
                     className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"

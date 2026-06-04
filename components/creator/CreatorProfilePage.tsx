@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -12,7 +11,6 @@ import {
   Globe2,
   Loader2,
   PlayCircle,
-  Plus,
   Radio,
   Share2,
   ShieldCheck,
@@ -20,7 +18,6 @@ import {
   UserCheck,
   UserPlus,
   Users,
-  Trash2,
   WifiOff,
 } from "lucide-react";
 
@@ -91,7 +88,7 @@ type CreatorProfileEditDraft = {
   bio: string;
   description: string;
   tagsText: string;
-  socialLinks: SocialLink[];
+  socialLinksText: string;
 };
 
 type AutoClip = {
@@ -99,14 +96,6 @@ type AutoClip = {
   title: string;
   platform: "youtube" | "twitch" | "kick" | string;
   url: string;
-  pageUrl?: string | null;
-  page_url?: string | null;
-  clipUrl?: string | null;
-  clip_url?: string | null;
-  canonicalUrl?: string | null;
-  canonical_url?: string | null;
-  videoUrl?: string | null;
-  video_url?: string | null;
   thumbnailUrl?: string | null;
   thumbnail_url?: string | null;
   description?: string | null;
@@ -433,50 +422,6 @@ function normalizeCreatorRank(rank: string | null | undefined): CreatorRank {
 }
 
 
-function createProfileEditDraft(
-  profile: CreatorProfileRow,
-  socialLinks: SocialLink[],
-): CreatorProfileEditDraft {
-  return {
-    nickname: profile.nickname || "",
-    title: profile.title || "",
-    category: profile.category || "",
-    faction: profile.faction || "",
-    avatarUrl: profile.avatar_url || "",
-    bannerUrl: profile.banner_url || "",
-    bio: profile.bio || "",
-    description: profile.description || "",
-    tagsText: normalizeCreatorTags(profile.tags).join(", "),
-    socialLinks:
-      socialLinks.length > 0
-        ? socialLinks.map((social) => ({
-            platform: social.platform || "link",
-            url: social.url || "",
-          }))
-        : [
-            {
-              platform: "twitch",
-              url: "",
-            },
-          ],
-  };
-}
-
-function createEmptySocialLink(): SocialLink {
-  return {
-    platform: "link",
-    url: "",
-  };
-}
-
-function normalizeEditSocialLinks(socialLinks: SocialLink[]): SocialLink[] {
-  return socialLinks
-    .map((social) => ({
-      platform: (social.platform || "link").trim().toLowerCase(),
-      url: (social.url || "").trim(),
-    }))
-    .filter((social) => Boolean(social.url));
-}
 
 function isLikelyImageUrl(url: string) {
   const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
@@ -492,102 +437,39 @@ function isLikelyDirectMediaUrl(url: string) {
   );
 }
 
-function isSafePublicClipPageUrl(url: string) {
-  if (!url || isLikelyImageUrl(url) || isLikelyDirectMediaUrl(url)) {
-    return false;
+function getSafeClipUrl(clip: AutoClip, socialLinks: SocialLink[]) {
+  const rawUrl = (clip.url || "").trim();
+
+  if (rawUrl && !isLikelyImageUrl(rawUrl) && !isLikelyDirectMediaUrl(rawUrl)) {
+    return rawUrl;
   }
 
-  try {
-    const parsedUrl = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
-    const host = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
-
-    if (host.includes("twitch.tv")) {
-      return parsedUrl.pathname.toLowerCase().includes("/clip");
-    }
-
-    if (host.includes("kick.com")) {
-      return (
-        parsedUrl.searchParams.has("clip") ||
-        parsedUrl.pathname.toLowerCase().includes("/clip")
-      );
-    }
-
-    if (host.includes("youtube.com") || host.includes("youtu.be")) {
-      return true;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getKickClipIdFromMediaUrl(url: string) {
-  if (!url) return "";
-
-  try {
-    const parsedUrl = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
-    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
-    const clipMarkerIndex = pathParts.findIndex((part) =>
-      ["clip", "clips"].includes(part.toLowerCase()),
-    );
-
-    if (clipMarkerIndex >= 0 && pathParts[clipMarkerIndex + 1]) {
-      return pathParts[clipMarkerIndex + 1];
-    }
-
-    return "";
-  } catch {
-    return "";
-  }
-}
-
-function buildKickClipPageUrl(clip: AutoClip, socials: SocialLink[]) {
-  const kickUrl = getSocialUrl(socials, "kick");
-  const kickUsername = kickUrl
-    ? extractPlatformUsername("kick", kickUrl)
-    : "";
-  const clipIdFromUrl = getKickClipIdFromMediaUrl(clip.url || "");
-  const clipId = (clip.clipUrl || clip.clip_url || clipIdFromUrl || clip.id || "")
-    .trim();
-
-  if (!kickUsername || !clipId || /^https?:\/\//i.test(clipId)) {
-    return "";
-  }
-
-  return `https://kick.com/${encodeURIComponent(kickUsername)}?clip=${encodeURIComponent(clipId)}`;
-}
-
-function getSafeClipUrl(clip: AutoClip, socials: SocialLink[]) {
-  const possiblePageUrls = [
-    clip.pageUrl,
-    clip.page_url,
-    clip.clipUrl,
-    clip.clip_url,
-    clip.canonicalUrl,
-    clip.canonical_url,
-    clip.url,
-  ]
-    .map((url) => String(url || "").trim())
-    .filter(Boolean);
-
-  const safePageUrl = possiblePageUrls.find(isSafePublicClipPageUrl);
-
-  if (safePageUrl) {
-    return safePageUrl;
-  }
-
-  if (String(clip.platform || "").toLowerCase() === "kick") {
-    const kickClipPageUrl = buildKickClipPageUrl(clip, socials);
-
-    if (kickClipPageUrl) {
-      return kickClipPageUrl;
-    }
-  }
-
-  const platformUrl = getSocialUrl(socials, clip.platform as SocialPlatform);
+  const platformUrl = getSocialUrl(
+    socialLinks,
+    String(clip.platform || "").toLowerCase() as SocialPlatform,
+  );
 
   return platformUrl || "#";
+}
+
+function createProfileEditDraft(
+  profile: CreatorProfileRow,
+  socialLinks: SocialLink[],
+): CreatorProfileEditDraft {
+  return {
+    nickname: profile.nickname || "",
+    title: profile.title || "",
+    category: profile.category || "",
+    faction: profile.faction || "",
+    avatarUrl: profile.avatar_url || "",
+    bannerUrl: profile.banner_url || "",
+    bio: profile.bio || "",
+    description: profile.description || "",
+    tagsText: normalizeCreatorTags(profile.tags).join(", "),
+    socialLinksText: socialLinks
+      .map((social) => `${social.platform}: ${social.url}`)
+      .join("\n"),
+  };
 }
 
 function parseEditTags(tagsText: string) {
@@ -595,6 +477,32 @@ function parseEditTags(tagsText: string) {
     .split(/[,\n]/)
     .map((tag) => tag.trim().replace(/^#/, ""))
     .filter(Boolean);
+}
+
+function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
+  return socialLinksText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf(":");
+
+      if (separatorIndex === -1) {
+        return {
+          platform: "link",
+          url: line,
+        };
+      }
+
+      const platform = line.slice(0, separatorIndex).trim();
+      const url = line.slice(separatorIndex + 1).trim();
+
+      return {
+        platform: platform || "link",
+        url,
+      };
+    })
+    .filter((social) => Boolean(social.url));
 }
 
 function normalizeCreatorSocials(socialLinks: SocialLink[]) {
@@ -725,8 +633,6 @@ export function CreatorProfilePage({
   startInEditMode = false,
 }: CreatorProfilePageProps) {
   const { t } = useLanguage();
-  const router = useRouter();
-  const pathname = usePathname();
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -1316,7 +1222,7 @@ export function CreatorProfilePage({
   }
 
   function handleEditDraftChange(
-    field: keyof Omit<CreatorProfileEditDraft, "socialLinks">,
+    field: keyof CreatorProfileEditDraft,
     value: string,
   ) {
     setEditDraft((current) =>
@@ -1330,66 +1236,6 @@ export function CreatorProfilePage({
     setProfileSaveError(null);
   }
 
-  function handleEditSocialLinkChange(
-    index: number,
-    field: keyof SocialLink,
-    value: string,
-  ) {
-    setEditDraft((current) => {
-      if (!current) return current;
-
-      const nextSocialLinks = current.socialLinks.map((social, socialIndex) =>
-        socialIndex === index
-          ? {
-              ...social,
-              [field]: value,
-            }
-          : social,
-      );
-
-      return {
-        ...current,
-        socialLinks: nextSocialLinks,
-      };
-    });
-    setProfileSaveError(null);
-  }
-
-  function handleAddEditSocialLink() {
-    setEditDraft((current) =>
-      current
-        ? {
-            ...current,
-            socialLinks: [...current.socialLinks, createEmptySocialLink()],
-          }
-        : current,
-    );
-    setProfileSaveError(null);
-  }
-
-  function handleRemoveEditSocialLink(index: number) {
-    setEditDraft((current) => {
-      if (!current) return current;
-
-      const nextSocialLinks = current.socialLinks.filter(
-        (_, socialIndex) => socialIndex !== index,
-      );
-
-      return {
-        ...current,
-        socialLinks:
-          nextSocialLinks.length > 0 ? nextSocialLinks : [createEmptySocialLink()],
-      };
-    });
-    setProfileSaveError(null);
-  }
-
-  function navigateBackToPublicProfile() {
-    if (!profile || !pathname?.endsWith("/dashboard")) return;
-
-    router.push(`/creator/${encodeURIComponent(profile.username)}`);
-  }
-
   function handleCancelEditMode() {
     if (profile) {
       setEditDraft(createProfileEditDraft(profile, socialLinks));
@@ -1397,7 +1243,6 @@ export function CreatorProfilePage({
 
     setProfileSaveError(null);
     setIsEditing(false);
-    navigateBackToPublicProfile();
   }
 
   async function handleSaveProfileEdit() {
@@ -1407,7 +1252,7 @@ export function CreatorProfilePage({
     setProfileSaveError(null);
 
     const nextTags = parseEditTags(editDraft.tagsText);
-    const nextSocialLinks = normalizeEditSocialLinks(editDraft.socialLinks);
+    const nextSocialLinks = parseEditSocialLinks(editDraft.socialLinksText);
 
     const { error } = await supabase
       .from("creator_profiles")
@@ -1480,7 +1325,6 @@ export function CreatorProfilePage({
     setIsEditing(false);
 
     await refreshCreatorProfile();
-    navigateBackToPublicProfile();
   }
 
   async function handleFollow() {
@@ -2197,81 +2041,20 @@ export function CreatorProfilePage({
                   </label>
                 </div>
 
-                <div className="mt-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={handleAddEditSocialLink}
-                      className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:bg-cyan-300/20"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Adicionar link
-                    </button>
-                  </div>
-
-                  <div className="mt-3 space-y-3">
-                    {editDraft.socialLinks.map((social, index) => (
-                      <div
-                        key={`${social.platform}-${index}`}
-                        className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-black/25 p-3 md:grid-cols-[180px_1fr_auto]"
-                      >
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                            Plataforma
-                          </span>
-                          <select
-                            value={social.platform}
-                            onChange={(event) =>
-                              handleEditSocialLinkChange(
-                                index,
-                                "platform",
-                                event.target.value,
-                              )
-                            }
-                            className="mt-2 w-full rounded-full border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white/80 outline-none transition focus:border-cyan-300/45"
-                          >
-                            <option value="twitch">Twitch</option>
-                            <option value="youtube">YouTube</option>
-                            <option value="kick">Kick</option>
-                            <option value="tiktok">TikTok</option>
-                            <option value="instagram">Instagram</option>
-                            <option value="x">X / Twitter</option>
-                            <option value="discord">Discord</option>
-                            <option value="link">Outro link</option>
-                          </select>
-                        </label>
-
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                            URL
-                          </span>
-                          <input
-                            value={social.url}
-                            onChange={(event) =>
-                              handleEditSocialLinkChange(index, "url", event.target.value)
-                            }
-                            placeholder="https://..."
-                            className="mt-2 w-full rounded-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveEditSocialLink(index)}
-                          className="inline-flex items-center justify-center gap-2 rounded-full border border-red-300/15 bg-red-300/10 px-4 py-3 text-sm font-black text-red-100 transition hover:bg-red-300/20 md:self-end"
-                          aria-label="Remover link social"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="md:hidden">Remover</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <label className="mt-4 block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
+                  </span>
+                  <textarea
+                    value={editDraft.socialLinksText}
+                    onChange={(event) =>
+                      handleEditDraftChange("socialLinksText", event.target.value)
+                    }
+                    rows={5}
+                    placeholder={"twitch: https://twitch.tv/seucanal\nyoutube: https://youtube.com/@seucanal"}
+                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm leading-7 text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                  />
+                </label>
               </article>
             ) : null}
 
