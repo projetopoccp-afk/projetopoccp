@@ -12,6 +12,59 @@ export const translations = {
     creatorProfileEditAddSocialLink: "Adicionar link",
     creatorProfileEditRemoveSocialLink: "Remover link",
 
+    legalBackHome: "Voltar para o início",
+    legalLastUpdated: "Última atualização: Junho de 2026",
+    legalCardpocBadge: "Cardpoc",
+
+    privacyPageTitle: "Política de Privacidade",
+    privacyPageDescription: "Política de Privacidade do Cardpoc.",
+    privacyPageIntro:
+      "O Cardpoc é uma plataforma de reputação digital e perfis colecionáveis para criadores de conteúdo. Esta Política de Privacidade explica como coletamos, usamos, armazenamos e protegemos informações quando usuários acessam nossa plataforma.",
+    privacyInformationTitle: "Informações que coletamos",
+    privacyInformationText:
+      "Podemos coletar informações de conta, como nome, e-mail, avatar, provedor de login, dados de perfil de criador, links sociais, atividade de coleção, cartas, pacotes, XP, níveis, notificações e dados de uso da plataforma.",
+    privacyConnectedServicesTitle: "Serviços conectados",
+    privacyConnectedServicesText:
+      "O Cardpoc pode permitir que usuários e criadores conectem serviços de terceiros, como Google, Discord, TikTok, Instagram, Twitch, YouTube e outras plataformas. Quando um serviço é conectado, solicitamos apenas as permissões necessárias para oferecer os recursos do Cardpoc.",
+    privacyUseTitle: "Como usamos as informações",
+    privacyUseText:
+      "Usamos informações para operar perfis de criadores, exibir informações públicas, calcular estatísticas da plataforma, gerenciar cartas digitais, apoiar reivindicações de perfil, melhorar a plataforma e manter contas seguras.",
+    privacyPublicProfilesTitle: "Perfis públicos de criadores",
+    privacyPublicProfilesText:
+      "Perfis de criadores podem exibir informações públicas, como nickname, username, avatar, categoria, links sociais, estatísticas públicas e outros detalhes aprovados ou fornecidos através da plataforma.",
+    privacyRemovalTitle: "Remoção de dados",
+    privacyRemovalText:
+      "Usuários e criadores podem solicitar remoção ou correção de seus dados entrando em contato com o Cardpoc pelos canais oficiais de suporte fornecidos na plataforma.",
+    privacyContactTitle: "Contato",
+    privacyContactText:
+      "Para dúvidas sobre privacidade, entre em contato com o Cardpoc pelo site oficial em www.cardpoc.com.",
+
+    termsPageTitle: "Termos de Serviço",
+    termsPageDescription: "Termos de Serviço do Cardpoc.",
+    termsPageIntro:
+      "Estes Termos de Serviço regem o uso do Cardpoc, uma plataforma de reputação digital e perfis colecionáveis para criadores de conteúdo. Ao usar o Cardpoc, você concorda com estes termos.",
+    termsPurposeTitle: "Objetivo da plataforma",
+    termsPurposeText:
+      "O Cardpoc permite que usuários descubram criadores, visualizem perfis públicos, colecionem cartas digitais, abram pacotes, acompanhem atividades de criadores e interajam com recursos gamificados de reputação.",
+    termsCreatorProfilesTitle: "Perfis de criadores",
+    termsCreatorProfilesText:
+      "Perfis de criadores podem ser criados, editados, aprovados, rejeitados, reivindicados ou removidos de acordo com as regras de moderação do Cardpoc. Um criador pode solicitar a posse de um perfil não reivindicado através do processo disponível.",
+    termsUserAccountsTitle: "Contas de usuário",
+    termsUserAccountsText:
+      "Usuários são responsáveis por manter suas contas seguras e por usar a plataforma de forma legal e respeitosa. O Cardpoc pode restringir o acesso se uma conta for usada para abusar, explorar ou prejudicar a plataforma ou outros usuários.",
+    termsDigitalCardsTitle: "Cartas digitais e recompensas",
+    termsDigitalCardsText:
+      "Cartas digitais, pacotes, XP, níveis, conquistas e outros recursos gamificados fazem parte da experiência do Cardpoc. Eles não representam ativos financeiros, produtos de investimento ou valor monetário garantido.",
+    termsThirdPartyTitle: "Plataformas de terceiros",
+    termsThirdPartyText:
+      "O Cardpoc pode exibir links, estatísticas ou informações de plataformas externas, como TikTok, Instagram, Twitch, YouTube, Kick e Discord. Esses serviços são regidos por seus próprios termos e políticas.",
+    termsChangesTitle: "Alterações nestes termos",
+    termsChangesText:
+      "O Cardpoc pode atualizar estes Termos de Serviço conforme a plataforma evolui. O uso contínuo da plataforma após alterações significa que você aceita os termos atualizados.",
+    termsContactTitle: "Contato",
+    termsContactText:
+      "Para dúvidas sobre estes termos, entre em contato com o Cardpoc pelo site oficial em www.cardpoc.com.",
+
     common: "Comum",
     rare: "Raro",
     epic: "Épico",
@@ -735,6 +788,59 @@ export const translations = {
     creatorProfileEditAddSocialLink: "Add link",
     creatorProfileEditRemoveSocialLink: "Remove link",
 
+    legalBackHome: "Back to home",
+    legalLastUpdated: "Last updated: June 2026",
+    legalCardpocBadge: "Cardpoc",
+
+    privacyPageTitle: "Privacy Policy",
+    privacyPageDescription: "Privacy Policy for Cardpoc.",
+    privacyPageIntro:
+      "Cardpoc is a digital reputation and collectible profile platform for content creators. This Privacy Policy explains how we collect, use, store and protect information when users access our platform.",
+    privacyInformationTitle: "Information we collect",
+    privacyInformationText:
+      "We may collect account information such as name, email address, avatar, login provider, creator profile data, social links, collection activity, cards, packs, XP, levels, notifications and platform usage data.",
+    privacyConnectedServicesTitle: "Connected services",
+    privacyConnectedServicesText:
+      "Cardpoc may allow users and creators to connect third-party services such as Google, Discord, TikTok, Instagram, Twitch, YouTube and other platforms. When a service is connected, we only request the permissions needed to provide Cardpoc features.",
+    privacyUseTitle: "How we use information",
+    privacyUseText:
+      "We use information to operate creator profiles, display public creator information, calculate platform statistics, manage digital cards, support profile claims, improve the platform and keep user accounts secure.",
+    privacyPublicProfilesTitle: "Public creator profiles",
+    privacyPublicProfilesText:
+      "Creator profiles may display public information such as nickname, username, avatar, category, social links, public statistics and other profile details approved or provided through the platform.",
+    privacyRemovalTitle: "Data removal",
+    privacyRemovalText:
+      "Users and creators may request removal or correction of their data by contacting Cardpoc through the official support channels provided on the platform.",
+    privacyContactTitle: "Contact",
+    privacyContactText:
+      "For privacy questions, contact Cardpoc through the official website at www.cardpoc.com.",
+
+    termsPageTitle: "Terms of Service",
+    termsPageDescription: "Terms of Service for Cardpoc.",
+    termsPageIntro:
+      "These Terms of Service govern the use of Cardpoc, a digital reputation and collectible profile platform for content creators. By using Cardpoc, you agree to these terms.",
+    termsPurposeTitle: "Platform purpose",
+    termsPurposeText:
+      "Cardpoc allows users to discover creators, view public creator profiles, collect digital cards, open packs, follow creator activity and interact with gamified reputation features.",
+    termsCreatorProfilesTitle: "Creator profiles",
+    termsCreatorProfilesText:
+      "Creator profiles may be created, edited, approved, rejected, claimed or removed according to Cardpoc moderation rules. A creator may request ownership of an unclaimed profile through the available claim process.",
+    termsUserAccountsTitle: "User accounts",
+    termsUserAccountsText:
+      "Users are responsible for keeping their accounts secure and for using the platform in a lawful and respectful way. Cardpoc may restrict access if an account is used to abuse, exploit or harm the platform or other users.",
+    termsDigitalCardsTitle: "Digital cards and rewards",
+    termsDigitalCardsText:
+      "Digital cards, packs, XP, levels, achievements and other gamified features are part of the Cardpoc experience. They do not represent financial assets, investment products or guaranteed monetary value.",
+    termsThirdPartyTitle: "Third-party platforms",
+    termsThirdPartyText:
+      "Cardpoc may display links, statistics or information from external platforms such as TikTok, Instagram, Twitch, YouTube, Kick and Discord. These services are governed by their own terms and policies.",
+    termsChangesTitle: "Changes to these terms",
+    termsChangesText:
+      "Cardpoc may update these Terms of Service as the platform evolves. Continued use of the platform after changes means you accept the updated terms.",
+    termsContactTitle: "Contact",
+    termsContactText:
+      "For questions about these terms, contact Cardpoc through the official website at www.cardpoc.com.",
+
     common: "Common",
     rare: "Rare",
     epic: "Epic",
@@ -1452,6 +1558,59 @@ export const translations = {
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
     creatorProfileEditRemoveSocialLink: "Eliminar enlace",
+
+    legalBackHome: "Volver al inicio",
+    legalLastUpdated: "Última actualización: Junio de 2026",
+    legalCardpocBadge: "Cardpoc",
+
+    privacyPageTitle: "Política de Privacidad",
+    privacyPageDescription: "Política de Privacidad de Cardpoc.",
+    privacyPageIntro:
+      "Cardpoc es una plataforma de reputación digital y perfiles coleccionables para creadores de contenido. Esta Política de Privacidad explica cómo recopilamos, usamos, almacenamos y protegemos información cuando los usuarios acceden a nuestra plataforma.",
+    privacyInformationTitle: "Información que recopilamos",
+    privacyInformationText:
+      "Podemos recopilar información de cuenta, como nombre, correo electrónico, avatar, proveedor de inicio de sesión, datos de perfil de creador, enlaces sociales, actividad de colección, cartas, paquetes, XP, niveles, notificaciones y datos de uso de la plataforma.",
+    privacyConnectedServicesTitle: "Servicios conectados",
+    privacyConnectedServicesText:
+      "Cardpoc puede permitir que usuarios y creadores conecten servicios de terceros como Google, Discord, TikTok, Instagram, Twitch, YouTube y otras plataformas. Cuando se conecta un servicio, solo solicitamos los permisos necesarios para ofrecer las funciones de Cardpoc.",
+    privacyUseTitle: "Cómo usamos la información",
+    privacyUseText:
+      "Usamos información para operar perfiles de creadores, mostrar información pública, calcular estadísticas de la plataforma, gestionar cartas digitales, apoyar reclamaciones de perfiles, mejorar la plataforma y mantener seguras las cuentas de usuario.",
+    privacyPublicProfilesTitle: "Perfiles públicos de creadores",
+    privacyPublicProfilesText:
+      "Los perfiles de creadores pueden mostrar información pública como nickname, username, avatar, categoría, enlaces sociales, estadísticas públicas y otros detalles aprobados o proporcionados a través de la plataforma.",
+    privacyRemovalTitle: "Eliminación de datos",
+    privacyRemovalText:
+      "Los usuarios y creadores pueden solicitar la eliminación o corrección de sus datos contactando a Cardpoc a través de los canales oficiales de soporte proporcionados en la plataforma.",
+    privacyContactTitle: "Contacto",
+    privacyContactText:
+      "Para preguntas sobre privacidad, contacta a Cardpoc a través del sitio oficial en www.cardpoc.com.",
+
+    termsPageTitle: "Términos de Servicio",
+    termsPageDescription: "Términos de Servicio de Cardpoc.",
+    termsPageIntro:
+      "Estos Términos de Servicio rigen el uso de Cardpoc, una plataforma de reputación digital y perfiles coleccionables para creadores de contenido. Al usar Cardpoc, aceptas estos términos.",
+    termsPurposeTitle: "Objetivo de la plataforma",
+    termsPurposeText:
+      "Cardpoc permite a los usuarios descubrir creadores, ver perfiles públicos, coleccionar cartas digitales, abrir paquetes, seguir la actividad de creadores e interactuar con funciones gamificadas de reputación.",
+    termsCreatorProfilesTitle: "Perfiles de creadores",
+    termsCreatorProfilesText:
+      "Los perfiles de creadores pueden ser creados, editados, aprobados, rechazados, reclamados o eliminados según las reglas de moderación de Cardpoc. Un creador puede solicitar la propiedad de un perfil no reclamado mediante el proceso disponible.",
+    termsUserAccountsTitle: "Cuentas de usuario",
+    termsUserAccountsText:
+      "Los usuarios son responsables de mantener sus cuentas seguras y usar la plataforma de forma legal y respetuosa. Cardpoc puede restringir el acceso si una cuenta se usa para abusar, explotar o perjudicar la plataforma u otros usuarios.",
+    termsDigitalCardsTitle: "Cartas digitales y recompensas",
+    termsDigitalCardsText:
+      "Las cartas digitales, paquetes, XP, niveles, logros y otros recursos gamificados forman parte de la experiencia de Cardpoc. No representan activos financieros, productos de inversión ni valor monetario garantizado.",
+    termsThirdPartyTitle: "Plataformas de terceros",
+    termsThirdPartyText:
+      "Cardpoc puede mostrar enlaces, estadísticas o información de plataformas externas como TikTok, Instagram, Twitch, YouTube, Kick y Discord. Estos servicios se rigen por sus propios términos y políticas.",
+    termsChangesTitle: "Cambios en estos términos",
+    termsChangesText:
+      "Cardpoc puede actualizar estos Términos de Servicio a medida que la plataforma evoluciona. El uso continuado de la plataforma después de los cambios significa que aceptas los términos actualizados.",
+    termsContactTitle: "Contacto",
+    termsContactText:
+      "Para preguntas sobre estos términos, contacta a Cardpoc a través del sitio oficial en www.cardpoc.com.",
 
     common: "Común",
     rare: "Raro",

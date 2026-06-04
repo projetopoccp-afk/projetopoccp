@@ -1,102 +1,93 @@
+"use client";
+
+import Link from "next/link";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
-
-export const metadata = {
-  title: "Privacy Policy",
-  description: "Privacy Policy for Cardpoc.",
-};
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 
 export default function PrivacyPage() {
+  const { t } = useLanguage();
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black px-6 py-16 text-white">
       <GlowBackground />
       <ParticleBackground />
 
       <section className="relative z-10 mx-auto max-w-4xl rounded-[32px] border border-cyan-300/15 bg-[#050812]/90 p-6 shadow-[0_0_60px_rgba(34,211,238,0.12)] backdrop-blur-xl sm:p-10">
-        <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">
-          Cardpoc
+        <Link
+          href="/"
+          className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white/60 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+        >
+          ← {translate(t, "legalBackHome", "Voltar para o início")}
+        </Link>
+
+        <p className="mt-8 text-xs font-black uppercase tracking-[0.28em] text-cyan-200">
+          {translate(t, "legalCardpocBadge", "Cardpoc")}
         </p>
 
         <h1 className="mt-4 bg-gradient-to-r from-white via-cyan-100 to-purple-200 bg-clip-text text-3xl font-black uppercase tracking-[0.12em] text-transparent sm:text-4xl">
-          Privacy Policy
+          {translate(t, "privacyPageTitle", "Política de Privacidade")}
         </h1>
 
         <p className="mt-4 text-sm leading-7 text-white/60">
-          Last updated: June 2026
+          {translate(t, "legalLastUpdated", "Última atualização: Junho de 2026")}
         </p>
 
         <div className="mt-8 space-y-6 text-sm leading-7 text-white/65">
-          <p>
-            Cardpoc is a digital reputation and collectible profile platform for
-            content creators. This Privacy Policy explains how we collect, use,
-            store and protect information when users access our platform.
-          </p>
+          <p>{translate(t, "privacyPageIntro", "O Cardpoc é uma plataforma de reputação digital e perfis colecionáveis para criadores de conteúdo.")}</p>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              Information we collect
+              {translate(t, "privacyInformationTitle", "Informações que coletamos")}
             </h2>
             <p className="mt-2">
-              We may collect account information such as name, email address,
-              avatar, login provider, creator profile data, social links,
-              collection activity, cards, packs, XP, levels, notifications and
-              platform usage data.
+              {translate(t, "privacyInformationText", "Podemos coletar informações de conta, perfil, links sociais, coleção, XP, níveis e dados de uso da plataforma.")}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              Connected services
+              {translate(t, "privacyConnectedServicesTitle", "Serviços conectados")}
             </h2>
             <p className="mt-2">
-              Cardpoc may allow users and creators to connect third-party
-              services such as Google, Discord, TikTok, Instagram, Twitch,
-              YouTube and other platforms. When a service is connected, we only
-              request the permissions needed to provide Cardpoc features.
+              {translate(t, "privacyConnectedServicesText", "O Cardpoc pode permitir que usuários e criadores conectem serviços de terceiros.")}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              How we use information
+              {translate(t, "privacyUseTitle", "Como usamos as informações")}
             </h2>
             <p className="mt-2">
-              We use information to operate creator profiles, display public
-              creator information, calculate platform statistics, manage digital
-              cards, support profile claims, improve the platform and keep user
-              accounts secure.
+              {translate(t, "privacyUseText", "Usamos informações para operar perfis, exibir informações públicas, calcular estatísticas e manter contas seguras.")}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              Public creator profiles
+              {translate(t, "privacyPublicProfilesTitle", "Perfis públicos de criadores")}
             </h2>
             <p className="mt-2">
-              Creator profiles may display public information such as nickname,
-              username, avatar, category, social links, public statistics and
-              other profile details approved or provided through the platform.
+              {translate(t, "privacyPublicProfilesText", "Perfis de criadores podem exibir informações públicas fornecidas ou aprovadas na plataforma.")}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              Data removal
+              {translate(t, "privacyRemovalTitle", "Remoção de dados")}
             </h2>
             <p className="mt-2">
-              Users and creators may request removal or correction of their data
-              by contacting Cardpoc through the official support channels
-              provided on the platform.
+              {translate(t, "privacyRemovalText", "Usuários e criadores podem solicitar remoção ou correção de seus dados pelos canais oficiais de suporte.")}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
-              Contact
+              {translate(t, "privacyContactTitle", "Contato")}
             </h2>
             <p className="mt-2">
-              For privacy questions, contact Cardpoc through the official
-              website at www.cardpoc.com.
+              {translate(t, "privacyContactText", "Para dúvidas sobre privacidade, entre em contato com o Cardpoc pelo site oficial em www.cardpoc.com.")}
             </p>
           </section>
         </div>
