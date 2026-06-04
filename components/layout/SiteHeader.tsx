@@ -10,6 +10,7 @@ import {
   Package,
   Sparkles,
   Trophy,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -421,6 +422,34 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     }
   }
 
+  async function clearAllNotifications() {
+    if (!user || notifications.length === 0) return;
+
+    const confirmed = window.confirm(
+      translate(
+        t,
+        "clearNotificationsConfirm",
+        "Tem certeza que deseja limpar todas as suas notificações?",
+      ),
+    );
+
+    if (!confirmed) return;
+
+    const previousNotifications = notifications;
+
+    setNotifications([]);
+
+    const { error } = await supabase
+      .from("user_notifications")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Erro ao limpar notificações:", error);
+      setNotifications(previousNotifications);
+    }
+  }
+
   function handleNotificationClick(notification: UserNotification) {
     markNotificationAsRead(notification.id);
     setNotificationsOpen(false);
@@ -586,6 +615,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                     unreadCount={unreadCount}
                     onClose={() => setNotificationsOpen(false)}
                     onMarkAllAsRead={markAllNotificationsAsRead}
+                    onClearAll={clearAllNotifications}
                     onNotificationClick={handleNotificationClick}
                   />
                 </div>
@@ -675,6 +705,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                   unreadCount={unreadCount}
                   onClose={() => setNotificationsOpen(false)}
                   onMarkAllAsRead={markAllNotificationsAsRead}
+                  onClearAll={clearAllNotifications}
                   onNotificationClick={handleNotificationClick}
                 />
               </div>
@@ -881,6 +912,7 @@ function NotificationsPopover({
   unreadCount,
   onClose,
   onMarkAllAsRead,
+  onClearAll,
   onNotificationClick,
 }: {
   open: boolean;
@@ -888,6 +920,7 @@ function NotificationsPopover({
   unreadCount: number;
   onClose: () => void;
   onMarkAllAsRead: () => void;
+  onClearAll: () => void;
   onNotificationClick: (notification: UserNotification) => void;
 }) {
   const { language, t } = useLanguage();
@@ -930,6 +963,21 @@ function NotificationsPopover({
               className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
             >
               {translate(t, "markAllRead", "Ler todas")}
+            </button>
+          )}
+
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onClearAll();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1.5 text-xs font-bold text-red-100 transition hover:bg-red-300/20"
+            >
+              <Trash2 size={12} />
+              {translate(t, "clearNotifications", "Limpar")}
             </button>
           )}
 
