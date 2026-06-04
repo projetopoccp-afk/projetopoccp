@@ -1664,6 +1664,7 @@ export function CreatorProfilePage({
         username: profile.username,
         nickname,
         title,
+        faction: "",
         category,
         mainPlatform: "youtube",
         status: normalizeCreatorStatus(profile.status),
