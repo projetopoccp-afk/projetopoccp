@@ -293,17 +293,38 @@ function getNormalizedYoutubeChannels(
     });
 }
 
+function getYoutubeChannelFallbackTitle(
+  channel: VisibleYoutubeChannel,
+  fallbackLabel: string,
+) {
+  const username = channel.username.replace(/^@/, "").trim();
+
+  if (username.length > 0) {
+    return username.startsWith("UC") ? fallbackLabel : `@${username}`;
+  }
+
+  return fallbackLabel;
+}
+
+function getLiveStatusExternalCount(status: LiveStatus | undefined) {
+  return status?.subscriberCount ?? status?.followerCount ?? status?.externalCount ?? 0;
+}
+
+function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
+  return Object.entries(liveStatus)
+    .filter(([key]) => key.startsWith("youtube:"))
+    .reduce((total, [, status]) => total + getLiveStatusExternalCount(status), 0);
+}
+
 function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
-  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const youtubeSubscribers = getYoutubeExternalReachFromLiveStatus(liveStatus);
 
   const twitchFollowers =
     twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
   const kickFollowers =
     kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
-  const youtubeSubscribers =
-    youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
 
   return twitchFollowers + kickFollowers + youtubeSubscribers;
 }
@@ -408,6 +429,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
+  const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -779,6 +802,31 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const visibleYoutubeChannels = getNormalizedYoutubeChannels(
+    socialLinks
+      .filter((social) => social.platform.toLowerCase() === "youtube")
+      .map((social) => social.url),
+  );
+  const youtubeExternalReach = getYoutubeExternalReachFromLiveStatus(liveStatus);
+  const youtubeChannelItems = visibleYoutubeChannels.map((channel, index) => {
+    const channelStatus = getPlatformLiveStatus(
+      liveStatus,
+      `youtube:${channel.originalIndex}`,
+    );
+
+    const fallbackTitle = getYoutubeChannelFallbackTitle(
+      channel,
+      `${translate(t, "creatorPopupYoutubeChannelFallback", "Canal")} ${index + 1}`,
+    );
+
+    return {
+      url: channelStatus?.url || channel.url,
+      title: channelStatus?.title || fallbackTitle,
+      thumbnail: channelStatus?.thumbnail,
+      subscriberCount:
+        channelStatus?.subscriberCount ?? channelStatus?.externalCount ?? 0,
+    };
+  });
   const isLive = Boolean(twitchStatus?.isLive || kickStatus?.isLive);
   const isOwner = Boolean(
     profile?.user_id && currentUserId === profile.user_id,
@@ -790,9 +838,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const platformCounters = [
     {
       key: "youtube",
-      label: "YouTube",
-      value:
-        youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0,
+      label: visibleYoutubeChannels.length > 1 ? `YouTube (${visibleYoutubeChannels.length})` : "YouTube",
+      value: youtubeExternalReach,
       suffix: translate(t, "creatorProfileSubscribers", "inscritos"),
       url: youtubeStatus?.url || getSocialUrl(socialLinks, "youtube"),
       isLive: false,
@@ -815,11 +862,22 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     },
   ].filter((item) => item.url || item.value > 0);
 
-  const heroLiveStatus = twitchStatus?.isLive
-    ? twitchStatus
-    : kickStatus?.isLive
-      ? kickStatus
-      : null;
+  const livePlatformItems = [
+    {
+      key: "twitch",
+      label: "Twitch",
+      status: twitchStatus,
+      fallbackUrl: getSocialUrl(socialLinks, "twitch"),
+    },
+    {
+      key: "kick",
+      label: "Kick",
+      status: kickStatus,
+      fallbackUrl: getSocialUrl(socialLinks, "kick"),
+    },
+  ].filter((item) => item.status?.isLive);
+
+  const heroLiveStatus = livePlatformItems[0]?.status || null;
 
   const creatorForPopup: Creator | null = profile
     ? {
@@ -1085,20 +1143,32 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         </section>
 
         {heroLiveStatus ? (
-          <a
-            href={heroLiveStatus.url || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-8 flex items-center gap-3 rounded-[1.6rem] border border-red-300/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-50 backdrop-blur-xl transition hover:bg-red-500/15"
+          <button
+            type="button"
+            onClick={() => {
+              if (livePlatformItems.length > 1) {
+                setLivePlatformsOpen(true);
+                return;
+              }
+
+              window.open(heroLiveStatus.url || "#", "_blank", "noopener,noreferrer");
+            }}
+            className="mt-8 flex w-full items-center gap-3 rounded-[1.6rem] border border-red-300/20 bg-red-500/10 px-5 py-4 text-left text-sm font-bold text-red-50 backdrop-blur-xl transition hover:bg-red-500/15"
           >
             <Radio className="h-5 w-5 animate-pulse" />
             <span className="line-clamp-1">
-              {heroLiveStatus.title ||
-                translate(
-                  t,
-                  "creatorProfileLiveFallbackTitle",
-                  "Live em andamento",
-                )}
+              {livePlatformItems.length > 1
+                ? translate(
+                    t,
+                    "creatorProfileChooseLivePlatform",
+                    "Este criador está ao vivo em mais de uma plataforma. Escolha onde assistir.",
+                  )
+                : heroLiveStatus.title ||
+                  translate(
+                    t,
+                    "creatorProfileLiveFallbackTitle",
+                    "Live em andamento",
+                  )}
             </span>
             {heroLiveStatus.viewerCount ? (
               <span className="ml-auto whitespace-nowrap text-red-100/70">
@@ -1106,7 +1176,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 {translate(t, "creatorProfileViewers", "assistindo")}
               </span>
             ) : null}
-          </a>
+          </button>
         ) : null}
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -1288,18 +1358,59 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
               {socialLinks.length > 0 ? (
                 <div className="mt-5 space-y-3">
-                  {socialLinks.map((social) => (
-                    <a
-                      key={`${social.platform}-${social.url}`}
-                      href={social.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
-                    >
-                      <span>{getPlatformLabel(social.platform)}</span>
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  ))}
+                  {[
+                    ...socialLinks.filter(
+                      (social) => social.platform.toLowerCase() !== "youtube",
+                    ),
+                    ...(visibleYoutubeChannels.length > 0
+                      ? [
+                          {
+                            platform: "youtube",
+                            url: visibleYoutubeChannels[0].url,
+                          },
+                        ]
+                      : []),
+                  ].map((social) => {
+                    const isYoutube = social.platform.toLowerCase() === "youtube";
+
+                    if (isYoutube) {
+                      return (
+                        <button
+                          key="youtube-channels"
+                          type="button"
+                          onClick={() => {
+                            if (visibleYoutubeChannels.length > 1) {
+                              setYoutubeChannelsOpen(true);
+                              return;
+                            }
+
+                            window.open(social.url, "_blank", "noopener,noreferrer");
+                          }}
+                          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                        >
+                          <span>
+                            {visibleYoutubeChannels.length > 1
+                              ? `YouTube (${visibleYoutubeChannels.length})`
+                              : "YouTube"}
+                          </span>
+                          <ExternalLink className="h-4 w-4" />
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <a
+                        key={`${social.platform}-${social.url}`}
+                        href={social.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                      >
+                        <span>{getPlatformLabel(social.platform)}</span>
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="mt-5 text-sm leading-7 text-white/50">
@@ -1371,6 +1482,150 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         </section>
       </div>
 
+
+      {livePlatformsOpen ? (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => setLivePlatformsOpen(false)}
+            aria-label={translate(t, "creatorProfileCloseLivePlatforms", "Fechar plataformas ao vivo")}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
+            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
+            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
+
+            <div className="relative z-10">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-red-200">
+                {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
+              </p>
+
+              <h3 className="mt-3 text-2xl font-black">
+                {translate(t, "creatorProfileLivePlatformsTitle", "Escolha onde assistir")}
+              </h3>
+
+              <p className="mt-2 text-sm text-white/45">
+                {translate(
+                  t,
+                  "creatorProfileLivePlatformsDescription",
+                  "Este criador está online em mais de uma plataforma.",
+                )}
+              </p>
+
+              <div className="mt-5 grid gap-3">
+                {livePlatformItems.map((item) => (
+                  <a
+                    key={item.key}
+                    href={item.status?.url || item.fallbackUrl || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-red-300/30 hover:bg-red-300/10"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-xs font-black text-red-100">
+                      <Radio className="h-5 w-5 animate-pulse" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black text-white">{item.label}</p>
+                      <p className="truncate text-sm text-white/45">
+                        {item.status?.title ||
+                          translate(t, "creatorProfileLiveFallbackTitle", "Live em andamento")}
+                      </p>
+                    </div>
+
+                    {item.status?.viewerCount ? (
+                      <span className="shrink-0 text-sm font-bold text-red-100/70">
+                        {formatNumber(item.status.viewerCount)}
+                      </span>
+                    ) : null}
+                  </a>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setLivePlatformsOpen(false)}
+                className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
+              >
+                {translate(t, "creatorProfileClose", "Fechar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {youtubeChannelsOpen ? (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => setYoutubeChannelsOpen(false)}
+            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Fechar canais do YouTube")}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
+            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
+            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
+
+            <div className="relative z-10">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-200">
+                YouTube
+              </p>
+
+              <h3 className="mt-3 text-2xl font-black">
+                {translate(t, "creatorPopupYoutubeChannelsTitle", "Canais do YouTube")}
+              </h3>
+
+              <p className="mt-2 text-sm text-white/45">
+                {translate(t, "creatorPopupYoutubeChannelsDescription", "Escolha qual canal você quer abrir.")}
+              </p>
+
+              <div className="mt-5 grid gap-3">
+                {youtubeChannelItems.map((channel, index) => (
+                  <a
+                    key={`${channel.url}-${index}`}
+                    href={channel.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
+                  >
+                    {channel.thumbnail ? (
+                      <img
+                        src={channel.thumbnail}
+                        alt={channel.title}
+                        className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-300/10 text-xs font-bold text-cyan-100">
+                        YT
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-white">
+                        {channel.title}
+                      </p>
+
+                      <p className="text-sm text-white/45">
+                        {formatNumber(channel.subscriberCount)} {translate(t, "creatorPopupYoutubeSubscribers", "inscritos")}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setYoutubeChannelsOpen(false)}
+                className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
+              >
+                {translate(t, "creatorProfileClose", "Fechar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {editPopupOpen && creatorForPopup ? (
         <CreatorPopup
           creator={creatorForPopup}
