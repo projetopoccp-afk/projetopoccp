@@ -1386,12 +1386,17 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
   if (loading) {
     return (
-      <main
-        className="relative min-h-screen overflow-hidden bg-black text-white"
-        aria-hidden="true"
-      >
-        <GlowBackground />
-        <ParticleBackground />
+      <main className="min-h-screen bg-[#020617] px-6 py-10 text-white">
+        <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center">
+          <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm text-white/70 shadow-2xl shadow-cyan-500/10">
+            <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />
+            {translate(
+              t,
+              "creatorProfileLoading",
+              "Carregando perfil do criador...",
+            )}
+          </div>
+        </div>
       </main>
     );
   }
