@@ -374,6 +374,11 @@ export const translations = {
     creatorPopupClaimUrlPlaceholder: "Link do canal ou perfil oficial",
     creatorPopupClaimUrlRequired:
       "Informe o link do canal ou perfil usado para verificação.",
+    creatorImageConsentTitle: "Autorização de uso de imagem",
+    creatorImageConsentDescription:
+      "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
+    creatorImageConsentRequired:
+      "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Prévia do clip",
     creatorPopupClipTitlePlaceholder: "Melhor momento da live",
@@ -467,6 +472,7 @@ export const translations = {
     creatorPopupOfflineShort: "Offline",
     creatorPopupYoutubeChannels: "canais",
     creatorPopupFollowersLabel: "seguidores",
+    creatorPopupDiscordMembers: "membros",
     creatorPopupCloseYoutubeChannels: "Fechar canais do YouTube",
     creatorPopupRemoveYoutubeChannel: "Remover canal do YouTube",
     creatorRequestModalBadge: "Solicitação Criador",
@@ -1144,6 +1150,11 @@ export const translations = {
     creatorPopupClaimUrlPlaceholder: "Official channel or profile link",
     creatorPopupClaimUrlRequired:
       "Enter the channel or profile link used for verification.",
+    creatorImageConsentTitle: "Image usage authorization",
+    creatorImageConsentDescription:
+      "I authorize Cardpoc to use my image, creator name, public identity and content submitted or linked by me to create personalized digital cards inside the platform.",
+    creatorImageConsentRequired:
+      "To submit the request, you need to authorize the use of your image to create personalized cards.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Clip preview",
     creatorPopupClipTitlePlaceholder: "Best live moment",
@@ -1236,6 +1247,7 @@ export const translations = {
     creatorPopupOfflineShort: "Offline",
     creatorPopupYoutubeChannels: "channels",
     creatorPopupFollowersLabel: "followers",
+    creatorPopupDiscordMembers: "members",
     creatorPopupCloseYoutubeChannels: "Close YouTube channels",
     creatorPopupRemoveYoutubeChannel: "Remove YouTube channel",
     creatorRequestModalBadge: "Creator Request",
@@ -1917,6 +1929,11 @@ export const translations = {
     creatorPopupClaimUrlPlaceholder: "Link del canal o perfil oficial",
     creatorPopupClaimUrlRequired:
       "Informa el link del canal o perfil usado para la verificación.",
+    creatorImageConsentTitle: "Autorización de uso de imagen",
+    creatorImageConsentDescription:
+      "Autorizo a Cardpoc a utilizar mi imagen, nombre artístico, identidad pública y contenidos enviados o vinculados por mí para crear cartas digitales personalizadas dentro de la plataforma.",
+    creatorImageConsentRequired:
+      "Para enviar la solicitud, necesitas autorizar el uso de tu imagen para crear cartas personalizadas.",
     packsModalInventoryHint: "Elige un pack para comenzar la revelación.",
     packsModalCollectionNote:
       "Los packs pueden conseguirse en misiones, eventos y recompensas de Cardpoc.",
@@ -2017,6 +2034,7 @@ export const translations = {
     creatorPopupOfflineShort: "Offline",
     creatorPopupYoutubeChannels: "canales",
     creatorPopupFollowersLabel: "seguidores",
+    creatorPopupDiscordMembers: "miembros",
     creatorPopupCloseYoutubeChannels: "Cerrar canales de YouTube",
     creatorPopupRemoveYoutubeChannel: "Quitar canal de YouTube",
     creatorRequestModalBadge: "Solicitud Creador",

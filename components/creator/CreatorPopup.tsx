@@ -478,6 +478,7 @@ export function CreatorPopup({
 
   const [claimPlatform, setClaimPlatform] = useState("youtube");
   const [claimUrl, setClaimUrl] = useState("");
+  const [claimImageUsageConsent, setClaimImageUsageConsent] = useState(false);
   const [claimSending, setClaimSending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
 
@@ -1282,6 +1283,19 @@ export function CreatorPopup({
       return;
     }
 
+    if (!claimImageUsageConsent) {
+      alert(
+        translate(
+          t,
+          "creatorImageConsentRequired",
+          "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas."
+        )
+      );
+      return;
+    }
+
+    const consentAcceptedAt = new Date().toISOString();
+
     setClaimSending(true);
 
     const { error } = await supabase.from("creator_claims").insert({
@@ -1290,6 +1304,12 @@ export function CreatorPopup({
       verification_platform: claimPlatform,
       verification_url: claimUrl,
       verification_code: claimCode,
+      image_usage_consent: true,
+      image_usage_consent_at: consentAcceptedAt,
+      image_usage_consent_version: "v1.0",
+      image_usage_consent_source: "claim_request",
+      image_usage_consent_text:
+        "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
       status: "pending",
     });
 
@@ -1478,6 +1498,8 @@ export function CreatorPopup({
                   setClaimPlatform={setClaimPlatform}
                   claimUrl={claimUrl}
                   setClaimUrl={setClaimUrl}
+                  claimImageUsageConsent={claimImageUsageConsent}
+                  setClaimImageUsageConsent={setClaimImageUsageConsent}
                   claimCode={claimCode}
                   claimSending={claimSending}
                   claimSuccess={claimSuccess}
@@ -1895,6 +1917,8 @@ function ClaimPanel({
   setClaimPlatform,
   claimUrl,
   setClaimUrl,
+  claimImageUsageConsent,
+  setClaimImageUsageConsent,
   claimCode,
   claimSending,
   claimSuccess,
@@ -1906,6 +1930,8 @@ function ClaimPanel({
   setClaimPlatform: (value: string) => void;
   claimUrl: string;
   setClaimUrl: (value: string) => void;
+  claimImageUsageConsent: boolean;
+  setClaimImageUsageConsent: (value: boolean) => void;
   claimCode: string;
   claimSending: boolean;
   claimSuccess: boolean;
@@ -1975,10 +2001,33 @@ function ClaimPanel({
         </p>
       </div>
 
+      <label className="mt-6 flex cursor-pointer gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-sm leading-relaxed text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.07]">
+        <input
+          type="checkbox"
+          checked={claimImageUsageConsent}
+          onChange={(event) => setClaimImageUsageConsent(event.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-cyan-300"
+        />
+
+        <span>
+          <strong className="block text-cyan-100">
+            {translate(t, "creatorImageConsentTitle", "Autorização de uso de imagem")}
+          </strong>
+
+          <span className="mt-1 block text-white/55">
+            {translate(
+              t,
+              "creatorImageConsentDescription",
+              "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma."
+            )}
+          </span>
+        </span>
+      </label>
+
       <div className="mt-6 flex flex-wrap gap-3">
         <button
           onClick={onSubmit}
-          disabled={claimSending}
+          disabled={claimSending || !claimImageUsageConsent}
           className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
         >
           <Send size={16} />

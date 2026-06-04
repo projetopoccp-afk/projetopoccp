@@ -277,6 +277,7 @@ export function CreatorRequestModal({
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [imageUsageConsent, setImageUsageConsent] = useState(false);
 
   const verificationCode = useMemo(() => {
     return `CDP-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -348,6 +349,20 @@ export function CreatorRequestModal({
       return;
     }
 
+    if (!imageUsageConsent) {
+      setLoading(false);
+      alert(
+        translate(
+          t,
+          "creatorImageConsentRequired",
+          "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas."
+        )
+      );
+      return;
+    }
+
+    const consentAcceptedAt = new Date().toISOString();
+
     const { error } = await supabase.from("creator_requests").insert({
       user_id: user.id,
       nickname,
@@ -368,6 +383,12 @@ export function CreatorRequestModal({
       verification_code: verificationCode,
       card_image_url: cardImageUrl,
       image_source: imageSource,
+      image_usage_consent: true,
+      image_usage_consent_at: consentAcceptedAt,
+      image_usage_consent_version: "v1.0",
+      image_usage_consent_source: "creator_request",
+      image_usage_consent_text:
+        "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
       status: "pending",
     });
 
@@ -726,6 +747,33 @@ export function CreatorRequestModal({
                   </AnimatePresence>
                 </div>
 
+                <label className="mt-6 flex cursor-pointer gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-sm leading-relaxed text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.07]">
+                  <input
+                    type="checkbox"
+                    checked={imageUsageConsent}
+                    onChange={(event) => setImageUsageConsent(event.target.checked)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-cyan-300"
+                  />
+
+                  <span>
+                    <strong className="block text-cyan-100">
+                      {translate(
+                        t,
+                        "creatorImageConsentTitle",
+                        "Autorização de uso de imagem"
+                      )}
+                    </strong>
+
+                    <span className="mt-1 block text-white/55">
+                      {translate(
+                        t,
+                        "creatorImageConsentDescription",
+                        "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma."
+                      )}
+                    </span>
+                  </span>
+                </label>
+
                 <button
                   onClick={handleSubmit}
                   disabled={
@@ -734,7 +782,8 @@ export function CreatorRequestModal({
                     !nickname ||
                     !username ||
                     !verificationUrl ||
-                    !cardImageUrl
+                    !cardImageUrl ||
+                    !imageUsageConsent
                   }
                   className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
                 >
