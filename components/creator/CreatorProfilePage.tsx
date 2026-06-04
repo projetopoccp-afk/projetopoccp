@@ -99,6 +99,14 @@ type AutoClip = {
   title: string;
   platform: "youtube" | "twitch" | "kick" | string;
   url: string;
+  pageUrl?: string | null;
+  page_url?: string | null;
+  clipUrl?: string | null;
+  clip_url?: string | null;
+  canonicalUrl?: string | null;
+  canonical_url?: string | null;
+  videoUrl?: string | null;
+  video_url?: string | null;
   thumbnailUrl?: string | null;
   thumbnail_url?: string | null;
   description?: string | null;
@@ -484,11 +492,97 @@ function isLikelyDirectMediaUrl(url: string) {
   );
 }
 
-function getSafeClipUrl(clip: AutoClip, socials: SocialLink[]) {
-  const rawUrl = (clip.url || "").trim();
+function isSafePublicClipPageUrl(url: string) {
+  if (!url || isLikelyImageUrl(url) || isLikelyDirectMediaUrl(url)) {
+    return false;
+  }
 
-  if (rawUrl && !isLikelyImageUrl(rawUrl) && !isLikelyDirectMediaUrl(rawUrl)) {
-    return rawUrl;
+  try {
+    const parsedUrl = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    const host = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
+
+    if (host.includes("twitch.tv")) {
+      return parsedUrl.pathname.toLowerCase().includes("/clip");
+    }
+
+    if (host.includes("kick.com")) {
+      return (
+        parsedUrl.searchParams.has("clip") ||
+        parsedUrl.pathname.toLowerCase().includes("/clip")
+      );
+    }
+
+    if (host.includes("youtube.com") || host.includes("youtu.be")) {
+      return true;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getKickClipIdFromMediaUrl(url: string) {
+  if (!url) return "";
+
+  try {
+    const parsedUrl = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const clipMarkerIndex = pathParts.findIndex((part) =>
+      ["clip", "clips"].includes(part.toLowerCase()),
+    );
+
+    if (clipMarkerIndex >= 0 && pathParts[clipMarkerIndex + 1]) {
+      return pathParts[clipMarkerIndex + 1];
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function buildKickClipPageUrl(clip: AutoClip, socials: SocialLink[]) {
+  const kickUrl = getSocialUrl(socials, "kick");
+  const kickUsername = kickUrl
+    ? extractPlatformUsername("kick", kickUrl)
+    : "";
+  const clipIdFromUrl = getKickClipIdFromMediaUrl(clip.url || "");
+  const clipId = (clip.clipUrl || clip.clip_url || clipIdFromUrl || clip.id || "")
+    .trim();
+
+  if (!kickUsername || !clipId || /^https?:\/\//i.test(clipId)) {
+    return "";
+  }
+
+  return `https://kick.com/${encodeURIComponent(kickUsername)}?clip=${encodeURIComponent(clipId)}`;
+}
+
+function getSafeClipUrl(clip: AutoClip, socials: SocialLink[]) {
+  const possiblePageUrls = [
+    clip.pageUrl,
+    clip.page_url,
+    clip.clipUrl,
+    clip.clip_url,
+    clip.canonicalUrl,
+    clip.canonical_url,
+    clip.url,
+  ]
+    .map((url) => String(url || "").trim())
+    .filter(Boolean);
+
+  const safePageUrl = possiblePageUrls.find(isSafePublicClipPageUrl);
+
+  if (safePageUrl) {
+    return safePageUrl;
+  }
+
+  if (String(clip.platform || "").toLowerCase() === "kick") {
+    const kickClipPageUrl = buildKickClipPageUrl(clip, socials);
+
+    if (kickClipPageUrl) {
+      return kickClipPageUrl;
+    }
   }
 
   const platformUrl = getSocialUrl(socials, clip.platform as SocialPlatform);
