@@ -42,6 +42,7 @@ import type {
 
 type CreatorProfilePageProps = {
   username: string;
+  startInEditMode?: boolean;
 };
 
 type CreatorCardRow = {
@@ -532,7 +533,10 @@ async function addXpAndNotifyLevelUp({
   return result;
 }
 
-export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
+export function CreatorProfilePage({
+  username,
+  startInEditMode = false,
+}: CreatorProfilePageProps) {
   const { t } = useLanguage();
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
