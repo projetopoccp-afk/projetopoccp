@@ -434,23 +434,6 @@ export const translations = {
     creatorRequestModalCopied: "Copiado",
     creatorRequestModalCopy: "Copiar",
     creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
-    creatorRequestModalGenerateVariation: "Generar variación",
-    creatorRequestModalGenerateImage: "Generar imagen",
-    creatorRequestModalImageToolBadge: "Imagen",
-    creatorRequestModalImageToolTitle: "Elige dónde generar",
-    creatorRequestModalImageToolDescription:
-      "Este botón no genera la imagen automáticamente. Primero adjunta una foto en la herramienta elegida y luego pega el prompt generado por Cardpoc.",
-    creatorRequestModalImageToolReminder:
-      "Importante: el prompt solo funciona correctamente si una imagen de la persona se adjunta en la conversación.",
-    creatorRequestModalImageToolChatGPTDescription:
-      "Adjunta la foto en el chat y pega el prompt generado.",
-    creatorRequestModalImageToolGeminiDescription:
-      "Abre un nuevo chat, adjunta la foto y pega el prompt.",
-    creatorRequestModalImageToolCopilotDescription:
-      "Usa el chat con la imagen adjunta y pega el prompt.",
-    creatorRequestModalImageToolLeonardoDescription:
-      "Úsalo como referencia para generar una versión estilizada.",
-    creatorRequestModalCopyBeforeOpening: "Copiar prompt antes de abrir",
     creatorRequestModalGenerateVariation: "Gerar variação",
     creatorRequestModalGenerateImage: "Gerar imagem",
     creatorRequestModalImageToolBadge: "Imagem",
@@ -1389,7 +1372,15 @@ export const translations = {
     type: "Type",
     quantity: "Quantity",
     recipient: "Recipient",
-  },
+  
+    packsModalInventoryHint: "Choose a pack to start the reveal.",
+    packsModalCollectionNote:
+      "Packs can be earned through missions, events and Cardpoc rewards.",
+    packsModalMorePacksSoon: "More packs soon.",
+    packsModalMythicPackDescription:
+      "An ultra rare pack with a chance for mythic cards.",
+    packsModalMythicPackName: "Mythic Pack",
+},
 
   es: {
     notifications: "Notificaciones",
@@ -1452,13 +1443,6 @@ export const translations = {
     share: "Compartir",
     shareCard: "Compartir carta",
     copied: "¡Copiado!",
-    packsModalInventoryHint: "Choose a pack to start the reveal.",
-    packsModalCollectionNote:
-      "Packs can be earned through missions, events and Cardpoc rewards.",
-    packsModalMorePacksSoon: "More packs soon.",
-    packsModalMythicPackDescription:
-      "An ultra rare pack with a chance for mythic cards.",
-    packsModalMythicPackName: "Mythic Pack",
     shareCardText:
       "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
 
@@ -2072,7 +2056,25 @@ export const translations = {
     type: "Tipo",
     quantity: "Cantidad",
     recipient: "Destinatario",
-  },
+  
+    creatorRequestModalGenerateVariation: "Generar variación",
+    creatorRequestModalGenerateImage: "Generar imagen",
+    creatorRequestModalImageToolBadge: "Imagen",
+    creatorRequestModalImageToolTitle: "Elige dónde generar",
+    creatorRequestModalImageToolDescription:
+      "Este botón no genera la imagen automáticamente. Primero adjunta una foto en la herramienta elegida y luego pega el prompt generado por Cardpoc.",
+    creatorRequestModalImageToolReminder:
+      "Importante: el prompt solo funciona correctamente si una imagen de la persona se adjunta en la conversación.",
+    creatorRequestModalImageToolChatGPTDescription:
+      "Adjunta la foto en el chat y pega el prompt generado.",
+    creatorRequestModalImageToolGeminiDescription:
+      "Abre un nuevo chat, adjunta la foto y pega el prompt.",
+    creatorRequestModalImageToolCopilotDescription:
+      "Usa el chat con la imagen adjunta y pega el prompt.",
+    creatorRequestModalImageToolLeonardoDescription:
+      "Úsalo como referencia para generar una versión estilizada.",
+    creatorRequestModalCopyBeforeOpening: "Copiar prompt antes de abrir",
+},
 } as const;
 
 export type TranslationKey = keyof typeof translations.pt;
