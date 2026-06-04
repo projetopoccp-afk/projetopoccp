@@ -179,6 +179,7 @@ async function getTwitchClips(username: string): Promise<CreatorClip[]> {
 }
 
 function normalizeKickClip(rawClip: any): CreatorClip | null {
+  console.log("KICK CLIP RAW:", JSON.stringify(rawClip, null, 2));
   const id = rawClip?.id || rawClip?.uuid || rawClip?.slug || rawClip?.clip_id;
   const title = rawClip?.title || rawClip?.name || rawClip?.description || "Kick clip";
   const url =
