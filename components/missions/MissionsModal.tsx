@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Gift, Target, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Gift,
+  Package,
+  Share2,
+  Sparkles,
+  Target,
+  Trophy,
+  Users,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -48,7 +58,7 @@ function normalizeMissionText(value: string | null | undefined) {
 
 function getMissionTranslationKey(
   mission: Mission,
-  field: "title" | "description"
+  field: "title" | "description",
 ) {
   const title = normalizeMissionText(mission.title);
   const description = normalizeMissionText(mission.description);
@@ -126,12 +136,114 @@ function getMissionDescription(t: any, mission: Mission) {
   return translate(t, key, mission.description || "");
 }
 
+function getMissionCategory(mission: Mission) {
+  const title = normalizeMissionText(mission.title);
+  const description = normalizeMissionText(mission.description);
+  const missionType = normalizeMissionText(mission.mission_type);
+
+  if (
+    missionType.includes("follow") ||
+    title.includes("follow") ||
+    title.includes("fa dedicado") ||
+    title.includes("rede de contatos") ||
+    description.includes("siga")
+  ) {
+    return {
+      label: "Criadores",
+      className: "border-cyan-300/20 bg-cyan-300/10 text-cyan-100",
+      Icon: Users,
+    };
+  }
+
+  if (
+    missionType.includes("share") ||
+    missionType.includes("social") ||
+    title.includes("social") ||
+    title.includes("influenciador") ||
+    description.includes("compartilhe")
+  ) {
+    return {
+      label: "Social",
+      className: "border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-100",
+      Icon: Share2,
+    };
+  }
+
+  if (
+    missionType.includes("pack") ||
+    title.includes("pack") ||
+    title.includes("abertura") ||
+    description.includes("pacote") ||
+    description.includes("pack")
+  ) {
+    return {
+      label: "Packs",
+      className: "border-violet-300/20 bg-violet-300/10 text-violet-100",
+      Icon: Package,
+    };
+  }
+
+  if (
+    missionType.includes("rarity") ||
+    missionType.includes("rare") ||
+    missionType.includes("epic") ||
+    missionType.includes("legendary") ||
+    missionType.includes("mythic") ||
+    title.includes("rara") ||
+    title.includes("epica") ||
+    title.includes("lenda") ||
+    title.includes("mito")
+  ) {
+    return {
+      label: "Raridades",
+      className: "border-yellow-300/20 bg-yellow-300/10 text-yellow-100",
+      Icon: Sparkles,
+    };
+  }
+
+  if (
+    missionType.includes("collect") ||
+    missionType.includes("card") ||
+    title.includes("colecionador") ||
+    title.includes("cartas") ||
+    description.includes("carta")
+  ) {
+    return {
+      label: "Coleção",
+      className: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
+      Icon: Trophy,
+    };
+  }
+
+  return {
+    label: "Iniciante",
+    className: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
+    Icon: Target,
+  };
+}
+
+function getMissionSortWeight(mission: Mission) {
+  const category = getMissionCategory(mission).label;
+
+  const weights: Record<string, number> = {
+    Iniciante: 0,
+    Criadores: 1,
+    Social: 2,
+    Coleção: 3,
+    Raridades: 4,
+    Packs: 5,
+  };
+
+  return weights[category] ?? 99;
+}
 
 export function MissionsModal({ open, onClose }: MissionsModalProps) {
   const { t } = useLanguage();
 
   const [loading, setLoading] = useState(false);
-  const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
+  const [claimingMissionId, setClaimingMissionId] = useState<string | null>(
+    null,
+  );
   const [missions, setMissions] = useState<MissionWithProgress[]>([]);
 
   useEffect(() => {
@@ -176,14 +288,14 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
     }
 
     const progressMap = new Map(
-      (userMissionData || []).map((item) => [item.mission_id, item])
+      (userMissionData || []).map((item) => [item.mission_id, item]),
     );
 
     setMissions(
       (missionData || []).map((mission) => ({
         ...mission,
         userMission: progressMap.get(mission.id) || null,
-      }))
+      })),
     );
 
     setLoading(false);
@@ -228,7 +340,8 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
               userMission: currentMission.userMission
                 ? {
                     ...currentMission.userMission,
-                    completed_at: currentMission.userMission.completed_at || now,
+                    completed_at:
+                      currentMission.userMission.completed_at || now,
                     claimed_at: now,
                   }
                 : {
@@ -239,8 +352,8 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                     claimed_at: now,
                   },
             }
-          : currentMission
-      )
+          : currentMission,
+      ),
     );
 
     const translatedMissionTitle = getMissionTitle(t, mission);
@@ -254,11 +367,15 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
     await createUserNotification({
       type: "mission_completed",
-      title: translate(t, "missionsModalNotificationTitle", "Missão concluída!"),
+      title: translate(
+        t,
+        "missionsModalNotificationTitle",
+        "Missão concluída!",
+      ),
       message: translate(
         t,
         "missionsModalNotificationMessage",
-        `Você concluiu "${mission.title}" e recebeu ${mission.reward_xp} XP.`
+        `Você concluiu "${mission.title}" e recebeu ${mission.reward_xp} XP.`,
       )
         .replace("{missionTitle}", translatedMissionTitle)
         .replace("{rewardXp}", String(mission.reward_xp)),
@@ -274,8 +391,18 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
   const completedCount = useMemo(() => {
     return missions.filter(
       (mission) =>
-        (mission.userMission?.progress || 0) >= mission.target_amount
+        (mission.userMission?.progress || 0) >= mission.target_amount,
     ).length;
+  }, [missions]);
+
+  const sortedMissions = useMemo(() => {
+    return [...missions].sort((a, b) => {
+      const categoryDiff = getMissionSortWeight(a) - getMissionSortWeight(b);
+
+      if (categoryDiff !== 0) return categoryDiff;
+
+      return a.target_amount - b.target_amount;
+    });
   }, [missions]);
 
   return (
@@ -295,41 +422,47 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+            className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[32px] border border-cyan-200/15 bg-[#03040b] text-white shadow-[0_0_90px_rgba(0,0,0,0.95)]"
           >
-            <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-emerald-500/20 blur-[90px]" />
-            <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-cyan-600/20 blur-[90px]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(168,85,247,0.28),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(6,182,212,0.24),transparent_36%),linear-gradient(135deg,rgba(88,28,135,0.30),rgba(2,6,23,0.10)_42%,rgba(8,145,178,0.18))]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[100px]" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-[100px]" />
 
             <button
               type="button"
               onClick={onClose}
               className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "missionsModalCloseAria", "Fechar missões")}
+              aria-label={translate(
+                t,
+                "missionsModalCloseAria",
+                "Fechar missões",
+              )}
             >
               <X size={18} />
             </button>
 
-            <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
-              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-emerald-100">
+            <div className="relative z-10 max-h-[92vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
+              <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-cyan-100 shadow-lg shadow-cyan-500/10">
                 <Target size={14} />
                 {translate(t, "missionsModalBadge", "Missões")}
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div className="mt-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <h2 className="text-3xl font-black md:text-5xl">
+                  <h2 className="text-4xl font-black tracking-tight md:text-6xl">
                     {translate(t, "missionsModalTitle", "Desafios do Nexus")}
                   </h2>
                   <p className="mt-3 max-w-2xl text-sm text-white/50">
                     {translate(
                       t,
                       "missionsModalDescription",
-                      "Complete objetivos, ganhe XP e desbloqueie recompensas para evoluir sua conta."
+                      "Complete objetivos, ganhe XP e desbloqueie recompensas para evoluir sua conta.",
                     )}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.05] px-6 py-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
                   <p className="text-xs uppercase tracking-[0.25em] text-white/40">
                     {translate(t, "missionsModalProgressLabel", "Progresso")}
                   </p>
@@ -342,76 +475,100 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
               <div className="mt-8 grid gap-4">
                 {loading && (
                   <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translate(t, "missionsModalLoading", "Carregando missões...")}
+                    {translate(
+                      t,
+                      "missionsModalLoading",
+                      "Carregando missões...",
+                    )}
                   </div>
                 )}
 
                 {!loading && missions.length === 0 && (
                   <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translate(t, "missionsModalEmpty", "Nenhuma missão ativa por enquanto.")}
+                    {translate(
+                      t,
+                      "missionsModalEmpty",
+                      "Nenhuma missão ativa por enquanto.",
+                    )}
                   </div>
                 )}
 
                 {!loading &&
-                  missions.map((mission) => {
+                  sortedMissions.map((mission) => {
                     const progress = mission.userMission?.progress || 0;
                     const percentage = Math.min(
                       100,
-                      Math.round((progress / mission.target_amount) * 100)
+                      Math.round((progress / mission.target_amount) * 100),
                     );
                     const completed = progress >= mission.target_amount;
                     const claimed = Boolean(mission.userMission?.claimed_at);
                     const claiming = claimingMissionId === mission.id;
+                    const category = getMissionCategory(mission);
+                    const CategoryIcon = category.Icon;
 
                     return (
                       <div
                         key={mission.id}
-                        className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
+                        className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-cyan-200/20 hover:bg-white/[0.065]"
                       >
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-cyan-400/10 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+                        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-start gap-4">
                             <div
                               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
                                 completed
-                                  ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
-                                  : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
+                                  ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                                  : category.className
                               }`}
                             >
                               {completed ? (
                                 <CheckCircle2 size={24} />
                               ) : (
-                                <Target size={24} />
+                                <CategoryIcon size={24} />
                               )}
                             </div>
 
                             <div>
-                              <h3 className="text-lg font-black">
-                                {getMissionTitle(t, mission)}
-                              </h3>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-lg font-black">
+                                  {getMissionTitle(t, mission)}
+                                </h3>
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${category.className}`}
+                                >
+                                  {category.label}
+                                </span>
+                              </div>
                               <p className="mt-1 text-sm text-white/50">
                                 {getMissionDescription(t, mission)}
                               </p>
 
                               <div className="mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/10">
                                 <div
-                                  className="h-full rounded-full bg-emerald-300"
+                                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-300 shadow-[0_0_18px_rgba(45,212,191,0.35)]"
                                   style={{ width: `${percentage}%` }}
                                 />
                               </div>
 
                               <p className="mt-2 text-xs text-white/40">
-                                {translate(t, "missionsModalProgressCount", "{progress}/{target} concluído")
+                                {translate(
+                                  t,
+                                  "missionsModalProgressCount",
+                                  "{progress}/{target} concluído",
+                                )
                                   .replace("{current}", String(progress))
                                   .replace("{progress}", String(progress))
-                                  .replace("{target}", String(mission.target_amount))}
+                                  .replace(
+                                    "{target}",
+                                    String(mission.target_amount),
+                                  )}
                               </p>
                             </div>
                           </div>
 
                           <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
                             <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm font-bold text-yellow-100">
-                              <Gift size={14} />
-                              +{mission.reward_xp} XP
+                              <Gift size={14} />+{mission.reward_xp} XP
                             </span>
 
                             <button
@@ -421,12 +578,28 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                               className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 disabled:hover:scale-100"
                             >
                               {claiming
-                                ? translate(t, "missionsModalClaiming", "Resgatando...")
+                                ? translate(
+                                    t,
+                                    "missionsModalClaiming",
+                                    "Resgatando...",
+                                  )
                                 : claimed
-                                  ? translate(t, "missionsModalClaimed", "Resgatado")
+                                  ? translate(
+                                      t,
+                                      "missionsModalClaimed",
+                                      "Resgatado",
+                                    )
                                   : completed
-                                    ? translate(t, "missionsModalClaim", "Resgatar")
-                                    : translate(t, "missionsModalInProgress", "Em progresso")}
+                                    ? translate(
+                                        t,
+                                        "missionsModalClaim",
+                                        "Resgatar",
+                                      )
+                                    : translate(
+                                        t,
+                                        "missionsModalInProgress",
+                                        "Em progresso",
+                                      )}
                             </button>
                           </div>
                         </div>
