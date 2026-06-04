@@ -179,15 +179,11 @@ async function getTwitchClips(username: string): Promise<CreatorClip[]> {
 }
 
 function normalizeKickClip(rawClip: any): CreatorClip | null {
-  console.log("KICK CLIP RAW:", JSON.stringify(rawClip, null, 2));
   const id = rawClip?.id || rawClip?.uuid || rawClip?.slug || rawClip?.clip_id;
-  const title = rawClip?.title || rawClip?.name || rawClip?.description || "Kick clip";
-  const url =
-    rawClip?.url ||
-    rawClip?.clip_url ||
-    rawClip?.share_url ||
-    rawClip?.link ||
-    (rawClip?.slug ? `https://kick.com/clip/${rawClip.slug}` : "");
+
+  const title =
+    rawClip?.title || rawClip?.name || rawClip?.description || "Kick clip";
+
   const thumbnailUrl =
     rawClip?.thumbnail_url ||
     rawClip?.thumbnail ||
@@ -196,14 +192,37 @@ function normalizeKickClip(rawClip: any): CreatorClip | null {
     rawClip?.image ||
     rawClip?.vod?.thumbnail ||
     "";
-  const createdAt =
-    rawClip?.created_at || rawClip?.createdAt || rawClip?.published_at || rawClip?.date;
-  const viewCount = Number(rawClip?.views || rawClip?.view_count || rawClip?.viewCount || 0);
 
-  if (!url) return null;
+  const createdAt =
+    rawClip?.created_at ||
+    rawClip?.createdAt ||
+    rawClip?.published_at ||
+    rawClip?.date;
+
+  const viewCount = Number(
+    rawClip?.views || rawClip?.view_count || rawClip?.viewCount || 0,
+  );
+
+  const rawUrl =
+    rawClip?.share_url ||
+    rawClip?.clip_url ||
+    rawClip?.link ||
+    rawClip?.url ||
+    "";
+
+  const isMediaUrl =
+    rawUrl.includes(".m3u8") ||
+    rawUrl.includes(".mp4") ||
+    rawUrl.includes(".webm") ||
+    rawUrl.includes(".jpg") ||
+    rawUrl.includes(".jpeg") ||
+    rawUrl.includes(".png") ||
+    rawUrl.includes(".webp");
+
+  const url = isMediaUrl ? "" : rawUrl;
 
   return {
-    id: `kick-${id || url}`,
+    id: `kick-${id || thumbnailUrl || title}`,
     platform: "kick",
     title,
     url,
