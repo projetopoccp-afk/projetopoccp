@@ -428,6 +428,40 @@ export const translations = {
     creatorRequestModalCopied: "Copiado",
     creatorRequestModalCopy: "Copiar",
     creatorRequestModalOpenChatGPT: "Abrir ChatGPT",
+    creatorRequestModalGenerateVariation: "Generar variación",
+    creatorRequestModalGenerateImage: "Generar imagen",
+    creatorRequestModalImageToolBadge: "Imagen",
+    creatorRequestModalImageToolTitle: "Elige dónde generar",
+    creatorRequestModalImageToolDescription:
+      "Este botón no genera la imagen automáticamente. Primero adjunta una foto en la herramienta elegida y luego pega el prompt generado por Cardpoc.",
+    creatorRequestModalImageToolReminder:
+      "Importante: el prompt solo funciona correctamente si una imagen de la persona se adjunta en la conversación.",
+    creatorRequestModalImageToolChatGPTDescription:
+      "Adjunta la foto en el chat y pega el prompt generado.",
+    creatorRequestModalImageToolGeminiDescription:
+      "Abre un nuevo chat, adjunta la foto y pega el prompt.",
+    creatorRequestModalImageToolCopilotDescription:
+      "Usa el chat con la imagen adjunta y pega el prompt.",
+    creatorRequestModalImageToolLeonardoDescription:
+      "Úsalo como referencia para generar una versión estilizada.",
+    creatorRequestModalCopyBeforeOpening: "Copiar prompt antes de abrir",
+    creatorRequestModalGenerateVariation: "Gerar variação",
+    creatorRequestModalGenerateImage: "Gerar imagem",
+    creatorRequestModalImageToolBadge: "Imagem",
+    creatorRequestModalImageToolTitle: "Escolha onde gerar",
+    creatorRequestModalImageToolDescription:
+      "Este botão não gera a imagem automaticamente. Primeiro anexe uma foto sua na ferramenta escolhida, depois cole o prompt gerado pelo Cardpoc.",
+    creatorRequestModalImageToolReminder:
+      "Importante: o prompt só funciona corretamente se uma imagem da pessoa for anexada junto na conversa.",
+    creatorRequestModalImageToolChatGPTDescription:
+      "Anexe a foto no chat e cole o prompt gerado.",
+    creatorRequestModalImageToolGeminiDescription:
+      "Abra um novo chat, anexe a foto e cole o prompt.",
+    creatorRequestModalImageToolCopilotDescription:
+      "Use o chat com imagem anexada e cole o prompt.",
+    creatorRequestModalImageToolLeonardoDescription:
+      "Use como referência para gerar uma versão estilizada.",
+    creatorRequestModalCopyBeforeOpening: "Copiar prompt antes de abrir",
     creatorRequestModalSubmitting: "Enviando...",
     creatorRequestModalSubmit: "Enviar solicitação",
     loadingScreenTitle: "Carregando sua coleção",
@@ -452,24 +486,20 @@ export const translations = {
     packsModalBadge: "Packs",
     packsModalTitle: "Abrir Packs",
     packsModalDescription:
-      "Abra packs e descubra novos criadores para sua coleção.",
+      "Abra seus packs para revelar novas cartas de criadores.",
     packsModalInventoryTitle: "Inventário de Packs",
-    packsModalInventoryHint: "Escolha um pack para iniciar a revelação.",
     packsModalPackCountSingular: "{count} pack disponível",
     packsModalPackCountPlural: "{count} packs disponíveis",
     packsModalLoading: "Carregando packs...",
     packsModalSearching: "Buscando seus packs...",
     packsModalEmpty: "Você ainda não possui packs disponíveis.",
-    packsModalMorePacksSoon: "Mais packs em breve.",
-    packsModalCollectionNote:
-      "Packs podem ser conquistados em missões, eventos e recompensas do Cardpoc.",
-    packsModalDefaultPackName: "Pack Cardpoc",
+    packsModalDefaultPackName: "Pack Nexus",
     packsModalDefaultPackDescription:
       "Um pack especial com cartas de criadores.",
     packsModalOriginLabel: "Origem",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
-    packsModalDefaultNexusPack: "Pack Cardpoc",
+    packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Escolha um pack",
     packsModalIdleDescription:
       "Selecione um pack do seu inventário para iniciar a abertura.",
@@ -482,11 +512,10 @@ export const translations = {
     packsModalOpenErrorTitle: "Não foi possível abrir o pack",
     packsModalOpenErrorDescription: "Tente novamente em alguns instantes.",
     packsModalAnimationLabel: "Revelação em andamento",
-    packsModalAnimationDescription:
-      "Glow do pack → rasgo → flash → revelação da carta",
+    packsModalAnimationDescription: "Rasgando o pack e revelando sua carta...",
     packsModalOpenAnother: "Abrir outro pack",
     packsModalRevealing: "Revelando...",
-    packsModalTearingPack: "Abriendo {packName}",
+    packsModalTearingPack: "Rasgando pack...",
     packsModalNewCard: "Nova carta",
     packsModalOpenPackAria: "Abrir pack",
     packsModalRandomBadge: "Aleatório",
@@ -522,9 +551,6 @@ export const translations = {
     homePageGuideFollowTitle: "Acompanhe",
     homePageGuideFollowDescription:
       "Veja lives, clips, estatísticas, redes sociais e evolução dos criadores em um só perfil.",
-    packsModalMythicPackName: "Pacote Mítico",
-    packsModalMythicPackDescription:
-      "Um pacote ultra raro com chance de cartas míticas.",
     packsModalLegendaryPackName: "Pacote Lendário",
     packsModalEpicPackName: "Pacote Épico",
     packsModalRarePackName: "Pacote Raro",
@@ -1105,6 +1131,23 @@ export const translations = {
     creatorRequestModalCopied: "Copied",
     creatorRequestModalCopy: "Copy",
     creatorRequestModalOpenChatGPT: "Open ChatGPT",
+    creatorRequestModalGenerateVariation: "Generate variation",
+    creatorRequestModalGenerateImage: "Generate image",
+    creatorRequestModalImageToolBadge: "Image",
+    creatorRequestModalImageToolTitle: "Choose where to generate",
+    creatorRequestModalImageToolDescription:
+      "This button does not generate the image automatically. First attach your photo in the selected tool, then paste the prompt generated by Cardpoc.",
+    creatorRequestModalImageToolReminder:
+      "Important: the prompt only works correctly if a photo of the person is attached in the conversation.",
+    creatorRequestModalImageToolChatGPTDescription:
+      "Attach the photo in the chat and paste the generated prompt.",
+    creatorRequestModalImageToolGeminiDescription:
+      "Open a new chat, attach the photo and paste the prompt.",
+    creatorRequestModalImageToolCopilotDescription:
+      "Use the chat with the image attached and paste the prompt.",
+    creatorRequestModalImageToolLeonardoDescription:
+      "Use it as a reference to generate a stylized version.",
+    creatorRequestModalCopyBeforeOpening: "Copy prompt before opening",
     creatorRequestModalSubmitting: "Submitting...",
     creatorRequestModalSubmit: "Submit request",
     loadingScreenTitle: "Loading your collection",
@@ -1129,24 +1172,19 @@ export const translations = {
     packsModalCloseAria: "Close packs",
     packsModalBadge: "Packs",
     packsModalTitle: "Open Packs",
-    packsModalDescription:
-      "Open packs and discover new creators for your collection.",
+    packsModalDescription: "Open your packs to reveal new creator cards.",
     packsModalInventoryTitle: "Pack Inventory",
-    packsModalInventoryHint: "Choose a pack to start the reveal.",
     packsModalPackCountSingular: "{count} pack available",
     packsModalPackCountPlural: "{count} packs available",
     packsModalLoading: "Loading packs...",
     packsModalSearching: "Searching your packs...",
     packsModalEmpty: "You do not have any packs available yet.",
-    packsModalMorePacksSoon: "More packs soon.",
-    packsModalCollectionNote:
-      "Packs can be earned through missions, events and Cardpoc rewards.",
-    packsModalDefaultPackName: "Cardpoc Pack",
+    packsModalDefaultPackName: "Nexus Pack",
     packsModalDefaultPackDescription: "A special pack with creator cards.",
     packsModalOriginLabel: "Origin",
     packsModalSystemSource: "System",
     packsModalOpenPackButton: "Open pack",
-    packsModalDefaultNexusPack: "Cardpoc Pack",
+    packsModalDefaultNexusPack: "Nexus Pack",
     packsModalIdleTitle: "Choose a pack",
     packsModalIdleDescription:
       "Select a pack from your inventory to start opening it.",
@@ -1160,10 +1198,10 @@ export const translations = {
     packsModalOpenErrorDescription: "Please try again in a few moments.",
     packsModalAnimationLabel: "Reveal in progress",
     packsModalAnimationDescription:
-      "Pack glow → tear → flash → card reveal",
+      "Tearing the pack and revealing your card...",
     packsModalOpenAnother: "Open another pack",
     packsModalRevealing: "Revealing...",
-    packsModalTearingPack: "Opening {packName}",
+    packsModalTearingPack: "Tearing pack...",
     packsModalNewCard: "New card",
     packsModalOpenPackAria: "Open pack",
     packsModalRandomBadge: "Random",
@@ -1199,9 +1237,6 @@ export const translations = {
     homePageGuideFollowTitle: "Follow",
     homePageGuideFollowDescription:
       "See lives, clips, stats, social links and creator growth in one profile.",
-    packsModalMythicPackName: "Mythic Pack",
-    packsModalMythicPackDescription:
-      "An ultra rare pack with a chance for mythic cards.",
     packsModalLegendaryPackName: "Legendary Pack",
     packsModalEpicPackName: "Epic Pack",
     packsModalRarePackName: "Rare Pack",
@@ -1801,24 +1836,20 @@ export const translations = {
     packsModalBadge: "Packs",
     packsModalTitle: "Abrir Packs",
     packsModalDescription:
-      "Abre packs y descubre nuevos creadores para tu colección.",
+      "Abre tus packs para revelar nuevas cartas de creadores.",
     packsModalInventoryTitle: "Inventario de Packs",
-    packsModalInventoryHint: "Elige un pack para iniciar la revelación.",
     packsModalPackCountSingular: "{count} pack disponible",
     packsModalPackCountPlural: "{count} packs disponibles",
     packsModalLoading: "Cargando packs...",
     packsModalSearching: "Buscando tus packs...",
     packsModalEmpty: "Todavía no tienes packs disponibles.",
-    packsModalMorePacksSoon: "Más packs pronto.",
-    packsModalCollectionNote:
-      "Los packs pueden conseguirse en misiones, eventos y recompensas de Cardpoc.",
-    packsModalDefaultPackName: "Pack Cardpoc",
+    packsModalDefaultPackName: "Pack Nexus",
     packsModalDefaultPackDescription:
       "Un pack especial con cartas de creadores.",
     packsModalOriginLabel: "Origen",
     packsModalSystemSource: "Sistema",
     packsModalOpenPackButton: "Abrir pack",
-    packsModalDefaultNexusPack: "Pack Cardpoc",
+    packsModalDefaultNexusPack: "Pack Nexus",
     packsModalIdleTitle: "Elige un pack",
     packsModalIdleDescription:
       "Selecciona un pack de tu inventario para iniciar la apertura.",
@@ -1831,11 +1862,10 @@ export const translations = {
     packsModalOpenErrorTitle: "No se pudo abrir el pack",
     packsModalOpenErrorDescription: "Inténtalo de nuevo en unos instantes.",
     packsModalAnimationLabel: "Revelación en progreso",
-    packsModalAnimationDescription:
-      "Glow del pack → rasgado → flash → revelación de la carta",
+    packsModalAnimationDescription: "Rasgando el pack y revelando tu carta...",
     packsModalOpenAnother: "Abrir otro pack",
     packsModalRevealing: "Revelando...",
-    packsModalTearingPack: "Abriendo {packName}",
+    packsModalTearingPack: "Rasgando pack...",
     packsModalNewCard: "Nueva carta",
     packsModalOpenPackAria: "Abrir pack",
     packsModalRandomBadge: "Aleatorio",
@@ -1871,9 +1901,6 @@ export const translations = {
     homePageGuideFollowTitle: "Acompaña",
     homePageGuideFollowDescription:
       "Ve lives, clips, estadísticas, redes sociales y evolución de los creadores en un solo perfil.",
-    packsModalMythicPackName: "Pack Mítico",
-    packsModalMythicPackDescription:
-      "Un pack ultra raro con probabilidad de cartas míticas.",
     packsModalLegendaryPackName: "Pack Legendario",
     packsModalEpicPackName: "Pack Épico",
     packsModalRarePackName: "Pack Raro",
