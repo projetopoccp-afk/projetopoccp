@@ -203,21 +203,24 @@ function normalizeKickClip(rawClip: any): CreatorClip | null {
     rawClip?.views || rawClip?.view_count || rawClip?.viewCount || 0,
   );
 
-  const rawUrl =
+  const rawUrl = String(
     rawClip?.share_url ||
-    rawClip?.clip_url ||
-    rawClip?.link ||
-    rawClip?.url ||
-    "";
+      rawClip?.clip_url ||
+      rawClip?.link ||
+      rawClip?.url ||
+      "",
+  ).trim();
+
+  const normalizedRawUrl = rawUrl.toLowerCase();
 
   const isMediaUrl =
-    rawUrl.includes(".m3u8") ||
-    rawUrl.includes(".mp4") ||
-    rawUrl.includes(".webm") ||
-    rawUrl.includes(".jpg") ||
-    rawUrl.includes(".jpeg") ||
-    rawUrl.includes(".png") ||
-    rawUrl.includes(".webp");
+    normalizedRawUrl.includes(".m3u8") ||
+    normalizedRawUrl.includes(".mp4") ||
+    normalizedRawUrl.includes(".webm") ||
+    normalizedRawUrl.includes(".jpg") ||
+    normalizedRawUrl.includes(".jpeg") ||
+    normalizedRawUrl.includes(".png") ||
+    normalizedRawUrl.includes(".webp");
 
   const url = isMediaUrl ? "" : rawUrl;
 
@@ -387,7 +390,7 @@ export async function GET(request: NextRequest) {
 
   const clips = results
     .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
-    .filter((clip) => clip.url)
+    .filter((clip) => clip.url || clip.thumbnailUrl)
     .sort(
       (a, b) =>
         new Date(b.createdAt || 0).getTime() -
