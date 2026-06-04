@@ -221,28 +221,41 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
+  if (!user?.id) return;
 
-    const channel = supabase
-      .channel(`user-notifications-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "user_notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          loadNotifications(user.id);
-        },
-      )
-      .subscribe();
+  const channelName = `user-notifications-${user.id}`;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
+  // Remove canais antigos com o mesmo nome para evitar duplicação
+  supabase
+    .getChannels()
+    .filter(
+      (existingChannel) =>
+        existingChannel.topic === `realtime:${channelName}`,
+    )
+    .forEach((existingChannel) => {
+      supabase.removeChannel(existingChannel);
+    });
+
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "user_notifications",
+        filter: `user_id=eq.${user.id}`,
+      },
+      () => {
+        loadNotifications(user.id);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
