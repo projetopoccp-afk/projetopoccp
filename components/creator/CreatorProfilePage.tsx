@@ -11,6 +11,7 @@ import {
   Globe2,
   Loader2,
   PlayCircle,
+  Plus,
   Radio,
   Share2,
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  Trash2,
   WifiOff,
 } from "lucide-react";
 
@@ -88,7 +90,7 @@ type CreatorProfileEditDraft = {
   bio: string;
   description: string;
   tagsText: string;
-  socialLinksText: string;
+  socialLinks: SocialLink[];
 };
 
 type AutoClip = {
@@ -436,10 +438,53 @@ function createProfileEditDraft(
     bio: profile.bio || "",
     description: profile.description || "",
     tagsText: normalizeCreatorTags(profile.tags).join(", "),
-    socialLinksText: socialLinks
-      .map((social) => `${social.platform}: ${social.url}`)
-      .join("\n"),
+    socialLinks:
+      socialLinks.length > 0
+        ? socialLinks.map((social) => ({
+            platform: social.platform || "link",
+            url: social.url || "",
+          }))
+        : [
+            {
+              platform: "twitch",
+              url: "",
+            },
+          ],
   };
+}
+
+function createEmptySocialLink(): SocialLink {
+  return {
+    platform: "link",
+    url: "",
+  };
+}
+
+function normalizeEditSocialLinks(socialLinks: SocialLink[]): SocialLink[] {
+  return socialLinks
+    .map((social) => ({
+      platform: (social.platform || "link").trim().toLowerCase(),
+      url: (social.url || "").trim(),
+    }))
+    .filter((social) => Boolean(social.url));
+}
+
+function isLikelyImageUrl(url: string) {
+  const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
+
+  return /\.(apng|avif|gif|jpg|jpeg|png|svg|webp)$/.test(normalizedUrl);
+}
+
+function getSafeClipUrl(clip: AutoClip, socials: SocialLink[]) {
+  const rawUrl = (clip.url || "").trim();
+
+  if (rawUrl && !isLikelyImageUrl(rawUrl)) {
+    return rawUrl;
+  }
+
+  const platformUrl = getSocialUrl(socials, clip.platform as SocialPlatform);
+
+  return platformUrl || rawUrl || "#";
 }
 
 function parseEditTags(tagsText: string) {
@@ -447,32 +492,6 @@ function parseEditTags(tagsText: string) {
     .split(/[,\n]/)
     .map((tag) => tag.trim().replace(/^#/, ""))
     .filter(Boolean);
-}
-
-function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
-  return socialLinksText
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const separatorIndex = line.indexOf(":");
-
-      if (separatorIndex === -1) {
-        return {
-          platform: "link",
-          url: line,
-        };
-      }
-
-      const platform = line.slice(0, separatorIndex).trim();
-      const url = line.slice(separatorIndex + 1).trim();
-
-      return {
-        platform: platform || "link",
-        url,
-      };
-    })
-    .filter((social) => Boolean(social.url));
 }
 
 function normalizeCreatorSocials(socialLinks: SocialLink[]) {
@@ -1192,7 +1211,7 @@ export function CreatorProfilePage({
   }
 
   function handleEditDraftChange(
-    field: keyof CreatorProfileEditDraft,
+    field: keyof Omit<CreatorProfileEditDraft, "socialLinks">,
     value: string,
   ) {
     setEditDraft((current) =>
@@ -1203,6 +1222,60 @@ export function CreatorProfilePage({
           }
         : current,
     );
+    setProfileSaveError(null);
+  }
+
+  function handleEditSocialLinkChange(
+    index: number,
+    field: keyof SocialLink,
+    value: string,
+  ) {
+    setEditDraft((current) => {
+      if (!current) return current;
+
+      const nextSocialLinks = current.socialLinks.map((social, socialIndex) =>
+        socialIndex === index
+          ? {
+              ...social,
+              [field]: value,
+            }
+          : social,
+      );
+
+      return {
+        ...current,
+        socialLinks: nextSocialLinks,
+      };
+    });
+    setProfileSaveError(null);
+  }
+
+  function handleAddEditSocialLink() {
+    setEditDraft((current) =>
+      current
+        ? {
+            ...current,
+            socialLinks: [...current.socialLinks, createEmptySocialLink()],
+          }
+        : current,
+    );
+    setProfileSaveError(null);
+  }
+
+  function handleRemoveEditSocialLink(index: number) {
+    setEditDraft((current) => {
+      if (!current) return current;
+
+      const nextSocialLinks = current.socialLinks.filter(
+        (_, socialIndex) => socialIndex !== index,
+      );
+
+      return {
+        ...current,
+        socialLinks:
+          nextSocialLinks.length > 0 ? nextSocialLinks : [createEmptySocialLink()],
+      };
+    });
     setProfileSaveError(null);
   }
 
@@ -1222,7 +1295,7 @@ export function CreatorProfilePage({
     setProfileSaveError(null);
 
     const nextTags = parseEditTags(editDraft.tagsText);
-    const nextSocialLinks = parseEditSocialLinks(editDraft.socialLinksText);
+    const nextSocialLinks = normalizeEditSocialLinks(editDraft.socialLinks);
 
     const { error } = await supabase
       .from("creator_profiles")
@@ -2011,20 +2084,81 @@ export function CreatorProfilePage({
                   </label>
                 </div>
 
-                <label className="mt-4 block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
-                  </span>
-                  <textarea
-                    value={editDraft.socialLinksText}
-                    onChange={(event) =>
-                      handleEditDraftChange("socialLinksText", event.target.value)
-                    }
-                    rows={5}
-                    placeholder={"twitch: https://twitch.tv/seucanal\nyoutube: https://youtube.com/@seucanal"}
-                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm leading-7 text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
-                  />
-                </label>
+                <div className="mt-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={handleAddEditSocialLink}
+                      className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:bg-cyan-300/20"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Adicionar link
+                    </button>
+                  </div>
+
+                  <div className="mt-3 space-y-3">
+                    {editDraft.socialLinks.map((social, index) => (
+                      <div
+                        key={`${social.platform}-${index}`}
+                        className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-black/25 p-3 md:grid-cols-[180px_1fr_auto]"
+                      >
+                        <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                            Plataforma
+                          </span>
+                          <select
+                            value={social.platform}
+                            onChange={(event) =>
+                              handleEditSocialLinkChange(
+                                index,
+                                "platform",
+                                event.target.value,
+                              )
+                            }
+                            className="mt-2 w-full rounded-full border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white/80 outline-none transition focus:border-cyan-300/45"
+                          >
+                            <option value="twitch">Twitch</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="kick">Kick</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="x">X / Twitter</option>
+                            <option value="discord">Discord</option>
+                            <option value="link">Outro link</option>
+                          </select>
+                        </label>
+
+                        <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                            URL
+                          </span>
+                          <input
+                            value={social.url}
+                            onChange={(event) =>
+                              handleEditSocialLinkChange(index, "url", event.target.value)
+                            }
+                            placeholder="https://..."
+                            className="mt-2 w-full rounded-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditSocialLink(index)}
+                          className="inline-flex items-center justify-center gap-2 rounded-full border border-red-300/15 bg-red-300/10 px-4 py-3 text-sm font-black text-red-100 transition hover:bg-red-300/20 md:self-end"
+                          aria-label="Remover link social"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="md:hidden">Remover</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </article>
             ) : null}
 
@@ -2106,11 +2240,12 @@ export function CreatorProfilePage({
                               clip.thumbnailUrl || clip.thumbnail_url;
                             const viewCount =
                               clip.viewCount ?? clip.view_count ?? 0;
+                            const clipHref = getSafeClipUrl(clip, socialLinks);
 
                             return (
                               <a
                                 key={clip.id}
-                                href={clip.url}
+                                href={clipHref}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[340px]"
