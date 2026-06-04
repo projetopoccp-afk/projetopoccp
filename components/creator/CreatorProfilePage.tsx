@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
@@ -77,6 +76,19 @@ type CreatorProfileRow = {
 type SocialLink = {
   platform: string;
   url: string;
+};
+
+type CreatorProfileEditDraft = {
+  nickname: string;
+  title: string;
+  category: string;
+  faction: string;
+  avatarUrl: string;
+  bannerUrl: string;
+  bio: string;
+  description: string;
+  tagsText: string;
+  socialLinksText: string;
 };
 
 type AutoClip = {
@@ -409,6 +421,60 @@ function normalizeCreatorRank(rank: string | null | undefined): CreatorRank {
   return "Bronze";
 }
 
+
+function createProfileEditDraft(
+  profile: CreatorProfileRow,
+  socialLinks: SocialLink[],
+): CreatorProfileEditDraft {
+  return {
+    nickname: profile.nickname || "",
+    title: profile.title || "",
+    category: profile.category || "",
+    faction: profile.faction || "",
+    avatarUrl: profile.avatar_url || "",
+    bannerUrl: profile.banner_url || "",
+    bio: profile.bio || "",
+    description: profile.description || "",
+    tagsText: normalizeCreatorTags(profile.tags).join(", "),
+    socialLinksText: socialLinks
+      .map((social) => `${social.platform}: ${social.url}`)
+      .join("\n"),
+  };
+}
+
+function parseEditTags(tagsText: string) {
+  return tagsText
+    .split(/[,\n]/)
+    .map((tag) => tag.trim().replace(/^#/, ""))
+    .filter(Boolean);
+}
+
+function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
+  return socialLinksText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf(":");
+
+      if (separatorIndex === -1) {
+        return {
+          platform: "link",
+          url: line,
+        };
+      }
+
+      const platform = line.slice(0, separatorIndex).trim();
+      const url = line.slice(separatorIndex + 1).trim();
+
+      return {
+        platform: platform || "link",
+        url,
+      };
+    })
+    .filter((social) => Boolean(social.url));
+}
+
 function normalizeCreatorSocials(socialLinks: SocialLink[]) {
   const allowedPlatforms = new Set<SocialPlatform>([
     "twitch",
@@ -552,8 +618,12 @@ export function CreatorProfilePage({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [editDraft, setEditDraft] = useState<CreatorProfileEditDraft | null>(
+    null,
+  );
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
@@ -718,6 +788,15 @@ export function CreatorProfilePage({
       cancelled = true;
     };
   }, [decodedUsername]);
+
+  useEffect(() => {
+    if (!profile) {
+      setEditDraft(null);
+      return;
+    }
+
+    setEditDraft(createProfileEditDraft(profile, socialLinks));
+  }, [profile, socialLinks]);
 
 
   useEffect(() => {
@@ -1112,6 +1191,112 @@ export function CreatorProfilePage({
     });
   }
 
+  function handleEditDraftChange(
+    field: keyof CreatorProfileEditDraft,
+    value: string,
+  ) {
+    setEditDraft((current) =>
+      current
+        ? {
+            ...current,
+            [field]: value,
+          }
+        : current,
+    );
+    setProfileSaveError(null);
+  }
+
+  function handleCancelEditMode() {
+    if (profile) {
+      setEditDraft(createProfileEditDraft(profile, socialLinks));
+    }
+
+    setProfileSaveError(null);
+    setIsEditing(false);
+  }
+
+  async function handleSaveProfileEdit() {
+    if (!profile || !editDraft || !canManageProfile) return;
+
+    setIsSavingProfile(true);
+    setProfileSaveError(null);
+
+    const nextTags = parseEditTags(editDraft.tagsText);
+    const nextSocialLinks = parseEditSocialLinks(editDraft.socialLinksText);
+
+    const { error } = await supabase
+      .from("creator_profiles")
+      .update({
+        nickname: editDraft.nickname.trim() || profile.nickname,
+        title: editDraft.title.trim() || null,
+        category: editDraft.category.trim() || null,
+        faction: editDraft.faction.trim() || null,
+        avatar_url: editDraft.avatarUrl.trim() || null,
+        banner_url: editDraft.bannerUrl.trim() || null,
+        bio: editDraft.bio.trim() || null,
+        description: editDraft.description.trim() || null,
+        tags: nextTags,
+      })
+      .eq("id", profile.id);
+
+    if (error) {
+      setIsSavingProfile(false);
+      setProfileSaveError(error.message);
+      return;
+    }
+
+    const { error: deleteSocialLinksError } = await supabase
+      .from("creator_social_links")
+      .delete()
+      .eq("creator_id", profile.id);
+
+    if (deleteSocialLinksError) {
+      setIsSavingProfile(false);
+      setProfileSaveError(deleteSocialLinksError.message);
+      return;
+    }
+
+    if (nextSocialLinks.length > 0) {
+      const { error: insertSocialLinksError } = await supabase
+        .from("creator_social_links")
+        .insert(
+          nextSocialLinks.map((social) => ({
+            creator_id: profile.id,
+            platform: social.platform,
+            url: social.url,
+          })),
+        );
+
+      if (insertSocialLinksError) {
+        setIsSavingProfile(false);
+        setProfileSaveError(insertSocialLinksError.message);
+        return;
+      }
+    }
+
+    setProfile((current) =>
+      current
+        ? {
+            ...current,
+            nickname: editDraft.nickname.trim() || current.nickname,
+            title: editDraft.title.trim() || null,
+            category: editDraft.category.trim() || null,
+            faction: editDraft.faction.trim() || null,
+            avatar_url: editDraft.avatarUrl.trim() || null,
+            banner_url: editDraft.bannerUrl.trim() || null,
+            bio: editDraft.bio.trim() || null,
+            description: editDraft.description.trim() || null,
+            tags: nextTags,
+          }
+        : current,
+    );
+    setSocialLinks(nextSocialLinks);
+    setIsSavingProfile(false);
+    setIsEditing(false);
+
+    await refreshCreatorProfile();
+  }
+
   async function handleFollow() {
     if (!profile) return;
 
@@ -1389,18 +1574,7 @@ export function CreatorProfilePage({
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020617] px-6 py-10 text-white">
-        <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center">
-          <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm text-white/70 shadow-2xl shadow-cyan-500/10">
-            <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />
-            {translate(
-              t,
-              "creatorProfileLoading",
-              "Carregando perfil do criador...",
-            )}
-          </div>
-        </div>
-      </main>
+      <main className="min-h-screen bg-[#020617] text-white" />
     );
   }
 
@@ -1463,14 +1637,15 @@ export function CreatorProfilePage({
             )}
           </Link>
 
-          {canManageProfile ? (
-            <Link
-              href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
+          {canManageProfile && !isEditing ? (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
               className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
             >
               <Sparkles className="h-4 w-4" />
               {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
-            </Link>
+            </button>
           ) : null}
         </div>
 
@@ -1518,22 +1693,83 @@ export function CreatorProfilePage({
               </span>
             </div>
 
-            <h1 className="mt-6 max-w-4xl text-5xl font-black tracking-[-0.06em] text-white drop-shadow-[0_0_32px_rgba(34,211,238,0.16)] md:text-7xl">
-              {nickname}
-            </h1>
+            {isEditing && editDraft ? (
+              <div className="mt-6 grid gap-4">
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditNickname", "Nome de exibição")}
+                  </span>
+                  <input
+                    value={editDraft.nickname}
+                    onChange={(event) =>
+                      handleEditDraftChange("nickname", event.target.value)
+                    }
+                    className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-3xl font-black tracking-[-0.04em] text-white outline-none transition focus:border-cyan-300/55 md:text-5xl"
+                  />
+                </label>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <p className="text-lg font-semibold text-cyan-100/90 md:text-2xl">
-                {title}
-              </p>
-              <span className="text-sm font-bold text-white/38">
-                @{profile.username}
-              </span>
-            </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditTitle", "Título")}
+                    </span>
+                    <input
+                      value={editDraft.title}
+                      onChange={(event) =>
+                        handleEditDraftChange("title", event.target.value)
+                      }
+                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                    />
+                  </label>
 
-            <p className="mt-6 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
-              {bio}
-            </p>
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditCategory", "Categoria")}
+                    </span>
+                    <input
+                      value={editDraft.category}
+                      onChange={(event) =>
+                        handleEditDraftChange("category", event.target.value)
+                      }
+                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
+                    />
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditBio", "Bio curta")}
+                  </span>
+                  <textarea
+                    value={editDraft.bio}
+                    onChange={(event) =>
+                      handleEditDraftChange("bio", event.target.value)
+                    }
+                    rows={3}
+                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base leading-7 text-white/80 outline-none transition focus:border-cyan-300/45"
+                  />
+                </label>
+              </div>
+            ) : (
+              <>
+                <h1 className="mt-6 max-w-4xl text-5xl font-black tracking-[-0.06em] text-white drop-shadow-[0_0_32px_rgba(34,211,238,0.16)] md:text-7xl">
+                  {nickname}
+                </h1>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <p className="text-lg font-semibold text-cyan-100/90 md:text-2xl">
+                    {title}
+                  </p>
+                  <span className="text-sm font-bold text-white/38">
+                    @{profile.username}
+                  </span>
+                </div>
+
+                <p className="mt-6 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
+                  {bio}
+                </p>
+              </>
+            )}
 
             <div className="mt-7 flex flex-wrap gap-3">
               <button
@@ -1574,7 +1810,36 @@ export function CreatorProfilePage({
               </button>
             </div>
 
-            {visibleTags.length > 0 ? (
+            {isEditing && editDraft ? (
+              <div className="mt-7 grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditTags", "Tags")}
+                  </span>
+                  <input
+                    value={editDraft.tagsText}
+                    onChange={(event) =>
+                      handleEditDraftChange("tagsText", event.target.value)
+                    }
+                    placeholder="Streamer, MMORPG, Black Desert"
+                    className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-sm font-semibold text-cyan-100 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditFaction", "Comunidade/Fação")}
+                  </span>
+                  <input
+                    value={editDraft.faction}
+                    onChange={(event) =>
+                      handleEditDraftChange("faction", event.target.value)
+                    }
+                    className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
+                  />
+                </label>
+              </div>
+            ) : visibleTags.length > 0 ? (
               <div className="mt-7 flex flex-wrap gap-3">
                 {visibleTags.map((tag) => (
                   <span
@@ -1694,10 +1959,75 @@ export function CreatorProfilePage({
                 </h2>
               </div>
 
-              <p className="mt-5 whitespace-pre-line text-base leading-8 text-white/68">
-                {description}
-              </p>
+              {isEditing && editDraft ? (
+                <textarea
+                  value={editDraft.description}
+                  onChange={(event) =>
+                    handleEditDraftChange("description", event.target.value)
+                  }
+                  rows={7}
+                  className="mt-5 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base leading-8 text-white/75 outline-none transition focus:border-cyan-300/45"
+                />
+              ) : (
+                <p className="mt-5 whitespace-pre-line text-base leading-8 text-white/68">
+                  {description}
+                </p>
+              )}
             </article>
+
+            {isEditing && editDraft ? (
+              <article className="rounded-[2rem] border border-cyan-300/15 bg-cyan-300/[0.035] p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl md:p-8">
+                <div className="flex items-center gap-3">
+                  <Globe2 className="h-5 w-5 text-cyan-200" />
+                  <h2 className="text-2xl font-black tracking-tight">
+                    {translate(t, "creatorProfileEditMediaTitle", "Mídia e links")}
+                  </h2>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditAvatarUrl", "URL do avatar")}
+                    </span>
+                    <input
+                      value={editDraft.avatarUrl}
+                      onChange={(event) =>
+                        handleEditDraftChange("avatarUrl", event.target.value)
+                      }
+                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditBannerUrl", "URL do banner")}
+                    </span>
+                    <input
+                      value={editDraft.bannerUrl}
+                      onChange={(event) =>
+                        handleEditDraftChange("bannerUrl", event.target.value)
+                      }
+                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
+                    />
+                  </label>
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                    {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
+                  </span>
+                  <textarea
+                    value={editDraft.socialLinksText}
+                    onChange={(event) =>
+                      handleEditDraftChange("socialLinksText", event.target.value)
+                    }
+                    rows={5}
+                    placeholder={"twitch: https://twitch.tv/seucanal\nyoutube: https://youtube.com/@seucanal"}
+                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm leading-7 text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                  />
+                </label>
+              </article>
+            ) : null}
 
             <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-8">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2257,35 +2587,55 @@ export function CreatorProfilePage({
           </div>
         </div>
       ) : null}
-      {editPopupOpen && creatorForPopup ? (
-        <CreatorPopup
-          creator={creatorForPopup}
-          onClose={() => setEditPopupOpen(false)}
-          onCreatorUpdated={(updatedCreator) => {
-            setEditPopupOpen(false);
+      {isEditing && canManageProfile ? (
+        <div className="fixed inset-x-0 bottom-4 z-[80] px-4 sm:bottom-6">
+          <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-[1.7rem] border border-cyan-300/20 bg-[#020617]/90 p-4 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-black text-white">
+                {translate(
+                  t,
+                  "creatorProfileUnsavedChanges",
+                  "Alterações não salvas",
+                )}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/50">
+                {translate(
+                  t,
+                  "creatorProfileUnsavedChangesDescription",
+                  "Salve para publicar as mudanças no perfil ou cancele para voltar ao modo de visualização.",
+                )}
+              </p>
+              {profileSaveError ? (
+                <p className="mt-2 text-xs font-bold text-red-200">
+                  {profileSaveError}
+                </p>
+              ) : null}
+            </div>
 
-            setProfile((current) =>
-              current
-                ? {
-                    ...current,
-                    username: updatedCreator.username,
-                    nickname: updatedCreator.nickname,
-                    title: updatedCreator.title,
-                    faction: updatedCreator.faction,
-                    category: updatedCreator.category,
-                    status: updatedCreator.status,
-                    avatar_url: updatedCreator.avatarUrl,
-                    banner_url: updatedCreator.bannerUrl,
-                    bio: updatedCreator.bio,
-                    description: updatedCreator.description,
-                    tags: updatedCreator.tags,
-                  }
-                : current,
-            );
+            <div className="flex shrink-0 gap-3">
+              <button
+                type="button"
+                onClick={handleCancelEditMode}
+                disabled={isSavingProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white/70 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {translate(t, "creatorProfileCancelEdit", "Cancelar")}
+              </button>
 
-            refreshCreatorProfile();
-          }}
-        />
+              <button
+                type="button"
+                onClick={handleSaveProfileEdit}
+                disabled={isSavingProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-5 py-3 text-sm font-black text-cyan-50 shadow-lg shadow-cyan-500/10 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingProfile ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                {translate(t, "creatorProfileSaveEdit", "Salvar")}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );

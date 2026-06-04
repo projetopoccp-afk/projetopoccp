@@ -7,6 +7,8 @@ export const translations = {
     login: "Entrar",
     account: "Conta",
     openPanel: "Clique para abrir o painel",
+    creatorProfileEditMediaTitle: "Mídia e links",
+    creatorProfileEditSocialLinks: "Links sociais",
 
     common: "Comum",
     rare: "Raro",
@@ -726,6 +728,8 @@ export const translations = {
     login: "Login",
     account: "Account",
     openPanel: "Open panel",
+    creatorProfileEditMediaTitle: "Media and links",
+    creatorProfileEditSocialLinks: "Social links",
 
     common: "Common",
     rare: "Rare",
@@ -1440,6 +1444,8 @@ export const translations = {
     login: "Entrar",
     account: "Cuenta",
     openPanel: "Abrir panel",
+    creatorProfileEditMediaTitle: "Medios y enlaces",
+    creatorProfileEditSocialLinks: "Enlaces sociales",
 
     common: "Común",
     rare: "Raro",
