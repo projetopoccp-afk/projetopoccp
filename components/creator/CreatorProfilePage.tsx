@@ -149,8 +149,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   x: "X",
 };
 
-
-
 const SOCIAL_PLATFORM_OPTIONS = [
   { value: "twitch", label: "Twitch" },
   { value: "youtube", label: "YouTube" },
@@ -163,6 +161,11 @@ const SOCIAL_PLATFORM_OPTIONS = [
 ] as const;
 
 const LIVE_PLATFORMS = ["twitch", "kick"] as const;
+const TRUSTED_EXTERNAL_METRIC_PLATFORMS = new Set([
+  "youtube",
+  "twitch",
+  "kick",
+]);
 
 const RARITY_SHOWCASE_CYCLE = [
   { rarity: "common" },
@@ -274,10 +277,7 @@ function extractPlatformUsername(platform: string, url: string) {
         return pathParts[0]?.trim() || "";
       }
 
-      if (
-        host.includes("discord.com") ||
-        host.includes("discordapp.com")
-      ) {
+      if (host.includes("discord.com") || host.includes("discordapp.com")) {
         const inviteIndex = pathParts.findIndex(
           (part) => part.toLowerCase() === "invite",
         );
@@ -393,6 +393,19 @@ function getLiveStatusExternalCount(status: LiveStatus | undefined) {
   );
 }
 
+function getTrustedLiveStatusExternalCount(
+  platform: string,
+  status: LiveStatus | undefined,
+) {
+  const normalizedPlatform = platform.toLowerCase();
+
+  if (!TRUSTED_EXTERNAL_METRIC_PLATFORMS.has(normalizedPlatform)) {
+    return 0;
+  }
+
+  return getLiveStatusExternalCount(status);
+}
+
 function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   return Object.entries(liveStatus)
     .filter(([key]) => key.startsWith("youtube:"))
@@ -405,25 +418,15 @@ function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
 function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
-  const instagramStatus = getPlatformLiveStatus(liveStatus, "instagram");
-  const tiktokStatus = getPlatformLiveStatus(liveStatus, "tiktok");
-  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
   const youtubeSubscribers = getYoutubeExternalReachFromLiveStatus(liveStatus);
 
-  const twitchFollowers = getLiveStatusExternalCount(twitchStatus);
-  const kickFollowers = getLiveStatusExternalCount(kickStatus);
-  const instagramFollowers = getLiveStatusExternalCount(instagramStatus);
-  const tiktokFollowers = getLiveStatusExternalCount(tiktokStatus);
-  const discordMembers = getLiveStatusExternalCount(discordStatus);
-
-  return (
-    twitchFollowers +
-    kickFollowers +
-    youtubeSubscribers +
-    instagramFollowers +
-    tiktokFollowers +
-    discordMembers
+  const twitchFollowers = getTrustedLiveStatusExternalCount(
+    "twitch",
+    twitchStatus,
   );
+  const kickFollowers = getTrustedLiveStatusExternalCount("kick", kickStatus);
+
+  return twitchFollowers + kickFollowers + youtubeSubscribers;
 }
 
 function getSocialUrl(socialLinks: SocialLink[], platform: string) {
@@ -484,8 +487,6 @@ function normalizeCreatorRank(rank: string | null | undefined): CreatorRank {
 
   return "Bronze";
 }
-
-
 
 function isLikelyImageUrl(url: string) {
   const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
@@ -568,12 +569,12 @@ function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
     .filter((social) => Boolean(social.url));
 }
 
-
-
 function getEditSocialLinkRows(socialLinksText: string): SocialLink[] {
   const parsedLinks = parseEditSocialLinks(socialLinksText);
 
-  return parsedLinks.length > 0 ? parsedLinks : [{ platform: "twitch", url: "" }];
+  return parsedLinks.length > 0
+    ? parsedLinks
+    : [{ platform: "twitch", url: "" }];
 }
 
 function serializeEditSocialLinks(socialLinks: SocialLink[]) {
@@ -610,7 +611,6 @@ function normalizeCreatorSocials(socialLinks: SocialLink[]) {
         social.url.trim().length > 0,
     );
 }
-
 
 type NotificationType =
   | "card_unlocked"
@@ -917,7 +917,6 @@ export function CreatorProfilePage({
     setEditDraft(createProfileEditDraft(profile, socialLinks));
   }, [profile, socialLinks]);
 
-
   useEffect(() => {
     let cancelled = false;
 
@@ -959,13 +958,7 @@ export function CreatorProfilePage({
       .map((social) => social.url);
 
     const targets: Array<{
-      platform:
-        | "twitch"
-        | "kick"
-        | "youtube"
-        | "instagram"
-        | "tiktok"
-        | "discord";
+      platform: "twitch" | "kick" | "youtube";
       username: string;
       index?: number;
     }> = [
@@ -973,17 +966,14 @@ export function CreatorProfilePage({
         .map((social) => {
           const platform = social.platform.toLowerCase();
 
-          if (
-            platform !== "twitch" &&
-            platform !== "kick" &&
-            platform !== "instagram" &&
-            platform !== "tiktok" &&
-            platform !== "discord"
-          ) {
+          if (platform !== "twitch" && platform !== "kick") {
             return null;
           }
 
-          const platformUsername = extractPlatformUsername(platform, social.url);
+          const platformUsername = extractPlatformUsername(
+            platform,
+            social.url,
+          );
 
           return {
             platform,
@@ -994,7 +984,7 @@ export function CreatorProfilePage({
           (
             target,
           ): target is {
-            platform: "twitch" | "kick" | "instagram" | "tiktok" | "discord";
+            platform: "twitch" | "kick";
             username: string;
           } => Boolean(target && target.username.length > 0),
         ),
@@ -1704,7 +1694,7 @@ export function CreatorProfilePage({
     {
       key: "twitch",
       label: "Twitch",
-      value: twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0,
+      value: getTrustedLiveStatusExternalCount("twitch", twitchStatus),
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: twitchStatus?.url || getSocialUrl(socialLinks, "twitch"),
       isLive: Boolean(twitchStatus?.isLive),
@@ -1712,7 +1702,7 @@ export function CreatorProfilePage({
     {
       key: "kick",
       label: "Kick",
-      value: kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0,
+      value: getTrustedLiveStatusExternalCount("kick", kickStatus),
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: kickStatus?.url || getSocialUrl(socialLinks, "kick"),
       isLive: Boolean(kickStatus?.isLive),
@@ -1720,7 +1710,7 @@ export function CreatorProfilePage({
     {
       key: "instagram",
       label: "Instagram",
-      value: getLiveStatusExternalCount(instagramStatus),
+      value: 0,
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: instagramStatus?.url || getSocialUrl(socialLinks, "instagram"),
       isLive: false,
@@ -1728,7 +1718,7 @@ export function CreatorProfilePage({
     {
       key: "tiktok",
       label: "TikTok",
-      value: getLiveStatusExternalCount(tiktokStatus),
+      value: 0,
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: tiktokStatus?.url || getSocialUrl(socialLinks, "tiktok"),
       isLive: false,
@@ -1736,12 +1726,12 @@ export function CreatorProfilePage({
     {
       key: "discord",
       label: "Discord",
-      value: getLiveStatusExternalCount(discordStatus),
+      value: 0,
       suffix: "membros",
       url: discordStatus?.url || getSocialUrl(socialLinks, "discord"),
       isLive: false,
     },
-  ].filter((item) => item.url || item.value > 0);
+  ].filter((item) => item.value > 0 || item.isLive);
 
   const livePlatformItems = [
     {
@@ -1807,8 +1797,8 @@ export function CreatorProfilePage({
   const isProfileClaimable = !profile?.user_id;
 
   if (loading) {
-      return null;
-    }
+    return null;
+  }
 
   if (!profile) {
     return (
@@ -1918,14 +1908,17 @@ export function CreatorProfilePage({
                   {translate(t, "creatorProfileVerified", "Verificado")}
                 </span>
               ) : null}
-
             </div>
 
             {isEditing && editDraft ? (
               <div className="mt-6 grid gap-4">
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditNickname", "Nome de exibição")}
+                    {translate(
+                      t,
+                      "creatorProfileEditNickname",
+                      "Nome de exibição",
+                    )}
                   </span>
                   <input
                     value={editDraft.nickname}
@@ -2214,14 +2207,22 @@ export function CreatorProfilePage({
                 <div className="flex items-center gap-3">
                   <Globe2 className="h-5 w-5 text-cyan-200" />
                   <h2 className="text-2xl font-black tracking-tight">
-                    {translate(t, "creatorProfileEditMediaTitle", "Mídia e links")}
+                    {translate(
+                      t,
+                      "creatorProfileEditMediaTitle",
+                      "Mídia e links",
+                    )}
                   </h2>
                 </div>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditAvatarUrl", "URL do avatar")}
+                      {translate(
+                        t,
+                        "creatorProfileEditAvatarUrl",
+                        "URL do avatar",
+                      )}
                     </span>
                     <input
                       value={editDraft.avatarUrl}
@@ -2234,7 +2235,11 @@ export function CreatorProfilePage({
 
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditBannerUrl", "URL do banner")}
+                      {translate(
+                        t,
+                        "creatorProfileEditBannerUrl",
+                        "URL do banner",
+                      )}
                     </span>
                     <input
                       value={editDraft.bannerUrl}
@@ -2249,7 +2254,11 @@ export function CreatorProfilePage({
                 <div className="mt-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
+                      {translate(
+                        t,
+                        "creatorProfileEditSocialLinks",
+                        "Links sociais",
+                      )}
                     </span>
                     <button
                       type="button"
@@ -2257,7 +2266,11 @@ export function CreatorProfilePage({
                       className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/15"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      {translate(t, "creatorProfileEditAddSocialLink", "Adicionar link")}
+                      {translate(
+                        t,
+                        "creatorProfileEditAddSocialLink",
+                        "Adicionar link",
+                      )}
                     </button>
                   </div>
 
@@ -2645,7 +2658,10 @@ export function CreatorProfilePage({
                             normalizedPlatform,
                           );
                           const platformCount =
-                            getLiveStatusExternalCount(platformStatus);
+                            getTrustedLiveStatusExternalCount(
+                              normalizedPlatform,
+                              platformStatus,
+                            );
                           const platformSuffix =
                             normalizedPlatform === "discord"
                               ? "membros"
