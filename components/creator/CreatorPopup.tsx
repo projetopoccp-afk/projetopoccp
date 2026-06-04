@@ -19,7 +19,7 @@ import { updateMissionProgress } from "@/lib/missions/user-missions";
 import { Creator } from "@/types/creator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type CreatorPopupProps = {
   creator: Creator | null;
@@ -363,7 +363,6 @@ export function CreatorPopup({
 }: CreatorPopupProps) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
-  const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(
     null,
@@ -1411,16 +1410,14 @@ export function CreatorPopup({
                   {translate(t, "creatorPopupShare", "Compartilhar")}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    router.push(`/creator/${encodeURIComponent(creator.username)}`);
-                  }}
+                <Link
+                  href={`/creator/${encodeURIComponent(creator.username)}`}
+                  onClick={onClose}
+                  prefetch
                   className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
                 >
                   {translate(t, "creatorPopupFullPage", "Ir para a página completa")}
-                </button>
+                </Link>
 
                 {canClaim && (
                   <button
