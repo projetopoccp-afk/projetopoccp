@@ -1701,6 +1701,7 @@ export function CreatorProfilePage({
         rarity: normalizeCreatorRarity(showcaseRarity),
       }
     : null;
+  const isProfileClaimable = !profile?.user_id;
 
   if (loading) {
       return null;
@@ -1932,6 +1933,25 @@ export function CreatorProfilePage({
                       "Copiar link do perfil",
                     )}
               </button>
+
+              {!isEditing && isProfileClaimable ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/?creator=${encodeURIComponent(profile.username)}&claim=1`,
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-5 py-3 text-sm font-black text-yellow-100 transition hover:bg-yellow-300/20"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  {translate(
+                    t,
+                    "creatorPopupClaimProfileBadge",
+                    "Reivindicar Perfil",
+                  )}
+                </button>
+              ) : null}
             </div>
 
             {isEditing && editDraft ? (
