@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Eye,
   Globe2,
@@ -130,6 +132,15 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 const LIVE_PLATFORMS = ["twitch", "kick"] as const;
+
+const RARITY_SHOWCASE_CYCLE = [
+  { rarity: "common" },
+  { rarity: "rare" },
+  { rarity: "epic" },
+  { rarity: "legendary" },
+] as const;
+
+const RARITY_SHOWCASE_INTERVAL = 8500;
 
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -433,18 +444,32 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [liveStatus, setLiveStatus] = useState<LiveStatusMap>({});
   const [liveStatusLoading, setLiveStatusLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
+  const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
       .replace("@", "")
       .trim();
   }, [username]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setShowcaseRarityIndex(
+        (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length,
+      );
+    }, RARITY_SHOWCASE_INTERVAL);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -454,8 +479,24 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         data: { user },
       } = await supabase.auth.getUser();
 
+      if (!user) {
+        if (!cancelled) {
+          setCurrentUserId(null);
+          setCurrentUserIsAdmin(false);
+        }
+
+        return;
+      }
+
+      const { data: accountProfile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
       if (!cancelled) {
-        setCurrentUserId(user?.id || null);
+        setCurrentUserId(user.id);
+        setCurrentUserIsAdmin(Boolean(accountProfile?.is_admin));
       }
     }
 
@@ -832,6 +873,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const isOwner = Boolean(
     profile?.user_id && currentUserId === profile.user_id,
   );
+  const canManageProfile = Boolean(isOwner || currentUserIsAdmin);
   const profileUrl = `/creator/${encodeURIComponent(
     profile?.username || decodedUsername,
   )}`;
@@ -959,6 +1001,15 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       }
     : null;
 
+  const showcaseRarity =
+    RARITY_SHOWCASE_CYCLE[showcaseRarityIndex]?.rarity || rarity;
+  const creatorForCard: Creator | null = creatorForPopup
+    ? {
+        ...creatorForPopup,
+        rarity: normalizeCreatorRarity(showcaseRarity),
+      }
+    : null;
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020617] px-6 py-10 text-white">
@@ -1037,7 +1088,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             )}
           </Link>
 
-          {isOwner ? (
+          {canManageProfile ? (
             <button
               type="button"
               onClick={() => setEditPopupOpen(true)}
@@ -1053,10 +1104,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
           <div className="flex justify-center lg:justify-start">
             <div className="relative rounded-[2rem] border border-cyan-300/15 bg-white/[0.035] p-5 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
               <div className="absolute -inset-5 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.18),transparent_62%)] blur-2xl" />
-              {creatorForPopup ? (
+              {creatorForCard ? (
                 <div className="scale-[1.06] py-3 sm:scale-[1.12] lg:scale-[1.08]">
                   <CreatorCard
-                    creator={creatorForPopup}
+                    key={`${creatorForCard.id}-${creatorForCard.rarity}`}
+                    creator={creatorForCard}
                     onClick={() => undefined}
                   />
                 </div>
@@ -1285,55 +1337,98 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                         </span>
                       </div>
 
-                      <div className="flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:thin] [scrollbar-color:rgba(34,211,238,0.45)_rgba(255,255,255,0.08)]">
-                        {platformClips.map((clip) => {
-                          const thumbnail =
-                            clip.thumbnailUrl || clip.thumbnail_url;
-                          const viewCount =
-                            clip.viewCount ?? clip.view_count ?? 0;
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document
+                              .getElementById(
+                                `creator-profile-clips-${platform}`,
+                              )
+                              ?.scrollBy({ left: -380, behavior: "smooth" });
+                          }}
+                          className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          aria-label={translate(
+                            t,
+                            "creatorProfilePreviousClips",
+                            "Clipes anteriores",
+                          )}
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
 
-                          return (
-                            <a
-                              key={clip.id}
-                              href={clip.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[340px]"
-                            >
-                              <div className="aspect-video bg-white/[0.04]">
-                                {thumbnail ? (
-                                  <img
-                                    src={thumbnail}
-                                    alt={clip.title}
-                                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-white/30">
-                                    <PlayCircle className="h-10 w-10" />
-                                  </div>
-                                )}
-                              </div>
+                        <div
+                          id={`creator-profile-clips-${platform}`}
+                          className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        >
+                          {platformClips.map((clip) => {
+                            const thumbnail =
+                              clip.thumbnailUrl || clip.thumbnail_url;
+                            const viewCount =
+                              clip.viewCount ?? clip.view_count ?? 0;
 
-                              <div className="p-4">
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                                    {getPlatformLabel(clip.platform)}
-                                  </p>
-
-                                  {viewCount > 0 ? (
-                                    <span className="text-xs font-bold text-white/40">
-                                      {formatNumber(viewCount)}
-                                    </span>
-                                  ) : null}
+                            return (
+                              <a
+                                key={clip.id}
+                                href={clip.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[340px]"
+                              >
+                                <div className="aspect-video bg-white/[0.04]">
+                                  {thumbnail ? (
+                                    <img
+                                      src={thumbnail}
+                                      alt={clip.title}
+                                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-white/30">
+                                      <PlayCircle className="h-10 w-10" />
+                                    </div>
+                                  )}
                                 </div>
 
-                                <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
-                                  {clip.title}
-                                </h3>
-                              </div>
-                            </a>
-                          );
-                        })}
+                                <div className="p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                                      {getPlatformLabel(clip.platform)}
+                                    </p>
+
+                                    {viewCount > 0 ? (
+                                      <span className="text-xs font-bold text-white/40">
+                                        {formatNumber(viewCount)}
+                                      </span>
+                                    ) : null}
+                                  </div>
+
+                                  <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
+                                    {clip.title}
+                                  </h3>
+                                </div>
+                              </a>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document
+                              .getElementById(
+                                `creator-profile-clips-${platform}`,
+                              )
+                              ?.scrollBy({ left: 380, behavior: "smooth" });
+                          }}
+                          className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          aria-label={translate(
+                            t,
+                            "creatorProfileNextClips",
+                            "Próximos clipes",
+                          )}
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
                       </div>
                     </section>
                   ))}
@@ -1591,7 +1686,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             )}
           />
 
-          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
             <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
             <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
 
@@ -1600,7 +1695,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
               </p>
 
-              <h3 className="mt-3 text-2xl font-black">
+              <h3 className="mt-3 text-xl font-black sm:text-2xl">
                 {translate(
                   t,
                   "creatorProfileLivePlatformsTitle",
@@ -1675,7 +1770,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             )}
           />
 
-          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
             <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
             <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
 
@@ -1684,7 +1779,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 YouTube
               </p>
 
-              <h3 className="mt-3 text-2xl font-black">
+              <h3 className="mt-3 text-xl font-black sm:text-2xl">
                 {translate(
                   t,
                   "creatorPopupYoutubeChannelsTitle",
