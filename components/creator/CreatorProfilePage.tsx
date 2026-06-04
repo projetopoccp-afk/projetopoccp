@@ -1638,14 +1638,13 @@ export function CreatorProfilePage({
           </Link>
 
           {canManageProfile && !isEditing ? (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
+            <Link
+              href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
               className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
             >
               <Sparkles className="h-4 w-4" />
               {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
-            </button>
+            </Link>
           ) : null}
         </div>
 
