@@ -121,6 +121,8 @@ type LiveStatus = {
   viewCount?: number;
   videoCount?: number;
   externalCount?: number;
+  memberCount?: number;
+  onlineMemberCount?: number;
 };
 
 type LiveStatusMap = Partial<Record<string, LiveStatus>>;
@@ -265,6 +267,29 @@ function extractPlatformUsername(platform: string, url: string) {
       return pathParts[0]?.replace("@", "").trim() || "";
     }
 
+    if (normalizedPlatform === "discord") {
+      const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+
+      if (host === "discord.gg") {
+        return pathParts[0]?.trim() || "";
+      }
+
+      if (
+        host.includes("discord.com") ||
+        host.includes("discordapp.com")
+      ) {
+        const inviteIndex = pathParts.findIndex(
+          (part) => part.toLowerCase() === "invite",
+        );
+
+        if (inviteIndex >= 0) {
+          return pathParts[inviteIndex + 1]?.trim() || "";
+        }
+
+        return pathParts[0]?.trim() || "";
+      }
+    }
+
     const username = parsedUrl.pathname
       .split("/")
       .filter(Boolean)[0]
@@ -289,16 +314,29 @@ function extractPlatformUsername(platform: string, url: string) {
 
 function getPlatformFallbackUrl(platform: string, username: string) {
   const normalizedPlatform = platform.toLowerCase();
+  const cleanUsername = username.replace("@", "").trim();
 
   if (normalizedPlatform === "kick") {
-    return `https://kick.com/${username}`;
+    return `https://kick.com/${cleanUsername}`;
   }
 
   if (normalizedPlatform === "youtube") {
-    return `https://www.youtube.com/${username.replace("@", "")}`;
+    return `https://www.youtube.com/${cleanUsername}`;
   }
 
-  return `https://twitch.tv/${username}`;
+  if (normalizedPlatform === "instagram") {
+    return `https://www.instagram.com/${cleanUsername}`;
+  }
+
+  if (normalizedPlatform === "tiktok") {
+    return `https://www.tiktok.com/@${cleanUsername}`;
+  }
+
+  if (normalizedPlatform === "discord") {
+    return `https://discord.gg/${cleanUsername}`;
+  }
+
+  return `https://twitch.tv/${cleanUsername}`;
 }
 
 function getPlatformLiveStatus(liveStatus: LiveStatusMap, platform: string) {
@@ -349,6 +387,7 @@ function getLiveStatusExternalCount(status: LiveStatus | undefined) {
   return (
     status?.subscriberCount ??
     status?.followerCount ??
+    status?.memberCount ??
     status?.externalCount ??
     0
   );
@@ -366,14 +405,25 @@ function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
 function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const instagramStatus = getPlatformLiveStatus(liveStatus, "instagram");
+  const tiktokStatus = getPlatformLiveStatus(liveStatus, "tiktok");
+  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
   const youtubeSubscribers = getYoutubeExternalReachFromLiveStatus(liveStatus);
 
-  const twitchFollowers =
-    twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
-  const kickFollowers =
-    kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
+  const twitchFollowers = getLiveStatusExternalCount(twitchStatus);
+  const kickFollowers = getLiveStatusExternalCount(kickStatus);
+  const instagramFollowers = getLiveStatusExternalCount(instagramStatus);
+  const tiktokFollowers = getLiveStatusExternalCount(tiktokStatus);
+  const discordMembers = getLiveStatusExternalCount(discordStatus);
 
-  return twitchFollowers + kickFollowers + youtubeSubscribers;
+  return (
+    twitchFollowers +
+    kickFollowers +
+    youtubeSubscribers +
+    instagramFollowers +
+    tiktokFollowers +
+    discordMembers
+  );
 }
 
 function getSocialUrl(socialLinks: SocialLink[], platform: string) {
@@ -909,19 +959,45 @@ export function CreatorProfilePage({
       .map((social) => social.url);
 
     const targets: Array<{
-      platform: "twitch" | "kick" | "youtube";
+      platform:
+        | "twitch"
+        | "kick"
+        | "youtube"
+        | "instagram"
+        | "tiktok"
+        | "discord";
       username: string;
       index?: number;
     }> = [
-      ...LIVE_PLATFORMS.map((platform) => {
-        const url = getSocialUrl(socialLinks, platform);
-        const platformUsername = extractPlatformUsername(platform, url);
+      ...socialLinks
+        .map((social) => {
+          const platform = social.platform.toLowerCase();
 
-        return {
-          platform,
-          username: platformUsername,
-        };
-      }).filter((target) => target.username.length > 0),
+          if (
+            platform !== "twitch" &&
+            platform !== "kick" &&
+            platform !== "instagram" &&
+            platform !== "tiktok" &&
+            platform !== "discord"
+          ) {
+            return null;
+          }
+
+          const platformUsername = extractPlatformUsername(platform, social.url);
+
+          return {
+            platform,
+            username: platformUsername,
+          };
+        })
+        .filter(
+          (
+            target,
+          ): target is {
+            platform: "twitch" | "kick" | "instagram" | "tiktok" | "discord";
+            username: string;
+          } => Boolean(target && target.username.length > 0),
+        ),
       ...getNormalizedYoutubeChannels(youtubeChannels).map((channel) => ({
         platform: "youtube" as const,
         username: channel.username,
@@ -1128,6 +1204,9 @@ export function CreatorProfilePage({
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const instagramStatus = getPlatformLiveStatus(liveStatus, "instagram");
+  const tiktokStatus = getPlatformLiveStatus(liveStatus, "tiktok");
+  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
   const visibleYoutubeChannels = getNormalizedYoutubeChannels(
     socialLinks
       .filter((social) => social.platform.toLowerCase() === "youtube")
@@ -1637,6 +1716,30 @@ export function CreatorProfilePage({
       suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
       url: kickStatus?.url || getSocialUrl(socialLinks, "kick"),
       isLive: Boolean(kickStatus?.isLive),
+    },
+    {
+      key: "instagram",
+      label: "Instagram",
+      value: getLiveStatusExternalCount(instagramStatus),
+      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
+      url: instagramStatus?.url || getSocialUrl(socialLinks, "instagram"),
+      isLive: false,
+    },
+    {
+      key: "tiktok",
+      label: "TikTok",
+      value: getLiveStatusExternalCount(tiktokStatus),
+      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
+      url: tiktokStatus?.url || getSocialUrl(socialLinks, "tiktok"),
+      isLive: false,
+    },
+    {
+      key: "discord",
+      label: "Discord",
+      value: getLiveStatusExternalCount(discordStatus),
+      suffix: "membros",
+      url: discordStatus?.url || getSocialUrl(socialLinks, "discord"),
+      isLive: false,
     },
   ].filter((item) => item.url || item.value > 0);
 
@@ -2508,7 +2611,18 @@ export function CreatorProfilePage({
                               ? `YouTube (${visibleYoutubeChannels.length})`
                               : "YouTube"}
                           </span>
-                          <ExternalLink className="h-4 w-4" />
+
+                          <span className="ml-auto mr-3 text-xs font-black text-cyan-100/70">
+                            {youtubeExternalReach > 0
+                              ? `${formatNumber(youtubeExternalReach)} ${translate(
+                                  t,
+                                  "creatorProfileSubscribers",
+                                  "inscritos",
+                                )}`
+                              : null}
+                          </span>
+
+                          <ExternalLink className="h-4 w-4 shrink-0" />
                         </button>
                       );
                     }
@@ -2522,7 +2636,33 @@ export function CreatorProfilePage({
                         className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
                       >
                         <span>{getPlatformLabel(social.platform)}</span>
-                        <ExternalLink className="h-4 w-4" />
+
+                        {(() => {
+                          const normalizedPlatform =
+                            social.platform.toLowerCase();
+                          const platformStatus = getPlatformLiveStatus(
+                            liveStatus,
+                            normalizedPlatform,
+                          );
+                          const platformCount =
+                            getLiveStatusExternalCount(platformStatus);
+                          const platformSuffix =
+                            normalizedPlatform === "discord"
+                              ? "membros"
+                              : translate(
+                                  t,
+                                  "creatorProfileFollowersShort",
+                                  "seguidores",
+                                );
+
+                          return platformCount > 0 ? (
+                            <span className="ml-auto mr-3 text-xs font-black text-cyan-100/70">
+                              {formatNumber(platformCount)} {platformSuffix}
+                            </span>
+                          ) : null;
+                        })()}
+
+                        <ExternalLink className="h-4 w-4 shrink-0" />
                       </a>
                     );
                   })}
