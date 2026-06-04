@@ -90,7 +90,7 @@ export default function AdminPage() {
         status: "offline",
         avatar_url: request.card_image_url,
         banner_url: request.card_image_url,
-        bio: "Novo creator aprovado na plataforma.",
+        bio: "Novo criador aprovado na plataforma.",
         description:
           "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
         tags: [],

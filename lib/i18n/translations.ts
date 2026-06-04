@@ -7,7 +7,7 @@ export const translations = {
     login: "Entrar",
     account: "Conta",
     openPanel: "Clique para abrir o painel",
-
+    goToFullPage: "Ir para a página completa",
     common: "Comum",
     rare: "Raro",
     epic: "Épico",
@@ -701,7 +701,7 @@ export const translations = {
     login: "Login",
     account: "Account",
     openPanel: "Open panel",
-
+    goToFullPage: "Go to full page",
     common: "Common",
     rare: "Rare",
     epic: "Epic",
@@ -1390,7 +1390,7 @@ export const translations = {
     login: "Entrar",
     account: "Cuenta",
     openPanel: "Abrir panel",
-
+    goToFullPage: "Ir a la página completa",
     common: "Común",
     rare: "Raro",
     epic: "Épico",
