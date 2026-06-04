@@ -1619,10 +1619,8 @@ export function CreatorProfilePage({
     : null;
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[#020617] text-white" />
-    );
-  }
+      return null;
+    }
 
   if (!profile) {
     return (
