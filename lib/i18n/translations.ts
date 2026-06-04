@@ -494,9 +494,29 @@ export const translations = {
     packsModalRandomPackDescription:
       "Um pacote misterioso com chance aleatória para qualquer raridade.",
     packsModalRandomRarity: "Aleatória",
-    homePageBadge: "Plataforma de Reputação Digital",
+    homePageBadge: "Colecione Criadores",
+    homePageTitle: "Colecione Criadores",
     homePageDescription:
-      "Descubra criadores lendários por meio de cartas digitais.",
+      "Descubra criadores de conteúdo, acompanhe lives, clips e estatísticas, ganhe cartas digitais e complete sua coleção.",
+    homePagePillarLives: "Lives",
+    homePagePillarClips: "Clips",
+    homePagePillarStats: "Estatísticas",
+    homePagePillarCards: "Cartas Digitais",
+    homePageGuideOpenAria: "Entender o Cardpoc",
+    homePageGuideTooltip: "O que é o Cardpoc?",
+    homePageGuideBadge: "Guia rápido",
+    homePageGuideTitle: "O que é o Cardpoc?",
+    homePageGuideDescription:
+      "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais.",
+    homePageGuideDiscoverTitle: "Descubra",
+    homePageGuideDiscoverDescription:
+      "Encontre streamers, youtubers, tiktokers e criadores de diversas plataformas.",
+    homePageGuideCollectTitle: "Colecione",
+    homePageGuideCollectDescription:
+      "Ganhe cartas digitais, abra packs, siga criadores e complete sua coleção.",
+    homePageGuideFollowTitle: "Acompanhe",
+    homePageGuideFollowDescription:
+      "Veja lives, clips, estatísticas, redes sociais e evolução dos criadores em um só perfil.",
     packsModalLegendaryPackName: "Pacote Lendário",
     packsModalEpicPackName: "Pacote Épico",
     packsModalRarePackName: "Pacote Raro",
@@ -1143,8 +1163,29 @@ export const translations = {
     packsModalRandomPackDescription:
       "A mystery pack with a random chance for any rarity.",
     packsModalRandomRarity: "Random",
-    homePageBadge: "Digital Reputation Platform",
-    homePageDescription: "Discover legendary creators through digital cards.",
+    homePageBadge: "Collect Creators",
+    homePageTitle: "Collect Creators",
+    homePageDescription:
+      "Discover content creators, follow lives, clips and stats, earn digital cards and complete your collection.",
+    homePagePillarLives: "Lives",
+    homePagePillarClips: "Clips",
+    homePagePillarStats: "Stats",
+    homePagePillarCards: "Digital Cards",
+    homePageGuideOpenAria: "Understand Cardpoc",
+    homePageGuideTooltip: "What is Cardpoc?",
+    homePageGuideBadge: "Quick guide",
+    homePageGuideTitle: "What is Cardpoc?",
+    homePageGuideDescription:
+      "Cardpoc is a platform to discover, follow and collect content creators through digital cards.",
+    homePageGuideDiscoverTitle: "Discover",
+    homePageGuideDiscoverDescription:
+      "Find streamers, YouTubers, TikTokers and creators from multiple platforms.",
+    homePageGuideCollectTitle: "Collect",
+    homePageGuideCollectDescription:
+      "Earn digital cards, open packs, follow creators and complete your collection.",
+    homePageGuideFollowTitle: "Follow",
+    homePageGuideFollowDescription:
+      "See lives, clips, stats, social links and creator growth in one profile.",
     packsModalLegendaryPackName: "Legendary Pack",
     packsModalEpicPackName: "Epic Pack",
     packsModalRarePackName: "Rare Pack",
@@ -1786,9 +1827,29 @@ export const translations = {
     packsModalRandomPackDescription:
       "Un pack misterioso con probabilidad aleatoria para cualquier rareza.",
     packsModalRandomRarity: "Aleatoria",
-    homePageBadge: "Plataforma de Reputación Digital",
+    homePageBadge: "Colecciona Creadores",
+    homePageTitle: "Colecciona Creadores",
     homePageDescription:
-      "Descubre creadores legendarios a través de cartas digitales.",
+      "Descubre creadores de contenido, sigue lives, clips y estadísticas, gana cartas digitales y completa tu colección.",
+    homePagePillarLives: "Lives",
+    homePagePillarClips: "Clips",
+    homePagePillarStats: "Estadísticas",
+    homePagePillarCards: "Cartas Digitales",
+    homePageGuideOpenAria: "Entender Cardpoc",
+    homePageGuideTooltip: "¿Qué es Cardpoc?",
+    homePageGuideBadge: "Guía rápida",
+    homePageGuideTitle: "¿Qué es Cardpoc?",
+    homePageGuideDescription:
+      "Cardpoc es una plataforma para descubrir, seguir y coleccionar creadores de contenido a través de cartas digitales.",
+    homePageGuideDiscoverTitle: "Descubre",
+    homePageGuideDiscoverDescription:
+      "Encuentra streamers, youtubers, tiktokers y creadores de distintas plataformas.",
+    homePageGuideCollectTitle: "Colecciona",
+    homePageGuideCollectDescription:
+      "Gana cartas digitales, abre packs, sigue creadores y completa tu colección.",
+    homePageGuideFollowTitle: "Acompaña",
+    homePageGuideFollowDescription:
+      "Ve lives, clips, estadísticas, redes sociales y evolución de los creadores en un solo perfil.",
     packsModalLegendaryPackName: "Pack Legendario",
     packsModalEpicPackName: "Pack Épico",
     packsModalRarePackName: "Pack Raro",
