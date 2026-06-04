@@ -121,7 +121,7 @@ export const translations = {
     cardsCountPlural: "{count} cartas",
     unlockedAchievementSingular: "{count} conquista desbloqueada",
     unlockedAchievementPlural: "{count} conquistas desbloqueadas",
-
+    packsModalInventoryHint: "Escolha um pack para iniciar a revelação.",
     user: "Usuário",
     adminActivities: "Atividades",
     adminApproveClaim: "Aprovar reivindicação",
@@ -1446,6 +1446,7 @@ export const translations = {
     share: "Compartir",
     shareCard: "Compartir carta",
     copied: "¡Copiado!",
+    packsModalInventoryHint: "Choose a pack to start the reveal.",
     shareCardText:
       "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
 
@@ -1697,6 +1698,7 @@ export const translations = {
     creatorPopupClaimUrlPlaceholder: "Link del canal o perfil oficial",
     creatorPopupClaimUrlRequired:
       "Informa el link del canal o perfil usado para la verificación.",
+    packsModalInventoryHint: "Elige un pack para comenzar la revelación.",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Vista previa del clip",
     creatorPopupClipTitlePlaceholder: "Mejor momento del directo",
