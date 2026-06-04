@@ -750,6 +750,12 @@ export function CreatorProfilePage({
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimPlatform, setClaimPlatform] = useState("youtube");
+  const [claimUrl, setClaimUrl] = useState("");
+  const [claimImageUsageConsent, setClaimImageUsageConsent] = useState(false);
+  const [claimSending, setClaimSending] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
 
   const decodedUsername = useMemo(() => {
@@ -763,6 +769,15 @@ export function CreatorProfilePage({
 
     return `/creator/${encodeURIComponent(targetUsername)}`;
   }, [decodedUsername, profile?.username, username]);
+
+  const claimCode = useMemo(() => {
+    const source = profile?.id || decodedUsername || username || "cardpoc";
+
+    return `CDP-${source
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 3)
+      .toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  }, [decodedUsername, profile?.id, username]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -1505,6 +1520,89 @@ export function CreatorProfilePage({
     }
   }
 
+  function handleOpenClaimModal() {
+    if (!currentUserId) {
+      alert(
+        translate(
+          t,
+          "creatorPopupLoginToClaim",
+          "Faça login para reivindicar este perfil.",
+        ),
+      );
+      return;
+    }
+
+    setClaimPlatform("youtube");
+    setClaimUrl("");
+    setClaimImageUsageConsent(false);
+    setClaimSending(false);
+    setClaimSuccess(false);
+    setClaimModalOpen(true);
+  }
+
+  async function handleClaimProfile() {
+    if (!profile || !currentUserId) {
+      alert(
+        translate(
+          t,
+          "creatorPopupLoginToClaim",
+          "Faça login para reivindicar este perfil.",
+        ),
+      );
+      return;
+    }
+
+    if (!claimUrl.trim()) {
+      alert(
+        translate(
+          t,
+          "creatorPopupClaimUrlRequired",
+          "Informe o link do canal ou perfil usado para verificação.",
+        ),
+      );
+      return;
+    }
+
+    if (!claimImageUsageConsent) {
+      alert(
+        translate(
+          t,
+          "creatorImageConsentRequired",
+          "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas.",
+        ),
+      );
+      return;
+    }
+
+    const consentAcceptedAt = new Date().toISOString();
+
+    setClaimSending(true);
+
+    const { error } = await supabase.from("creator_claims").insert({
+      creator_id: profile.id,
+      user_id: currentUserId,
+      verification_platform: claimPlatform,
+      verification_url: claimUrl.trim(),
+      verification_code: claimCode,
+      image_usage_consent: true,
+      image_usage_consent_at: consentAcceptedAt,
+      image_usage_consent_version: "v1.0",
+      image_usage_consent_source: "claim_request",
+      image_usage_consent_text:
+        "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
+      status: "pending",
+    });
+
+    setClaimSending(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setClaimSuccess(true);
+  }
+
   async function handleFollow() {
     if (!profile) return;
 
@@ -2002,11 +2100,7 @@ export function CreatorProfilePage({
               {!isEditing && isProfileClaimable ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(
-                      `/?creator=${encodeURIComponent(profile.username)}&claim=1`,
-                    )
-                  }
+                  onClick={handleOpenClaimModal}
                   className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-5 py-3 text-sm font-black text-yellow-100 transition hover:bg-yellow-300/20"
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -2753,6 +2847,170 @@ export function CreatorProfilePage({
           </div>
         </div>
       ) : null}
+      {claimModalOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl">
+          <button
+            type="button"
+            aria-label={translate(t, "creatorProfileClose", "Fechar")}
+            className="absolute inset-0"
+            onClick={() => setClaimModalOpen(false)}
+          />
+
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-yellow-300/20 bg-[#08050d]/95 p-6 text-white shadow-2xl shadow-yellow-500/10 sm:p-8">
+            <button
+              type="button"
+              onClick={() => setClaimModalOpen(false)}
+              className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+            >
+              {translate(t, "creatorProfileClose", "Fechar")}
+            </button>
+
+            {claimSuccess ? (
+              <div className="pr-10">
+                <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
+                  {translate(t, "creatorPopupClaimSentBadge", "Claim Sent")}
+                </p>
+
+                <h3 className="mt-3 text-3xl font-black">
+                  {translate(t, "creatorPopupClaimSentTitle", "Solicitação enviada")}
+                </h3>
+
+                <p className="mt-4 text-sm leading-6 text-white/60">
+                  {translate(
+                    t,
+                    "creatorPopupClaimSentDescription",
+                    "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.",
+                  )}
+                </p>
+
+                <div className="mt-6 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.04] p-5 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
+                  {claimCode}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setClaimModalOpen(false)}
+                  className="mt-6 rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-black text-white/70 transition hover:bg-white/[0.08]"
+                >
+                  {translate(t, "creatorProfileClose", "Fechar")}
+                </button>
+              </div>
+            ) : (
+              <div className="pr-10">
+                <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
+                  {translate(t, "creatorPopupClaimProfileBadge", "Claim Profile")}
+                </p>
+
+                <h3 className="mt-3 text-3xl font-black">
+                  {translate(t, "creatorPopupClaimMine", "Este perfil é meu")}
+                </h3>
+
+                <p className="mt-4 text-sm leading-6 text-white/60">
+                  {translate(
+                    t,
+                    "creatorPopupClaimDescription",
+                    "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
+                  )}
+                </p>
+
+                <div className="mt-6 rounded-3xl border border-yellow-300/15 bg-yellow-300/[0.04] p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-yellow-200/70">
+                    {translate(t, "creatorPopupClaimCode", "Código de verificação")}
+                  </p>
+
+                  <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
+                    {claimCode}
+                  </p>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-[180px_1fr]">
+                  <select
+                    value={claimPlatform}
+                    onChange={(event) => setClaimPlatform(event.target.value)}
+                    className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-yellow-300/40"
+                  >
+                    {SOCIAL_PLATFORM_OPTIONS.filter(
+                      (platform) => platform.value !== "link",
+                    ).map((platform) => (
+                      <option key={platform.value} value={platform.value}>
+                        {platform.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    value={claimUrl}
+                    onChange={(event) => setClaimUrl(event.target.value)}
+                    placeholder={translate(
+                      t,
+                      "creatorPopupClaimUrlPlaceholder",
+                      "Link do canal ou perfil oficial",
+                    )}
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-yellow-300/40"
+                  />
+                </div>
+
+                <label className="mt-6 flex cursor-pointer gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-sm leading-relaxed text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.07]">
+                  <input
+                    type="checkbox"
+                    checked={claimImageUsageConsent}
+                    onChange={(event) =>
+                      setClaimImageUsageConsent(event.target.checked)
+                    }
+                    className="mt-1 h-4 w-4 shrink-0 accent-cyan-300"
+                  />
+
+                  <span>
+                    <strong className="block text-cyan-100">
+                      {translate(
+                        t,
+                        "creatorImageConsentTitle",
+                        "Autorização para cartas personalizadas",
+                      )}
+                    </strong>
+                    {translate(
+                      t,
+                      "creatorImageConsentDescription",
+                      "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
+                    )}
+                  </span>
+                </label>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClaimProfile}
+                    disabled={claimSending || !claimImageUsageConsent}
+                    className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {claimSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4" />
+                    )}
+                    {claimSending
+                      ? translate(t, "creatorPopupSending", "Enviando...")
+                      : translate(
+                          t,
+                          "creatorPopupSendClaim",
+                          "Enviar reivindicação",
+                        )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setClaimModalOpen(false)}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-black text-white/70 transition hover:bg-white/[0.08]"
+                  >
+                    {translate(t, "creatorProfileCancelEdit", "Cancelar")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {isEditing && canManageProfile ? (
         <div className="fixed inset-x-0 bottom-4 z-[80] px-4 sm:bottom-6">
           <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-[1.7rem] border border-cyan-300/20 bg-[#020617]/90 p-4 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
