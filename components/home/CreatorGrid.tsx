@@ -235,28 +235,11 @@ export function CreatorGrid({ search }: CreatorGridProps) {
 
   function handleOpenCreator(creator: Creator) {
     setSelectedCreator(creator);
-
-    const nextUrl = `/creator/${encodeURIComponent(creator.username)}`;
-
-    if (window.location.pathname !== nextUrl) {
-      window.history.pushState(
-        {
-          creatorId: creator.id,
-        },
-        "",
-        nextUrl
-      );
-    }
   }
 
   function handleCloseCreator() {
     setSelectedCreator(null);
-
-    if (window.location.pathname.startsWith("/creator/")) {
-      window.history.pushState(null, "", "/");
-    }
   }
-
 
   function handleCreatorUpdated(updatedCreator: Creator) {
     setCreators((currentCreators) =>
