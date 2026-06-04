@@ -12,16 +12,28 @@ import { translate } from "@/lib/i18n/translate";
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
 
   const { t } = useLanguage();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+    const hasSeenLoading = sessionStorage.getItem(
+      "cardpoc-initial-loading"
+    );
 
-    return () => clearTimeout(timer);
+    if (!hasSeenLoading) {
+      setLoading(true);
+
+      const timer = setTimeout(() => {
+        setLoading(false);
+        sessionStorage.setItem(
+          "cardpoc-initial-loading",
+          "true"
+        );
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
