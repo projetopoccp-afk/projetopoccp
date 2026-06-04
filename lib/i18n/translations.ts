@@ -7,7 +7,7 @@ export const translations = {
     login: "Entrar",
     account: "Conta",
     openPanel: "Clique para abrir o painel",
-    goToFullPage: "Ir para a página completa",
+
     common: "Comum",
     rare: "Raro",
     epic: "Épico",
@@ -374,6 +374,9 @@ export const translations = {
     creatorPopupShareDescriptionPrefix: "Compartilhe o perfil de",
     creatorPopupShareDescriptionSuffix:
       "usando o link com preview do Creator Nexus.",
+    creatorPopupFullPage: "Ir para a página completa",
+    creatorPopupShareHiddenLinkHint:
+      "Use as opções abaixo para compartilhar ou copiar o link público do perfil.",
     creatorPopupShares: "Compartilhamentos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link do",
     creatorPopupSocialLinksDescription:
@@ -701,7 +704,7 @@ export const translations = {
     login: "Login",
     account: "Account",
     openPanel: "Open panel",
-    goToFullPage: "Go to full page",
+
     common: "Common",
     rare: "Rare",
     epic: "Epic",
@@ -1060,6 +1063,9 @@ export const translations = {
     creatorPopupShareBadge: "Share Profile",
     creatorPopupShareDescriptionPrefix: "Share the profile of",
     creatorPopupShareDescriptionSuffix: "using the Creator Nexus preview link.",
+    creatorPopupFullPage: "Go to full page",
+    creatorPopupShareHiddenLinkHint:
+      "Use the options below to share or copy the public profile link.",
     creatorPopupShares: "Shares",
     creatorPopupSocialLinkPlaceholderPrefix: "Link to",
     creatorPopupSocialLinksDescription: "Add the creator's official links.",
@@ -1390,7 +1396,7 @@ export const translations = {
     login: "Entrar",
     account: "Cuenta",
     openPanel: "Abrir panel",
-    goToFullPage: "Ir a la página completa",
+
     common: "Común",
     rare: "Raro",
     epic: "Épico",
@@ -1758,6 +1764,9 @@ export const translations = {
     creatorPopupShareDescriptionPrefix: "Comparte el perfil de",
     creatorPopupShareDescriptionSuffix:
       "usando el link con vista previa de Creator Nexus.",
+    creatorPopupFullPage: "Ir a la página completa",
+    creatorPopupShareHiddenLinkHint:
+      "Usa las opciones de abajo para compartir o copiar el link público del perfil.",
     creatorPopupShares: "Compartidos",
     creatorPopupSocialLinkPlaceholderPrefix: "Link de",
     creatorPopupSocialLinksDescription:
