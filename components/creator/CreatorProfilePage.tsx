@@ -767,6 +767,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         likes: 0,
         views: stats.views,
         socials: socialLinks,
+        traits: [],
+
+          featuredMoment: {
+            title: "",
+            description: "",
+          },
+
+          achievements: [],
       }
     : null;
 
