@@ -1674,7 +1674,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       </div>
 
       {livePlatformsOpen ? (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 px-4 py-6 sm:px-6">
           <button
             type="button"
             className="absolute inset-0"
@@ -1686,9 +1686,9 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             )}
           />
 
-          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
-            <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
-            <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
+          <div className="relative w-[min(92vw,760px)] rounded-[28px] border border-white/15 bg-zinc-950/95 p-5 text-white shadow-[0_0_90px_rgba(0,0,0,0.95)] sm:p-6">
+            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-500/20 blur-[80px]" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-cyan-500/20 blur-[80px]" />
 
             <div className="relative z-10">
               <p className="text-xs font-black uppercase tracking-[0.3em] text-red-200">
@@ -1718,15 +1718,16 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                     href={item.status?.url || item.fallbackUrl || "#"}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-red-300/30 hover:bg-red-300/10"
+                    onClick={() => setLivePlatformsOpen(false)}
+                    className="group flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-red-300/30 hover:bg-red-300/10"
                   >
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-xs font-black text-red-100">
                       <Radio className="h-5 w-5 animate-pulse" />
                     </div>
 
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 pr-2">
                       <p className="font-black text-white">{item.label}</p>
-                      <p className="truncate text-sm text-white/45">
+                      <p className="break-words text-sm leading-snug text-white/45">
                         {item.status?.title ||
                           translate(
                             t,
@@ -1737,7 +1738,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                     </div>
 
                     {item.status?.viewerCount ? (
-                      <span className="shrink-0 text-sm font-bold text-red-100/70">
+                      <span className="hidden shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-bold text-red-100/70 sm:inline-flex">
                         {formatNumber(item.status.viewerCount)}
                       </span>
                     ) : null}
