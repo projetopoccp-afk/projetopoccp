@@ -331,7 +331,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             {translate(t, "creatorCardLevelPrefix", "Lv.")} {creator.level}
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+          <div className="absolute bottom-10 left-0 right-0 z-20 px-4">
             <p
               className={`text-xs uppercase tracking-[0.3em] ${rarity.text}`}
               style={{
@@ -341,26 +341,14 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               {creator.category}
             </p>
 
-            <h2 className="mt-2 text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+            <h2 className="mt-2 pr-10 text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
               {creator.nickname}
             </h2>
-
-            <p className="mt-2 line-clamp-2 text-sm text-white/78 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-              {creator.bio}
-            </p>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span
-                className={`rounded-full border px-3 py-1 text-xs backdrop-blur-md ${rarity.badge}`}
-              >
-                {creator.rank}
-              </span>
-
-              <span className="text-xs text-white/55 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-                @{creator.username}
-              </span>
-            </div>
           </div>
+
+          <span className="absolute bottom-4 right-4 z-20 text-xs text-white/55 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+            @{creator.username}
+          </span>
 
           <div className="creator-card-frame pointer-events-none absolute inset-0 rounded-[24px]" />
 
