@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -12,6 +13,8 @@ type LoginModalProps = {
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const { t } = useLanguage();
+  const [banMessage, setBanMessage] = useState<string | null>(null);
+  const [isCheckingBan, setIsCheckingBan] = useState(false);
 
   function tx(key: string, fallback: string) {
     const value = (t as (translationKey: any) => string)(key);
@@ -19,9 +22,75 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     return value && value !== key ? value : fallback;
   }
 
+  const blockedAccountMessage = tx(
+    "loginModalBannedAccountMessage",
+    "Sua conta foi suspensa no Cardpoc. Para solicitar desbloqueio, entre em contato com um administrador.",
+  );
+
+  async function checkBannedAccount(userId: string) {
+    setIsCheckingBan(true);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("is_banned")
+      .eq("id", userId)
+      .maybeSingle();
+
+    setIsCheckingBan(false);
+
+    if (error) {
+      return false;
+    }
+
+    if (data?.is_banned) {
+      await supabase.auth.signOut();
+      setBanMessage(blockedAccountMessage);
+
+      return true;
+    }
+
+    setBanMessage(null);
+
+    return false;
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      const userId = data.session?.user.id;
+
+      if (!isMounted || !userId) {
+        return;
+      }
+
+      await checkBannedAccount(userId);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user.id) {
+        void checkBannedAccount(session.user.id);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [blockedAccountMessage]);
+
+  function handleClose() {
+    setBanMessage(null);
+    onClose();
+  }
+
+  const shouldShowModal = open || Boolean(banMessage);
+
   return (
     <AnimatePresence>
-      {open && (
+      {shouldShowModal && (
         <motion.div
           initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
           animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
@@ -33,7 +102,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:42px_42px] opacity-35" />
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute inset-0"
             aria-label={tx("loginModalCloseLoginAria", "Fechar login")}
           />
@@ -50,7 +119,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <div className="absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
 
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
               aria-label={tx("close", "Fechar")}
             >
@@ -110,6 +179,17 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 )}
               </p>
 
+              {banMessage ? (
+                <div className="mt-5 rounded-[22px] border border-red-300/25 bg-red-500/10 p-4 shadow-[0_0_28px_rgba(248,113,113,0.10)]">
+                  <p className="text-sm font-black text-red-100">
+                    {tx("loginModalBannedAccountTitle", "Conta suspensa")}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-red-100/70">
+                    {banMessage}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="mt-6 grid gap-2 rounded-[22px] border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.045] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/80">
@@ -164,6 +244,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
                 <button
                   onClick={async () => {
+                    setBanMessage(null);
+
                     await supabase.auth.signInWithOAuth({
                       provider: "google",
                       options: {
@@ -171,7 +253,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                       },
                     });
                   }}
-                  className="group w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:shadow-[0_0_28px_rgba(34,211,238,0.10)]"
+                  disabled={isCheckingBan}
+                  className="group w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:shadow-[0_0_28px_rgba(34,211,238,0.10)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <p className="font-bold text-white">
                     {tx("loginModalContinueGoogle", "Continuar com Google")}

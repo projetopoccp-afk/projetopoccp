@@ -341,6 +341,9 @@ export const translations = {
       "Perfis de criadores passam por curadoria para manter cartas autênticas, raridades especiais e uma coleção premium.",
     loginModalSupabaseNotice:
       "Seu progresso fica salvo com segurança na sua conta Cardpoc.",
+    loginModalBannedAccountTitle: "Conta suspensa",
+    loginModalBannedAccountMessage:
+      "Sua conta foi suspensa no Cardpoc. Para solicitar desbloqueio, entre em contato com um administrador.",
 
     creatorCardOpenAria: "Abrir perfil do criador",
     creatorCardLevelPrefix: "Nível",
@@ -1158,6 +1161,9 @@ export const translations = {
       "Creator profiles go through curation to keep cards authentic, rarities special and the collection premium.",
     loginModalSupabaseNotice:
       "Your progress is safely saved to your Cardpoc account.",
+    loginModalBannedAccountTitle: "Account suspended",
+    loginModalBannedAccountMessage:
+      "Your Cardpoc account has been suspended. To request access again, contact an administrator.",
 
     creatorCardOpenAria: "Open creator profile",
     creatorCardLevelPrefix: "Level",
@@ -1978,6 +1984,9 @@ export const translations = {
       "Los perfiles de creadores pasan por curaduría para mantener cartas auténticas, rarezas especiales y una colección premium.",
     loginModalSupabaseNotice:
       "Tu progreso queda guardado con seguridad en tu cuenta Cardpoc.",
+    loginModalBannedAccountTitle: "Cuenta suspendida",
+    loginModalBannedAccountMessage:
+      "Tu cuenta de Cardpoc fue suspendida. Para solicitar el desbloqueo, contacta a un administrador.",
 
     creatorCardOpenAria: "Abrir perfil del creador",
     creatorCardLevelPrefix: "Nivel",
