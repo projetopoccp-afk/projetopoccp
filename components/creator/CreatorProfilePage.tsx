@@ -11,12 +11,14 @@ import {
   Eye,
   Globe2,
   Loader2,
+  Plus,
   PlayCircle,
   Radio,
   Share2,
   ShieldCheck,
   Sparkles,
   UserCheck,
+  Trash2,
   UserPlus,
   Users,
   WifiOff,
@@ -59,7 +61,6 @@ type CreatorProfileRow = {
   username: string;
   nickname: string;
   title: string | null;
-  faction: string | null;
   category: string | null;
   status: string | null;
   avatar_url: string | null;
@@ -83,7 +84,6 @@ type CreatorProfileEditDraft = {
   nickname: string;
   title: string;
   category: string;
-  faction: string;
   avatarUrl: string;
   bannerUrl: string;
   bio: string;
@@ -146,6 +146,19 @@ const PLATFORM_LABELS: Record<string, string> = {
   discord: "Discord",
   x: "X",
 };
+
+
+
+const SOCIAL_PLATFORM_OPTIONS = [
+  { value: "twitch", label: "Twitch" },
+  { value: "youtube", label: "YouTube" },
+  { value: "kick", label: "Kick" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "instagram", label: "Instagram" },
+  { value: "x", label: "X" },
+  { value: "discord", label: "Discord" },
+  { value: "link", label: "Outro link" },
+] as const;
 
 const LIVE_PLATFORMS = ["twitch", "kick"] as const;
 
@@ -461,7 +474,6 @@ function createProfileEditDraft(
     nickname: profile.nickname || "",
     title: profile.title || "",
     category: profile.category || "",
-    faction: profile.faction || "",
     avatarUrl: profile.avatar_url || "",
     bannerUrl: profile.banner_url || "",
     bio: profile.bio || "",
@@ -504,6 +516,26 @@ function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
       };
     })
     .filter((social) => Boolean(social.url));
+}
+
+
+
+function getEditSocialLinkRows(socialLinksText: string): SocialLink[] {
+  const parsedLinks = parseEditSocialLinks(socialLinksText);
+
+  return parsedLinks.length > 0 ? parsedLinks : [{ platform: "twitch", url: "" }];
+}
+
+function serializeEditSocialLinks(socialLinks: SocialLink[]) {
+  return socialLinks
+    .map((social) => {
+      const platform = social.platform.trim() || "link";
+      const url = social.url.trim();
+
+      return url ? `${platform}: ${url}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
 }
 
 function normalizeCreatorSocials(socialLinks: SocialLink[]) {
@@ -738,7 +770,6 @@ export function CreatorProfilePage({
           username,
           nickname,
           title,
-          faction,
           category,
           status,
           avatar_url,
@@ -1076,8 +1107,6 @@ export function CreatorProfilePage({
   const category =
     profile?.category ||
     translate(t, "creatorProfileDefaultCategory", "Criador");
-  const faction =
-    profile?.faction || translate(t, "creatorProfileDefaultFaction", "Cardpoc");
   const bio =
     profile?.bio ||
     translate(
@@ -1170,7 +1199,6 @@ export function CreatorProfilePage({
         username,
         nickname,
         title,
-        faction,
         category,
         status,
         avatar_url,
@@ -1244,6 +1272,64 @@ export function CreatorProfilePage({
     setProfileSaveError(null);
   }
 
+  function handleEditSocialLinkChange(
+    index: number,
+    field: keyof SocialLink,
+    value: string,
+  ) {
+    setEditDraft((current) => {
+      if (!current) return current;
+
+      const rows = getEditSocialLinkRows(current.socialLinksText);
+      const nextRows = rows.map((social, socialIndex) =>
+        socialIndex === index
+          ? {
+              ...social,
+              [field]: value,
+            }
+          : social,
+      );
+
+      return {
+        ...current,
+        socialLinksText: serializeEditSocialLinks(nextRows),
+      };
+    });
+    setProfileSaveError(null);
+  }
+
+  function handleAddEditSocialLink() {
+    setEditDraft((current) => {
+      if (!current) return current;
+
+      const rows = getEditSocialLinkRows(current.socialLinksText);
+
+      return {
+        ...current,
+        socialLinksText: serializeEditSocialLinks([
+          ...rows,
+          { platform: "youtube", url: "" },
+        ]),
+      };
+    });
+    setProfileSaveError(null);
+  }
+
+  function handleRemoveEditSocialLink(index: number) {
+    setEditDraft((current) => {
+      if (!current) return current;
+
+      const rows = getEditSocialLinkRows(current.socialLinksText);
+      const nextRows = rows.filter((_, socialIndex) => socialIndex !== index);
+
+      return {
+        ...current,
+        socialLinksText: serializeEditSocialLinks(nextRows),
+      };
+    });
+    setProfileSaveError(null);
+  }
+
   function handleCancelEditMode() {
     if (profile) {
       setEditDraft(createProfileEditDraft(profile, socialLinks));
@@ -1272,7 +1358,6 @@ export function CreatorProfilePage({
         nickname: editDraft.nickname.trim() || profile.nickname,
         title: editDraft.title.trim() || null,
         category: editDraft.category.trim() || null,
-        faction: editDraft.faction.trim() || null,
         avatar_url: editDraft.avatarUrl.trim() || null,
         banner_url: editDraft.bannerUrl.trim() || null,
         bio: editDraft.bio.trim() || null,
@@ -1323,7 +1408,6 @@ export function CreatorProfilePage({
             nickname: editDraft.nickname.trim() || current.nickname,
             title: editDraft.title.trim() || null,
             category: editDraft.category.trim() || null,
-            faction: editDraft.faction.trim() || null,
             avatar_url: editDraft.avatarUrl.trim() || null,
             banner_url: editDraft.bannerUrl.trim() || null,
             bio: editDraft.bio.trim() || null,
@@ -1580,7 +1664,6 @@ export function CreatorProfilePage({
         username: profile.username,
         nickname,
         title,
-        faction,
         category,
         mainPlatform: "youtube",
         status: normalizeCreatorStatus(profile.status),
@@ -1731,9 +1814,6 @@ export function CreatorProfilePage({
                 </span>
               ) : null}
 
-              <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur">
-                {getRarityLabel(rarity)}
-              </span>
             </div>
 
             {isEditing && editDraft ? (
@@ -1854,7 +1934,7 @@ export function CreatorProfilePage({
             </div>
 
             {isEditing && editDraft ? (
-              <div className="mt-7 grid gap-4 md:grid-cols-2">
+              <div className="mt-7 grid gap-4">
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
                     {translate(t, "creatorProfileEditTags", "Tags")}
@@ -1866,19 +1946,6 @@ export function CreatorProfilePage({
                     }
                     placeholder="Streamer, MMORPG, Black Desert"
                     className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-sm font-semibold text-cyan-100 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditFaction", "Comunidade/Fação")}
-                  </span>
-                  <input
-                    value={editDraft.faction}
-                    onChange={(event) =>
-                      handleEditDraftChange("faction", event.target.value)
-                    }
-                    className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
                   />
                 </label>
               </div>
@@ -2055,20 +2122,76 @@ export function CreatorProfilePage({
                   </label>
                 </div>
 
-                <label className="mt-4 block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
-                  </span>
-                  <textarea
-                    value={editDraft.socialLinksText}
-                    onChange={(event) =>
-                      handleEditDraftChange("socialLinksText", event.target.value)
-                    }
-                    rows={5}
-                    placeholder={"twitch: https://twitch.tv/seucanal\nyoutube: https://youtube.com/@seucanal"}
-                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm leading-7 text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
-                  />
-                </label>
+                <div className="mt-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(t, "creatorProfileEditSocialLinks", "Links sociais")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddEditSocialLink}
+                      className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/15"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {translate(t, "creatorProfileEditAddSocialLink", "Adicionar link")}
+                    </button>
+                  </div>
+
+                  <div className="mt-3 grid gap-3">
+                    {getEditSocialLinkRows(editDraft.socialLinksText).map(
+                      (social, index) => (
+                        <div
+                          key={`social-link-${index}`}
+                          className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-black/25 p-3 md:grid-cols-[180px_minmax(0,1fr)_auto]"
+                        >
+                          <select
+                            value={social.platform || "link"}
+                            onChange={(event) =>
+                              handleEditSocialLinkChange(
+                                index,
+                                "platform",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-[1rem] border border-white/10 bg-black/35 px-3 py-3 text-sm font-bold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                          >
+                            {SOCIAL_PLATFORM_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            value={social.url}
+                            onChange={(event) =>
+                              handleEditSocialLinkChange(
+                                index,
+                                "url",
+                                event.target.value,
+                              )
+                            }
+                            placeholder="https://..."
+                            className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEditSocialLink(index)}
+                            className="inline-flex items-center justify-center rounded-[1rem] border border-red-300/15 bg-red-500/10 px-4 py-3 text-red-100 transition hover:bg-red-500/15"
+                            aria-label={translate(
+                              t,
+                              "creatorProfileEditRemoveSocialLink",
+                              "Remover link",
+                            )}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
               </article>
             ) : null}
 
