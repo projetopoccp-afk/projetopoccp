@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type SocialPlatform = "twitch" | "kick" | "youtube" | "discord";
+type SocialPlatform = "twitch" | "kick" | "youtube";
 
 type LiveStatusResponse = {
   platform: SocialPlatform;
@@ -18,8 +18,6 @@ type LiveStatusResponse = {
   viewCount?: number;
   videoCount?: number;
   externalCount?: number;
-  memberCount?: number;
-  onlineMemberCount?: number;
 };
 
 async function getTwitchAccessToken() {
@@ -480,111 +478,243 @@ async function getYouTubeChannelStatus(
   };
 }
 
-function normalizeDiscordInviteCode(input: string) {
+function parseCompactNumber(input: string) {
+  const normalized = input
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/,/g, ".");
+
+  const match = normalized.match(/([\d.]+)(k|mil|m|mi|b|bi)?/i);
+
+  if (!match) return 0;
+
+  const value = Number(match[1]);
+
+  if (!Number.isFinite(value)) return 0;
+
+  const suffix = match[2];
+
+  if (suffix === "k" || suffix === "mil") return Math.round(value * 1_000);
+  if (suffix === "m" || suffix === "mi") return Math.round(value * 1_000_000);
+  if (suffix === "b" || suffix === "bi") return Math.round(value * 1_000_000_000);
+
+  return Math.round(value);
+}
+
+function normalizeTikTokUrl(input: string) {
   const value = input.trim();
 
-  if (!value) return "";
+  if (!value) return "https://www.tiktok.com";
 
-  try {
-    const url = new URL(value.startsWith("http") ? value : `https://${value}`);
-    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
-    const pathParts = url.pathname.split("/").filter(Boolean);
-
-    if (
-      hostname === "discord.gg" ||
-      hostname === "discord.com" ||
-      hostname === "discordapp.com"
-    ) {
-      if (hostname === "discord.gg" && pathParts[0]) {
-        return pathParts[0].split("?")[0].trim();
-      }
-
-      const inviteIndex = pathParts.findIndex((part) => part === "invite");
-
-      if (inviteIndex >= 0 && pathParts[inviteIndex + 1]) {
-        return pathParts[inviteIndex + 1].split("?")[0].trim();
-      }
-    }
-  } catch {
-    // Se não for uma URL válida, trata como código puro do convite.
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
   }
 
-  return value
+  const cleanUsername = value
     .replace(/^@/, "")
-    .replace(/^discord\.gg\//i, "")
-    .replace(/^discord\.com\/invite\//i, "")
-    .replace(/^discordapp\.com\/invite\//i, "")
+    .replace(/^tiktok\.com\//i, "")
+    .replace(/^www\.tiktok\.com\//i, "")
+    .replace(/^@/, "")
+    .split("?")[0]
+    .trim();
+
+  return `https://www.tiktok.com/@${cleanUsername}`;
+}
+
+function normalizeInstagramUrl(input: string) {
+  const value = input.trim();
+
+  if (!value) return "https://www.instagram.com";
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  const cleanUsername = value
+    .replace(/^@/, "")
+    .replace(/^instagram\.com\//i, "")
+    .replace(/^www\.instagram\.com\//i, "")
+    .replace(/^@/, "")
     .split("?")[0]
     .split("/")[0]
     .trim();
+
+  return `https://www.instagram.com/${cleanUsername}/`;
 }
 
-async function getDiscordServerStatus(
-  invite: string
-): Promise<LiveStatusResponse> {
-  const inviteCode = normalizeDiscordInviteCode(invite);
+function extractFirstNumberFromPatterns(html: string, patterns: RegExp[]) {
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const rawValue = match?.[1];
 
-  if (!inviteCode) {
-    return {
-      platform: "discord",
-      username: invite,
-      isLive: false,
-      memberCount: 0,
-      onlineMemberCount: 0,
-      externalCount: 0,
-      url: "https://discord.com",
-    };
+    if (!rawValue) continue;
+
+    const parsedValue = parseCompactNumber(rawValue);
+
+    if (parsedValue > 0) return parsedValue;
   }
 
-  const discordResponse = await fetch(
-    `https://discord.com/api/v10/invites/${encodeURIComponent(
-      inviteCode
-    )}?with_counts=true&with_expiration=true`,
-    {
+  return 0;
+}
+
+async function getTikTokViewStatus(input: string): Promise<LiveStatusResponse> {
+  const url = normalizeTikTokUrl(input);
+
+  try {
+    const response = await fetch(url, {
       headers: {
-        Accept: "application/json",
-        "User-Agent": "CardpocBot/1.0 (+https://www.cardpoc.com)",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
       },
       next: {
         revalidate: 3600,
       },
-    }
-  );
+      redirect: "follow",
+    });
 
-  if (!discordResponse.ok) {
-    console.error("Erro Discord invite:", discordResponse.status);
+    if (!response.ok) {
+      console.error("Erro TikTok:", response.status);
+
+      return {
+        platform: "tiktok",
+        username: input,
+        isLive: false,
+        viewCount: 0,
+        externalCount: 0,
+        externalCountType: "views",
+        countLabel: "views",
+        url,
+      };
+    }
+
+    const html = await response.text();
+
+    const titleMatch =
+      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<title[^>]*>([^<]+)<\/title>/i);
+
+    const thumbnailMatch =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/"cover"\s*:\s*"([^"]+)"/i) ||
+      html.match(/"originCover"\s*:\s*"([^"]+)"/i);
+
+    const viewCount = extractFirstNumberFromPatterns(html, [
+      /"playCount"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"play_count"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"viewCount"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"views"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /([\d.,]+[kKmMbB]?)\s+views/i,
+      /([\d.,]+[kKmMbB]?)\s+visualiza(?:ç|c)[õo]es/i,
+    ]);
 
     return {
-      platform: "discord",
-      username: inviteCode,
+      platform: "tiktok",
+      username: input,
       isLive: false,
-      memberCount: 0,
-      onlineMemberCount: 0,
+      title: titleMatch?.[1]?.trim(),
+      thumbnail: thumbnailMatch?.[1]?.replace(/\\u002F/g, "/"),
+      viewCount,
+      externalCount: viewCount,
+      externalCountType: "views",
+      countLabel: "views",
+      url: response.url || url,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar views do TikTok:", error);
+
+    return {
+      platform: "tiktok",
+      username: input,
+      isLive: false,
+      viewCount: 0,
       externalCount: 0,
-      url: `https://discord.gg/${inviteCode}`,
+      externalCountType: "views",
+      countLabel: "views",
+      url,
     };
   }
+}
 
-  const data = await discordResponse.json();
+async function getInstagramViewStatus(input: string): Promise<LiveStatusResponse> {
+  const url = normalizeInstagramUrl(input);
 
-  const memberCount = Number(data?.approximate_member_count ?? 0);
-  const onlineMemberCount = Number(data?.approximate_presence_count ?? 0);
-  const guildName = data?.guild?.name || inviteCode;
-  const guildIcon = data?.guild?.icon
-    ? `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`
-    : undefined;
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+      },
+      next: {
+        revalidate: 3600,
+      },
+      redirect: "follow",
+    });
 
-  return {
-    platform: "discord",
-    username: guildName,
-    isLive: false,
-    title: guildName,
-    thumbnail: guildIcon,
-    memberCount,
-    onlineMemberCount,
-    externalCount: memberCount,
-    url: `https://discord.gg/${inviteCode}`,
-  };
+    if (!response.ok) {
+      console.error("Erro Instagram:", response.status);
+
+      return {
+        platform: "instagram",
+        username: input,
+        isLive: false,
+        viewCount: 0,
+        externalCount: 0,
+        externalCountType: "views",
+        countLabel: "views",
+        url,
+      };
+    }
+
+    const html = await response.text();
+
+    const titleMatch =
+      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<title[^>]*>([^<]+)<\/title>/i);
+
+    const thumbnailMatch =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/"display_url"\s*:\s*"([^"]+)"/i);
+
+    const viewCount = extractFirstNumberFromPatterns(html, [
+      /"video_view_count"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"play_count"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"view_count"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /"views"\s*:\s*"?([\d.,]+[kKmMbB]?)"?/i,
+      /([\d.,]+[kKmMbB]?)\s+views/i,
+      /([\d.,]+[kKmMbB]?)\s+visualiza(?:ç|c)[õo]es/i,
+    ]);
+
+    return {
+      platform: "instagram",
+      username: input,
+      isLive: false,
+      title: titleMatch?.[1]?.trim(),
+      thumbnail: thumbnailMatch?.[1]?.replace(/\\u002F/g, "/"),
+      viewCount,
+      externalCount: viewCount,
+      externalCountType: "views",
+      countLabel: "views",
+      url: response.url || url,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar views do Instagram:", error);
+
+    return {
+      platform: "instagram",
+      username: input,
+      isLive: false,
+      viewCount: 0,
+      externalCount: 0,
+      externalCountType: "views",
+      countLabel: "views",
+      url,
+    };
+  }
 }
 
 
@@ -619,6 +749,16 @@ export async function GET(request: NextRequest) {
 
     if (platform === "discord") {
       const status = await getDiscordServerStatus(username);
+      return NextResponse.json(status);
+    }
+
+    if (platform === "tiktok") {
+      const status = await getTikTokViewStatus(username);
+      return NextResponse.json(status);
+    }
+
+    if (platform === "instagram") {
+      const status = await getInstagramViewStatus(username);
       return NextResponse.json(status);
     }
 
