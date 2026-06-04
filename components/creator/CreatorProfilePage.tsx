@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
@@ -323,6 +325,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [liveStatusLoading, setLiveStatusLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "").replace("@", "").trim();
@@ -680,6 +684,10 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     );
   const rarity = card?.rarity || "common";
   const tags = normalizeCreatorTags(profile?.tags);
+  const hiddenAutoTags = new Set(["streamer", "mmorpg", "black desert", "react"]);
+  const visibleTags = tags.filter(
+    (tag) => !hiddenAutoTags.has(tag.trim().toLowerCase())
+  );
   const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
@@ -732,6 +740,36 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       ? kickStatus
       : null;
 
+  const creatorForPopup = profile
+    ? {
+        id: profile.id,
+        ownerId: profile.user_id || undefined,
+        username: profile.username,
+        nickname,
+        title,
+        faction,
+        category,
+        mainPlatform: "youtube",
+        status: profile.status || "offline",
+        avatarUrl: profile.avatar_url || "",
+        bannerUrl: profile.banner_url || "",
+        bio,
+        description,
+        tags,
+        rank: card?.rank || "Bronze",
+        rarity,
+        aura: card?.aura || "Origin Aura",
+        evolutionStage: card?.evolution_stage || "Stage 1 — Rising Creator",
+        powerScore: card?.power_score || 0,
+        collectedBy: 0,
+        level: card?.level || 1,
+        followers: stats.followers,
+        likes: 0,
+        views: stats.views,
+        socials: socialLinks,
+      }
+    : null;
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020617] px-6 py-10 text-white">
@@ -779,6 +817,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#020617] text-white">
+      <SiteHeader search={search} onSearchChange={setSearch} />
       <section className="relative border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.20),transparent_42%)]" />
 
@@ -804,13 +843,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             </Link>
 
             {isOwner ? (
-              <Link
-                href="/"
+              <button
+                type="button"
+                onClick={() => setEditPopupOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 transition hover:bg-fuchsia-300/20"
               >
                 <Sparkles className="h-4 w-4" />
                 {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
-              </Link>
+              </button>
             ) : null}
           </div>
 
@@ -891,7 +931,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                   {faction}
                 </span>
 
-                {tags.map((tag) => (
+                {visibleTags.map((tag) => (
                   <span
                     key={tag}
                     className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85"
@@ -1222,6 +1262,17 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
           </article>
         </aside>
       </section>
+
+      {editPopupOpen && creatorForPopup ? (
+        <CreatorPopup
+          creator={creatorForPopup}
+          onClose={() => setEditPopupOpen(false)}
+          onCreatorUpdated={() => {
+            setEditPopupOpen(false);
+            window.location.reload();
+          }}
+        />
+      ) : null}
     </main>
   );
 }
