@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { SiteHeader } from "@/components/layout/SiteHeader";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { GlowBackground } from "@/components/effects/GlowBackground";
@@ -1449,8 +1448,6 @@ export function CreatorProfilePage({
       <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.035)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]" />
       <div className="pointer-events-none absolute left-1/2 top-28 z-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[90px]" />
       <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
-
-      <SiteHeader search={search} onSearchChange={setSearch} />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
