@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030305;
+  --foreground: #ededed;
+  --cardpoc-cyan: #22d3ee;
+  --cardpoc-purple: #d946ef;
+  --cardpoc-gold: #fde68a;
 }
 
 @theme inline {
@@ -12,17 +15,27 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #030305;
 }
 
 body {
-  background: var(--background);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.08), transparent 34%),
+    radial-gradient(circle at 85% 20%, rgba(217, 70, 239, 0.06), transparent 28%),
+    var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.28);
+  color: #ffffff;
 }
 
 .no-scrollbar {
@@ -34,6 +47,15 @@ body {
   display: none;
   width: 0;
   height: 0;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes floatParticle {
@@ -50,11 +72,31 @@ body {
   }
 }
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+@keyframes cardpocShine {
+  0% {
+    transform: translateX(-130%) rotate(12deg);
+    opacity: 0;
+  }
+
+  28% {
+    opacity: 0.65;
+  }
+
+  100% {
+    transform: translateX(170%) rotate(12deg);
+    opacity: 0;
+  }
 }
 
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@keyframes cardpocPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+  }
 }

@@ -470,33 +470,38 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps) {
               className="group relative flex items-center gap-3 rounded-3xl border border-white/0 px-1 py-1 transition hover:border-cyan-300/10 hover:bg-white/[0.025]"
               aria-label="Cardpoc"
             >
-              <div className="pointer-events-none absolute -inset-2 rounded-[2rem] bg-cyan-300/[0.03] opacity-0 blur-xl transition group-hover:opacity-100" />
+              <div className="pointer-events-none absolute -inset-3 rounded-[2rem] bg-[radial-gradient(circle_at_30%_30%,rgba(34,211,238,0.16),transparent_42%),radial-gradient(circle_at_80%_75%,rgba(217,70,239,0.14),transparent_42%)] opacity-0 blur-xl transition duration-300 group-hover:opacity-100" />
 
-              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-cyan-300/25 bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.24),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.015))] shadow-[0_0_34px_rgba(34,211,238,0.18)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-cyan-200/55 group-hover:shadow-[0_0_44px_rgba(34,211,238,0.28)]">
-                <div className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.95)]" />
-                <div className="absolute inset-1.5 rounded-[1rem] border border-white/10 bg-black/35" />
-                <div className="absolute left-2 top-2 h-2 w-2 rounded-full border border-cyan-200/35" />
-                <div className="absolute bottom-2 right-2 h-2 w-2 rounded-full border border-fuchsia-200/25" />
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-cyan-300/30 bg-[radial-gradient(circle_at_72%_18%,rgba(34,211,238,0.30),transparent_30%),radial-gradient(circle_at_22%_82%,rgba(217,70,239,0.20),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.10),rgba(255,255,255,0.015))] shadow-[0_0_34px_rgba(34,211,238,0.22)] transition duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-2deg] group-hover:border-cyan-200/60 group-hover:shadow-[0_0_48px_rgba(34,211,238,0.32)]">
+                <div className="absolute inset-1.5 rounded-[0.95rem] border border-white/10 bg-black/45" />
+                <div className="absolute left-1/2 top-1.5 h-1.5 w-7 -translate-x-1/2 rounded-full bg-cyan-200/70 shadow-[0_0_16px_rgba(34,211,238,0.9)]" />
+                <div className="absolute bottom-2 left-2 h-2 w-2 rounded-full bg-fuchsia-300 shadow-[0_0_16px_rgba(217,70,239,0.85)]" />
+                <div className="absolute right-2 top-2 h-2 w-2 rounded-full border border-cyan-100/50" />
+                <div className="absolute -right-4 top-1/2 h-14 w-5 -translate-y-1/2 rotate-12 bg-white/10 blur-md transition duration-500 group-hover:right-10" />
 
-                <span className="relative rounded-lg border border-white/10 bg-black/35 px-1.5 py-1 text-[10px] font-black uppercase tracking-[-0.04em] text-white shadow-[0_0_18px_rgba(34,211,238,0.18)]">
-                  CP
+                <span className="relative text-[21px] font-black leading-none text-white drop-shadow-[0_0_16px_rgba(34,211,238,0.45)]">
+                  ◈
                 </span>
               </div>
 
-              <div className="relative flex min-w-[118px] flex-col leading-none sm:min-w-[146px]">
+              <div className="relative flex min-w-[140px] flex-col leading-none sm:min-w-[168px]">
                 <div className="flex items-center gap-2">
-                  <span className="h-px w-4 bg-cyan-300/60 shadow-[0_0_12px_rgba(34,211,238,0.75)]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.34em] text-white/95 sm:text-[12px] sm:tracking-[0.44em]">
+                  <span className="h-px w-4 bg-cyan-300/70 shadow-[0_0_12px_rgba(34,211,238,0.85)]" />
+                  <span className="bg-gradient-to-r from-cyan-100 via-white to-white bg-clip-text text-[15px] font-black uppercase tracking-[0.28em] text-transparent sm:text-[18px] sm:tracking-[0.34em]">
                     Card
                   </span>
                 </div>
 
-                <div className="-mt-0.5 flex items-center gap-2 pl-4 sm:pl-5">
-                  <span className="bg-gradient-to-r from-cyan-200 via-white to-fuchsia-200 bg-clip-text text-[18px] font-black uppercase tracking-[0.18em] text-transparent drop-shadow-[0_0_14px_rgba(34,211,238,0.26)] sm:text-[23px] sm:tracking-[0.24em]">
+                <div className="-mt-0.5 flex items-center gap-2 pl-7 sm:pl-8">
+                  <span className="bg-gradient-to-r from-white via-fuchsia-100 to-cyan-100 bg-clip-text text-[17px] font-black uppercase tracking-[0.20em] text-transparent drop-shadow-[0_0_14px_rgba(217,70,239,0.22)] sm:text-[22px] sm:tracking-[0.26em]">
                     Poc
                   </span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-200 shadow-[0_0_14px_rgba(217,70,239,0.75)]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-200 shadow-[0_0_14px_rgba(217,70,239,0.85)]" />
                 </div>
+
+                <span className="mt-1 hidden text-[8px] font-bold uppercase tracking-[0.28em] text-cyan-100/45 sm:block">
+                  {translate(t, "brandTaglineShort", "Colecione criadores")}
+                </span>
               </div>
             </a>
 
