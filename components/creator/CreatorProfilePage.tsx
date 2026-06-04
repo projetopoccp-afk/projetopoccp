@@ -165,6 +165,7 @@ const TRUSTED_EXTERNAL_METRIC_PLATFORMS = new Set([
   "youtube",
   "twitch",
   "kick",
+  "discord",
 ]);
 
 const RARITY_SHOWCASE_CYCLE = [
@@ -418,6 +419,7 @@ function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
 function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
   const youtubeSubscribers = getYoutubeExternalReachFromLiveStatus(liveStatus);
 
   const twitchFollowers = getTrustedLiveStatusExternalCount(
@@ -425,8 +427,12 @@ function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
     twitchStatus,
   );
   const kickFollowers = getTrustedLiveStatusExternalCount("kick", kickStatus);
+  const discordMembers = getTrustedLiveStatusExternalCount(
+    "discord",
+    discordStatus,
+  );
 
-  return twitchFollowers + kickFollowers + youtubeSubscribers;
+  return twitchFollowers + kickFollowers + discordMembers + youtubeSubscribers;
 }
 
 function getSocialUrl(socialLinks: SocialLink[], platform: string) {
@@ -740,6 +746,7 @@ export function CreatorProfilePage({
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
+  const [socialLinksOpen, setSocialLinksOpen] = useState(false);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -958,7 +965,7 @@ export function CreatorProfilePage({
       .map((social) => social.url);
 
     const targets: Array<{
-      platform: "twitch" | "kick" | "youtube";
+      platform: "twitch" | "kick" | "youtube" | "discord";
       username: string;
       index?: number;
     }> = [
@@ -966,7 +973,11 @@ export function CreatorProfilePage({
         .map((social) => {
           const platform = social.platform.toLowerCase();
 
-          if (platform !== "twitch" && platform !== "kick") {
+          if (
+            platform !== "twitch" &&
+            platform !== "kick" &&
+            platform !== "discord"
+          ) {
             return null;
           }
 
@@ -984,7 +995,7 @@ export function CreatorProfilePage({
           (
             target,
           ): target is {
-            platform: "twitch" | "kick";
+            platform: "twitch" | "kick" | "discord";
             username: string;
           } => Boolean(target && target.username.length > 0),
         ),
@@ -1194,8 +1205,6 @@ export function CreatorProfilePage({
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
-  const instagramStatus = getPlatformLiveStatus(liveStatus, "instagram");
-  const tiktokStatus = getPlatformLiveStatus(liveStatus, "tiktok");
   const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
   const visibleYoutubeChannels = getNormalizedYoutubeChannels(
     socialLinks
@@ -1679,59 +1688,19 @@ export function CreatorProfilePage({
     }
   }
 
-  const platformCounters = [
-    {
-      key: "youtube",
-      label:
-        visibleYoutubeChannels.length > 1
-          ? `YouTube (${visibleYoutubeChannels.length})`
-          : "YouTube",
-      value: youtubeExternalReach,
-      suffix: translate(t, "creatorProfileSubscribers", "inscritos"),
-      url: youtubeStatus?.url || getSocialUrl(socialLinks, "youtube"),
-      isLive: false,
-    },
-    {
-      key: "twitch",
-      label: "Twitch",
-      value: getTrustedLiveStatusExternalCount("twitch", twitchStatus),
-      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
-      url: twitchStatus?.url || getSocialUrl(socialLinks, "twitch"),
-      isLive: Boolean(twitchStatus?.isLive),
-    },
-    {
-      key: "kick",
-      label: "Kick",
-      value: getTrustedLiveStatusExternalCount("kick", kickStatus),
-      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
-      url: kickStatus?.url || getSocialUrl(socialLinks, "kick"),
-      isLive: Boolean(kickStatus?.isLive),
-    },
-    {
-      key: "instagram",
-      label: "Instagram",
-      value: 0,
-      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
-      url: instagramStatus?.url || getSocialUrl(socialLinks, "instagram"),
-      isLive: false,
-    },
-    {
-      key: "tiktok",
-      label: "TikTok",
-      value: 0,
-      suffix: translate(t, "creatorProfileFollowersShort", "seguidores"),
-      url: tiktokStatus?.url || getSocialUrl(socialLinks, "tiktok"),
-      isLive: false,
-    },
-    {
-      key: "discord",
-      label: "Discord",
-      value: 0,
-      suffix: "membros",
-      url: discordStatus?.url || getSocialUrl(socialLinks, "discord"),
-      isLive: false,
-    },
-  ].filter((item) => item.value > 0 || item.isLive);
+  const socialDropdownItems = [
+    ...socialLinks.filter(
+      (social) => social.platform.toLowerCase() !== "youtube",
+    ),
+    ...(visibleYoutubeChannels.length > 0
+      ? [
+          {
+            platform: "youtube",
+            url: visibleYoutubeChannels[0].url,
+          },
+        ]
+      : []),
+  ].filter((social) => social.url.trim().length > 0);
 
   const livePlatformItems = [
     {
@@ -2048,6 +2017,124 @@ export function CreatorProfilePage({
                   )}
                 </button>
               ) : null}
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSocialLinksOpen((current) => !current)}
+                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  <Globe2 className="h-4 w-4" />
+                  {translate(t, "creatorProfileSocialLinks", "Redes sociais")}
+                </button>
+
+                {socialLinksOpen ? (
+                  <div className="absolute left-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.4rem] border border-white/10 bg-[#100913]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                    {socialDropdownItems.length > 0 ? (
+                      <div className="space-y-2">
+                        {socialDropdownItems.map((social) => {
+                          const normalizedPlatform =
+                            social.platform.toLowerCase();
+                          const isYoutube = normalizedPlatform === "youtube";
+                          const platformStatus = getPlatformLiveStatus(
+                            liveStatus,
+                            normalizedPlatform,
+                          );
+                          const platformCount = isYoutube
+                            ? youtubeExternalReach
+                            : getTrustedLiveStatusExternalCount(
+                                normalizedPlatform,
+                                platformStatus,
+                              );
+                          const platformSuffix =
+                            normalizedPlatform === "discord"
+                              ? "membros"
+                              : isYoutube
+                                ? translate(
+                                    t,
+                                    "creatorProfileSubscribers",
+                                    "inscritos",
+                                  )
+                                : translate(
+                                    t,
+                                    "creatorProfileFollowersShort",
+                                    "seguidores",
+                                  );
+                          const platformLabel = isYoutube
+                            ? visibleYoutubeChannels.length > 1
+                              ? `YouTube (${visibleYoutubeChannels.length})`
+                              : "YouTube"
+                            : getPlatformLabel(normalizedPlatform);
+
+                          const counterLabel =
+                            platformCount > 0
+                              ? `${formatNumber(platformCount)} ${platformSuffix}`
+                              : "";
+
+                          if (isYoutube) {
+                            return (
+                              <button
+                                key="youtube-social-dropdown"
+                                type="button"
+                                onClick={() => {
+                                  setSocialLinksOpen(false);
+
+                                  if (visibleYoutubeChannels.length > 1) {
+                                    setYoutubeChannelsOpen(true);
+                                    return;
+                                  }
+
+                                  window.open(
+                                    social.url,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
+                                }}
+                                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                              >
+                                <span>{platformLabel}</span>
+                                {counterLabel ? (
+                                  <span className="ml-auto text-xs font-black text-cyan-100/70">
+                                    {counterLabel}
+                                  </span>
+                                ) : null}
+                                <ExternalLink className="h-4 w-4 shrink-0" />
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <a
+                              key={`${social.platform}-${social.url}`}
+                              href={social.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => setSocialLinksOpen(false)}
+                              className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                            >
+                              <span>{platformLabel}</span>
+                              {counterLabel ? (
+                                <span className="ml-auto text-xs font-black text-cyan-100/70">
+                                  {counterLabel}
+                                </span>
+                              ) : null}
+                              <ExternalLink className="h-4 w-4 shrink-0" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="px-3 py-2 text-sm font-semibold leading-6 text-white/50">
+                        {translate(
+                          t,
+                          "creatorProfileNoSocialLinks",
+                          "As redes sociais deste criador ainda não foram adicionadas.",
+                        )}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             {isEditing && editDraft ? (
@@ -2110,8 +2197,8 @@ export function CreatorProfilePage({
                   <p className="text-[10px] font-black uppercase tracking-[0.22em]">
                     {translate(
                       t,
-                      "creatorProfileExternalReach",
-                      "Alcance externo",
+                      "creatorProfileGlobalFollowers",
+                      "Seguidores Globais",
                     )}
                   </p>
                 </div>
@@ -2176,7 +2263,7 @@ export function CreatorProfilePage({
           </button>
         ) : null}
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="mt-8">
           <div className="space-y-6">
             <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-8">
               <div className="flex items-center gap-3">
@@ -2490,271 +2577,6 @@ export function CreatorProfilePage({
             </article>
           </div>
 
-          <aside className="space-y-6">
-            {platformCounters.length > 0 ? (
-              <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/55">
-                      {translate(
-                        t,
-                        "creatorProfilePlatformsTitle",
-                        "Plataformas",
-                      )}
-                    </p>
-                    <h2 className="mt-2 text-xl font-black tracking-tight">
-                      {translate(
-                        t,
-                        "creatorProfileExternalAudience",
-                        "Audiência externa",
-                      )}
-                    </h2>
-                  </div>
-
-                  {liveStatusLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-cyan-100/70" />
-                  ) : null}
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {platformCounters.map((platform) => {
-                    const platformContent = (
-                      <>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
-                            {platform.label}
-                          </p>
-
-                          {platform.isLive ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
-                              <Radio className="h-3 w-3 animate-pulse" />
-                              Live
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <p className="mt-3 text-3xl font-black">
-                          {formatNumber(platform.value)}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-white/45">
-                          {platform.suffix}
-                        </p>
-                      </>
-                    );
-
-                    if (
-                      platform.key === "youtube" &&
-                      visibleYoutubeChannels.length > 1
-                    ) {
-                      return (
-                        <button
-                          key={platform.key}
-                          type="button"
-                          onClick={() => setYoutubeChannelsOpen(true)}
-                          className="block w-full rounded-[1.3rem] border border-white/10 bg-black/25 p-4 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
-                        >
-                          {platformContent}
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <a
-                        key={platform.key}
-                        href={platform.url || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block rounded-[1.3rem] border border-white/10 bg-black/25 p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
-                      >
-                        {platformContent}
-                      </a>
-                    );
-                  })}
-                </div>
-              </article>
-            ) : null}
-
-            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <Globe2 className="h-5 w-5 text-cyan-200" />
-                <h2 className="text-xl font-black tracking-tight">
-                  {translate(t, "creatorProfileSocialLinks", "Redes sociais")}
-                </h2>
-              </div>
-
-              {socialLinks.length > 0 ? (
-                <div className="mt-5 space-y-3">
-                  {[
-                    ...socialLinks.filter(
-                      (social) => social.platform.toLowerCase() !== "youtube",
-                    ),
-                    ...(visibleYoutubeChannels.length > 0
-                      ? [
-                          {
-                            platform: "youtube",
-                            url: visibleYoutubeChannels[0].url,
-                          },
-                        ]
-                      : []),
-                  ].map((social) => {
-                    const isYoutube =
-                      social.platform.toLowerCase() === "youtube";
-
-                    if (isYoutube) {
-                      return (
-                        <button
-                          key="youtube-channels"
-                          type="button"
-                          onClick={() => {
-                            if (visibleYoutubeChannels.length > 1) {
-                              setYoutubeChannelsOpen(true);
-                              return;
-                            }
-
-                            window.open(
-                              social.url,
-                              "_blank",
-                              "noopener,noreferrer",
-                            );
-                          }}
-                          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
-                        >
-                          <span>
-                            {visibleYoutubeChannels.length > 1
-                              ? `YouTube (${visibleYoutubeChannels.length})`
-                              : "YouTube"}
-                          </span>
-
-                          <span className="ml-auto mr-3 text-xs font-black text-cyan-100/70">
-                            {youtubeExternalReach > 0
-                              ? `${formatNumber(youtubeExternalReach)} ${translate(
-                                  t,
-                                  "creatorProfileSubscribers",
-                                  "inscritos",
-                                )}`
-                              : null}
-                          </span>
-
-                          <ExternalLink className="h-4 w-4 shrink-0" />
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <a
-                        key={`${social.platform}-${social.url}`}
-                        href={social.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
-                      >
-                        <span>{getPlatformLabel(social.platform)}</span>
-
-                        {(() => {
-                          const normalizedPlatform =
-                            social.platform.toLowerCase();
-                          const platformStatus = getPlatformLiveStatus(
-                            liveStatus,
-                            normalizedPlatform,
-                          );
-                          const platformCount =
-                            getTrustedLiveStatusExternalCount(
-                              normalizedPlatform,
-                              platformStatus,
-                            );
-                          const platformSuffix =
-                            normalizedPlatform === "discord"
-                              ? "membros"
-                              : translate(
-                                  t,
-                                  "creatorProfileFollowersShort",
-                                  "seguidores",
-                                );
-
-                          return platformCount > 0 ? (
-                            <span className="ml-auto mr-3 text-xs font-black text-cyan-100/70">
-                              {formatNumber(platformCount)} {platformSuffix}
-                            </span>
-                          ) : null;
-                        })()}
-
-                        <ExternalLink className="h-4 w-4 shrink-0" />
-                      </a>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-5 text-sm leading-7 text-white/50">
-                  {translate(
-                    t,
-                    "creatorProfileNoSocialLinks",
-                    "As redes sociais deste criador ainda não foram adicionadas.",
-                  )}
-                </p>
-              )}
-            </article>
-
-            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-fuchsia-200" />
-                <h2 className="text-xl font-black tracking-tight">
-                  {translate(t, "creatorProfileCardStats", "Carta do criador")}
-                </h2>
-              </div>
-
-              <div className="mt-5 space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                  <span className="text-white/45">
-                    {translate(t, "creatorProfileCardRarity", "Raridade")}
-                  </span>
-                  <strong>{getRarityLabel(rarity)}</strong>
-                </div>
-
-                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                  <span className="text-white/45">
-                    {translate(t, "creatorProfileCardRank", "Rank")}
-                  </span>
-                  <strong>
-                    {card?.rank ||
-                      translate(t, "creatorProfileDefaultRank", "Bronze")}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                  <span className="text-white/45">
-                    {translate(t, "creatorProfileCardLevel", "Nível")}
-                  </span>
-                  <strong>{card?.level || 1}</strong>
-                </div>
-
-                <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3">
-                  <span className="text-white/45">
-                    {translate(t, "creatorProfileCardPower", "Poder")}
-                  </span>
-                  <strong>{formatNumber(card?.power_score || 0)}</strong>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={copyProfileLink}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
-              >
-                <Share2 className="h-4 w-4" />
-                {profileLinkCopied
-                  ? translate(
-                      t,
-                      "creatorProfileProfileLinkCopied",
-                      "Link copiado",
-                    )
-                  : translate(
-                      t,
-                      "creatorProfileCopyProfileLink",
-                      "Copiar link do perfil",
-                    )}
-              </button>
-            </article>
-          </aside>
         </section>
       </div>
 
