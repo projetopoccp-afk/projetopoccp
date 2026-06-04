@@ -13,7 +13,6 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
-  Star,
   UserCheck,
   Users,
   WifiOff,
@@ -307,13 +306,21 @@ function getYoutubeChannelFallbackTitle(
 }
 
 function getLiveStatusExternalCount(status: LiveStatus | undefined) {
-  return status?.subscriberCount ?? status?.followerCount ?? status?.externalCount ?? 0;
+  return (
+    status?.subscriberCount ??
+    status?.followerCount ??
+    status?.externalCount ??
+    0
+  );
 }
 
 function getYoutubeExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   return Object.entries(liveStatus)
     .filter(([key]) => key.startsWith("youtube:"))
-    .reduce((total, [, status]) => total + getLiveStatusExternalCount(status), 0);
+    .reduce(
+      (total, [, status]) => total + getLiveStatusExternalCount(status),
+      0,
+    );
 }
 
 function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
@@ -431,6 +438,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
+  const [profileLinkCopied, setProfileLinkCopied] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -789,15 +797,7 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     );
   const rarity = card?.rarity || "common";
   const tags = normalizeCreatorTags(profile?.tags);
-  const hiddenAutoTags = new Set([
-    "streamer",
-    "mmorpg",
-    "black desert",
-    "react",
-  ]);
-  const visibleTags = tags.filter(
-    (tag) => !hiddenAutoTags.has(tag.trim().toLowerCase()),
-  );
+  const visibleTags = tags;
   const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
@@ -807,7 +807,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       .filter((social) => social.platform.toLowerCase() === "youtube")
       .map((social) => social.url),
   );
-  const youtubeExternalReach = getYoutubeExternalReachFromLiveStatus(liveStatus);
+  const youtubeExternalReach =
+    getYoutubeExternalReachFromLiveStatus(liveStatus);
   const youtubeChannelItems = visibleYoutubeChannels.map((channel, index) => {
     const channelStatus = getPlatformLiveStatus(
       liveStatus,
@@ -831,14 +832,57 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const isOwner = Boolean(
     profile?.user_id && currentUserId === profile.user_id,
   );
-  const ogCardUrl = `/api/og/card/${encodeURIComponent(
+  const profileUrl = `/creator/${encodeURIComponent(
     profile?.username || decodedUsername,
   )}`;
+
+  const groupedClips = clips.reduce<Record<string, AutoClip[]>>(
+    (accumulator, clip) => {
+      const platform = String(clip.platform || "outros").toLowerCase();
+
+      if (!accumulator[platform]) {
+        accumulator[platform] = [];
+      }
+
+      accumulator[platform].push(clip);
+      return accumulator;
+    },
+    {},
+  );
+
+  const clipPlatformSections = (
+    Object.entries(groupedClips) as Array<[string, AutoClip[]]>
+  ).sort(([platformA], [platformB]) => {
+    const order = ["youtube", "twitch", "kick", "tiktok", "instagram"];
+    const indexA = order.indexOf(platformA);
+    const indexB = order.indexOf(platformB);
+
+    return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+  });
+
+  async function copyProfileLink() {
+    const baseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://www.cardpoc.com";
+    const fullProfileUrl = `${baseUrl}${profileUrl}`;
+
+    try {
+      await navigator.clipboard.writeText(fullProfileUrl);
+      setProfileLinkCopied(true);
+      window.setTimeout(() => setProfileLinkCopied(false), 1800);
+    } catch {
+      window.open(profileUrl, "_blank", "noopener,noreferrer");
+    }
+  }
 
   const platformCounters = [
     {
       key: "youtube",
-      label: visibleYoutubeChannels.length > 1 ? `YouTube (${visibleYoutubeChannels.length})` : "YouTube",
+      label:
+        visibleYoutubeChannels.length > 1
+          ? `YouTube (${visibleYoutubeChannels.length})`
+          : "YouTube",
       value: youtubeExternalReach,
       suffix: translate(t, "creatorProfileSubscribers", "inscritos"),
       url: youtubeStatus?.url || getSocialUrl(socialLinks, "youtube"),
@@ -1067,24 +1111,18 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               {bio}
             </p>
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75 backdrop-blur">
-                {category}
-              </span>
-
-              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75 backdrop-blur">
-                {faction}
-              </span>
-
-              {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85 backdrop-blur"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
+            {visibleTags.length > 0 ? (
+              <div className="mt-7 flex flex-wrap gap-3">
+                {visibleTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85 backdrop-blur"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
@@ -1151,7 +1189,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 return;
               }
 
-              window.open(heroLiveStatus.url || "#", "_blank", "noopener,noreferrer");
+              window.open(
+                heroLiveStatus.url || "#",
+                "_blank",
+                "noopener,noreferrer",
+              );
             }}
             className="mt-8 flex w-full items-center gap-3 rounded-[1.6rem] border border-red-300/20 bg-red-500/10 px-5 py-4 text-left text-sm font-bold text-red-50 backdrop-blur-xl transition hover:bg-red-500/15"
           >
@@ -1228,53 +1270,73 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                   )}
                 </div>
               ) : clips.length > 0 ? (
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  {clips.map((clip) => {
-                    const thumbnail = clip.thumbnailUrl || clip.thumbnail_url;
-                    const viewCount = clip.viewCount ?? clip.view_count ?? 0;
+                <div className="mt-6 space-y-7">
+                  {clipPlatformSections.map(([platform, platformClips]) => (
+                    <section key={platform}>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                          {getPlatformLabel(platform)}
+                        </p>
+                        <span className="text-xs font-bold text-white/35">
+                          {platformClips.length}{" "}
+                          {platformClips.length === 1
+                            ? translate(t, "creatorProfileClipSingular", "clip")
+                            : translate(t, "creatorProfileClipPlural", "clips")}
+                        </span>
+                      </div>
 
-                    return (
-                      <a
-                        key={clip.id}
-                        href={clip.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]"
-                      >
-                        <div className="aspect-video bg-white/[0.04]">
-                          {thumbnail ? (
-                            <img
-                              src={thumbnail}
-                              alt={clip.title}
-                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-white/30">
-                              <PlayCircle className="h-10 w-10" />
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:thin] [scrollbar-color:rgba(34,211,238,0.45)_rgba(255,255,255,0.08)]">
+                        {platformClips.map((clip) => {
+                          const thumbnail =
+                            clip.thumbnailUrl || clip.thumbnail_url;
+                          const viewCount =
+                            clip.viewCount ?? clip.view_count ?? 0;
 
-                        <div className="p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                              {getPlatformLabel(clip.platform)}
-                            </p>
+                          return (
+                            <a
+                              key={clip.id}
+                              href={clip.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[340px]"
+                            >
+                              <div className="aspect-video bg-white/[0.04]">
+                                {thumbnail ? (
+                                  <img
+                                    src={thumbnail}
+                                    alt={clip.title}
+                                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-white/30">
+                                    <PlayCircle className="h-10 w-10" />
+                                  </div>
+                                )}
+                              </div>
 
-                            {viewCount > 0 ? (
-                              <span className="text-xs font-bold text-white/40">
-                                {formatNumber(viewCount)}
-                              </span>
-                            ) : null}
-                          </div>
+                              <div className="p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                                    {getPlatformLabel(clip.platform)}
+                                  </p>
 
-                          <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
-                            {clip.title}
-                          </h3>
-                        </div>
-                      </a>
-                    );
-                  })}
+                                  {viewCount > 0 ? (
+                                    <span className="text-xs font-bold text-white/40">
+                                      {formatNumber(viewCount)}
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
+                                  {clip.title}
+                                </h3>
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
                 </div>
               ) : (
                 <p className="mt-5 text-sm leading-7 text-white/50">
@@ -1315,35 +1377,59 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  {platformCounters.map((platform) => (
-                    <a
-                      key={platform.key}
-                      href={platform.url || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block rounded-[1.3rem] border border-white/10 bg-black/25 p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
-                          {platform.label}
+                  {platformCounters.map((platform) => {
+                    const platformContent = (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-black uppercase tracking-[0.22em] text-white/55">
+                            {platform.label}
+                          </p>
+
+                          {platform.isLive ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
+                              <Radio className="h-3 w-3 animate-pulse" />
+                              Live
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <p className="mt-3 text-3xl font-black">
+                          {formatNumber(platform.value)}
                         </p>
+                        <p className="mt-1 text-xs font-semibold text-white/45">
+                          {platform.suffix}
+                        </p>
+                      </>
+                    );
 
-                        {platform.isLive ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
-                            <Radio className="h-3 w-3 animate-pulse" />
-                            Live
-                          </span>
-                        ) : null}
-                      </div>
+                    if (
+                      platform.key === "youtube" &&
+                      visibleYoutubeChannels.length > 1
+                    ) {
+                      return (
+                        <button
+                          key={platform.key}
+                          type="button"
+                          onClick={() => setYoutubeChannelsOpen(true)}
+                          className="block w-full rounded-[1.3rem] border border-white/10 bg-black/25 p-4 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
+                        >
+                          {platformContent}
+                        </button>
+                      );
+                    }
 
-                      <p className="mt-3 text-3xl font-black">
-                        {formatNumber(platform.value)}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-white/45">
-                        {platform.suffix}
-                      </p>
-                    </a>
-                  ))}
+                    return (
+                      <a
+                        key={platform.key}
+                        href={platform.url || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-[1.3rem] border border-white/10 bg-black/25 p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.06]"
+                      >
+                        {platformContent}
+                      </a>
+                    );
+                  })}
                 </div>
               </article>
             ) : null}
@@ -1371,7 +1457,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                         ]
                       : []),
                   ].map((social) => {
-                    const isYoutube = social.platform.toLowerCase() === "youtube";
+                    const isYoutube =
+                      social.platform.toLowerCase() === "youtube";
 
                     if (isYoutube) {
                       return (
@@ -1384,7 +1471,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                               return;
                             }
 
-                            window.open(social.url, "_blank", "noopener,noreferrer");
+                            window.open(
+                              social.url,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
                           }}
                           className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white/75 transition hover:border-cyan-300/30 hover:text-cyan-100"
                         >
@@ -1464,24 +1555,28 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                 </div>
               </div>
 
-              <a
-                href={ogCardUrl}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={copyProfileLink}
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
               >
-                <Star className="h-4 w-4" />
-                {translate(
-                  t,
-                  "creatorProfileViewShareCard",
-                  "Ver carta compartilhável",
-                )}
-              </a>
+                <Share2 className="h-4 w-4" />
+                {profileLinkCopied
+                  ? translate(
+                      t,
+                      "creatorProfileProfileLinkCopied",
+                      "Link copiado",
+                    )
+                  : translate(
+                      t,
+                      "creatorProfileCopyProfileLink",
+                      "Copiar link do perfil",
+                    )}
+              </button>
             </article>
           </aside>
         </section>
       </div>
-
 
       {livePlatformsOpen ? (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
@@ -1489,10 +1584,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             type="button"
             className="absolute inset-0"
             onClick={() => setLivePlatformsOpen(false)}
-            aria-label={translate(t, "creatorProfileCloseLivePlatforms", "Fechar plataformas ao vivo")}
+            aria-label={translate(
+              t,
+              "creatorProfileCloseLivePlatforms",
+              "Fechar plataformas ao vivo",
+            )}
           />
 
-          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
             <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
             <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
 
@@ -1502,7 +1601,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </p>
 
               <h3 className="mt-3 text-2xl font-black">
-                {translate(t, "creatorProfileLivePlatformsTitle", "Escolha onde assistir")}
+                {translate(
+                  t,
+                  "creatorProfileLivePlatformsTitle",
+                  "Escolha onde assistir",
+                )}
               </h3>
 
               <p className="mt-2 text-sm text-white/45">
@@ -1530,7 +1633,11 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                       <p className="font-black text-white">{item.label}</p>
                       <p className="truncate text-sm text-white/45">
                         {item.status?.title ||
-                          translate(t, "creatorProfileLiveFallbackTitle", "Live em andamento")}
+                          translate(
+                            t,
+                            "creatorProfileLiveFallbackTitle",
+                            "Live em andamento",
+                          )}
                       </p>
                     </div>
 
@@ -1561,10 +1668,14 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             type="button"
             className="absolute inset-0"
             onClick={() => setYoutubeChannelsOpen(false)}
-            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Fechar canais do YouTube")}
+            aria-label={translate(
+              t,
+              "creatorPopupCloseYoutubeChannels",
+              "Fechar canais do YouTube",
+            )}
           />
 
-          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-5 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)] sm:p-6">
             <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-red-500/20 blur-[70px]" />
             <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-[70px]" />
 
@@ -1574,11 +1685,19 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
               </p>
 
               <h3 className="mt-3 text-2xl font-black">
-                {translate(t, "creatorPopupYoutubeChannelsTitle", "Canais do YouTube")}
+                {translate(
+                  t,
+                  "creatorPopupYoutubeChannelsTitle",
+                  "Canais do YouTube",
+                )}
               </h3>
 
               <p className="mt-2 text-sm text-white/45">
-                {translate(t, "creatorPopupYoutubeChannelsDescription", "Escolha qual canal você quer abrir.")}
+                {translate(
+                  t,
+                  "creatorPopupYoutubeChannelsDescription",
+                  "Escolha qual canal você quer abrir.",
+                )}
               </p>
 
               <div className="mt-5 grid gap-3">
@@ -1608,7 +1727,12 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
                       </p>
 
                       <p className="text-sm text-white/45">
-                        {formatNumber(channel.subscriberCount)} {translate(t, "creatorPopupYoutubeSubscribers", "inscritos")}
+                        {formatNumber(channel.subscriberCount)}{" "}
+                        {translate(
+                          t,
+                          "creatorPopupYoutubeSubscribers",
+                          "inscritos",
+                        )}
                       </p>
                     </div>
                   </a>
