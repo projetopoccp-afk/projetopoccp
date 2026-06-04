@@ -365,6 +365,7 @@ export const translations = {
     creatorPopupChooseFile: "Escolher arquivo",
     creatorPopupClaimDescription:
       "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
+    creatorPopupClaimCode: "Código de verificação",
     creatorPopupClaimMine: "Este perfil é meu",
     creatorPopupClaimProfileBadge: "Reivindicar Perfil",
     creatorPopupClaimSentBadge: "Reivindicação Enviada",
@@ -1141,6 +1142,7 @@ export const translations = {
     creatorPopupChooseFile: "Choose file",
     creatorPopupClaimDescription:
       "To prove this profile belongs to you, enter an official platform and temporarily place the code below in the channel bio/description.",
+    creatorPopupClaimCode: "Verification code",
     creatorPopupClaimMine: "This profile is mine",
     creatorPopupClaimProfileBadge: "Claim Profile",
     creatorPopupClaimSentBadge: "Claim Sent",
@@ -1920,6 +1922,7 @@ export const translations = {
     creatorPopupChooseFile: "Elegir archivo",
     creatorPopupClaimDescription:
       "Para demostrar que este perfil te pertenece, informa una plataforma oficial y coloca temporalmente el código abajo en la bio/descripción del canal.",
+    creatorPopupClaimCode: "Código de verificación",
     creatorPopupClaimMine: "Este perfil es mío",
     creatorPopupClaimProfileBadge: "Reclamar Perfil",
     creatorPopupClaimSentBadge: "Reclamación Enviada",
