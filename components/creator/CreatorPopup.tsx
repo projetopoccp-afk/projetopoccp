@@ -54,6 +54,8 @@ type LiveStatus = {
   viewCount?: number;
   videoCount?: number;
   externalCount?: number;
+  memberCount?: number;
+  onlineMemberCount?: number;
 };
 
 type LiveStatusMap = Partial<Record<string, LiveStatus>>;
@@ -220,7 +222,66 @@ function getPlatformFallbackUrl(platform: string, username: string) {
     return `https://www.youtube.com/${username.replace("@", "")}`;
   }
 
+  if (normalizedPlatform === "discord") {
+    return username.startsWith("http")
+      ? username
+      : `https://discord.gg/${username}`;
+  }
+
+  if (normalizedPlatform === "instagram") {
+    return `https://www.instagram.com/${username.replace("@", "")}`;
+  }
+
+  if (normalizedPlatform === "tiktok") {
+    return `https://www.tiktok.com/@${username.replace("@", "")}`;
+  }
+
+  if (normalizedPlatform === "x") {
+    return `https://x.com/${username.replace("@", "")}`;
+  }
+
   return `https://twitch.tv/${username}`;
+}
+
+function getLiveStatusExternalCount(status: LiveStatus | undefined) {
+  return (
+    status?.subscriberCount ??
+    status?.followerCount ??
+    status?.memberCount ??
+    status?.externalCount ??
+    0
+  );
+}
+
+function getPlatformMetricLabel(
+  t: (key: any) => string,
+  platform: string,
+) {
+  const normalizedPlatform = platform.toLowerCase();
+
+  if (normalizedPlatform === "youtube") {
+    return translate(t, "creatorPopupYoutubeSubscribers", "inscritos");
+  }
+
+  if (normalizedPlatform === "discord") {
+    return translate(t, "creatorPopupDiscordMembers", "membros");
+  }
+
+  return translate(t, "creatorPopupFollowersLabel", "seguidores");
+}
+
+function getPlatformDisplayName(platform: string) {
+  const normalizedPlatform = platform.toLowerCase();
+
+  if (normalizedPlatform === "youtube") return "YouTube";
+  if (normalizedPlatform === "twitch") return "Twitch";
+  if (normalizedPlatform === "tiktok") return "TikTok";
+  if (normalizedPlatform === "kick") return "Kick";
+  if (normalizedPlatform === "instagram") return "Instagram";
+  if (normalizedPlatform === "discord") return "Discord";
+  if (normalizedPlatform === "x") return "X";
+
+  return platform;
 }
 
 const VIEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -232,12 +293,14 @@ function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
 
   const twitchFollowers = twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
   const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
   const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
+  const discordMembers = discordStatus?.memberCount ?? discordStatus?.externalCount ?? 0;
 
-  return twitchFollowers + kickFollowers + youtubeSubscribers;
+  return twitchFollowers + kickFollowers + youtubeSubscribers + discordMembers;
 }
 
 function calculateCreatorCardProgress({
@@ -570,10 +633,10 @@ export function CreatorPopup({
       return;
     }
 
-    const liveTargets = ["twitch", "kick"] as const;
+    const liveTargets = ["twitch", "kick", "discord"] as const;
 
     const targets: Array<{
-      platform: "twitch" | "kick" | "youtube";
+      platform: "twitch" | "kick" | "youtube" | "discord";
       username: string;
       url?: string;
       index?: number;
@@ -693,7 +756,7 @@ export function CreatorPopup({
     return () => {
       cancelled = true;
     };
-  }, [creator, socials.twitch, socials.kick, youtubeChannels]);
+  }, [creator, socials.twitch, socials.kick, socials.discord, youtubeChannels]);
 
   useEffect(() => {
     if (!creator) return;
@@ -2182,17 +2245,16 @@ function ViewPanel({
               const supportsExternalCount =
                 normalizedPlatform === "twitch" ||
                 normalizedPlatform === "kick" ||
-                normalizedPlatform === "youtube";
+                normalizedPlatform === "youtube" ||
+                normalizedPlatform === "discord";
               const isPlatformLive = Boolean(platformLiveStatus?.isLive);
               const platformUrl = platformLiveStatus?.url || url;
-              const platformExternalCount =
-                normalizedPlatform === "youtube"
-                  ? platformLiveStatus?.subscriberCount ?? platformLiveStatus?.externalCount ?? 0
-                  : platformLiveStatus?.followerCount ?? platformLiveStatus?.externalCount ?? 0;
-              const platformExternalLabel =
-                normalizedPlatform === "youtube"
-                  ? translate(t, "creatorPopupYoutubeSubscribers", "subscribers")
-                  : translate(t, "creatorPopupFollowersLabel", "followers");
+              const platformExternalCount = getLiveStatusExternalCount(platformLiveStatus);
+              const platformExternalLabel = getPlatformMetricLabel(
+                t,
+                normalizedPlatform
+              );
+              const platformName = getPlatformDisplayName(normalizedPlatform);
 
               if (normalizedPlatform === "youtube") {
                 return (
@@ -2212,7 +2274,7 @@ function ViewPanel({
                     <span className="block truncate font-bold uppercase tracking-[0.18em]">
                       {visibleYoutubeChannels.length > 1
                         ? `YOUTUBE (${visibleYoutubeChannels.length})`
-                        : "youtube"}
+                        : "YOUTUBE"}
                     </span>
 
                     <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
@@ -2245,10 +2307,7 @@ function ViewPanel({
                   }`}
                 >
                   <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                    {normalizedPlatform === "youtube" &&
-                    visibleYoutubeChannels.length > 1
-                      ? `YOUTUBE (${visibleYoutubeChannels.length})`
-                      : platform}
+                    {platformName}
                   </span>
 
                   <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
@@ -2277,7 +2336,6 @@ function ViewPanel({
             })}
         </div>
       </div>
-
       {youtubeChannelsOpen && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
           <button
