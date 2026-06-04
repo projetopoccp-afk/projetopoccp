@@ -178,7 +178,7 @@ async function getTwitchClips(username: string): Promise<CreatorClip[]> {
     }));
 }
 
-function normalizeKickClip(rawClip: any): CreatorClip | null {
+function normalizeKickClip(rawClip: any, channel: string): CreatorClip | null {
   const id = rawClip?.id || rawClip?.uuid || rawClip?.slug || rawClip?.clip_id;
 
   const title =
@@ -222,10 +222,24 @@ function normalizeKickClip(rawClip: any): CreatorClip | null {
     normalizedRawUrl.includes(".png") ||
     normalizedRawUrl.includes(".webp");
 
-  const url = isMediaUrl ? "" : rawUrl;
+  const mediaClipId =
+    rawUrl.match(/\/clips\/\d+\/(clip_[^/]+)/i)?.[1] ||
+    thumbnailUrl.match(/\/clips\/\d+\/(clip_[^/]+)/i)?.[1];
+
+  const explicitClipId =
+    [rawClip?.slug, rawClip?.uuid, rawClip?.clip_id, rawClip?.id]
+      .map((value) => String(value || "").trim())
+      .find((value) => value.startsWith("clip_")) || "";
+
+  const publicClipId = explicitClipId || mediaClipId || "";
+  const publicClipUrl = publicClipId
+    ? `https://kick.com/${encodeURIComponent(channel)}/clips/${publicClipId}`
+    : "";
+
+  const url = !isMediaUrl && rawUrl ? rawUrl : publicClipUrl;
 
   return {
-    id: `kick-${id || thumbnailUrl || title}`,
+    id: `kick-${publicClipId || id || thumbnailUrl || title}`,
     platform: "kick",
     title,
     url,
@@ -255,7 +269,7 @@ async function getKickClips(username: string): Promise<CreatorClip[]> {
     if (!Array.isArray(rawClips)) continue;
 
     const clips = rawClips
-      .map(normalizeKickClip)
+      .map((clip) => normalizeKickClip(clip, channel))
       .filter(Boolean) as CreatorClip[];
 
     if (clips.length > 0) {
