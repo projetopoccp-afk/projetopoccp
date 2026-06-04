@@ -1413,7 +1413,11 @@ export function CreatorPopup({
                   href={`/creator/${creator.username}`}
                   className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
                 >
-                  {t("goToFullPage")}
+                  {translate(
+                    t,
+                    "creatorPopupFullPage",
+                    "Ir para a página completa",
+                  )}
                 </a>
 
                 {canClaim && (
