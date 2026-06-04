@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -633,6 +634,7 @@ export function CreatorProfilePage({
   startInEditMode = false,
 }: CreatorProfilePageProps) {
   const { t } = useLanguage();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -666,6 +668,12 @@ export function CreatorProfilePage({
       .replace("@", "")
       .trim();
   }, [username]);
+
+  const creatorPublicPath = useMemo(() => {
+    const targetUsername = profile?.username || decodedUsername || username;
+
+    return `/creator/${encodeURIComponent(targetUsername)}`;
+  }, [decodedUsername, profile?.username, username]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -1243,6 +1251,10 @@ export function CreatorProfilePage({
 
     setProfileSaveError(null);
     setIsEditing(false);
+
+    if (startInEditMode) {
+      router.replace(creatorPublicPath);
+    }
   }
 
   async function handleSaveProfileEdit() {
@@ -1325,6 +1337,10 @@ export function CreatorProfilePage({
     setIsEditing(false);
 
     await refreshCreatorProfile();
+
+    if (startInEditMode) {
+      router.replace(creatorPublicPath);
+    }
   }
 
   async function handleFollow() {
