@@ -31,6 +31,7 @@ export function FloatingProfileSaveBar({
               "Alterações não salvas",
             )}
           </p>
+
           <p className="mt-1 text-xs leading-5 text-white/50">
             {translate(
               t,
@@ -38,6 +39,7 @@ export function FloatingProfileSaveBar({
               "Salve para publicar as mudanças no perfil ou cancele para voltar ao modo de visualização.",
             )}
           </p>
+
           {error ? (
             <p className="mt-2 text-xs font-bold text-red-200">{error}</p>
           ) : null}
