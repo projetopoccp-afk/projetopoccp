@@ -7,9 +7,7 @@ export const translations = {
     login: "Entrar",
     account: "Conta",
     openPanel: "Clique para abrir o painel",
-    creatorProfileUnsavedChanges: "Alterações não salvas",
-    creatorProfileSaveChanges: "Salvar alterações",
-    creatorProfileCancelChanges: "Cancelar",
+
     common: "Comum",
     rare: "Raro",
     epic: "Épico",
@@ -706,9 +704,7 @@ export const translations = {
     login: "Login",
     account: "Account",
     openPanel: "Open panel",
-    creatorProfileUnsavedChanges: "Unsaved changes",
-    creatorProfileSaveChanges: "Save changes",
-    creatorProfileCancelChanges: "Cancel",
+
     common: "Common",
     rare: "Rare",
     epic: "Epic",
@@ -1400,9 +1396,7 @@ export const translations = {
     login: "Entrar",
     account: "Cuenta",
     openPanel: "Abrir panel",
-    creatorProfileUnsavedChanges: "Cambios no guardados",
-    creatorProfileSaveChanges: "Guardar cambios",
-    creatorProfileCancelChanges: "Cancelar",
+
     common: "Común",
     rare: "Raro",
     epic: "Épico",
