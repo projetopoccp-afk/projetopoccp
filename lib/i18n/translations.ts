@@ -761,6 +761,7 @@ export const translations = {
     creatorProfileExternalReach: "Alcance externo",
     creatorProfilePlatformsTitle: "Plataformas",
     creatorProfileExternalAudience: "Audiência externa",
+    creatorProfileGlobalFollowers: "Seguidores Globais",
     creatorProfileUpdatingPlatforms: "Atualizando plataformas...",
     creatorProfileLoadingClips: "Carregando clipes...",
     creatorProfileChooseLivePlatform:
@@ -1524,6 +1525,7 @@ export const translations = {
     creatorProfileExternalReach: "External reach",
     creatorProfilePlatformsTitle: "Platforms",
     creatorProfileExternalAudience: "External audience",
+    creatorProfileGlobalFollowers: "Global Followers",
     creatorProfileUpdatingPlatforms: "Updating platforms...",
     creatorProfileLoadingClips: "Loading clips...",
     creatorProfileChooseLivePlatform:
@@ -2290,6 +2292,7 @@ export const translations = {
     creatorProfileExternalReach: "Alcance externo",
     creatorProfilePlatformsTitle: "Plataformas",
     creatorProfileExternalAudience: "Audiencia externa",
+    creatorProfileGlobalFollowers: "Seguidores Globales",
     creatorProfileUpdatingPlatforms: "Actualizando plataformas...",
     creatorProfileLoadingClips: "Cargando clips...",
     creatorProfileChooseLivePlatform:
