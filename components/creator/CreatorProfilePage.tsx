@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserCheck,
+  UserPlus,
   Users,
   WifiOff,
 } from "lucide-react";
@@ -29,6 +30,8 @@ import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
+import { addUserXp } from "@/lib/xp/user-xp";
+import { updateMissionProgress } from "@/lib/missions/user-missions";
 import type {
   Creator,
   CreatorRank,
@@ -429,6 +432,106 @@ function normalizeCreatorSocials(socialLinks: SocialLink[]) {
     );
 }
 
+
+type NotificationType =
+  | "card_unlocked"
+  | "level_up"
+  | "follow_creator"
+  | "share_profile"
+  | "generic";
+
+async function createUserNotification({
+  userId,
+  type,
+  title,
+  message,
+  metadata = {},
+}: {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const { error } = await supabase.from("user_notifications").insert({
+    user_id: userId,
+    type,
+    title,
+    message,
+    metadata,
+  });
+
+  if (error) {
+    console.error("Erro ao criar notificação:", error);
+  }
+}
+
+async function getCurrentUserLevel(userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("level")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao buscar level atual:", error);
+  }
+
+  return data?.level || 1;
+}
+
+async function hasXpEvent(
+  userId: string,
+  eventType: string,
+  metadata: Record<string, unknown>,
+) {
+  const { data, error } = await supabase
+    .from("user_xp_events")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("event_type", eventType)
+    .contains("metadata", metadata)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao verificar evento de XP:", error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
+async function addXpAndNotifyLevelUp({
+  userId,
+  eventType,
+  metadata,
+}: {
+  userId: string;
+  eventType: Parameters<typeof addUserXp>[0];
+  metadata: Record<string, unknown>;
+}) {
+  const previousLevel = await getCurrentUserLevel(userId);
+  const result = await addUserXp(eventType, metadata);
+
+  if (result?.new_level && result.new_level > previousLevel) {
+    await createUserNotification({
+      userId,
+      type: "level_up",
+      title: `Você chegou ao nível ${result.new_level}!`,
+      message: "Seu perfil evoluiu no Cardpoc.",
+      metadata: {
+        ...metadata,
+        previous_level: previousLevel,
+        new_level: result.new_level,
+        new_xp: result.new_xp,
+      },
+    });
+  }
+
+  return result;
+}
+
 export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const { t } = useLanguage();
 
@@ -451,6 +554,8 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
 
   const decodedUsername = useMemo(() => {
@@ -610,6 +715,37 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
       cancelled = true;
     };
   }, [decodedUsername]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFollowState() {
+      if (!profile?.id || !currentUserId) {
+        if (!cancelled) {
+          setIsFollowing(false);
+        }
+        return;
+      }
+
+      const { data } = await supabase
+        .from("creator_followers")
+        .select("id")
+        .eq("creator_id", profile.id)
+        .eq("user_id", currentUserId)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setIsFollowing(Boolean(data));
+      }
+    }
+
+    loadFollowState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id, currentUserId]);
 
   useEffect(() => {
     if (!profile) {
@@ -902,6 +1038,244 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
     return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
   });
 
+  async function refreshCreatorProfile() {
+    if (!decodedUsername) return;
+
+    const { data, error } = await supabase
+      .from("creator_profiles")
+      .select(
+        `
+        id,
+        user_id,
+        username,
+        nickname,
+        title,
+        faction,
+        category,
+        status,
+        avatar_url,
+        banner_url,
+        bio,
+        description,
+        tags,
+        is_verified,
+        created_at,
+        trending_score,
+        share_count,
+        creator_cards (
+          rarity,
+          rank,
+          aura,
+          evolution_stage,
+          level,
+          power_score
+        )
+      `,
+      )
+      .eq("is_public", true)
+      .ilike("username", decodedUsername)
+      .maybeSingle();
+
+    if (error || !data) return;
+
+    const typedProfile = data as CreatorProfileRow;
+    setProfile(typedProfile);
+
+    const [
+      { data: socialData },
+      { count: viewCount },
+      { count: followerCount },
+    ] = await Promise.all([
+      supabase
+        .from("creator_social_links")
+        .select("platform, url")
+        .eq("creator_id", typedProfile.id)
+        .order("platform", { ascending: true }),
+      supabase
+        .from("creator_views")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", typedProfile.id),
+      supabase
+        .from("creator_followers")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", typedProfile.id),
+    ]);
+
+    setSocialLinks((socialData || []) as SocialLink[]);
+    setStats({
+      views: viewCount || 0,
+      followers: followerCount || 0,
+      shares: typedProfile.share_count || 0,
+    });
+  }
+
+  async function handleFollow() {
+    if (!profile) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert(
+        translate(
+          t,
+          "creatorPopupLoginToFollow",
+          "Faça login para seguir este creator.",
+        ),
+      );
+      return;
+    }
+
+    setFollowLoading(true);
+
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from("creator_followers")
+          .delete()
+          .eq("creator_id", profile.id)
+          .eq("user_id", user.id);
+
+        if (error) {
+          alert(error.message);
+          return;
+        }
+
+        setIsFollowing(false);
+        setStats((current) => ({
+          ...current,
+          followers: Math.max(0, current.followers - 1),
+        }));
+        return;
+      }
+
+      const { error } = await supabase.from("creator_followers").insert({
+        creator_id: profile.id,
+        user_id: user.id,
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      setIsFollowing(true);
+      setStats((current) => ({
+        ...current,
+        followers: current.followers + 1,
+      }));
+
+      const metadata = {
+        creator_id: profile.id,
+        creator_username: profile.username,
+        creator_nickname: nickname,
+      };
+
+      const followAlreadyRewarded = await hasXpEvent(
+        user.id,
+        "follow_creator",
+        { creator_id: profile.id },
+      );
+
+      if (!followAlreadyRewarded) {
+        await addXpAndNotifyLevelUp({
+          userId: user.id,
+          eventType: "follow_creator",
+          metadata,
+        });
+
+        await createUserNotification({
+          userId: user.id,
+          type: "follow_creator",
+          title: `${translate(
+            t,
+            "creatorPopupFollowNotificationPrefix",
+            "Você seguiu",
+          )} ${nickname}`,
+          message: translate(
+            t,
+            "creatorPopupFollowXpMessage",
+            "Você ganhou XP por seguir um creator.",
+          ),
+          metadata,
+        });
+      }
+
+      await updateMissionProgress("follow_creator", 1, metadata);
+
+      const { data: existingCard } = await supabase
+        .from("user_cards")
+        .select("id")
+        .eq("creator_id", profile.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!existingCard) {
+        const { data: newCard, error: cardError } = await supabase
+          .from("user_cards")
+          .insert({
+            creator_id: profile.id,
+            user_id: user.id,
+            rarity: "common",
+            source: "follow",
+          })
+          .select("id, rarity, source, obtained_at")
+          .single();
+
+        if (cardError) {
+          console.error("Erro ao criar carta do usuário:", cardError);
+        } else {
+          await addXpAndNotifyLevelUp({
+            userId: user.id,
+            eventType: "collect_common_card",
+            metadata: {
+              creator_id: profile.id,
+              creator_username: profile.username,
+              creator_nickname: nickname,
+              card_id: newCard?.id,
+              rarity: newCard?.rarity,
+              source: newCard?.source,
+            },
+          });
+
+          await createUserNotification({
+            userId: user.id,
+            type: "card_unlocked",
+            title: `${translate(
+              t,
+              "creatorPopupCardUnlockedNotificationTitle",
+              "Carta desbloqueada:",
+            )} ${nickname}`,
+            message: translate(
+              t,
+              "creatorPopupCardUnlockedByFollow",
+              "Você ganhou uma carta comum por seguir este creator.",
+            ),
+            metadata: {
+              creator_id: profile.id,
+              creator_username: profile.username,
+              creator_nickname: nickname,
+              card_id: newCard?.id,
+              rarity: newCard?.rarity,
+              source: newCard?.source,
+            },
+          });
+
+          await updateMissionProgress("collect_card", 1, {
+            creator_id: profile.id,
+            creator_username: profile.username,
+            creator_nickname: nickname,
+            rarity: newCard?.rarity,
+            source: newCard?.source,
+          });
+        }
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
   async function copyProfileLink() {
     const baseUrl =
       typeof window !== "undefined"
@@ -1162,6 +1536,45 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
             <p className="mt-6 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
               {bio}
             </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleFollow}
+                disabled={followLoading}
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {followLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isFollowing ? (
+                  <UserCheck className="h-4 w-4" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                {isFollowing
+                  ? translate(t, "creatorPopupFollowing", "Seguindo")
+                  : translate(t, "creatorPopupFollow", "Seguir")}
+              </button>
+
+              <button
+                type="button"
+                onClick={copyProfileLink}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white/70 transition hover:border-cyan-300/25 hover:text-cyan-100"
+              >
+                <Share2 className="h-4 w-4" />
+                {profileLinkCopied
+                  ? translate(
+                      t,
+                      "creatorProfileProfileLinkCopied",
+                      "Link copiado",
+                    )
+                  : translate(
+                      t,
+                      "creatorProfileCopyProfileLink",
+                      "Copiar link do perfil",
+                    )}
+              </button>
+            </div>
 
             {visibleTags.length > 0 ? (
               <div className="mt-7 flex flex-wrap gap-3">
@@ -1850,9 +2263,29 @@ export function CreatorProfilePage({ username }: CreatorProfilePageProps) {
         <CreatorPopup
           creator={creatorForPopup}
           onClose={() => setEditPopupOpen(false)}
-          onCreatorUpdated={() => {
+          onCreatorUpdated={(updatedCreator) => {
             setEditPopupOpen(false);
-            window.location.reload();
+
+            setProfile((current) =>
+              current
+                ? {
+                    ...current,
+                    username: updatedCreator.username,
+                    nickname: updatedCreator.nickname,
+                    title: updatedCreator.title,
+                    faction: updatedCreator.faction,
+                    category: updatedCreator.category,
+                    status: updatedCreator.status,
+                    avatar_url: updatedCreator.avatarUrl,
+                    banner_url: updatedCreator.bannerUrl,
+                    bio: updatedCreator.bio,
+                    description: updatedCreator.description,
+                    tags: updatedCreator.tags,
+                  }
+                : current,
+            );
+
+            refreshCreatorProfile();
           }}
         />
       ) : null}
