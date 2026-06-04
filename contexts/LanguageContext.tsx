@@ -43,7 +43,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       language,
       setLanguage,
       t: (key: keyof typeof translations.pt) => {
-        return translations[language][key] || translations.pt[key] || key;
+        const dictionary = translations[language] as typeof translations.pt;
+
+        return dictionary[key] || translations.pt[key] || key;
       },
     }),
     [language]
