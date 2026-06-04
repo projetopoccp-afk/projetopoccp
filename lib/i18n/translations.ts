@@ -122,6 +122,12 @@ export const translations = {
     unlockedAchievementSingular: "{count} conquista desbloqueada",
     unlockedAchievementPlural: "{count} conquistas desbloqueadas",
     packsModalInventoryHint: "Escolha um pack para iniciar a revelação.",
+    packsModalCollectionNote:
+      "Packs podem ser conquistados em missões, eventos e recompensas do Cardpoc.",
+    packsModalMorePacksSoon: "Mais packs em breve.",
+    packsModalMythicPackDescription:
+      "Um pacote ultra raro com chance de cartas míticas.",
+    packsModalMythicPackName: "Pacote Mítico",
     user: "Usuário",
     adminActivities: "Atividades",
     adminApproveClaim: "Aprovar reivindicação",
@@ -1447,6 +1453,12 @@ export const translations = {
     shareCard: "Compartir carta",
     copied: "¡Copiado!",
     packsModalInventoryHint: "Choose a pack to start the reveal.",
+    packsModalCollectionNote:
+      "Packs can be earned through missions, events and Cardpoc rewards.",
+    packsModalMorePacksSoon: "More packs soon.",
+    packsModalMythicPackDescription:
+      "An ultra rare pack with a chance for mythic cards.",
+    packsModalMythicPackName: "Mythic Pack",
     shareCardText:
       "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
 
@@ -1699,6 +1711,12 @@ export const translations = {
     creatorPopupClaimUrlRequired:
       "Informa el link del canal o perfil usado para la verificación.",
     packsModalInventoryHint: "Elige un pack para comenzar la revelación.",
+    packsModalCollectionNote:
+      "Los packs pueden conseguirse en misiones, eventos y recompensas de Cardpoc.",
+    packsModalMorePacksSoon: "Más packs pronto.",
+    packsModalMythicPackDescription:
+      "Un pack ultra raro con probabilidad de cartas míticas.",
+    packsModalMythicPackName: "Pack Mítico",
     creatorPopupClipPrefix: "Clip",
     creatorPopupClipPreviewAltPrefix: "Vista previa del clip",
     creatorPopupClipTitlePlaceholder: "Mejor momento del directo",
