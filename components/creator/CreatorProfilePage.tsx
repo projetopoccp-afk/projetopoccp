@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -475,16 +476,24 @@ function isLikelyImageUrl(url: string) {
   return /\.(apng|avif|gif|jpg|jpeg|png|svg|webp)$/.test(normalizedUrl);
 }
 
+function isLikelyDirectMediaUrl(url: string) {
+  const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
+
+  return /\.(m3u8|mp4|m4v|mov|webm|mkv|avi|ts|m4a|mp3|wav|ogg)$/.test(
+    normalizedUrl,
+  );
+}
+
 function getSafeClipUrl(clip: AutoClip, socials: SocialLink[]) {
   const rawUrl = (clip.url || "").trim();
 
-  if (rawUrl && !isLikelyImageUrl(rawUrl)) {
+  if (rawUrl && !isLikelyImageUrl(rawUrl) && !isLikelyDirectMediaUrl(rawUrl)) {
     return rawUrl;
   }
 
   const platformUrl = getSocialUrl(socials, clip.platform as SocialPlatform);
 
-  return platformUrl || rawUrl || "#";
+  return platformUrl || "#";
 }
 
 function parseEditTags(tagsText: string) {
@@ -622,6 +631,8 @@ export function CreatorProfilePage({
   startInEditMode = false,
 }: CreatorProfilePageProps) {
   const { t } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -1279,6 +1290,12 @@ export function CreatorProfilePage({
     setProfileSaveError(null);
   }
 
+  function navigateBackToPublicProfile() {
+    if (!profile || !pathname?.endsWith("/dashboard")) return;
+
+    router.push(`/creator/${encodeURIComponent(profile.username)}`);
+  }
+
   function handleCancelEditMode() {
     if (profile) {
       setEditDraft(createProfileEditDraft(profile, socialLinks));
@@ -1286,6 +1303,7 @@ export function CreatorProfilePage({
 
     setProfileSaveError(null);
     setIsEditing(false);
+    navigateBackToPublicProfile();
   }
 
   async function handleSaveProfileEdit() {
@@ -1368,6 +1386,7 @@ export function CreatorProfilePage({
     setIsEditing(false);
 
     await refreshCreatorProfile();
+    navigateBackToPublicProfile();
   }
 
   async function handleFollow() {
