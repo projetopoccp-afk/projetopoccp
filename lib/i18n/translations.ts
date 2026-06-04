@@ -9,6 +9,7 @@ export const translations = {
     openPanel: "Clique para abrir o painel",
     creatorProfileEditMediaTitle: "Mídia e links",
     creatorProfileEditSocialLinks: "Links sociais",
+    creatorProfileEditAddSocialLink: "Adicionar link",
 
     common: "Comum",
     rare: "Raro",
@@ -730,6 +731,7 @@ export const translations = {
     openPanel: "Open panel",
     creatorProfileEditMediaTitle: "Media and links",
     creatorProfileEditSocialLinks: "Social links",
+    creatorProfileEditAddSocialLink: "Add link",
 
     common: "Common",
     rare: "Rare",
@@ -1446,6 +1448,7 @@ export const translations = {
     openPanel: "Abrir panel",
     creatorProfileEditMediaTitle: "Medios y enlaces",
     creatorProfileEditSocialLinks: "Enlaces sociales",
+    creatorProfileEditAddSocialLink: "Agregar enlace",
 
     common: "Común",
     rare: "Raro",
