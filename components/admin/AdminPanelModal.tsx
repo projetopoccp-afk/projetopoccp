@@ -11,6 +11,9 @@ import {
   EyeOff,
   Gift,
   History,
+  Ban,
+  BarChart3,
+  RotateCcw,
   Package,
   Search,
   ShieldCheck,
@@ -26,7 +29,7 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs";
+type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs" | "statistics";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
@@ -47,6 +50,7 @@ const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "cards", labelKey: "adminManageCards", fallback: "Gerenciar Cartas" },
   { id: "claims", labelKey: "adminClaims", fallback: "Reivindicações" },
   { id: "logs", labelKey: "adminActivities", fallback: "Atividades" },
+  { id: "statistics", labelKey: "adminStatistics", fallback: "Estatísticas" },
 ];
 
 const GRANT_RARITIES: {
@@ -210,6 +214,7 @@ type ProfileUser = {
   username: string | null;
   avatar_url: string | null;
   is_admin: boolean | null;
+  is_banned?: boolean | null;
   created_at: string;
 };
 
@@ -242,6 +247,17 @@ type CreatorClaim = {
   created_at: string;
 };
 
+type AdminStats = {
+  visits: number;
+  logins: number;
+  conqueredCards: number;
+  openedPacks: number;
+  creatorFollows: number;
+  pendingRequests: number;
+  pendingClaims: number;
+  totalCreators: number;
+};
+
 type AdminLog = {
   id: string;
   admin_id: string | null;
@@ -264,8 +280,19 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [creators, setCreators] = useState<CreatorProfile[]>([]);
   const [claims, setClaims] = useState<CreatorClaim[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [stats, setStats] = useState<AdminStats>({
+    visits: 0,
+    logins: 0,
+    conqueredCards: 0,
+    openedPacks: 0,
+    creatorFollows: 0,
+    pendingRequests: 0,
+    pendingClaims: 0,
+    totalCreators: 0,
+  });
 
   const [userSearch, setUserSearch] = useState("");
+  const [requestSearch, setRequestSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
   const [claimSearch, setClaimSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
@@ -287,6 +314,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>(
     {},
   );
+  const [expandedRequests, setExpandedRequests] = useState<
+    Record<string, boolean>
+  >({});
   const [expandedCreators, setExpandedCreators] = useState<
     Record<string, boolean>
   >({});
@@ -294,6 +324,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     {},
   );
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
+  const [successToast, setSuccessToast] = useState<string | null>(null);
 
   async function getCurrentUserId() {
     const {
@@ -341,7 +372,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const { data } = await supabase
       .from("profiles")
       .select(
-        "id, email, display_name, username, avatar_url, is_admin, created_at",
+        "id, email, display_name, username, avatar_url, is_admin, is_banned, created_at",
       )
       .order("created_at", { ascending: false });
 
@@ -402,6 +433,39 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setLogs((data || []) as AdminLog[]);
   }
 
+  async function loadStats() {
+    const [
+      { count: visits },
+      { count: conqueredCards },
+      { count: openedPacks },
+      { count: creatorFollows },
+      { count: pendingRequests },
+      { count: pendingClaims },
+      { count: totalCreators },
+      { count: totalUsers },
+    ] = await Promise.all([
+      supabase.from("creator_views").select("id", { count: "exact", head: true }),
+      supabase.from("user_cards").select("id", { count: "exact", head: true }),
+      supabase.from("user_packs").select("id", { count: "exact", head: true }).not("opened_at", "is", null),
+      supabase.from("creator_followers").select("id", { count: "exact", head: true }),
+      supabase.from("creator_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("creator_claims").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("creator_profiles").select("id", { count: "exact", head: true }),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+    ]);
+
+    setStats({
+      visits: visits || 0,
+      logins: totalUsers || 0,
+      conqueredCards: conqueredCards || 0,
+      openedPacks: openedPacks || 0,
+      creatorFollows: creatorFollows || 0,
+      pendingRequests: pendingRequests || 0,
+      pendingClaims: pendingClaims || 0,
+      totalCreators: totalCreators || 0,
+    });
+  }
+
   async function loadPanel() {
     setLoading(true);
 
@@ -411,6 +475,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       loadCreators(),
       loadClaims(),
       loadLogs(),
+      loadStats(),
     ]);
 
     setLoading(false);
@@ -697,6 +762,45 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
   }
 
+  async function toggleUserBan(targetUser: ProfileUser) {
+    setActionLoading(targetUser.id);
+
+    const newBannedValue = !targetUser.is_banned;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        is_banned: newBannedValue,
+      })
+      .eq("id", targetUser.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: newBannedValue ? "ban_user" : "unban_user",
+      targetType: "profile",
+      targetId: targetUser.id,
+      metadata: {
+        email: targetUser.email,
+        display_name: targetUser.display_name,
+        username: targetUser.username,
+      },
+    });
+
+    setActionLoading(null);
+    await loadUsers();
+    await loadLogs();
+    showAdminSuccess(
+      newBannedValue
+        ? translate(t, "adminUserBannedSuccess", "Usuário banido com sucesso.")
+        : translate(t, "adminUserUnbannedSuccess", "Usuário desbanido com sucesso."),
+    );
+  }
+
   async function toggleCreatorPublic(creator: CreatorProfile) {
     setActionLoading(creator.id);
 
@@ -771,6 +875,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       .update({
         user_id: null,
         owner_status: "unclaimed",
+        image_usage_consent: false,
+        image_usage_consent_at: null,
+        image_usage_consent_version: null,
+        image_usage_consent_source: "admin_reset",
+        image_usage_consent_text: null,
       })
       .eq("id", creator.id);
 
@@ -806,6 +915,15 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       .update({
         user_id: userId || null,
         owner_status: userId ? "claimed" : "unclaimed",
+        ...(userId
+          ? {}
+          : {
+              image_usage_consent: false,
+              image_usage_consent_at: null,
+              image_usage_consent_version: null,
+              image_usage_consent_source: "admin_reset",
+              image_usage_consent_text: null,
+            }),
       })
       .eq("id", creator.id);
 
@@ -855,6 +973,105 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       profile.email ||
       translate(t, "user", "Usuário")
     );
+  }
+
+  function showAdminSuccess(message: string) {
+    setSuccessToast(message);
+    window.setTimeout(() => setSuccessToast(null), 3200);
+  }
+
+  function getTabCounter(tabId: Tab) {
+    if (tabId === "requests") return requests.length;
+    if (tabId === "users") return users.length;
+    if (tabId === "creators") return creators.length;
+    if (tabId === "cards") return `${creators.length} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
+    if (tabId === "claims") return claims.length;
+    if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
+    if (tabId === "statistics") return null;
+
+    return null;
+  }
+
+  function getFriendlyLogTitle(log: AdminLog) {
+    const metadata = log.metadata || {};
+    const actor = getOwner(log.admin_id);
+    const actorName =
+      actor?.display_name ||
+      actor?.username ||
+      actor?.email ||
+      translate(t, "system", "Sistema");
+
+    const creatorName =
+      typeof metadata.creator_nickname === "string"
+        ? metadata.creator_nickname
+        : typeof metadata.nickname === "string"
+          ? metadata.nickname
+          : null;
+
+    const targetName =
+      creatorName ||
+      (typeof metadata.email === "string" ? metadata.email : null) ||
+      (typeof metadata.target_user_email === "string"
+        ? metadata.target_user_email
+        : null) ||
+      translate(t, "adminUnknownTarget", "um item");
+
+    const actionMap: Record<string, string> = {
+      approve_creator_request: translate(
+        t,
+        "adminActivityApprovedRequest",
+        "{actor} aprovou a solicitação de {target}.",
+      ),
+      reject_creator_request: translate(
+        t,
+        "adminActivityRejectedRequest",
+        "{actor} rejeitou a solicitação de {target}.",
+      ),
+      approve_creator_claim: translate(
+        t,
+        "adminActivityApprovedClaim",
+        "{actor} aprovou a reivindicação de {target}.",
+      ),
+      reject_creator_claim: translate(
+        t,
+        "adminActivityRejectedClaim",
+        "{actor} rejeitou a reivindicação de {target}.",
+      ),
+      grant_user_card: translate(
+        t,
+        "adminActivitySentCard",
+        "{actor} enviou carta para {target}.",
+      ),
+      giveaway_cards: translate(
+        t,
+        "adminActivityGiveawayCards",
+        "{actor} enviou cartas em giveaway.",
+      ),
+      grant_user_pack: translate(
+        t,
+        "adminActivitySentPack",
+        "{actor} enviou pacote para {target}.",
+      ),
+      giveaway_packs: translate(
+        t,
+        "adminActivityGiveawayPacks",
+        "{actor} enviou pacotes em giveaway.",
+      ),
+      ban_user: translate(t, "adminActivityBannedUser", "{actor} baniu {target}."),
+      unban_user: translate(
+        t,
+        "adminActivityUnbannedUser",
+        "{actor} desbaniu {target}.",
+      ),
+    };
+
+    return (actionMap[log.action] || translate(
+      t,
+      "adminActivityGeneric",
+      "{actor} realizou uma ação administrativa em {target}.",
+    ))
+      .replace("{actor}", actorName)
+      .replace("{target}", targetName);
   }
 
   async function grantCardToUser() {
@@ -961,7 +1178,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setActionLoading(null);
     await loadLogs();
 
-    alert(
+    showAdminSuccess(
       translate(
         t,
         adminRewardTarget === "all_users"
@@ -1067,7 +1284,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setActionLoading(null);
     await loadLogs();
 
-    alert(
+    showAdminSuccess(
       translate(
         t,
         adminRewardTarget === "all_users"
@@ -1083,6 +1300,24 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         .replace("{user}", targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : ""),
     );
   }
+
+  const filteredRequests = requests.filter((request) => {
+    const search = requestSearch.toLowerCase().trim();
+
+    const searchableText = [
+      request.nickname,
+      request.username,
+      request.email,
+      request.category,
+      request.verification_platform,
+      request.verification_url,
+      request.verification_code,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
 
   const filteredUsers = users.filter((user) => {
     const search = userSearch.toLowerCase().trim();
@@ -1210,7 +1445,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.94 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="no-scrollbar relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)] md:p-8"
+            className="no-scrollbar relative h-[86vh] w-full max-w-7xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)] md:p-8"
           >
             <button
               onClick={onClose}
@@ -1238,19 +1473,34 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {ADMIN_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    activeTab === tab.id
-                      ? "bg-cyan-300 text-black"
-                      : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
-                  }`}
-                >
-                  {translate(t, tab.labelKey, tab.fallback)}
-                </button>
-              ))}
+              {ADMIN_TABS.map((tab) => {
+                const counter = getTabCounter(tab.id);
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      activeTab === tab.id
+                        ? "bg-cyan-300 text-black"
+                        : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+                    }`}
+                  >
+                    <span>{translate(t, tab.labelKey, tab.fallback)}</span>
+                    {counter !== null && (
+                      <span
+                        className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                          activeTab === tab.id
+                            ? "bg-black/15 text-black"
+                            : "bg-white/10 text-white/70"
+                        }`}
+                      >
+                        {counter}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {loading && (
@@ -1260,103 +1510,154 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
             )}
 
             {!loading && activeTab === "requests" && (
-              <div className="mt-8 grid gap-5">
-                {requests.length === 0 && (
-                  <EmptyBox
-                    text={translate(
-                      t,
-                      "adminNoPendingRequests",
-                      "Nenhuma solicitação pendente.",
-                    )}
-                  />
-                )}
+              <div className="mt-8">
+                <SearchInput
+                  value={requestSearch}
+                  onChange={setRequestSearch}
+                  placeholder={translate(
+                    t,
+                    "adminSearchRequestPlaceholder",
+                    "Buscar solicitações por email, nome, username, categoria ou código...",
+                  )}
+                />
 
-                {requests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="grid gap-5 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 md:grid-cols-[180px_1fr]"
-                  >
-                    <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
-                      {request.card_image_url ? (
-                        <img
-                          src={request.card_image_url}
-                          alt={request.nickname}
-                          className="h-64 w-full object-cover md:h-full"
-                        />
-                      ) : (
-                        <div className="flex h-64 items-center justify-center text-white/30">
-                          {translate(t, "noImage", "Sem imagem")}
+                <div className="mt-5 grid gap-4">
+                  {filteredRequests.length === 0 && (
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoPendingRequests",
+                        "Nenhuma solicitação pendente.",
+                      )}
+                    />
+                  )}
+
+                  {filteredRequests.map((request) => {
+                    const isExpanded = expandedRequests[request.id] ?? false;
+
+                    return (
+                      <div
+                        key={request.id}
+                        className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
+                      >
+                        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                          <div className="min-w-0">
+                            <h3 className="truncate text-xl font-black text-white">
+                              {request.nickname}
+                            </h3>
+
+                            <p className="text-sm text-white/45">@{request.username}</p>
+                            <p className="mt-1 truncate text-sm text-white/40">
+                              {request.email}
+                            </p>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <StatusPill
+                                label={request.category || translate(t, "category", "Categoria")}
+                                tone="cyan"
+                              />
+                              <StatusPill
+                                label={request.verification_platform || translate(t, "notInformed", "Não informado")}
+                              />
+                              <StatusPill
+                                label={new Date(request.created_at).toLocaleDateString(dateLocale)}
+                                tone="yellow"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            <button
+                              onClick={() =>
+                                setExpandedRequests((current) => ({
+                                  ...current,
+                                  [request.id]: !isExpanded,
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  {translate(t, "collapse", "Recolher")}
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  {translate(t, "expand", "Expandir")}
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => approveRequest(request)}
+                              disabled={actionLoading === request.id}
+                              className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                            >
+                              <Check size={16} />
+                              {actionLoading === request.id
+                                ? translate(t, "approving", "Aprovando...")
+                                : translate(t, "approve", "Aprovar")}
+                            </button>
+
+                            <button
+                              onClick={() => rejectRequest(request)}
+                              disabled={actionLoading === request.id}
+                              className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-2 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                            >
+                              <X size={16} />
+                              {actionLoading === request.id
+                                ? translate(t, "processing", "Processando...")
+                                : translate(t, "reject", "Rejeitar")}
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    <div>
-                      <h3 className="text-2xl font-black">
-                        {request.nickname}
-                      </h3>
+                        {isExpanded && (
+                          <div className="grid gap-4 border-t border-white/10 bg-black/20 p-5 md:grid-cols-2">
+                            <InfoBox
+                              label={translate(t, "email", "Email")}
+                              value={request.email || translate(t, "noEmailLower", "sem email")}
+                            />
 
-                      <p className="text-white/45">@{request.username}</p>
-                      <p className="mt-1 text-sm text-white/40">
-                        {request.email}
-                      </p>
+                            <InfoBox
+                              label={translate(t, "code", "Código")}
+                              value={request.verification_code}
+                              highlight
+                            />
 
-                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        <InfoBox
-                          label={translate(t, "platform", "Plataforma")}
-                          value={
-                            request.verification_platform ||
-                            translate(t, "notInformed", "Não informado")
-                          }
-                        />
+                            <InfoBox
+                              label={translate(t, "platform", "Plataforma")}
+                              value={request.verification_platform || translate(t, "notInformed", "Não informado")}
+                            />
 
-                        <InfoBox
-                          label={translate(t, "code", "Código")}
-                          value={request.verification_code}
-                          highlight
-                        />
+                            <InfoBox
+                              label={translate(t, "requestedAt", "Solicitado em")}
+                              value={new Date(request.created_at).toLocaleString(dateLocale)}
+                            />
+
+                            {request.verification_url && (
+                              <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
+                                <p className="text-xs text-white/40">
+                                  {translate(t, "verificationUrl", "URL de verificação")}
+                                </p>
+
+                                <a
+                                  href={request.verification_url}
+                                  target="_blank"
+                                  className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-cyan-100 hover:text-cyan-200"
+                                >
+                                  <ExternalLink size={16} />
+                                  {request.verification_url}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-
-                      {request.verification_url && (
-                        <a
-                          href={request.verification_url}
-                          target="_blank"
-                          className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 hover:bg-cyan-300/20"
-                        >
-                          <ExternalLink size={16} />
-                          {translate(
-                            t,
-                            "adminOpenChannelProfile",
-                            "Abrir canal/perfil",
-                          )}
-                        </a>
-                      )}
-
-                      <div className="mt-6 flex flex-wrap gap-3">
-                        <button
-                          onClick={() => approveRequest(request)}
-                          disabled={actionLoading === request.id}
-                          className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
-                        >
-                          <Check size={16} />
-                          {actionLoading === request.id
-                            ? translate(t, "approving", "Aprovando...")
-                            : translate(t, "approve", "Aprovar")}
-                        </button>
-
-                        <button
-                          onClick={() => rejectRequest(request)}
-                          disabled={actionLoading === request.id}
-                          className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
-                        >
-                          <X size={16} />
-                          {actionLoading === request.id
-                            ? translate(t, "processing", "Processando...")
-                            : translate(t, "reject", "Rejeitar")}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1372,7 +1673,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                   )}
                 />
 
-                <div className="mt-5 grid gap-4">
+                <div className="mt-5 grid gap-3">
                   {filteredUsers.length === 0 && (
                     <EmptyBox
                       text={translate(
@@ -1386,7 +1687,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                   {filteredUsers.map((profile) => (
                     <div
                       key={profile.id}
-                      className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <UserInfo profile={profile} t={t} />
 
@@ -1395,6 +1696,13 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <StatusPill
                             label={translate(t, "admin", "Admin")}
                             tone="yellow"
+                          />
+                        )}
+
+                        {profile.is_banned && (
+                          <StatusPill
+                            label={translate(t, "adminBanned", "Banido")}
+                            tone="red"
                           />
                         )}
 
@@ -1410,6 +1718,28 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           {profile.is_admin
                             ? translate(t, "adminRemoveAdmin", "Remover Admin")
                             : translate(t, "adminMakeAdmin", "Tornar Admin")}
+                        </button>
+
+                        <button
+                          onClick={() => toggleUserBan(profile)}
+                          disabled={actionLoading === profile.id}
+                          className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
+                            profile.is_banned
+                              ? "border border-emerald-300/20 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
+                              : "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
+                          }`}
+                        >
+                          {profile.is_banned ? (
+                            <>
+                              <RotateCcw size={16} />
+                              {translate(t, "adminUnbanUser", "Desbanir")}
+                            </>
+                          ) : (
+                            <>
+                              <Ban size={16} />
+                              {translate(t, "adminBanUser", "Banir")}
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1454,18 +1784,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       >
                         <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                              {creator.avatar_url ? (
-                                <img
-                                  src={creator.avatar_url}
-                                  alt={creator.nickname}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                  {translate(t, "noImage", "Sem imagem")}
-                                </div>
-                              )}
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-lg font-black text-cyan-100">
+                              {creator.nickname?.slice(0, 1).toUpperCase() || "C"}
                             </div>
 
                             <div>
@@ -1877,7 +2197,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           />
                         </div>
 
-                        <div className="mt-4 grid max-h-[430px] gap-3 overflow-y-auto pr-1">
+                        <div className="mt-4 grid max-h-[360px] gap-3 overflow-y-auto pr-1">
                           {filteredCardCreators.length === 0 && (
                             <EmptyBox
                               text={translate(
@@ -1897,24 +2217,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                                 key={creator.id}
                                 type="button"
                                 onClick={() => setSelectedCardCreatorId(creator.id)}
-                                className={`flex items-center gap-4 rounded-3xl border p-4 text-left transition ${
+                                className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
                                   selected
                                     ? "border-cyan-300/60 bg-cyan-300/10"
                                     : "border-white/10 bg-black/20 hover:bg-white/[0.05]"
                                 }`}
                               >
-                                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                                  {creator.avatar_url ? (
-                                    <img
-                                      src={creator.avatar_url}
-                                      alt={creator.nickname}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-xs text-white/30">
-                                      {translate(t, "noImage", "Sem imagem")}
-                                    </div>
-                                  )}
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-sm font-black text-cyan-100">
+                                  {creator.nickname?.slice(0, 1).toUpperCase() || "C"}
                                 </div>
 
                                 <div className="min-w-0 flex-1">
@@ -2476,7 +2786,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                   )}
 
                   {filteredLogs.map((log) => {
-                    const admin = getOwner(log.admin_id);
                     const isExpanded = expandedLogs[log.id] ?? false;
 
                     return (
@@ -2488,15 +2797,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <div>
                             <p className="flex items-center gap-2 font-bold text-white">
                               <History size={16} />
-                              {log.action}
+                              {getFriendlyLogTitle(log)}
                             </p>
 
                             <p className="mt-1 text-sm text-white/45">
-                              {translate(t, "admin", "Admin")}:{" "}
-                              {admin
-                                ? admin.email || admin.display_name
-                                : log.admin_id ||
-                                  translate(t, "system", "Sistema")}
+                              {translate(t, "adminActivityAction", "Ação")}:{" "}
+                              {log.action}
                             </p>
 
                             <p className="text-sm text-white/35">
@@ -2557,10 +2863,126 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 </div>
               </div>
             )}
+
+
+            {!loading && activeTab === "statistics" && (
+              <div className="mt-8">
+                <div className="flex items-start gap-3 rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
+                    <BarChart3 size={20} />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-black text-white">
+                      {translate(t, "adminStatistics", "Estatísticas")}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/50">
+                      {translate(
+                        t,
+                        "adminStatisticsDescription",
+                        "Resumo operacional do Cardpoc com visitas, logins, cartas conquistadas e atividades principais.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard
+                    label={translate(t, "adminStatsVisits", "Visitas")}
+                    value={stats.visits}
+                    hint={translate(t, "adminStatsVisitsHint", "Visualizações registradas em perfis.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsLogins", "Logins/Usuários")}
+                    value={stats.logins}
+                    hint={translate(t, "adminStatsLoginsHint", "Total de contas cadastradas.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsConqueredCards", "Cartas conquistadas")}
+                    value={stats.conqueredCards}
+                    hint={translate(t, "adminStatsConqueredCardsHint", "Cartas no inventário dos usuários.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsOpenedPacks", "Packs abertos")}
+                    value={stats.openedPacks}
+                    hint={translate(t, "adminStatsOpenedPacksHint", "Packs já revelados pelos usuários.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsCreatorFollows", "Follows em criadores")}
+                    value={stats.creatorFollows}
+                    hint={translate(t, "adminStatsCreatorFollowsHint", "Relações de seguidores dentro do Cardpoc.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsPendingRequests", "Solicitações pendentes")}
+                    value={stats.pendingRequests}
+                    hint={translate(t, "adminStatsPendingRequestsHint", "Perfis aguardando aprovação.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsPendingClaims", "Reivindicações pendentes")}
+                    value={stats.pendingClaims}
+                    hint={translate(t, "adminStatsPendingClaimsHint", "Criadores aguardando validação de posse.")}
+                    dateLocale={dateLocale}
+                  />
+                  <StatCard
+                    label={translate(t, "adminStatsCreators", "Perfis de criadores")}
+                    value={stats.totalCreators}
+                    hint={translate(t, "adminStatsCreatorsHint", "Total de perfis criados na plataforma.")}
+                    dateLocale={dateLocale}
+                  />
+                </div>
+              </div>
+            )}
+
+
+
+            <AnimatePresence>
+              {successToast && (
+                <motion.button
+                  type="button"
+                  onClick={() => setSuccessToast(null)}
+                  initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                  className="fixed bottom-6 left-1/2 z-[120] max-w-md -translate-x-1/2 rounded-3xl border border-emerald-300/20 bg-emerald-950/95 px-5 py-4 text-left text-sm font-bold text-emerald-50 shadow-2xl shadow-emerald-500/20 backdrop-blur-2xl"
+                >
+                  {successToast}
+                </motion.button>
+              )}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  dateLocale,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  dateLocale: string;
+}) {
+  return (
+    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+      <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+        {label}
+      </p>
+      <p className="mt-3 text-3xl font-black text-white">
+        {Number(value || 0).toLocaleString(dateLocale)}
+      </p>
+      <p className="mt-2 text-sm leading-5 text-white/45">{hint}</p>
+    </div>
   );
 }
 
@@ -2633,14 +3055,16 @@ function StatusPill({
   tone = "default",
 }: {
   label: string;
-  tone?: "default" | "cyan" | "yellow";
+  tone?: "default" | "cyan" | "yellow" | "red";
 }) {
   const toneClass =
     tone === "cyan"
       ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
       : tone === "yellow"
         ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-100"
-        : "border-white/10 bg-white/[0.04] text-white/60";
+        : tone === "red"
+          ? "border-red-300/20 bg-red-300/10 text-red-100"
+          : "border-white/10 bg-white/[0.04] text-white/60";
 
   return (
     <span className={`rounded-full border px-3 py-1 text-xs ${toneClass}`}>
