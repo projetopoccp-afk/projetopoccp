@@ -77,6 +77,8 @@ export const translations = {
     legendaryPlural: "Lendárias",
 
     searchCreators: "Buscar criadores...",
+    rankings: "Rankings",
+    openRankings: "Abrir rankings",
     brandTaglineShort: "Colecione criadores",
     digitalReputationPlatform: "Plataforma de Reputação Digital",
     discoverCreators:
@@ -1096,6 +1098,8 @@ export const translations = {
     legendaryPlural: "Legendary",
 
     searchCreators: "Search creators...",
+    rankings: "Rankings",
+    openRankings: "Open rankings",
     brandTaglineShort: "Collect creators",
     digitalReputationPlatform: "Digital Reputation Platform",
     discoverCreators: "Discover legendary creators through digital cards.",
@@ -2110,6 +2114,8 @@ export const translations = {
     legendaryPlural: "Legendarias",
 
     searchCreators: "Buscar creadores...",
+    rankings: "Rankings",
+    openRankings: "Abrir rankings",
     brandTaglineShort: "Colecciona creadores",
     digitalReputationPlatform: "Plataforma de Reputación Digital",
     discoverCreators:
