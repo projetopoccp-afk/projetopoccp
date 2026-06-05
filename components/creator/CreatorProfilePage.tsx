@@ -950,7 +950,7 @@ function getSupportTypeLabel(
   type: SupportConversationType,
 ) {
   const item = SUPPORT_CONVERSATION_TYPES.find((option) => option.id === type);
-  return item ? translate(t, item.labelKey, item.fallback) : translate(t, "supportTypeOther", "Outro assunto");
+  return item ? translate(t, item.labelKey as TranslationKey, item.fallback) : translate(t, "supportTypeOther", "Outro assunto");
 }
 
 type SupportChatModalProps = {
@@ -1191,7 +1191,7 @@ function SupportChatModal({
                           : "border-white/10 bg-white/[0.035] text-white/60 hover:bg-white/[0.06]"
                       }`}
                     >
-                      {translate(t, type.labelKey, type.fallback)}
+                      {translate(t, type.labelKey as TranslationKey, type.fallback)}
                     </button>
                   ))}
                 </div>

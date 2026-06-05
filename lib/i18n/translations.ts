@@ -121,6 +121,7 @@ export const translations = {
       "🃏 Eu conquistei a carta {nickname} ({rarity}) no Creator Nexus",
 
     close: "Fechar",
+    cancel: "Cancelar",
     myAccount: "Minha Conta",
     noUsername: "sem_username",
     level: "Nível",
@@ -1088,6 +1089,7 @@ export const translations = {
       "🃏 I earned the {nickname} card ({rarity}) on Creator Nexus",
 
     close: "Close",
+    cancel: "Cancel",
     myAccount: "My Account",
     noUsername: "no_username",
     level: "Level",
@@ -2052,6 +2054,7 @@ export const translations = {
       "🃏 Conseguí la carta {nickname} ({rarity}) en Creator Nexus",
 
     close: "Cerrar",
+    cancel: "Cancelar",
     myAccount: "Mi Cuenta",
     noUsername: "sin_usuario",
     level: "Nivel",

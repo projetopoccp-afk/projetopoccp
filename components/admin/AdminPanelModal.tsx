@@ -231,7 +231,7 @@ function getPartnershipTypeLabel(type: string, t: TranslateFunction) {
 
   if (!option) return type;
 
-  return translate(t, option.labelKey, option.fallback);
+  return translate(t, option.labelKey as TranslationKey, option.fallback);
 }
 
 function getGrantRarityLabel(
@@ -242,7 +242,7 @@ function getGrantRarityLabel(
 
   if (!rarityOption) return rarity;
 
-  return translate(t, rarityOption.labelKey, rarityOption.fallback);
+  return translate(t, rarityOption.labelKey as TranslationKey, rarityOption.fallback);
 }
 
 function getAdminPackLabel(packType: AdminPackType | string, t: TranslateFunction) {
@@ -250,7 +250,7 @@ function getAdminPackLabel(packType: AdminPackType | string, t: TranslateFunctio
 
   if (!packOption) return packType;
 
-  return translate(t, packOption.labelKey, packOption.fallback);
+  return translate(t, packOption.labelKey as TranslationKey, packOption.fallback);
 }
 
 type CreatorRequest = {
@@ -2234,7 +2234,7 @@ if (!response.ok) {
                         : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
                     }`}
                   >
-                    <span>{translate(t, tab.labelKey, tab.fallback)}</span>
+                    <span>{translate(t, tab.labelKey as TranslationKey, tab.fallback)}</span>
                     {counter !== null && (
                       <span
                         className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
@@ -3063,7 +3063,7 @@ if (!response.ok) {
                                   <Package size={20} />
                                 </div>
                                 <p className="font-black text-white">
-                                  {translate(t, packOption.labelKey, packOption.fallback)}
+                                  {translate(t, packOption.labelKey as TranslationKey, packOption.fallback)}
                                 </p>
                                 <p className="mt-1 text-xs text-white/45">
                                   {translate(
@@ -4025,7 +4025,7 @@ if (!response.ok) {
                           >
                             {PARTNERSHIP_TYPE_OPTIONS.map((option) => (
                               <option key={option.id} value={option.id}>
-                                {translate(t, option.labelKey, option.fallback)}
+                                {translate(t, option.labelKey as TranslationKey, option.fallback)}
                               </option>
                             ))}
                           </select>
