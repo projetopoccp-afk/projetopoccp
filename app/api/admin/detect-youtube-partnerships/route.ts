@@ -462,8 +462,8 @@ if (profile?.is_admin !== true) {
               .select("id")
               .eq("creator_id", link.creator_id)
               .eq("source_platform", "youtube")
-              .eq("source_url", detection.sourceUrl)
               .eq("brand_name", detection.brandName)
+              .in("status", ["suggested", "verified", "manual"])
               .maybeSingle();
 
             if (existing?.id) {
