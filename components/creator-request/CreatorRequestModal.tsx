@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, ExternalLink, ImagePlus, RefreshCw, Send, Sparkles, WandSparkles, X } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
@@ -405,20 +406,12 @@ export function CreatorRequestModal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4"
+        <CardpocModalShell
+          onClose={onClose}
+          className="max-w-3xl"
+          contentClassName="no-scrollbar overflow-y-auto p-8 text-white"
+          zIndexClassName="z-[90]"
         >
-          <button className="absolute inset-0" onClick={onClose} />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 20 }}
-            className="no-scrollbar relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-8 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
-          >
             <button
               onClick={onClose}
               className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 hover:text-white"
@@ -794,8 +787,7 @@ export function CreatorRequestModal({
                 </button>
               </>
             )}
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );
