@@ -12,6 +12,9 @@ export const translations = {
     creatorProfileEditAddSocialLink: "Adicionar link",
     creatorProfileEditRemoveSocialLink: "Remover link",
 
+    rankings: "Rankings",
+    openRankings: "Abrir rankings",
+
     legalBackHome: "Voltar para o início",
     legalLastUpdated: "Última atualização: Junho de 2026",
     legalCardpocBadge: "Cardpoc",
@@ -1033,6 +1036,9 @@ export const translations = {
     creatorProfileEditAddSocialLink: "Add link",
     creatorProfileEditRemoveSocialLink: "Remove link",
 
+    rankings: "Rankings",
+    openRankings: "Open rankings",
+
     legalBackHome: "Back to home",
     legalLastUpdated: "Last updated: June 2026",
     legalCardpocBadge: "Cardpoc",
@@ -2048,6 +2054,9 @@ export const translations = {
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
     creatorProfileEditRemoveSocialLink: "Eliminar enlace",
+
+    rankings: "Rankings",
+    openRankings: "Abrir rankings",
 
     legalBackHome: "Volver al inicio",
     legalLastUpdated: "Última actualización: Junio de 2026",
