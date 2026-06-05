@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type TranslateFunction = (key: string, fallback?: string) => string;
-
 type RankingTab = "creators" | "collectors";
 
 type RankingItem = {
@@ -41,9 +39,10 @@ type RankingBlock = {
   items: RankingItem[];
 };
 
-function translate(t: TranslateFunction, key: string, fallback: string) {
+function translate(t: unknown, key: string, fallback: string) {
   try {
-    const value = t(key, fallback);
+    const translateFn = t as (key: any, fallback?: string) => string;
+    const value = translateFn(key as any, fallback);
     return value || fallback;
   } catch {
     return fallback;
