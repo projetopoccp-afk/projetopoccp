@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Gift, Info, Package, Plus, Sparkles, Star, X, Zap } from "lucide-react";
+import { Gift, Info, Package, Plus, Sparkles, Star, Zap } from "lucide-react";
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
@@ -129,19 +129,14 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
   return (
     <AnimatePresence>
       {open && (
-        <CardpocModalShell onClose={onClose}>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-5 top-5 z-30 grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/50 text-white/70 shadow-[0_0_28px_rgba(168,85,247,0.28)] backdrop-blur-xl transition hover:border-pink-200/40 hover:bg-pink-500/15 hover:text-white hover:shadow-[0_0_34px_rgba(236,72,153,0.35)]"
-              aria-label={translate(t, "packsModalCloseAria", "Close packs")}
-            >
-              <X size={22} />
-            </button>
-
-            <div className="relative z-10 flex h-full min-h-0 w-full flex-col p-5 sm:p-6 md:p-8">
-              <div className="flex shrink-0 items-center justify-between gap-4 pr-12">
+        <CardpocModalShell
+          onClose={onClose}
+          showCloseButton
+          closeLabel={translate(t, "packsModalCloseAria", "Close packs")}
+          contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-5 sm:p-6 md:p-8"
+        >
+            <div className="relative z-10 flex min-h-0 w-full flex-col">
+              <div className="flex shrink-0 items-center justify-between gap-4">
                 <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.32em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.08)]">
                   <Package size={15} />
                   {translate(t, "packsModalBadge", "Packs")}
