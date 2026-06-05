@@ -59,7 +59,7 @@ export function CardpocModalShell({
 
         <div className={`relative z-10 min-h-0 w-full ${contentClassName}`}>
           {hasControls && (
-            <div className="sticky top-4 z-50 mb-4 flex justify-end gap-3">
+            <div className="absolute right-6 top-6 z-50 flex gap-3">
               {showMinimizeButton && onMinimize && (
                 <button
                   type="button"
