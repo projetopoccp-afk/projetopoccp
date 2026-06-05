@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/admin/detect-youtube-partnerships",
+      "path": "/api/admin/detect-youtube-partnerships?cron_secret=cardpoc_cron_youtube_2026_8JH29xKQm71LpA",
       "schedule": "0 6 * * *"
     }
   ]

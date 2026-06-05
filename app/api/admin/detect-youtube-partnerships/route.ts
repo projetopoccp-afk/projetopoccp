@@ -384,7 +384,9 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     const cronSecret = process.env.CRON_SECRET;
-const cronHeader = request.headers.get("x-cron-secret");
+const cronHeader =
+  request.headers.get("x-cron-secret") ||
+  request.nextUrl.searchParams.get("cron_secret");
 
 const isCronRequest =
   cronSecret &&
