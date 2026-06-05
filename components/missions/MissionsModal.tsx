@@ -413,9 +413,10 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
           showCloseButton
           closeLabel={translate(t, "missionsModalCloseAria", "Fechar missões")}
           zIndexClassName="z-[120]"
-          className="h-auto max-h-[92vh] max-w-6xl rounded-[32px]"
+          className="max-w-6xl"
+          contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 md:p-8"
         >
-            <div className="relative z-10 max-h-[92vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
+          <div className="relative z-10">
               <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-cyan-100 shadow-lg shadow-cyan-500/10">
                 <Target size={14} />
                 {translate(t, "missionsModalBadge", "Missões")}
