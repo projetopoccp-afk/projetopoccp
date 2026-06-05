@@ -411,6 +411,7 @@ export function CreatorRequestModal({
           showCloseButton
           closeLabel={translate(t, "close", "Fechar")}
           zIndexClassName="z-[90]"
+          contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-7 sm:p-8"
         >
 
             <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
