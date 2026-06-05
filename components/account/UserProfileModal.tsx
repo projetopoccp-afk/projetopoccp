@@ -12,7 +12,6 @@ import {
   Star,
   Trophy,
   UserRound,
-  X,
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,6 +19,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 type AccountProfile = {
   display_name: string | null;
@@ -246,35 +246,15 @@ export function UserProfileModal({
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.25 }}
-          onClick={handleClose}
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4"
+        <CardpocModalShell
+          onClose={handleClose}
+          showCloseButton
+          closeLabel={translate(t, "closeProfile", "Fechar perfil")}
+          zIndexClassName="z-[110]"
+          className="max-w-4xl"
+          contentClassName="max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.94 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
-          >
-            <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
-            <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
-
-            <button
-              type="button"
-              onClick={handleClose}
-              className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "closeProfile", "Fechar perfil")}
-            >
-              <X size={18} />
-            </button>
-
-            <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
+            <div className="relative">
               <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                 <UserRound size={14} />
                 {translate(t, "profile", "Meu Perfil")}
@@ -554,8 +534,7 @@ export function UserProfileModal({
                 </div>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );
