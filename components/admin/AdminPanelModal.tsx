@@ -3260,7 +3260,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           />
                         </div>
 
-                        <div className="mt-4 grid max-h-[360px] gap-3 overflow-y-auto pr-1">
+                        <div className="mt-4 grid max-h-[360px] gap-3 hide-scrollbar overflow-y-auto pr-1">
                           {filteredCardCreators.length === 0 && (
                             <EmptyBox
                               text={translate(
@@ -3521,7 +3521,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                             />
                           </div>
 
-                          <div className="mt-4 grid max-h-[260px] gap-3 overflow-y-auto pr-1">
+                          <div className="mt-4 grid max-h-[260px] gap-3 hide-scrollbar overflow-y-auto pr-1">
                             {filteredCardUsers.length === 0 && (
                               <EmptyBox
                                 text={translate(
