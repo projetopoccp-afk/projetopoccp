@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
-
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { GlowBackground } from "@/components/effects/GlowBackground";
