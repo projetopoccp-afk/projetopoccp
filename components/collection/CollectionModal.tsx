@@ -649,7 +649,7 @@ export function CollectionModal({
           <CardpocModalShell
             onClose={onClose}
             className="max-w-6xl"
-            contentClassName="hide-scrollbar overflow-y-auto p-8"
+            contentClassName="hide-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-8 pb-10"
             zIndexClassName="z-[100]"
           >
             <button
