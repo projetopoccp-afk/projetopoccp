@@ -102,6 +102,8 @@ export const translations = {
     collectionTitle: "Suas cartas do Cardpoc",
     collectionDescription:
       "Aqui ficam as cartas de criadores conquistadas por seguir, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui.",
+    collectionSearchPlaceholder: "Pesquisar por carta, criador, raridade...",
+    collectionNoSearchResults: "Nenhuma carta encontrada para essa pesquisa.",
     total: "Total",
     loadingCollection: "Carregando coleção...",
     emptyCollectionTitle: "Coleção vazia por enquanto",
@@ -1118,6 +1120,8 @@ export const translations = {
     collectionTitle: "Your Nexus cards",
     collectionDescription:
       "Here are the creator cards you earned through follows, packs, missions, and events. Card notifications can open a specific card directly here.",
+    collectionSearchPlaceholder: "Search by card, creator, rarity...",
+    collectionNoSearchResults: "No cards found for this search.",
     total: "Total",
     loadingCollection: "Loading collection...",
     emptyCollectionTitle: "Your collection is empty for now",
@@ -2131,6 +2135,8 @@ export const translations = {
     collectionTitle: "Tus cartas del Nexus",
     collectionDescription:
       "Aquí están las cartas de creadores que ganaste mediante follows, paquetes, misiones y eventos. Las notificaciones de carta pueden abrir una carta específica directamente aquí.",
+    collectionSearchPlaceholder: "Buscar por carta, creador, rareza...",
+    collectionNoSearchResults: "No se encontraron cartas para esta búsqueda.",
     total: "Total",
     loadingCollection: "Cargando colección...",
     emptyCollectionTitle: "Tu colección está vacía por ahora",
