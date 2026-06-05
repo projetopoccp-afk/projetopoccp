@@ -1413,21 +1413,7 @@ export function CreatorPopup({
                 {getTranslatedStatusLabel(displayedStatus)}
               </div>
 
-              <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
-                {creator.category}
-              </p>
-
-              <h2 className="mt-2 text-4xl font-black text-white">
-                {nickname || creator.nickname}
-              </h2>
-
-              <p className="mt-1 text-sm font-semibold text-cyan-100">
-                {title || creator.title}
-              </p>
-
-              <p className="mt-2 text-sm text-white/60">@{creator.username}</p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   onClick={handleFollow}
                   disabled={followLoading}
@@ -2082,7 +2068,12 @@ function ViewPanel({
 
   const externalTotal = getCreatorExternalReachFromLiveStatus(liveStatus);
   const profileTitle = title || creator.title;
-  const profileDescription = description || creator.description || bio || creator.bio;
+  const rawProfileDescription = bio || creator.bio || description || creator.description || "";
+  const profileDescription =
+    rawProfileDescription.trim() ===
+    "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve."
+      ? ""
+      : rawProfileDescription.trim();
   const tagItems = tagsText
     .split(",")
     .map((tag) => tag.trim())
@@ -2131,7 +2122,7 @@ function ViewPanel({
         )}
 
         {profileDescription && (
-          <p className="mt-4 line-clamp-5 text-sm leading-relaxed text-white/65">
+          <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-white/65">
             {profileDescription}
           </p>
         )}
@@ -2156,10 +2147,10 @@ function ViewPanel({
         </div>
       )}
 
-      <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <InfoCard label={translate(t, "creatorProfileGlobalFollowers", "Seguidores Globais")} value={externalTotal.toLocaleString("pt-BR")} color="text-emerald-200" />
-        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores do site")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
+      <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <InfoCard label={translate(t, "creatorPopupViews", "Views")} value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
+        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores do site")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
+        <InfoCard label={translate(t, "creatorProfileGlobalFollowers", "Seguidores Globais")} value={externalTotal.toLocaleString("pt-BR")} color="text-emerald-200" />
         <InfoCard label={translate(t, "creatorPopupShares", "Compartilhamentos")} value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
       </div>
 
@@ -2484,9 +2475,9 @@ function InfoCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-white/35">{label}</p>
-      <p className={`mt-2 text-lg font-black ${color}`}>{value}</p>
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <p className="break-words text-[10px] uppercase leading-relaxed tracking-[0.14em] text-white/35">{label}</p>
+      <p className={`mt-2 truncate text-lg font-black ${color}`}>{value}</p>
     </div>
   );
 }
