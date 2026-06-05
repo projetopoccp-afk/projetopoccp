@@ -12,13 +12,14 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { createUserNotification } from "@/lib/notifications/user-notifications";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 type Mission = {
   id: string;
@@ -408,26 +409,11 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.25 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4"
+        <CardpocModalShell
+          onClose={onClose}
+          zIndexClassName="z-[120]"
+          className="h-auto max-h-[92vh] max-w-6xl rounded-[32px]"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.94 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[32px] border border-cyan-200/15 bg-[#03040b] text-white shadow-[0_0_90px_rgba(0,0,0,0.95)]"
-          >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(168,85,247,0.28),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(6,182,212,0.24),transparent_36%),linear-gradient(135deg,rgba(88,28,135,0.30),rgba(2,6,23,0.10)_42%,rgba(8,145,178,0.18))]" />
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30" />
-            <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[100px]" />
-            <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-[100px]" />
 
             <button
               type="button"
@@ -608,8 +594,7 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                   })}
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );
