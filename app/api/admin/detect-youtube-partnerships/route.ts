@@ -421,39 +421,48 @@ function formatBrandName(value: string) {
 }
 
 function extractLinks(text: string): DetectedLink[] {
-  const matches = text.match(/(?:https?:\/\/|www\.)[^\s)\]}<>"']+/gi) ?? [];
+  const matches = text.match(/https?:\/\/[^\s)\]}>"']+/gi) ?? [];
   const uniqueUrls = Array.from(new Set(matches.map(sanitizeRawUrl)));
 
-  return uniqueUrls
-    .map((rawUrl) => {
-      const normalizedUrl = normalizePossibleUrl(rawUrl);
+  const detectedLinks: DetectedLink[] = [];
 
-      if (!normalizedUrl) return null;
+  for (const rawUrl of uniqueUrls) {
+    const normalizedUrl = normalizePossibleUrl(rawUrl);
 
-      try {
-        const url = new URL(normalizedUrl);
-        const hostname = normalizeHostname(url.hostname);
-        const domain = getRegistrableDomain(hostname);
+    if (!normalizedUrl) continue;
 
-        if (!domain || isIgnoredDomain(domain)) return null;
+    try {
+      const url = new URL(normalizedUrl);
+      const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+      const domainParts = hostname.split(".");
+      const domain =
+        domainParts.length >= 2
+          ? domainParts[domainParts.length - 2]
+          : domainParts[0];
 
-        const knownBrand = KNOWN_DOMAIN_BRANDS[domain] || KNOWN_DOMAIN_BRANDS[hostname];
-        const domainName = domain.split(".")[0];
+      if (!domain) continue;
 
-        return {
-          url: url.toString(),
-          hostname,
-          domain,
-          brandName: knownBrand?.brandName || formatBrandName(domainName),
-          campaignName: knownBrand?.campaignName,
-          score: knownBrand?.score || scoreDetectedLink(url.toString(), domain),
-        };
-      } catch {
-        return null;
+      if (IGNORED_DOMAINS.some((ignored) => domain.includes(ignored))) {
+        continue;
       }
-    })
-    .filter((link): link is DetectedLink => link !== null)
-    .sort((a, b) => b.score - a.score);
+
+      const knownBrand = inferKnownBrandFromDomain(hostname, domain);
+
+      detectedLinks.push({
+        url: normalizedUrl,
+        hostname,
+        domain,
+        brandName: knownBrand?.brandName || formatBrandName(domain),
+        campaignName:
+          knownBrand?.campaignName || inferCampaignNameFromUrl(normalizedUrl),
+        score: knownBrand?.score || scoreDetectedLink(normalizedUrl, domain),
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return detectedLinks.sort((a, b) => b.score - a.score);
 }
 
 function scoreDetectedLink(url: string, domain: string) {
