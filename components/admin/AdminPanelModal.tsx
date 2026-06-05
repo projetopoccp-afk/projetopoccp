@@ -29,6 +29,7 @@ import {
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 type TranslationKey = Parameters<ReturnType<typeof useLanguage>["t"]>[0];
 
@@ -2461,34 +2462,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/80 p-4"
+        <CardpocModalShell
+          onClose={onClose}
+          showCloseButton
+          closeLabel={translate(t, "adminClosePanel", "Fechar painel admin")}
+          zIndexClassName="z-[95]"
+          className="max-w-7xl"
+          contentClassName="no-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 md:p-8"
         >
-          <button
-            onClick={onClose}
-            className="absolute inset-0"
-            aria-label={translate(t, "adminClosePanel", "Fechar painel admin")}
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.94 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="no-scrollbar relative h-[86vh] w-full max-w-7xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)] md:p-8"
-          >
-            <button
-              onClick={onClose}
-              className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "close", "Fechar")}
-            >
-              <X size={18} />
-            </button>
-
             <div className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-yellow-100">
               <ShieldCheck size={14} />
               {translate(t, "adminPanelBadge", "Admin Panel")}
@@ -5533,8 +5514,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                 </motion.button>
               )}
             </AnimatePresence>
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );
