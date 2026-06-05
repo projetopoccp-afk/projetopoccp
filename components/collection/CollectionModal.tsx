@@ -930,10 +930,11 @@ function CollectionCardShowcase({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="absolute right-6 top-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-red-400/25 bg-black/70 text-red-100 shadow-[0_0_24px_rgba(248,113,113,0.14)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-400/40 hover:bg-red-500/15"
           aria-label={translate(t, "closeCard", "Fechar carta")}
+          title={translate(t, "closeCard", "Fechar carta")}
         >
-          <X size={20} />
+          <X size={22} strokeWidth={3} />
         </button>
 
         <motion.div
