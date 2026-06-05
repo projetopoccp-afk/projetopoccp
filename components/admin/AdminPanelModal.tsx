@@ -863,7 +863,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           "Parceria detectada automaticamente e verificada pela equipe Cardpoc.",
         ),
       websiteUrl: partnership.website_url || brand?.website_url || "",
-      startDate: partnership.start_date || "",
+      startDate:
+        partnership.start_date ||
+        (partnership.source_published_at
+          ? new Date(partnership.source_published_at)
+              .toISOString()
+              .split("T")[0]
+          : ""),
+
       endDate: partnership.end_date || "",
     });
   }
