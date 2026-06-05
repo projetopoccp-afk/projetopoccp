@@ -12,6 +12,8 @@ import {
   Gift,
   Handshake,
   History,
+  ImageIcon,
+  Link,
   MessageCircle,
   Send,
   Ban,
@@ -19,6 +21,7 @@ import {
   RotateCcw,
   Package,
   Search,
+  Upload,
   ShieldCheck,
   UserCog,
   X,
@@ -31,7 +34,9 @@ type TranslationKey = Parameters<ReturnType<typeof useLanguage>["t"]>[0];
 
 function translateExisting(t: unknown, key: string, fallback: string) {
   const value = (t as Record<string, string | undefined>)[key];
-  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : fallback;
 }
 
 type AdminPanelModalProps = {
@@ -39,7 +44,16 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "partnerships" | "conversations" | "logs" | "statistics";
+type Tab =
+  | "requests"
+  | "users"
+  | "creators"
+  | "cards"
+  | "claims"
+  | "partnerships"
+  | "conversations"
+  | "logs"
+  | "statistics";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
@@ -59,8 +73,16 @@ const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "creators", labelKey: "adminProfiles", fallback: "Perfis" },
   { id: "cards", labelKey: "adminManageCards", fallback: "Gerenciar Cartas" },
   { id: "claims", labelKey: "adminClaims", fallback: "Reivindicações" },
-  { id: "partnerships", labelKey: "adminPartnerships", fallback: "Parcerias Detectadas" },
-  { id: "conversations", labelKey: "adminConversations", fallback: "Conversas" },
+  {
+    id: "partnerships",
+    labelKey: "adminPartnerships",
+    fallback: "Parcerias Detectadas",
+  },
+  {
+    id: "conversations",
+    labelKey: "adminConversations",
+    fallback: "Conversas",
+  },
   { id: "logs", labelKey: "adminActivities", fallback: "Atividades" },
   { id: "statistics", labelKey: "adminStatistics", fallback: "Estatísticas" },
 ];
@@ -154,11 +176,27 @@ const ADMIN_PACK_TYPES: {
 ];
 
 const PARTNERSHIP_TYPE_OPTIONS = [
-  { id: "sponsorship", labelKey: "adminPartnershipTypeSponsorship", fallback: "Patrocínio" },
-  { id: "ambassador", labelKey: "adminPartnershipTypeAmbassador", fallback: "Embaixador" },
-  { id: "campaign", labelKey: "adminPartnershipTypeCampaign", fallback: "Campanha" },
+  {
+    id: "sponsorship",
+    labelKey: "adminPartnershipTypeSponsorship",
+    fallback: "Patrocínio",
+  },
+  {
+    id: "ambassador",
+    labelKey: "adminPartnershipTypeAmbassador",
+    fallback: "Embaixador",
+  },
+  {
+    id: "campaign",
+    labelKey: "adminPartnershipTypeCampaign",
+    fallback: "Campanha",
+  },
   { id: "event", labelKey: "adminPartnershipTypeEvent", fallback: "Evento" },
-  { id: "partnership", labelKey: "adminPartnershipTypePartnership", fallback: "Parceria" },
+  {
+    id: "partnership",
+    labelKey: "adminPartnershipTypePartnership",
+    fallback: "Parceria",
+  },
 ];
 
 const RARITY_LEVEL: Record<Exclude<GrantRarity, "random">, number> = {
@@ -192,7 +230,6 @@ function getDateLocale(language: string) {
   return "pt-BR";
 }
 
-
 function getSupportStatusLabel(
   t: TranslateFunction,
   status: SupportConversationStatus,
@@ -208,7 +245,10 @@ function getSupportStatusLabel(
   return translateExisting(t, key, fallback);
 }
 
-function getSupportTypeLabel(t: TranslateFunction, type: SupportConversationType) {
+function getSupportTypeLabel(
+  t: TranslateFunction,
+  type: SupportConversationType,
+) {
   const labels: Record<SupportConversationType, [string, string]> = {
     bug: ["supportTypeBug", "Bug"],
     profile_correction: ["supportTypeProfileCorrection", "Correção de perfil"],
@@ -247,15 +287,26 @@ function getGrantRarityLabel(
 
   if (!rarityOption) return rarity;
 
-  return translate(t, rarityOption.labelKey as TranslationKey, rarityOption.fallback);
+  return translate(
+    t,
+    rarityOption.labelKey as TranslationKey,
+    rarityOption.fallback,
+  );
 }
 
-function getAdminPackLabel(packType: AdminPackType | string, t: TranslateFunction) {
+function getAdminPackLabel(
+  packType: AdminPackType | string,
+  t: TranslateFunction,
+) {
   const packOption = ADMIN_PACK_TYPES.find((item) => item.id === packType);
 
   if (!packOption) return packType;
 
-  return translate(t, packOption.labelKey as TranslationKey, packOption.fallback);
+  return translate(
+    t,
+    packOption.labelKey as TranslationKey,
+    packOption.fallback,
+  );
 }
 
 type CreatorRequest = {
@@ -313,7 +364,6 @@ type CreatorClaim = {
   status: "pending" | "approved" | "rejected" | "verified";
   created_at: string;
 };
-
 
 type Brand = {
   id: string;
@@ -394,8 +444,12 @@ type AdminLog = {
   created_at: string;
 };
 
-
-type SupportConversationStatus = "open" | "waiting_admin" | "waiting_user" | "resolved" | "closed";
+type SupportConversationStatus =
+  | "open"
+  | "waiting_admin"
+  | "waiting_user"
+  | "resolved"
+  | "closed";
 type SupportConversationType =
   | "bug"
   | "profile_correction"
@@ -434,17 +488,37 @@ const SUPPORT_STATUS_FILTERS: {
   labelKey: string;
   fallback: string;
 }[] = [
-  { id: "active", labelKey: "adminConversationFilterActive", fallback: "Ativas" },
+  {
+    id: "active",
+    labelKey: "adminConversationFilterActive",
+    fallback: "Ativas",
+  },
   { id: "all", labelKey: "adminConversationFilterAll", fallback: "Todas" },
   { id: "open", labelKey: "supportStatusOpen", fallback: "Abertas" },
-  { id: "waiting_admin", labelKey: "supportStatusWaitingAdmin", fallback: "Aguardando equipe" },
-  { id: "waiting_user", labelKey: "supportStatusWaitingUser", fallback: "Aguardando criador" },
+  {
+    id: "waiting_admin",
+    labelKey: "supportStatusWaitingAdmin",
+    fallback: "Aguardando equipe",
+  },
+  {
+    id: "waiting_user",
+    labelKey: "supportStatusWaitingUser",
+    fallback: "Aguardando criador",
+  },
   { id: "resolved", labelKey: "supportStatusResolved", fallback: "Resolvidas" },
   { id: "closed", labelKey: "supportStatusClosed", fallback: "Encerradas" },
 ];
 
-const ACTIVE_SUPPORT_STATUSES: SupportConversationStatus[] = ["open", "waiting_admin", "waiting_user"];
-const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = ["resolved", "closed"];
+const ACTIVE_SUPPORT_STATUSES: SupportConversationStatus[] = [
+  "open",
+  "waiting_admin",
+  "waiting_user",
+];
+const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = [
+  "resolved",
+  "closed",
+];
+const CREATOR_IMAGE_BUCKET = "creator-images";
 
 function isSupportConversationFinal(status: SupportConversationStatus) {
   return FINAL_SUPPORT_STATUSES.includes(status);
@@ -463,7 +537,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [claims, setClaims] = useState<CreatorClaim[]>([]);
   const [partnerships, setPartnerships] = useState<CreatorPartnership[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
-  const [supportConversations, setSupportConversations] = useState<SupportConversation[]>([]);
+  const [supportConversations, setSupportConversations] = useState<
+    SupportConversation[]
+  >([]);
   const [userCardsCount, setUserCardsCount] = useState(0);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [stats, setStats] = useState<AdminStats>({
@@ -484,8 +560,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
   const [conversationSearch, setConversationSearch] = useState("");
-  const [conversationStatusFilter, setConversationStatusFilter] = useState<SupportFilter>("active");
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [conversationStatusFilter, setConversationStatusFilter] =
+    useState<SupportFilter>("active");
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
   const [conversationReply, setConversationReply] = useState("");
   const [cardCreatorSearch, setCardCreatorSearch] = useState("");
   const [cardUserSearch, setCardUserSearch] = useState("");
@@ -514,18 +593,24 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [expandedClaims, setExpandedClaims] = useState<Record<string, boolean>>(
     {},
   );
-  const [expandedPartnerships, setExpandedPartnerships] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [expandedPartnerships, setExpandedPartnerships] = useState<
+    Record<string, boolean>
+  >({});
   const [partnershipApprovalDraft, setPartnershipApprovalDraft] =
     useState<PartnershipApprovalDraft | null>(null);
   const [brandEnrichmentLoading, setBrandEnrichmentLoading] = useState(false);
-  const [brandEnrichmentConfidence, setBrandEnrichmentConfidence] =
-    useState<number | null>(null);
-  const [brandEnrichmentSource, setBrandEnrichmentSource] =
-    useState<string | null>(null);
+  const [brandEnrichmentConfidence, setBrandEnrichmentConfidence] = useState<
+    number | null
+  >(null);
+  const [brandEnrichmentSource, setBrandEnrichmentSource] = useState<
+    string | null
+  >(null);
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [imageEditorCreator, setImageEditorCreator] =
+    useState<CreatorProfile | null>(null);
+  const [imageEditorUrl, setImageEditorUrl] = useState("");
+  const [imageEditorFile, setImageEditorFile] = useState<File | null>(null);
 
   async function getCurrentUserId() {
     const {
@@ -624,7 +709,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setClaims((data || []) as CreatorClaim[]);
   }
 
-
   async function loadPartnerships() {
     const { data } = await supabase
       .from("creator_partnerships")
@@ -634,7 +718,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     setPartnerships((data || []) as CreatorPartnership[]);
   }
-
 
   async function loadSupportConversations() {
     const { data } = await supabase
@@ -650,7 +733,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       .from("user_cards")
       .select("id", { count: "exact", head: true });
 
-setUserCardsCount(userCardsTotal ?? 0);
+    setUserCardsCount(userCardsTotal ?? 0);
   }
 
   async function loadSupportMessages(conversationId: string | null) {
@@ -694,10 +777,18 @@ setUserCardsCount(userCardsTotal ?? 0);
   }
 
   async function sendSupportReply() {
-    const conversation = supportConversations.find((item) => item.id === selectedConversationId) || null;
+    const conversation =
+      supportConversations.find((item) => item.id === selectedConversationId) ||
+      null;
     const adminId = await getCurrentUserId();
 
-    if (!conversation || !adminId || !conversationReply.trim() || conversation.status === "closed") return;
+    if (
+      !conversation ||
+      !adminId ||
+      !conversationReply.trim() ||
+      conversation.status === "closed"
+    )
+      return;
 
     setActionLoading(conversation.id);
 
@@ -735,13 +826,28 @@ setUserCardsCount(userCardsTotal ?? 0);
       { count: totalCreators },
       { count: totalUsers },
     ] = await Promise.all([
-      supabase.from("creator_views").select("id", { count: "exact", head: true }),
+      supabase
+        .from("creator_views")
+        .select("id", { count: "exact", head: true }),
       supabase.from("user_cards").select("id", { count: "exact", head: true }),
-      supabase.from("user_packs").select("id", { count: "exact", head: true }).not("opened_at", "is", null),
-      supabase.from("creator_followers").select("id", { count: "exact", head: true }),
-      supabase.from("creator_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("creator_claims").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("creator_profiles").select("id", { count: "exact", head: true }),
+      supabase
+        .from("user_packs")
+        .select("id", { count: "exact", head: true })
+        .not("opened_at", "is", null),
+      supabase
+        .from("creator_followers")
+        .select("id", { count: "exact", head: true }),
+      supabase
+        .from("creator_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("creator_claims")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("creator_profiles")
+        .select("id", { count: "exact", head: true }),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
     ]);
 
@@ -1027,7 +1133,6 @@ setUserCardsCount(userCardsTotal ?? 0);
     await loadPanel();
   }
 
-
   function openPartnershipApproval(partnership: CreatorPartnership) {
     const brand = partnership.brands;
 
@@ -1120,7 +1225,9 @@ setUserCardsCount(userCardsTotal ?? 0);
               brandWebsiteUrl:
                 result.brand.website_url || current.brandWebsiteUrl,
               websiteUrl:
-                current.websiteUrl || result.brand.website_url || current.websiteUrl,
+                current.websiteUrl ||
+                result.brand.website_url ||
+                current.websiteUrl,
               brandDescription:
                 result.brand.description || current.brandDescription,
             }
@@ -1206,9 +1313,10 @@ setUserCardsCount(userCardsTotal ?? 0);
           external_logo_source: partnershipApprovalDraft.brandLogoUrl.trim()
             ? "brand_enrichment"
             : null,
-          last_enriched_at: brandEnrichmentConfidence !== null
-            ? new Date().toISOString()
-            : null,
+          last_enriched_at:
+            brandEnrichmentConfidence !== null
+              ? new Date().toISOString()
+              : null,
         })
         .eq("id", existingBrand.id);
 
@@ -1231,9 +1339,10 @@ setUserCardsCount(userCardsTotal ?? 0);
           external_logo_source: partnershipApprovalDraft.brandLogoUrl.trim()
             ? "brand_enrichment"
             : null,
-          last_enriched_at: brandEnrichmentConfidence !== null
-            ? new Date().toISOString()
-            : null,
+          last_enriched_at:
+            brandEnrichmentConfidence !== null
+              ? new Date().toISOString()
+              : null,
         })
         .select("id")
         .single();
@@ -1254,7 +1363,8 @@ setUserCardsCount(userCardsTotal ?? 0);
         brand_name: normalizedBrandName,
         partnership_type: partnershipApprovalDraft.partnershipType,
         campaign_name: partnershipApprovalDraft.campaignName.trim() || null,
-        public_description: partnershipApprovalDraft.publicDescription.trim() || null,
+        public_description:
+          partnershipApprovalDraft.publicDescription.trim() || null,
         website_url:
           partnershipApprovalDraft.websiteUrl.trim() ||
           partnershipApprovalDraft.brandWebsiteUrl.trim() ||
@@ -1300,7 +1410,11 @@ setUserCardsCount(userCardsTotal ?? 0);
     await loadPartnerships();
     await loadLogs();
     showAdminSuccess(
-      translate(t, "adminPartnershipApprovedSuccess", "Parceria aprovada com sucesso."),
+      translate(
+        t,
+        "adminPartnershipApprovedSuccess",
+        "Parceria aprovada com sucesso.",
+      ),
     );
   }
 
@@ -1360,28 +1474,28 @@ setUserCardsCount(userCardsTotal ?? 0);
 
     try {
       const {
-  data: { session },
-} = await supabase.auth.getSession();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-const response = await fetch("/api/admin/detect-youtube-partnerships", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${session?.access_token ?? ""}`,
-  },
-});
+      const response = await fetch("/api/admin/detect-youtube-partnerships", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+      });
 
-const result = await response.json().catch(() => null);
+      const result = await response.json().catch(() => null);
 
-if (!response.ok) {
-  throw new Error(
-    result?.error ||
-      translate(
-        t,
-        "adminPartnershipDetectionError",
-        "Não foi possível detectar parcerias do YouTube agora.",
-      ),
-  );
-}
+      if (!response.ok) {
+        throw new Error(
+          result?.error ||
+            translate(
+              t,
+              "adminPartnershipDetectionError",
+              "Não foi possível detectar parcerias do YouTube agora.",
+            ),
+        );
+      }
 
       await loadPartnerships();
       await loadLogs();
@@ -1477,7 +1591,11 @@ if (!response.ok) {
     showAdminSuccess(
       newBannedValue
         ? translate(t, "adminUserBannedSuccess", "Usuário banido com sucesso.")
-        : translate(t, "adminUserUnbannedSuccess", "Usuário desbanido com sucesso."),
+        : translate(
+            t,
+            "adminUserUnbannedSuccess",
+            "Usuário desbanido com sucesso.",
+          ),
     );
   }
 
@@ -1545,6 +1663,99 @@ if (!response.ok) {
     setActionLoading(null);
     await loadCreators();
     await loadLogs();
+  }
+
+  function openCreatorImageEditor(creator: CreatorProfile) {
+    setImageEditorCreator(creator);
+    setImageEditorUrl(creator.avatar_url || "");
+    setImageEditorFile(null);
+  }
+
+  function closeCreatorImageEditor() {
+    setImageEditorCreator(null);
+    setImageEditorUrl("");
+    setImageEditorFile(null);
+  }
+
+  async function saveCreatorImage() {
+    if (!imageEditorCreator) return;
+
+    const trimmedUrl = imageEditorUrl.trim();
+
+    if (!trimmedUrl && !imageEditorFile) {
+      alert(
+        translate(
+          t,
+          "adminCreatorImageRequired",
+          "Informe uma URL ou selecione uma imagem para upload.",
+        ),
+      );
+      return;
+    }
+
+    setActionLoading(`creator-image-${imageEditorCreator.id}`);
+
+    let nextAvatarUrl = trimmedUrl;
+
+    if (imageEditorFile) {
+      const extension =
+        imageEditorFile.name.split(".").pop()?.toLowerCase() || "webp";
+      const safeUsername = imageEditorCreator.username
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      const filePath = `${imageEditorCreator.id}/${safeUsername || "creator"}-${Date.now()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(CREATOR_IMAGE_BUCKET)
+        .upload(filePath, imageEditorFile, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        setActionLoading(null);
+        alert(uploadError.message);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(CREATOR_IMAGE_BUCKET)
+        .getPublicUrl(filePath);
+
+      nextAvatarUrl = publicUrlData.publicUrl;
+    }
+
+    const { error } = await supabase
+      .from("creator_profiles")
+      .update({ avatar_url: nextAvatarUrl })
+      .eq("id", imageEditorCreator.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "update_creator_avatar",
+      targetType: "creator_profile",
+      targetId: imageEditorCreator.id,
+      metadata: {
+        nickname: imageEditorCreator.nickname,
+        username: imageEditorCreator.username,
+        image_source: imageEditorFile ? "upload" : "url",
+      },
+    });
+
+    closeCreatorImageEditor();
+    setActionLoading(null);
+    await loadCreators();
+    await loadLogs();
+    showAdminSuccess(
+      translate(t, "adminCreatorImageUpdated", "Imagem do perfil atualizada."),
+    );
   }
 
   async function removeCreatorOwner(creator: CreatorProfile) {
@@ -1664,10 +1875,14 @@ if (!response.ok) {
     if (tabId === "requests") return requests.length;
     if (tabId === "users") return users.length;
     if (tabId === "creators") return creators.length;
-    if (tabId === "cards") return `${userCardsCount} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
+    if (tabId === "cards")
+      return `${userCardsCount} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
     if (tabId === "claims") return claims.length;
     if (tabId === "partnerships") return partnerships.length;
-    if (tabId === "conversations") return supportConversations.filter((conversation) => ACTIVE_SUPPORT_STATUSES.includes(conversation.status)).length;
+    if (tabId === "conversations")
+      return supportConversations.filter((conversation) =>
+        ACTIVE_SUPPORT_STATUSES.includes(conversation.status),
+      ).length;
     if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
     if (tabId === "statistics") return null;
 
@@ -1749,7 +1964,11 @@ if (!response.ok) {
         "adminActivityRejectedPartnership",
         "{actor} rejeitou a parceria de {target}.",
       ),
-      ban_user: translate(t, "adminActivityBannedUser", "{actor} baniu {target}."),
+      ban_user: translate(
+        t,
+        "adminActivityBannedUser",
+        "{actor} baniu {target}.",
+      ),
       unban_user: translate(
         t,
         "adminActivityUnbannedUser",
@@ -1757,11 +1976,14 @@ if (!response.ok) {
       ),
     };
 
-    return (actionMap[log.action] || translate(
-      t,
-      "adminActivityGeneric",
-      "{actor} realizou uma ação administrativa em {target}.",
-    ))
+    return (
+      actionMap[log.action] ||
+      translate(
+        t,
+        "adminActivityGeneric",
+        "{actor} realizou uma ação administrativa em {target}.",
+      )
+    )
       .replace("{actor}", actorName)
       .replace("{target}", targetName);
   }
@@ -1854,7 +2076,10 @@ if (!response.ok) {
     }
 
     await createAdminLog({
-      action: adminRewardTarget === "all_users" ? "giveaway_cards" : "grant_user_card",
+      action:
+        adminRewardTarget === "all_users"
+          ? "giveaway_cards"
+          : "grant_user_card",
       targetType: adminRewardTarget === "all_users" ? "users" : "user_card",
       targetId: adminRewardTarget === "all_users" ? null : selectedCardUserId,
       metadata: {
@@ -1884,7 +2109,10 @@ if (!response.ok) {
         .replace("{creator}", selectedCreator.nickname)
         .replace("{rarity}", getGrantRarityLabel(selectedGrantRarity, t))
         .replace("{count}", String(targetUsers.length))
-        .replace("{user}", targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : ""),
+        .replace(
+          "{user}",
+          targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : "",
+        ),
     );
   }
 
@@ -1936,11 +2164,17 @@ if (!response.ok) {
 
     for (const targetUser of targetUsers) {
       for (let index = 0; index < quantity; index += 1) {
-        const { data: grantedPackId, error } = await supabase.rpc("grant_user_pack", {
-          p_target_user_id: targetUser.id,
-          p_pack_id: pack.id,
-          p_source: adminRewardTarget === "all_users" ? "admin_giveaway" : "admin_grant",
-        });
+        const { data: grantedPackId, error } = await supabase.rpc(
+          "grant_user_pack",
+          {
+            p_target_user_id: targetUser.id,
+            p_pack_id: pack.id,
+            p_source:
+              adminRewardTarget === "all_users"
+                ? "admin_giveaway"
+                : "admin_grant",
+          },
+        );
 
         if (error) {
           setActionLoading(null);
@@ -1955,15 +2189,18 @@ if (!response.ok) {
     }
 
     await createAdminLog({
-      action: adminRewardTarget === "all_users" ? "giveaway_packs" : "grant_user_pack",
+      action:
+        adminRewardTarget === "all_users"
+          ? "giveaway_packs"
+          : "grant_user_pack",
       targetType: adminRewardTarget === "all_users" ? "users" : "user_pack",
       targetId:
-        adminRewardTarget === "all_users"
-          ? null
-          : grantedPackIds[0] || pack.id,
+        adminRewardTarget === "all_users" ? null : grantedPackIds[0] || pack.id,
       metadata: {
-        target_user_id: adminRewardTarget === "user" ? selectedCardUserId : null,
-        target_user_email: adminRewardTarget === "user" ? targetUsers[0]?.email : null,
+        target_user_id:
+          adminRewardTarget === "user" ? selectedCardUserId : null,
+        target_user_email:
+          adminRewardTarget === "user" ? targetUsers[0]?.email : null,
         pack_id: pack.id,
         pack_name: pack.name,
         pack_type: selectedAdminPackType,
@@ -1989,7 +2226,10 @@ if (!response.ok) {
         .replace("{quantity}", String(quantity))
         .replace("{pack}", getAdminPackLabel(selectedAdminPackType, t))
         .replace("{count}", String(targetUsers.length))
-        .replace("{user}", targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : ""),
+        .replace(
+          "{user}",
+          targetUsers[0] ? getProfileDisplayName(targetUsers[0]) : "",
+        ),
     );
   }
 
@@ -2062,7 +2302,6 @@ if (!response.ok) {
     return searchableText.includes(search);
   });
 
-
   const filteredPartnerships = partnerships.filter((partnership) => {
     const search = partnershipSearch.toLowerCase().trim();
     const creator = getCreator(partnership.creator_id);
@@ -2118,15 +2357,23 @@ if (!response.ok) {
   const selectedCardUser =
     users.find((user) => user.id === selectedCardUserId) || null;
 
-
-
-  const conversationStatusCounts = supportConversations.reduce<Record<SupportFilter, number>>(
+  const conversationStatusCounts = supportConversations.reduce<
+    Record<SupportFilter, number>
+  >(
     (accumulator, conversation) => {
       accumulator.all += 1;
       accumulator[conversation.status] += 1;
       return accumulator;
     },
-    { active: 0, all: 0, open: 0, waiting_admin: 0, waiting_user: 0, resolved: 0, closed: 0 },
+    {
+      active: 0,
+      all: 0,
+      open: 0,
+      waiting_admin: 0,
+      waiting_user: 0,
+      resolved: 0,
+      closed: 0,
+    },
   );
 
   const activeSupportConversationCount = ACTIVE_SUPPORT_STATUSES.reduce(
@@ -2136,35 +2383,39 @@ if (!response.ok) {
 
   conversationStatusCounts.active = activeSupportConversationCount;
 
-  const filteredSupportConversations = supportConversations.filter((conversation) => {
-    const search = conversationSearch.toLowerCase().trim();
-    const owner = getOwner(conversation.user_id);
-    const creator = getCreator(conversation.creator_id);
+  const filteredSupportConversations = supportConversations.filter(
+    (conversation) => {
+      const search = conversationSearch.toLowerCase().trim();
+      const owner = getOwner(conversation.user_id);
+      const creator = getCreator(conversation.creator_id);
 
-    const matchesStatus =
-      conversationStatusFilter === "all" ||
-      (conversationStatusFilter === "active"
-        ? ACTIVE_SUPPORT_STATUSES.includes(conversation.status)
-        : conversation.status === conversationStatusFilter);
+      const matchesStatus =
+        conversationStatusFilter === "all" ||
+        (conversationStatusFilter === "active"
+          ? ACTIVE_SUPPORT_STATUSES.includes(conversation.status)
+          : conversation.status === conversationStatusFilter);
 
-    const searchableText = [
-      conversation.subject,
-      conversation.type,
-      conversation.status,
-      owner?.email,
-      owner?.display_name,
-      owner?.username,
-      creator?.nickname,
-      creator?.username,
-    ]
-      .join(" ")
-      .toLowerCase();
+      const searchableText = [
+        conversation.subject,
+        conversation.type,
+        conversation.status,
+        owner?.email,
+        owner?.display_name,
+        owner?.username,
+        creator?.nickname,
+        creator?.username,
+      ]
+        .join(" ")
+        .toLowerCase();
 
-    return matchesStatus && searchableText.includes(search);
-  });
+      return matchesStatus && searchableText.includes(search);
+    },
+  );
 
   const selectedSupportConversation =
-    filteredSupportConversations.find((conversation) => conversation.id === selectedConversationId) ||
+    filteredSupportConversations.find(
+      (conversation) => conversation.id === selectedConversationId,
+    ) ||
     filteredSupportConversations[0] ||
     null;
 
@@ -2182,7 +2433,12 @@ if (!response.ok) {
     if (!selectedStillVisible) {
       setSelectedConversationId(filteredSupportConversations[0].id);
     }
-  }, [activeTab, conversationStatusFilter, conversationSearch, supportConversations.length]);
+  }, [
+    activeTab,
+    conversationStatusFilter,
+    conversationSearch,
+    supportConversations.length,
+  ]);
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
@@ -2327,21 +2583,31 @@ if (!response.ok) {
                               {request.nickname}
                             </h3>
 
-                            <p className="text-sm text-white/45">@{request.username}</p>
+                            <p className="text-sm text-white/45">
+                              @{request.username}
+                            </p>
                             <p className="mt-1 truncate text-sm text-white/40">
                               {request.email}
                             </p>
 
                             <div className="mt-3 flex flex-wrap gap-2">
                               <StatusPill
-                                label={request.category || translate(t, "category", "Categoria")}
+                                label={
+                                  request.category ||
+                                  translate(t, "category", "Categoria")
+                                }
                                 tone="cyan"
                               />
                               <StatusPill
-                                label={request.verification_platform || translate(t, "notInformed", "Não informado")}
+                                label={
+                                  request.verification_platform ||
+                                  translate(t, "notInformed", "Não informado")
+                                }
                               />
                               <StatusPill
-                                label={new Date(request.created_at).toLocaleDateString(dateLocale)}
+                                label={new Date(
+                                  request.created_at,
+                                ).toLocaleDateString(dateLocale)}
                                 tone="yellow"
                               />
                             </div>
@@ -2398,7 +2664,10 @@ if (!response.ok) {
                           <div className="grid gap-4 border-t border-white/10 bg-black/20 p-5 md:grid-cols-2">
                             <InfoBox
                               label={translate(t, "email", "Email")}
-                              value={request.email || translate(t, "noEmailLower", "sem email")}
+                              value={
+                                request.email ||
+                                translate(t, "noEmailLower", "sem email")
+                              }
                             />
 
                             <InfoBox
@@ -2409,18 +2678,31 @@ if (!response.ok) {
 
                             <InfoBox
                               label={translate(t, "platform", "Plataforma")}
-                              value={request.verification_platform || translate(t, "notInformed", "Não informado")}
+                              value={
+                                request.verification_platform ||
+                                translate(t, "notInformed", "Não informado")
+                              }
                             />
 
                             <InfoBox
-                              label={translate(t, "requestedAt", "Solicitado em")}
-                              value={new Date(request.created_at).toLocaleString(dateLocale)}
+                              label={translate(
+                                t,
+                                "requestedAt",
+                                "Solicitado em",
+                              )}
+                              value={new Date(
+                                request.created_at,
+                              ).toLocaleString(dateLocale)}
                             />
 
                             {request.verification_url && (
                               <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
                                 <p className="text-xs text-white/40">
-                                  {translate(t, "verificationUrl", "URL de verificação")}
+                                  {translate(
+                                    t,
+                                    "verificationUrl",
+                                    "URL de verificação",
+                                  )}
                                 </p>
 
                                 <a
@@ -2566,7 +2848,8 @@ if (!response.ok) {
                         <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-lg font-black text-cyan-100">
-                              {creator.nickname?.slice(0, 1).toUpperCase() || "C"}
+                              {creator.nickname?.slice(0, 1).toUpperCase() ||
+                                "C"}
                             </div>
 
                             <div>
@@ -2816,6 +3099,24 @@ if (!response.ok) {
                                       </>
                                     )}
                                   </button>
+
+                                  <button
+                                    onClick={() =>
+                                      openCreatorImageEditor(creator)
+                                    }
+                                    disabled={
+                                      actionLoading ===
+                                      `creator-image-${creator.id}`
+                                    }
+                                    className="inline-flex items-center gap-2 rounded-full border border-purple-300/20 bg-purple-300/10 px-5 py-2 text-sm font-bold text-purple-100 transition hover:bg-purple-300/20 disabled:opacity-40"
+                                  >
+                                    <ImageIcon size={16} />
+                                    {translate(
+                                      t,
+                                      "adminChangeCreatorImage",
+                                      "Alterar imagem",
+                                    )}
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -2990,14 +3291,17 @@ if (!response.ok) {
                           )}
 
                           {filteredCardCreators.map((creator) => {
-                            const selected = selectedCardCreatorId === creator.id;
+                            const selected =
+                              selectedCardCreatorId === creator.id;
                             const owner = getOwner(creator.user_id);
 
                             return (
                               <button
                                 key={creator.id}
                                 type="button"
-                                onClick={() => setSelectedCardCreatorId(creator.id)}
+                                onClick={() =>
+                                  setSelectedCardCreatorId(creator.id)
+                                }
                                 className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
                                   selected
                                     ? "border-cyan-300/60 bg-cyan-300/10"
@@ -3005,7 +3309,9 @@ if (!response.ok) {
                                 }`}
                               >
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-sm font-black text-cyan-100">
-                                  {creator.nickname?.slice(0, 1).toUpperCase() || "C"}
+                                  {creator.nickname
+                                    ?.slice(0, 1)
+                                    .toUpperCase() || "C"}
                                 </div>
 
                                 <div className="min-w-0 flex-1">
@@ -3016,7 +3322,7 @@ if (!response.ok) {
                                     @{creator.username}
                                   </p>
                                   <p className="mt-1 truncate text-xs text-white/40">
-                                    {translate(t, "owner", "Dono")}: {" "}
+                                    {translate(t, "owner", "Dono")}:{" "}
                                     {owner?.email ||
                                       owner?.username ||
                                       translate(t, "noOwner", "Sem dono")}
@@ -3024,7 +3330,10 @@ if (!response.ok) {
                                 </div>
 
                                 {selected && (
-                                  <Check size={18} className="shrink-0 text-cyan-200" />
+                                  <Check
+                                    size={18}
+                                    className="shrink-0 text-cyan-200"
+                                  />
                                 )}
                               </button>
                             );
@@ -3045,13 +3354,16 @@ if (!response.ok) {
                       {adminRewardType === "card" ? (
                         <div className="mt-4 grid grid-cols-2 gap-3">
                           {GRANT_RARITIES.map((rarityOption) => {
-                            const selected = selectedGrantRarity === rarityOption.id;
+                            const selected =
+                              selectedGrantRarity === rarityOption.id;
 
                             return (
                               <button
                                 key={rarityOption.id}
                                 type="button"
-                                onClick={() => setSelectedGrantRarity(rarityOption.id)}
+                                onClick={() =>
+                                  setSelectedGrantRarity(rarityOption.id)
+                                }
                                 className={`rounded-2xl border p-3 text-left transition ${
                                   selected
                                     ? "border-yellow-300/60 bg-yellow-300/10"
@@ -3079,13 +3391,16 @@ if (!response.ok) {
                       ) : (
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                           {ADMIN_PACK_TYPES.map((packOption) => {
-                            const selected = selectedAdminPackType === packOption.id;
+                            const selected =
+                              selectedAdminPackType === packOption.id;
 
                             return (
                               <button
                                 key={packOption.id}
                                 type="button"
-                                onClick={() => setSelectedAdminPackType(packOption.id)}
+                                onClick={() =>
+                                  setSelectedAdminPackType(packOption.id)
+                                }
                                 className={`rounded-3xl border p-4 text-left transition ${
                                   selected
                                     ? "border-purple-300/60 bg-purple-300/10"
@@ -3096,7 +3411,11 @@ if (!response.ok) {
                                   <Package size={20} />
                                 </div>
                                 <p className="font-black text-white">
-                                  {translate(t, packOption.labelKey as TranslationKey, packOption.fallback)}
+                                  {translate(
+                                    t,
+                                    packOption.labelKey as TranslationKey,
+                                    packOption.fallback,
+                                  )}
                                 </p>
                                 <p className="mt-1 text-xs text-white/45">
                                   {translate(
@@ -3121,9 +3440,15 @@ if (!response.ok) {
                         type="number"
                         min={1}
                         max={100}
-                        value={adminRewardType === "card" ? adminCardQuantity : adminPackQuantity}
+                        value={
+                          adminRewardType === "card"
+                            ? adminCardQuantity
+                            : adminPackQuantity
+                        }
                         onChange={(event) => {
-                          const value = getSafeQuantity(Number(event.target.value));
+                          const value = getSafeQuantity(
+                            Number(event.target.value),
+                          );
 
                           if (adminRewardType === "card") {
                             setAdminCardQuantity(value);
@@ -3160,7 +3485,11 @@ if (!response.ok) {
                           }`}
                         >
                           <p className="font-bold text-white">
-                            {translate(t, "adminSpecificUser", "Usuário específico")}
+                            {translate(
+                              t,
+                              "adminSpecificUser",
+                              "Usuário específico",
+                            )}
                           </p>
                           <p className="mt-1 text-xs text-white/40">
                             {translate(
@@ -3181,7 +3510,11 @@ if (!response.ok) {
                           }`}
                         >
                           <p className="font-bold text-white">
-                            {translate(t, "adminGiveawayAllUsers", "Giveaway para todos")}
+                            {translate(
+                              t,
+                              "adminGiveawayAllUsers",
+                              "Giveaway para todos",
+                            )}
                           </p>
                           <p className="mt-1 text-xs text-white/40">
                             {translate(
@@ -3219,13 +3552,16 @@ if (!response.ok) {
                             )}
 
                             {filteredCardUsers.map((profile) => {
-                              const selected = selectedCardUserId === profile.id;
+                              const selected =
+                                selectedCardUserId === profile.id;
 
                               return (
                                 <button
                                   key={profile.id}
                                   type="button"
-                                  onClick={() => setSelectedCardUserId(profile.id)}
+                                  onClick={() =>
+                                    setSelectedCardUserId(profile.id)
+                                  }
                                   className={`flex items-center justify-between gap-3 rounded-3xl border p-3 text-left transition ${
                                     selected
                                       ? "border-purple-300/60 bg-purple-300/10"
@@ -3234,7 +3570,10 @@ if (!response.ok) {
                                 >
                                   <UserInfo profile={profile} t={t} />
                                   {selected && (
-                                    <Check size={18} className="shrink-0 text-purple-200" />
+                                    <Check
+                                      size={18}
+                                      className="shrink-0 text-purple-200"
+                                    />
                                   )}
                                 </button>
                               );
@@ -3261,7 +3600,7 @@ if (!response.ok) {
 
                       <div className="mt-3 space-y-2 text-sm text-white/65">
                         <p>
-                          {translate(t, "type", "Tipo")}: {" "}
+                          {translate(t, "type", "Tipo")}:{" "}
                           <span className="font-bold text-white">
                             {adminRewardType === "card"
                               ? translate(t, "cards", "Cartas")
@@ -3272,7 +3611,7 @@ if (!response.ok) {
                         {adminRewardType === "card" ? (
                           <>
                             <p>
-                              {translate(t, "card", "Carta")}: {" "}
+                              {translate(t, "card", "Carta")}:{" "}
                               <span className="font-bold text-white">
                                 {selectedCardCreator?.nickname ||
                                   translate(
@@ -3283,7 +3622,7 @@ if (!response.ok) {
                               </span>
                             </p>
                             <p>
-                              {translate(t, "rarity", "Raridade")}: {" "}
+                              {translate(t, "rarity", "Raridade")}:{" "}
                               <span className="font-bold text-white">
                                 {getGrantRarityLabel(selectedGrantRarity, t)}
                               </span>
@@ -3291,7 +3630,7 @@ if (!response.ok) {
                           </>
                         ) : (
                           <p>
-                            {translate(t, "pack", "Pacote")}: {" "}
+                            {translate(t, "pack", "Pacote")}:{" "}
                             <span className="font-bold text-white">
                               {getAdminPackLabel(selectedAdminPackType, t)}
                             </span>
@@ -3299,7 +3638,7 @@ if (!response.ok) {
                         )}
 
                         <p>
-                          {translate(t, "quantity", "Quantidade")}: {" "}
+                          {translate(t, "quantity", "Quantidade")}:{" "}
                           <span className="font-bold text-white">
                             {adminRewardType === "card"
                               ? adminCardQuantity
@@ -3308,7 +3647,7 @@ if (!response.ok) {
                         </p>
 
                         <p>
-                          {translate(t, "recipient", "Destinatário")}: {" "}
+                          {translate(t, "recipient", "Destinatário")}:{" "}
                           <span className="font-bold text-white">
                             {adminRewardTarget === "all_users"
                               ? translate(
@@ -3330,20 +3669,31 @@ if (!response.ok) {
 
                       <button
                         type="button"
-                        onClick={adminRewardType === "card" ? grantCardToUser : grantPackToUser}
+                        onClick={
+                          adminRewardType === "card"
+                            ? grantCardToUser
+                            : grantPackToUser
+                        }
                         disabled={
                           actionLoading !== null ||
-                          (adminRewardType === "card" && !selectedCardCreatorId) ||
+                          (adminRewardType === "card" &&
+                            !selectedCardCreatorId) ||
                           (adminRewardTarget === "user" && !selectedCardUserId)
                         }
                         className={`mt-5 w-full rounded-full px-5 py-3 text-sm font-black text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40 ${
-                          adminRewardType === "card" ? "bg-cyan-300" : "bg-purple-300"
+                          adminRewardType === "card"
+                            ? "bg-cyan-300"
+                            : "bg-purple-300"
                         }`}
                       >
                         {actionLoading
                           ? translate(t, "adminSendingReward", "Enviando...")
                           : adminRewardTarget === "all_users"
-                            ? translate(t, "adminSendGiveaway", "Enviar giveaway")
+                            ? translate(
+                                t,
+                                "adminSendGiveaway",
+                                "Enviar giveaway",
+                              )
                             : translate(t, "adminSendReward", "Enviar")}
                       </button>
                     </div>
@@ -3543,7 +3893,6 @@ if (!response.ok) {
               </div>
             )}
 
-
             {!loading && activeTab === "partnerships" && (
               <div className="mt-8">
                 <div className="rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
@@ -3551,11 +3900,19 @@ if (!response.ok) {
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
                         <Handshake size={14} />
-                        {translate(t, "adminPartnershipsBadge", "YouTube Detector")}
+                        {translate(
+                          t,
+                          "adminPartnershipsBadge",
+                          "YouTube Detector",
+                        )}
                       </div>
 
                       <h3 className="mt-4 text-2xl font-black text-white">
-                        {translate(t, "adminPartnershipsTitle", "Parcerias Detectadas")}
+                        {translate(
+                          t,
+                          "adminPartnershipsTitle",
+                          "Parcerias Detectadas",
+                        )}
                       </h3>
 
                       <p className="mt-2 max-w-2xl text-sm text-white/50">
@@ -3574,8 +3931,16 @@ if (!response.ok) {
                     >
                       <Search size={16} />
                       {actionLoading === "detect-youtube-partnerships"
-                        ? translate(t, "adminPartnershipDetecting", "Detectando...")
-                        : translate(t, "adminDetectYouTubePartnerships", "Detectar YouTube")}
+                        ? translate(
+                            t,
+                            "adminPartnershipDetecting",
+                            "Detectando...",
+                          )
+                        : translate(
+                            t,
+                            "adminDetectYouTubePartnerships",
+                            "Detectar YouTube",
+                          )}
                     </button>
                   </div>
                 </div>
@@ -3605,7 +3970,8 @@ if (!response.ok) {
 
                   {filteredPartnerships.map((partnership) => {
                     const creator = getCreator(partnership.creator_id);
-                    const isExpanded = expandedPartnerships[partnership.id] ?? false;
+                    const isExpanded =
+                      expandedPartnerships[partnership.id] ?? false;
                     const confidenceScore = partnership.confidence_score ?? 0;
 
                     return (
@@ -3627,12 +3993,20 @@ if (!response.ok) {
                               <p className="text-sm text-white/45">
                                 {creator
                                   ? `${creator.nickname} • @${creator.username}`
-                                  : translate(t, "creatorNotFound", "Creator não encontrado")}
+                                  : translate(
+                                      t,
+                                      "creatorNotFound",
+                                      "Creator não encontrado",
+                                    )}
                               </p>
 
                               <p className="mt-1 text-xs text-white/35">
-                                {translate(t, "adminPartnershipSource", "Fonte")}:{" "}
-                                {partnership.source_platform}
+                                {translate(
+                                  t,
+                                  "adminPartnershipSource",
+                                  "Fonte",
+                                )}
+                                : {partnership.source_platform}
                               </p>
                             </div>
                           </div>
@@ -3640,11 +4014,20 @@ if (!response.ok) {
                           <div className="flex flex-wrap items-center gap-2 md:justify-end">
                             <StatusPill
                               label={`${confidenceScore}% ${translate(t, "adminConfidence", "confiança")}`}
-                              tone={confidenceScore >= 80 ? "green" : confidenceScore >= 60 ? "yellow" : "cyan"}
+                              tone={
+                                confidenceScore >= 80
+                                  ? "green"
+                                  : confidenceScore >= 60
+                                    ? "yellow"
+                                    : "cyan"
+                              }
                             />
 
                             <StatusPill
-                              label={getPartnershipTypeLabel(partnership.partnership_type, t)}
+                              label={getPartnershipTypeLabel(
+                                partnership.partnership_type,
+                                t,
+                              )}
                               tone="cyan"
                             />
 
@@ -3676,18 +4059,33 @@ if (!response.ok) {
                           <>
                             <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
                               <InfoBox
-                                label={translate(t, "adminPartnershipBrand", "Marca")}
+                                label={translate(
+                                  t,
+                                  "adminPartnershipBrand",
+                                  "Marca",
+                                )}
                                 value={partnership.brand_name}
                                 highlight
                               />
 
                               <InfoBox
-                                label={translate(t, "adminPartnershipType", "Tipo")}
-                                value={getPartnershipTypeLabel(partnership.partnership_type, t)}
+                                label={translate(
+                                  t,
+                                  "adminPartnershipType",
+                                  "Tipo",
+                                )}
+                                value={getPartnershipTypeLabel(
+                                  partnership.partnership_type,
+                                  t,
+                                )}
                               />
 
                               <InfoBox
-                                label={translate(t, "adminDetectionReason", "Motivo da detecção")}
+                                label={translate(
+                                  t,
+                                  "adminDetectionReason",
+                                  "Motivo da detecção",
+                                )}
                                 value={
                                   partnership.detection_reason ||
                                   translate(t, "notInformed", "Não informado")
@@ -3696,24 +4094,38 @@ if (!response.ok) {
 
                               <InfoBox
                                 label={translate(t, "createdAt", "Criado em")}
-                                value={new Date(partnership.created_at).toLocaleString(dateLocale)}
+                                value={new Date(
+                                  partnership.created_at,
+                                ).toLocaleString(dateLocale)}
                               />
 
                               <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
                                 <p className="text-xs text-white/40">
-                                  {translate(t, "adminEvidenceText", "Evidência encontrada")}
+                                  {translate(
+                                    t,
+                                    "adminEvidenceText",
+                                    "Evidência encontrada",
+                                  )}
                                 </p>
 
                                 <p className="mt-2 whitespace-pre-wrap text-sm text-white/70">
                                   {partnership.evidence_text ||
-                                    translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
+                                    translate(
+                                      t,
+                                      "adminNoEvidenceText",
+                                      "Sem texto de evidência.",
+                                    )}
                                 </p>
                               </div>
 
                               {partnership.source_url && (
                                 <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
                                   <p className="text-xs text-white/40">
-                                    {translate(t, "adminSourceUrl", "URL da fonte")}
+                                    {translate(
+                                      t,
+                                      "adminSourceUrl",
+                                      "URL da fonte",
+                                    )}
                                   </p>
 
                                   <a
@@ -3731,7 +4143,9 @@ if (!response.ok) {
 
                             <div className="flex flex-wrap gap-3 border-t border-white/10 bg-black/20 p-5">
                               <button
-                                onClick={() => openPartnershipApproval(partnership)}
+                                onClick={() =>
+                                  openPartnershipApproval(partnership)
+                                }
                                 disabled={actionLoading === partnership.id}
                                 className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
                               >
@@ -3761,7 +4175,6 @@ if (!response.ok) {
               </div>
             )}
 
-
             {!loading && activeTab === "conversations" && (
               <div className="mt-8">
                 <div className="rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
@@ -3773,7 +4186,11 @@ if (!response.ok) {
                       </div>
 
                       <h3 className="mt-4 text-2xl font-black text-white">
-                        {translate(t, "adminConversationsTitle", "Central de conversas")}
+                        {translate(
+                          t,
+                          "adminConversationsTitle",
+                          "Central de conversas",
+                        )}
                       </h3>
 
                       <p className="mt-2 max-w-2xl text-sm text-white/50">
@@ -3792,7 +4209,11 @@ if (!response.ok) {
                       />
                       <StatusPill
                         label={`${conversationStatusCounts.waiting_admin} ${translate(t, "adminNeedReply", "aguardando equipe")}`}
-                        tone={conversationStatusCounts.waiting_admin > 0 ? "yellow" : "default"}
+                        tone={
+                          conversationStatusCounts.waiting_admin > 0
+                            ? "yellow"
+                            : "default"
+                        }
                       />
                     </div>
                   </div>
@@ -3819,17 +4240,25 @@ if (!response.ok) {
                           <button
                             key={filter.id}
                             type="button"
-                            onClick={() => setConversationStatusFilter(filter.id)}
+                            onClick={() =>
+                              setConversationStatusFilter(filter.id)
+                            }
                             className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${
                               selected
                                 ? "border-cyan-300/60 bg-cyan-300 text-black"
                                 : "border-white/10 bg-black/20 text-white/60 hover:bg-white/[0.06] hover:text-white"
                             }`}
                           >
-                            {translateExisting(t, filter.labelKey, filter.fallback)}
+                            {translateExisting(
+                              t,
+                              filter.labelKey,
+                              filter.fallback,
+                            )}
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] ${
-                                selected ? "bg-black/15 text-black" : "bg-white/10 text-white/60"
+                                selected
+                                  ? "bg-black/15 text-black"
+                                  : "bg-white/10 text-white/60"
                               }`}
                             >
                               {count}
@@ -3853,7 +4282,8 @@ if (!response.ok) {
                       {filteredSupportConversations.map((conversation) => {
                         const owner = getOwner(conversation.user_id);
                         const creator = getCreator(conversation.creator_id);
-                        const selected = selectedSupportConversation?.id === conversation.id;
+                        const selected =
+                          selectedSupportConversation?.id === conversation.id;
                         const statusTone =
                           conversation.status === "closed"
                             ? "default"
@@ -3869,7 +4299,9 @@ if (!response.ok) {
                           <button
                             key={conversation.id}
                             type="button"
-                            onClick={() => setSelectedConversationId(conversation.id)}
+                            onClick={() =>
+                              setSelectedConversationId(conversation.id)
+                            }
                             className={`rounded-3xl border p-4 text-left transition ${
                               selected
                                 ? "border-cyan-300/60 bg-cyan-300/10"
@@ -3882,19 +4314,28 @@ if (!response.ok) {
                                   {conversation.subject}
                                 </p>
                                 <p className="mt-1 truncate text-xs text-white/45">
-                                  {owner?.display_name || owner?.username || owner?.email || translate(t, "user", "Usuário")}
+                                  {owner?.display_name ||
+                                    owner?.username ||
+                                    owner?.email ||
+                                    translate(t, "user", "Usuário")}
                                 </p>
                               </div>
 
                               <StatusPill
-                                label={getSupportStatusLabel(t, conversation.status)}
+                                label={getSupportStatusLabel(
+                                  t,
+                                  conversation.status,
+                                )}
                                 tone={statusTone}
                               />
                             </div>
 
                             <div className="mt-3 flex flex-wrap gap-2">
                               <StatusPill
-                                label={getSupportTypeLabel(t, conversation.type)}
+                                label={getSupportTypeLabel(
+                                  t,
+                                  conversation.type,
+                                )}
                                 tone="default"
                               />
                               {creator && (
@@ -3906,7 +4347,10 @@ if (!response.ok) {
                             </div>
 
                             <p className="mt-3 text-xs text-white/35">
-                              {new Date(conversation.last_message_at || conversation.created_at).toLocaleString(dateLocale)}
+                              {new Date(
+                                conversation.last_message_at ||
+                                  conversation.created_at,
+                              ).toLocaleString(dateLocale)}
                             </p>
                           </button>
                         );
@@ -3931,17 +4375,26 @@ if (!response.ok) {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <StatusPill
-                                label={getSupportTypeLabel(t, selectedSupportConversation.type)}
+                                label={getSupportTypeLabel(
+                                  t,
+                                  selectedSupportConversation.type,
+                                )}
                                 tone="cyan"
                               />
                               <StatusPill
-                                label={getSupportStatusLabel(t, selectedSupportConversation.status)}
+                                label={getSupportStatusLabel(
+                                  t,
+                                  selectedSupportConversation.status,
+                                )}
                                 tone={
-                                  selectedSupportConversation.status === "closed"
+                                  selectedSupportConversation.status ===
+                                  "closed"
                                     ? "default"
-                                    : selectedSupportConversation.status === "resolved"
+                                    : selectedSupportConversation.status ===
+                                        "resolved"
                                       ? "green"
-                                      : selectedSupportConversation.status === "waiting_admin"
+                                      : selectedSupportConversation.status ===
+                                          "waiting_admin"
                                         ? "yellow"
                                         : "cyan"
                                 }
@@ -3954,10 +4407,20 @@ if (!response.ok) {
 
                             <p className="mt-2 text-sm text-white/45">
                               {(() => {
-                                const owner = getOwner(selectedSupportConversation.user_id);
-                                const creator = getCreator(selectedSupportConversation.creator_id);
-                                const ownerText = owner?.display_name || owner?.username || owner?.email || translate(t, "user", "Usuário");
-                                const creatorText = creator ? ` • ${creator.nickname} (@${creator.username})` : "";
+                                const owner = getOwner(
+                                  selectedSupportConversation.user_id,
+                                );
+                                const creator = getCreator(
+                                  selectedSupportConversation.creator_id,
+                                );
+                                const ownerText =
+                                  owner?.display_name ||
+                                  owner?.username ||
+                                  owner?.email ||
+                                  translate(t, "user", "Usuário");
+                                const creatorText = creator
+                                  ? ` • ${creator.nickname} (@${creator.username})`
+                                  : "";
                                 return `${ownerText}${creatorText}`;
                               })()}
                             </p>
@@ -3969,15 +4432,28 @@ if (!response.ok) {
                               onChange={(event) =>
                                 updateSupportConversationStatus(
                                   selectedSupportConversation.id,
-                                  event.target.value as SupportConversationStatus,
+                                  event.target
+                                    .value as SupportConversationStatus,
                                 )
                               }
-                              disabled={actionLoading === selectedSupportConversation.id}
+                              disabled={
+                                actionLoading === selectedSupportConversation.id
+                              }
                               className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold text-white outline-none transition focus:border-cyan-300/50"
                             >
-                              {SUPPORT_STATUS_FILTERS.filter((filter) => filter.id !== "all").map((filter) => (
-                                <option key={filter.id} value={filter.id} className="bg-zinc-950 text-white">
-                                  {translateExisting(t, filter.labelKey, filter.fallback)}
+                              {SUPPORT_STATUS_FILTERS.filter(
+                                (filter) => filter.id !== "all",
+                              ).map((filter) => (
+                                <option
+                                  key={filter.id}
+                                  value={filter.id}
+                                  className="bg-zinc-950 text-white"
+                                >
+                                  {translateExisting(
+                                    t,
+                                    filter.labelKey,
+                                    filter.fallback,
+                                  )}
                                 </option>
                               ))}
                             </select>
@@ -3996,12 +4472,17 @@ if (!response.ok) {
                           )}
 
                           {supportMessages.map((message) => {
-                            const isAdminMessage = message.sender_role === "admin";
-                            const isSystemMessage = message.sender_role === "system";
+                            const isAdminMessage =
+                              message.sender_role === "admin";
+                            const isSystemMessage =
+                              message.sender_role === "system";
 
                             if (isSystemMessage) {
                               return (
-                                <div key={message.id} className="flex justify-center">
+                                <div
+                                  key={message.id}
+                                  className="flex justify-center"
+                                >
                                   <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-white/45">
                                     {message.message}
                                   </div>
@@ -4024,10 +4505,18 @@ if (!response.ok) {
                                   <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.2em] text-white/35">
                                     <span>
                                       {isAdminMessage
-                                        ? translate(t, "adminTeamCardpoc", "Equipe Cardpoc")
+                                        ? translate(
+                                            t,
+                                            "adminTeamCardpoc",
+                                            "Equipe Cardpoc",
+                                          )
                                         : translate(t, "user", "Usuário")}
                                     </span>
-                                    <span>{new Date(message.created_at).toLocaleString(dateLocale)}</span>
+                                    <span>
+                                      {new Date(
+                                        message.created_at,
+                                      ).toLocaleString(dateLocale)}
+                                    </span>
                                   </div>
 
                                   <p className="whitespace-pre-wrap text-sm leading-relaxed">
@@ -4040,7 +4529,9 @@ if (!response.ok) {
                         </div>
 
                         <div className="mt-5 border-t border-white/10 pt-4">
-                          {isSupportConversationFinal(selectedSupportConversation.status) ? (
+                          {isSupportConversationFinal(
+                            selectedSupportConversation.status,
+                          ) ? (
                             <div className="rounded-3xl border border-white/10 bg-black/30 p-4 text-sm text-white/45">
                               {translate(
                                 t,
@@ -4052,7 +4543,9 @@ if (!response.ok) {
                             <div className="flex flex-col gap-3 md:flex-row">
                               <textarea
                                 value={conversationReply}
-                                onChange={(event) => setConversationReply(event.target.value)}
+                                onChange={(event) =>
+                                  setConversationReply(event.target.value)
+                                }
                                 rows={3}
                                 placeholder={translate(
                                   t,
@@ -4066,7 +4559,8 @@ if (!response.ok) {
                                 type="button"
                                 onClick={sendSupportReply}
                                 disabled={
-                                  actionLoading === selectedSupportConversation.id ||
+                                  actionLoading ===
+                                    selectedSupportConversation.id ||
                                   !conversationReply.trim()
                                 }
                                 className="inline-flex items-center justify-center gap-2 rounded-3xl bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40 md:w-40"
@@ -4186,7 +4680,6 @@ if (!response.ok) {
               </div>
             )}
 
-
             {!loading && activeTab === "statistics" && (
               <div className="mt-8">
                 <div className="flex items-start gap-3 rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
@@ -4212,56 +4705,110 @@ if (!response.ok) {
                   <StatCard
                     label={translate(t, "adminStatsVisits", "Visitas")}
                     value={stats.visits}
-                    hint={translate(t, "adminStatsVisitsHint", "Visualizações registradas em perfis.")}
+                    hint={translate(
+                      t,
+                      "adminStatsVisitsHint",
+                      "Visualizações registradas em perfis.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
                     label={translate(t, "adminStatsLogins", "Logins/Usuários")}
                     value={stats.logins}
-                    hint={translate(t, "adminStatsLoginsHint", "Total de contas cadastradas.")}
+                    hint={translate(
+                      t,
+                      "adminStatsLoginsHint",
+                      "Total de contas cadastradas.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsConqueredCards", "Cartas conquistadas")}
+                    label={translate(
+                      t,
+                      "adminStatsConqueredCards",
+                      "Cartas conquistadas",
+                    )}
                     value={stats.conqueredCards}
-                    hint={translate(t, "adminStatsConqueredCardsHint", "Cartas no inventário dos usuários.")}
+                    hint={translate(
+                      t,
+                      "adminStatsConqueredCardsHint",
+                      "Cartas no inventário dos usuários.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsOpenedPacks", "Packs abertos")}
+                    label={translate(
+                      t,
+                      "adminStatsOpenedPacks",
+                      "Packs abertos",
+                    )}
                     value={stats.openedPacks}
-                    hint={translate(t, "adminStatsOpenedPacksHint", "Packs já revelados pelos usuários.")}
+                    hint={translate(
+                      t,
+                      "adminStatsOpenedPacksHint",
+                      "Packs já revelados pelos usuários.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsCreatorFollows", "Follows em criadores")}
+                    label={translate(
+                      t,
+                      "adminStatsCreatorFollows",
+                      "Follows em criadores",
+                    )}
                     value={stats.creatorFollows}
-                    hint={translate(t, "adminStatsCreatorFollowsHint", "Relações de seguidores dentro do Cardpoc.")}
+                    hint={translate(
+                      t,
+                      "adminStatsCreatorFollowsHint",
+                      "Relações de seguidores dentro do Cardpoc.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsPendingRequests", "Solicitações pendentes")}
+                    label={translate(
+                      t,
+                      "adminStatsPendingRequests",
+                      "Solicitações pendentes",
+                    )}
                     value={stats.pendingRequests}
-                    hint={translate(t, "adminStatsPendingRequestsHint", "Perfis aguardando aprovação.")}
+                    hint={translate(
+                      t,
+                      "adminStatsPendingRequestsHint",
+                      "Perfis aguardando aprovação.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsPendingClaims", "Reivindicações pendentes")}
+                    label={translate(
+                      t,
+                      "adminStatsPendingClaims",
+                      "Reivindicações pendentes",
+                    )}
                     value={stats.pendingClaims}
-                    hint={translate(t, "adminStatsPendingClaimsHint", "Criadores aguardando validação de posse.")}
+                    hint={translate(
+                      t,
+                      "adminStatsPendingClaimsHint",
+                      "Criadores aguardando validação de posse.",
+                    )}
                     dateLocale={dateLocale}
                   />
                   <StatCard
-                    label={translate(t, "adminStatsCreators", "Perfis de criadores")}
+                    label={translate(
+                      t,
+                      "adminStatsCreators",
+                      "Perfis de criadores",
+                    )}
                     value={stats.totalCreators}
-                    hint={translate(t, "adminStatsCreatorsHint", "Total de perfis criados na plataforma.")}
+                    hint={translate(
+                      t,
+                      "adminStatsCreatorsHint",
+                      "Total de perfis criados na plataforma.",
+                    )}
                     dateLocale={dateLocale}
                   />
                 </div>
               </div>
             )}
-
-
 
             <AnimatePresence>
               {partnershipApprovalDraft && (
@@ -4281,11 +4828,19 @@ if (!response.ok) {
                       <div>
                         <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-cyan-100">
                           <ShieldCheck size={14} />
-                          {translate(t, "adminSmartApprovalBadge", "Aprovação Inteligente")}
+                          {translate(
+                            t,
+                            "adminSmartApprovalBadge",
+                            "Aprovação Inteligente",
+                          )}
                         </div>
 
                         <h3 className="mt-4 text-2xl font-black text-white">
-                          {translate(t, "adminApprovePartnershipTitle", "Aprovar parceria")}
+                          {translate(
+                            t,
+                            "adminApprovePartnershipTitle",
+                            "Aprovar parceria",
+                          )}
                         </h3>
 
                         <p className="mt-2 max-w-2xl text-sm text-white/50">
@@ -4340,13 +4895,26 @@ if (!response.ok) {
                         >
                           <Search size={16} />
                           {brandEnrichmentLoading
-                            ? translate(t, "adminBrandSearching", "Pesquisando marca...")
-                            : translate(t, "adminBrandSearch", "Pesquisar marca")}
+                            ? translate(
+                                t,
+                                "adminBrandSearching",
+                                "Pesquisando marca...",
+                              )
+                            : translate(
+                                t,
+                                "adminBrandSearch",
+                                "Pesquisar marca",
+                              )}
                         </button>
 
                         {brandEnrichmentConfidence !== null && (
                           <p className="mt-3 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100">
-                            {translate(t, "adminBrandConfidence", "Confiança da busca")}: {brandEnrichmentConfidence}%
+                            {translate(
+                              t,
+                              "adminBrandConfidence",
+                              "Confiança da busca",
+                            )}
+                            : {brandEnrichmentConfidence}%
                           </p>
                         )}
                       </div>
@@ -4354,12 +4922,19 @@ if (!response.ok) {
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminPartnershipBrandName", "Nome da marca")}
+                            {translate(
+                              t,
+                              "adminPartnershipBrandName",
+                              "Nome da marca",
+                            )}
                           </span>
                           <input
                             value={partnershipApprovalDraft.brandName}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("brandName", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "brandName",
+                                event.target.value,
+                              )
                             }
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-300/40"
                           />
@@ -4381,7 +4956,11 @@ if (!response.ok) {
                           >
                             {PARTNERSHIP_TYPE_OPTIONS.map((option) => (
                               <option key={option.id} value={option.id}>
-                                {translate(t, option.labelKey as TranslationKey, option.fallback)}
+                                {translate(
+                                  t,
+                                  option.labelKey as TranslationKey,
+                                  option.fallback,
+                                )}
                               </option>
                             ))}
                           </select>
@@ -4394,7 +4973,10 @@ if (!response.ok) {
                           <input
                             value={partnershipApprovalDraft.brandLogoUrl}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("brandLogoUrl", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "brandLogoUrl",
+                                event.target.value,
+                              )
                             }
                             placeholder="https://..."
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
@@ -4403,13 +4985,23 @@ if (!response.ok) {
 
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminBrandWebsiteUrl", "Site da marca")}
+                            {translate(
+                              t,
+                              "adminBrandWebsiteUrl",
+                              "Site da marca",
+                            )}
                           </span>
                           <input
                             value={partnershipApprovalDraft.brandWebsiteUrl}
                             onChange={(event) => {
-                              updatePartnershipApprovalDraft("brandWebsiteUrl", event.target.value);
-                              updatePartnershipApprovalDraft("websiteUrl", event.target.value);
+                              updatePartnershipApprovalDraft(
+                                "brandWebsiteUrl",
+                                event.target.value,
+                              );
+                              updatePartnershipApprovalDraft(
+                                "websiteUrl",
+                                event.target.value,
+                              );
                             }}
                             placeholder="https://..."
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
@@ -4418,26 +5010,44 @@ if (!response.ok) {
 
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminCampaignName", "Nome da campanha")}
+                            {translate(
+                              t,
+                              "adminCampaignName",
+                              "Nome da campanha",
+                            )}
                           </span>
                           <input
                             value={partnershipApprovalDraft.campaignName}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("campaignName", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "campaignName",
+                                event.target.value,
+                              )
                             }
-                            placeholder={translate(t, "adminCampaignNamePlaceholder", "Ex: Black Friday 2026")}
+                            placeholder={translate(
+                              t,
+                              "adminCampaignNamePlaceholder",
+                              "Ex: Black Friday 2026",
+                            )}
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
                           />
                         </label>
 
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminPartnershipPublicUrl", "Link público")}
+                            {translate(
+                              t,
+                              "adminPartnershipPublicUrl",
+                              "Link público",
+                            )}
                           </span>
                           <input
                             value={partnershipApprovalDraft.websiteUrl}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("websiteUrl", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "websiteUrl",
+                                event.target.value,
+                              )
                             }
                             placeholder="https://..."
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
@@ -4446,13 +5056,20 @@ if (!response.ok) {
 
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminPartnershipStartDate", "Início")}
+                            {translate(
+                              t,
+                              "adminPartnershipStartDate",
+                              "Início",
+                            )}
                           </span>
                           <input
                             type="date"
                             value={partnershipApprovalDraft.startDate}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("startDate", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "startDate",
+                                event.target.value,
+                              )
                             }
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
                           />
@@ -4466,7 +5083,10 @@ if (!response.ok) {
                             type="date"
                             value={partnershipApprovalDraft.endDate}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("endDate", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "endDate",
+                                event.target.value,
+                              )
                             }
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
                           />
@@ -4474,12 +5094,19 @@ if (!response.ok) {
 
                         <label className="block md:col-span-2">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminBrandDescription", "Descrição da marca")}
+                            {translate(
+                              t,
+                              "adminBrandDescription",
+                              "Descrição da marca",
+                            )}
                           </span>
                           <textarea
                             value={partnershipApprovalDraft.brandDescription}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("brandDescription", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "brandDescription",
+                                event.target.value,
+                              )
                             }
                             rows={3}
                             className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
@@ -4488,12 +5115,19 @@ if (!response.ok) {
 
                         <label className="block md:col-span-2">
                           <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                            {translate(t, "adminPartnershipPublicDescription", "Descrição pública da parceria")}
+                            {translate(
+                              t,
+                              "adminPartnershipPublicDescription",
+                              "Descrição pública da parceria",
+                            )}
                           </span>
                           <textarea
                             value={partnershipApprovalDraft.publicDescription}
                             onChange={(event) =>
-                              updatePartnershipApprovalDraft("publicDescription", event.target.value)
+                              updatePartnershipApprovalDraft(
+                                "publicDescription",
+                                event.target.value,
+                              )
                             }
                             rows={4}
                             className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
@@ -4506,7 +5140,11 @@ if (!response.ok) {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-100/70">
-                            {translate(t, "adminPartnershipEvidenceTitle", "Evidência do YouTube")}
+                            {translate(
+                              t,
+                              "adminPartnershipEvidenceTitle",
+                              "Evidência do YouTube",
+                            )}
                           </p>
                           <p className="mt-1 text-sm text-white/45">
                             {translate(
@@ -4519,25 +5157,40 @@ if (!response.ok) {
 
                         {partnershipApprovalDraft.partnership.source_url && (
                           <a
-                            href={partnershipApprovalDraft.partnership.source_url}
+                            href={
+                              partnershipApprovalDraft.partnership.source_url
+                            }
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
                           >
                             <ExternalLink size={14} />
-                            {translate(t, "adminPartnershipOpenVideo", "Abrir vídeo")}
+                            {translate(
+                              t,
+                              "adminPartnershipOpenVideo",
+                              "Abrir vídeo",
+                            )}
                           </a>
                         )}
                       </div>
 
                       <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
                         <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
-                          {partnershipApprovalDraft.partnership.source_thumbnail ? (
+                          {partnershipApprovalDraft.partnership
+                            .source_thumbnail ? (
                             <img
-                              src={partnershipApprovalDraft.partnership.source_thumbnail}
+                              src={
+                                partnershipApprovalDraft.partnership
+                                  .source_thumbnail
+                              }
                               alt={
-                                partnershipApprovalDraft.partnership.source_title ||
-                                translate(t, "adminPartnershipVideoThumbnail", "Thumbnail do vídeo")
+                                partnershipApprovalDraft.partnership
+                                  .source_title ||
+                                translate(
+                                  t,
+                                  "adminPartnershipVideoThumbnail",
+                                  "Thumbnail do vídeo",
+                                )
                               }
                               className="aspect-video w-full object-cover"
                             />
@@ -4554,55 +5207,90 @@ if (!response.ok) {
                               {translate(t, "adminPartnershipVideo", "Vídeo")}
                             </p>
                             <p className="mt-2 text-sm font-bold leading-5 text-white">
-                              {partnershipApprovalDraft.partnership.source_title ||
-                                translate(t, "adminPartnershipVideoUnavailable", "Título do vídeo indisponível")}
+                              {partnershipApprovalDraft.partnership
+                                .source_title ||
+                                translate(
+                                  t,
+                                  "adminPartnershipVideoUnavailable",
+                                  "Título do vídeo indisponível",
+                                )}
                             </p>
                           </div>
 
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                               <p className="text-xs uppercase tracking-[0.18em] text-white/35">
-                                {translate(t, "adminPartnershipChannel", "Canal")}
+                                {translate(
+                                  t,
+                                  "adminPartnershipChannel",
+                                  "Canal",
+                                )}
                               </p>
                               <p className="mt-2 truncate text-sm font-bold text-white">
-                                {partnershipApprovalDraft.partnership.source_channel ||
-                                  translate(t, "adminPartnershipUnknownChannel", "Canal não informado")}
+                                {partnershipApprovalDraft.partnership
+                                  .source_channel ||
+                                  translate(
+                                    t,
+                                    "adminPartnershipUnknownChannel",
+                                    "Canal não informado",
+                                  )}
                               </p>
                             </div>
 
                             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                               <p className="text-xs uppercase tracking-[0.18em] text-white/35">
-                                {translate(t, "adminPartnershipPublishedAt", "Publicado em")}
+                                {translate(
+                                  t,
+                                  "adminPartnershipPublishedAt",
+                                  "Publicado em",
+                                )}
                               </p>
                               <p className="mt-2 text-sm font-bold text-white">
-                                {partnershipApprovalDraft.partnership.source_published_at
+                                {partnershipApprovalDraft.partnership
+                                  .source_published_at
                                   ? new Date(
-                                      partnershipApprovalDraft.partnership.source_published_at,
+                                      partnershipApprovalDraft.partnership
+                                        .source_published_at,
                                     ).toLocaleDateString(dateLocale)
-                                  : translate(t, "adminPartnershipUnknownDate", "Data não informada")}
+                                  : translate(
+                                      t,
+                                      "adminPartnershipUnknownDate",
+                                      "Data não informada",
+                                    )}
                               </p>
                             </div>
                           </div>
 
                           <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
                             <p className="text-xs uppercase tracking-[0.18em] text-emerald-100/60">
-                              {translate(t, "adminDetectionReason", "Motivo da detecção")}
+                              {translate(
+                                t,
+                                "adminDetectionReason",
+                                "Motivo da detecção",
+                              )}
                             </p>
                             <p className="mt-2 text-sm font-bold text-emerald-50">
-                              {partnershipApprovalDraft.partnership.detection_reason === "paid_product_placement"
+                              {partnershipApprovalDraft.partnership
+                                .detection_reason === "paid_product_placement"
                                 ? translate(
                                     t,
                                     "adminPartnershipPaidPromotion",
                                     "Promoção paga detectada pelo YouTube",
                                   )
-                                : partnershipApprovalDraft.partnership.detection_reason === "keyword_match"
+                                : partnershipApprovalDraft.partnership
+                                      .detection_reason === "keyword_match"
                                   ? translate(
                                       t,
                                       "adminPartnershipKeywordMatch",
                                       "Termos de parceria encontrados no título ou descrição",
                                     )
-                                  : partnershipApprovalDraft.partnership.detection_reason ||
-                                    translate(t, "adminPartnershipUnknownReason", "Motivo não informado")}
+                                  : partnershipApprovalDraft.partnership
+                                      .detection_reason ||
+                                    translate(
+                                      t,
+                                      "adminPartnershipUnknownReason",
+                                      "Motivo não informado",
+                                    )}
                             </p>
                           </div>
                         </div>
@@ -4610,11 +5298,19 @@ if (!response.ok) {
 
                       <div className="mt-4 rounded-[24px] border border-white/10 bg-black/30 p-4">
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                          {translate(t, "adminEvidenceText", "Evidência encontrada")}
+                          {translate(
+                            t,
+                            "adminEvidenceText",
+                            "Evidência encontrada",
+                          )}
                         </p>
                         <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-white/55">
                           {partnershipApprovalDraft.partnership.evidence_text ||
-                            translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
+                            translate(
+                              t,
+                              "adminNoEvidenceText",
+                              "Sem texto de evidência.",
+                            )}
                         </p>
                       </div>
                     </div>
@@ -4635,13 +5331,187 @@ if (!response.ok) {
                       <button
                         type="button"
                         onClick={approvePartnership}
-                        disabled={actionLoading === partnershipApprovalDraft.partnership.id}
+                        disabled={
+                          actionLoading ===
+                          partnershipApprovalDraft.partnership.id
+                        }
                         className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
                       >
                         <Check size={16} />
-                        {actionLoading === partnershipApprovalDraft.partnership.id
+                        {actionLoading ===
+                        partnershipApprovalDraft.partnership.id
                           ? translate(t, "approving", "Aprovando...")
-                          : translate(t, "adminApproveAndPublish", "Aprovar e publicar")}
+                          : translate(
+                              t,
+                              "adminApproveAndPublish",
+                              "Aprovar e publicar",
+                            )}
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {imageEditorCreator && (
+                <motion.div
+                  className="fixed inset-0 z-[115] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: 18 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 18 }}
+                    className="w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/10 bg-zinc-950/95 shadow-2xl shadow-cyan-500/10"
+                  >
+                    <div className="flex items-start justify-between gap-4 border-b border-white/10 p-6">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-100/60">
+                          {translate(
+                            t,
+                            "adminCreatorImage",
+                            "Imagem do criador",
+                          )}
+                        </p>
+                        <h3 className="mt-2 text-2xl font-black text-white">
+                          {translate(
+                            t,
+                            "adminChangeCreatorImage",
+                            "Alterar imagem",
+                          )}
+                        </h3>
+                        <p className="mt-1 text-sm text-white/45">
+                          {imageEditorCreator.nickname} @
+                          {imageEditorCreator.username}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={closeCreatorImageEditor}
+                        className="rounded-full border border-white/10 bg-white/[0.04] p-3 text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="grid gap-5 p-6 md:grid-cols-[180px_1fr]">
+                      <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/40">
+                        {imageEditorFile ? (
+                          <img
+                            src={URL.createObjectURL(imageEditorFile)}
+                            alt={translate(
+                              t,
+                              "adminCreatorImagePreview",
+                              "Prévia da imagem",
+                            )}
+                            className="aspect-[3/4] w-full object-cover"
+                          />
+                        ) : imageEditorUrl.trim() ? (
+                          <img
+                            src={imageEditorUrl.trim()}
+                            alt={translate(
+                              t,
+                              "adminCreatorImagePreview",
+                              "Prévia da imagem",
+                            )}
+                            className="aspect-[3/4] w-full object-cover"
+                          />
+                        ) : imageEditorCreator.avatar_url ? (
+                          <img
+                            src={imageEditorCreator.avatar_url}
+                            alt={translate(
+                              t,
+                              "adminCreatorImagePreview",
+                              "Prévia da imagem",
+                            )}
+                            className="aspect-[3/4] w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex aspect-[3/4] w-full items-center justify-center text-white/30">
+                            <ImageIcon size={36} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="block">
+                          <span className="mb-2 inline-flex items-center gap-2 text-sm font-bold text-white/70">
+                            <Link size={16} />
+                            {translate(
+                              t,
+                              "adminCreatorImageUrl",
+                              "URL da imagem",
+                            )}
+                          </span>
+                          <input
+                            value={imageEditorUrl}
+                            onChange={(event) => {
+                              setImageEditorUrl(event.target.value);
+                              if (event.target.value.trim())
+                                setImageEditorFile(null);
+                            }}
+                            placeholder="https://..."
+                            className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                          <p className="mb-3 inline-flex items-center gap-2 text-sm font-bold text-white/70">
+                            <Upload size={16} />
+                            {translate(
+                              t,
+                              "adminCreatorImageUpload",
+                              "Upload de arquivo",
+                            )}
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] || null;
+                              setImageEditorFile(file);
+                              if (file) setImageEditorUrl("");
+                            }}
+                            className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300 file:px-4 file:py-2 file:text-sm file:font-black file:text-black hover:file:bg-cyan-200"
+                          />
+                          <p className="mt-3 text-xs text-white/35">
+                            {translate(
+                              t,
+                              "adminCreatorImageUploadHint",
+                              "Use uma imagem vertical para preservar o visual premium da carta.",
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap justify-end gap-3 border-t border-white/10 p-6">
+                      <button
+                        type="button"
+                        onClick={closeCreatorImageEditor}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.08]"
+                      >
+                        {translate(t, "cancel", "Cancelar")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={saveCreatorImage}
+                        disabled={
+                          actionLoading ===
+                          `creator-image-${imageEditorCreator.id}`
+                        }
+                        className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                      >
+                        <Check size={16} />
+                        {actionLoading ===
+                        `creator-image-${imageEditorCreator.id}`
+                          ? translate(t, "saving", "Salvando...")
+                          : translate(t, "save", "Salvar")}
                       </button>
                     </div>
                   </motion.div>
@@ -4771,10 +5641,10 @@ function StatusPill({
       : tone === "green"
         ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
         : tone === "yellow"
-        ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-100"
-        : tone === "red"
-          ? "border-red-300/20 bg-red-300/10 text-red-100"
-          : "border-white/10 bg-white/[0.04] text-white/60";
+          ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-100"
+          : tone === "red"
+            ? "border-red-300/20 bg-red-300/10 text-red-100"
+            : "border-white/10 bg-white/[0.04] text-white/60";
 
   return (
     <span className={`rounded-full border px-3 py-1 text-xs ${toneClass}`}>
