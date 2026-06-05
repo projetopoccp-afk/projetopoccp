@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   ExternalLink,
   Eye,
   Globe2,
@@ -884,7 +882,6 @@ export function CreatorProfilePage({
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
-  const [activeClipPlatform, setActiveClipPlatform] = useState<string>("");
   const socialLinksDropdownRef = useRef<HTMLDivElement | null>(null);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -1484,35 +1481,19 @@ export function CreatorProfilePage({
 
   const clipPlatformSections = (
     Object.entries(groupedClips) as Array<[string, AutoClip[]]>
-  ).sort(([platformA], [platformB]) => {
-    const order = ["youtube", "twitch", "kick", "tiktok", "instagram"];
-    const indexA = order.indexOf(platformA);
-    const indexB = order.indexOf(platformB);
+  )
+    .map(([platform, platformClips]) => [
+      platform,
+      platformClips.slice(0, 3),
+    ] as [string, AutoClip[]])
+    .filter(([, platformClips]) => platformClips.length > 0)
+    .sort(([platformA], [platformB]) => {
+      const order = ["twitch", "kick", "youtube", "tiktok", "instagram"];
+      const indexA = order.indexOf(platformA);
+      const indexB = order.indexOf(platformB);
 
-    return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
-  });
-
-  const clipPlatformKey = clipPlatformSections
-    .map(([platform]) => platform)
-    .join("|");
-  const selectedClipPlatform =
-    activeClipPlatform && groupedClips[activeClipPlatform]
-      ? activeClipPlatform
-      : clipPlatformSections[0]?.[0] || "";
-  const selectedPlatformClips = selectedClipPlatform
-    ? groupedClips[selectedClipPlatform] || []
-    : [];
-
-  useEffect(() => {
-    if (!clipPlatformSections.length) {
-      if (activeClipPlatform) setActiveClipPlatform("");
-      return;
-    }
-
-    if (!activeClipPlatform || !groupedClips[activeClipPlatform]) {
-      setActiveClipPlatform(clipPlatformSections[0][0]);
-    }
-  }, [activeClipPlatform, clipPlatformKey]);
+      return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+    });
 
   const visiblePartnerships = partnerships
     .filter((partnership) =>
@@ -3202,74 +3183,41 @@ export function CreatorProfilePage({
                     "Carregando clipes...",
                   )}
                 </div>
-              ) : clips.length > 0 ? (
-                <div className="mt-5">
-                  {clipPlatformSections.length > 1 ? (
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {clipPlatformSections.map(([platform, platformClips]) => (
-                        <button
-                          key={platform}
-                          type="button"
-                          onClick={() => setActiveClipPlatform(platform)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition ${
-                            selectedClipPlatform === platform
-                              ? "border-fuchsia-300/40 bg-fuchsia-300/15 text-fuchsia-100 shadow-lg shadow-fuchsia-500/10"
-                              : "border-white/10 bg-white/[0.04] text-white/50 hover:border-cyan-300/25 hover:text-cyan-100"
-                          }`}
-                        >
-                          <PlayCircle className="h-3.5 w-3.5" />
-                          {getPlatformLabel(platform)}
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/55">
-                            {platformClips.length}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+              ) : clipPlatformSections.length > 0 ? (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {clipPlatformSections.map(([platform, platformClips]) => {
+                    const totalViews = platformClips.reduce((total, clip) => {
+                      return total + (clip.viewCount ?? clip.view_count ?? 0);
+                    }, 0);
 
-                  {selectedClipPlatform && selectedPlatformClips.length > 0 ? (
-                    <section>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                          {getPlatformLabel(selectedClipPlatform)}
-                        </p>
-                        <span className="text-xs font-bold text-white/35">
-                          {selectedPlatformClips.length}{" "}
-                          {selectedPlatformClips.length === 1
-                            ? translate(t, "creatorProfileClipSingular", "clip")
-                            : translate(t, "creatorProfileClipPlural", "clips")}
-                        </span>
-                      </div>
+                    return (
+                      <section
+                        key={platform}
+                        className="overflow-hidden rounded-[1.45rem] border border-white/10 bg-black/25 shadow-xl shadow-black/20 transition hover:border-fuchsia-300/20 hover:bg-fuchsia-300/[0.025]"
+                      >
+                        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.035] px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-fuchsia-100">
+                              {getPlatformLabel(platform)}
+                            </p>
+                            <p className="mt-1 text-[11px] font-bold text-white/35">
+                              {platformClips.length} {platformClips.length === 1
+                                ? translate(t, "creatorProfileClipSingular", "clip")
+                                : translate(t, "creatorProfileClipPlural", "clips")}
+                            </p>
+                          </div>
 
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            document
-                              .getElementById(
-                                `creator-profile-clips-${selectedClipPlatform}`,
-                              )
-                              ?.scrollBy({ left: -320, behavior: "smooth" });
-                          }}
-                          className="absolute -left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-fuchsia-300/20 bg-black/80 text-fuchsia-100 shadow-2xl backdrop-blur transition hover:border-fuchsia-300/45 hover:bg-fuchsia-300/15 sm:flex"
-                          aria-label={translate(
-                            t,
-                            "creatorProfilePreviousClips",
-                            "Clipes anteriores",
-                          )}
-                        >
-                          <ChevronLeft className="h-5 w-5" />
-                        </button>
+                          {totalViews > 0 ? (
+                            <span className="shrink-0 rounded-full border border-cyan-300/15 bg-cyan-300/10 px-2.5 py-1 text-[11px] font-black text-cyan-100/80">
+                              {formatNumber(totalViews)}
+                            </span>
+                          ) : null}
+                        </div>
 
-                        <div
-                          id={`creator-profile-clips-${selectedClipPlatform}`}
-                          className="flex snap-x gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                        >
-                          {selectedPlatformClips.map((clip) => {
-                            const thumbnail =
-                              clip.thumbnailUrl || clip.thumbnail_url;
-                            const viewCount =
-                              clip.viewCount ?? clip.view_count ?? 0;
+                        <div className="grid gap-2.5 p-3">
+                          {platformClips.map((clip) => {
+                            const thumbnail = clip.thumbnailUrl || clip.thumbnail_url;
+                            const viewCount = clip.viewCount ?? clip.view_count ?? 0;
                             const clipHref = getSafeClipUrl(clip, socialLinks);
 
                             return (
@@ -3278,9 +3226,9 @@ export function CreatorProfilePage({
                                 href={clipHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.1rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[260px] lg:w-[290px]"
+                                className="group grid grid-cols-[92px_minmax(0,1fr)] gap-3 overflow-hidden rounded-[1rem] border border-white/10 bg-white/[0.035] p-2 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.055]"
                               >
-                                <div className="aspect-[16/8.5] bg-white/[0.04]">
+                                <div className="aspect-video overflow-hidden rounded-[0.75rem] bg-white/[0.04]">
                                   {thumbnail ? (
                                     <img
                                       src={thumbnail}
@@ -3289,54 +3237,29 @@ export function CreatorProfilePage({
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-white/30">
-                                      <PlayCircle className="h-8 w-8" />
+                                      <PlayCircle className="h-6 w-6" />
                                     </div>
                                   )}
                                 </div>
 
-                                <div className="p-3">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100/60">
-                                      {getPlatformLabel(clip.platform)}
-                                    </p>
-
-                                    {viewCount > 0 ? (
-                                      <span className="text-[11px] font-bold text-white/40">
-                                        {formatNumber(viewCount)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-
-                                  <h3 className="mt-1.5 line-clamp-2 text-xs font-black leading-5 text-white sm:text-sm">
+                                <div className="min-w-0 py-0.5">
+                                  <h3 className="line-clamp-2 text-xs font-black leading-4 text-white transition group-hover:text-cyan-100">
                                     {clip.title}
                                   </h3>
+
+                                  {viewCount > 0 ? (
+                                    <p className="mt-1.5 text-[11px] font-bold text-white/40">
+                                      {formatNumber(viewCount)}
+                                    </p>
+                                  ) : null}
                                 </div>
                               </a>
                             );
                           })}
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            document
-                              .getElementById(
-                                `creator-profile-clips-${selectedClipPlatform}`,
-                              )
-                              ?.scrollBy({ left: 320, behavior: "smooth" });
-                          }}
-                          className="absolute -right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-fuchsia-300/20 bg-black/80 text-fuchsia-100 shadow-2xl backdrop-blur transition hover:border-fuchsia-300/45 hover:bg-fuchsia-300/15 sm:flex"
-                          aria-label={translate(
-                            t,
-                            "creatorProfileNextClips",
-                            "Próximos clipes",
-                          )}
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </section>
-                  ) : null}
+                      </section>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="mt-5 text-sm leading-7 text-white/50">
