@@ -96,19 +96,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           onClose={handleClose}
           zIndexClassName="z-[80]"
           className="max-w-lg"
-          contentClassName="hide-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-7 sm:p-8"
+          contentClassName="hide-scrollbar h-full overflow-y-auto p-7 pb-12 sm:p-8 sm:pb-12"
         >
+            <button
+              onClick={handleClose}
+              className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+              aria-label={tx("close", "Fechar")}
+            >
+              <X size={18} />
+            </button>
+
             <div className="relative z-10">
-              <div className="mb-4 flex justify-end">
-                <button
-                  onClick={handleClose}
-                  className="rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                  aria-label={tx("close", "Fechar")}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="flex items-start gap-4 pr-9">
+              <div className="flex items-start gap-4">
                 <motion.div
                   animate={{ y: [0, -5, 0], rotate: [-2, 2, -2] }}
                   transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
