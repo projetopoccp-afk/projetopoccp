@@ -452,8 +452,8 @@ function extractLinks(text: string): DetectedLink[] {
         return null;
       }
     })
-    .filter(Boolean)
-    .sort((a, b) => b.score - a.score) as DetectedLink[];
+    .filter((link): link is DetectedLink => link !== null)
+    .sort((a, b) => b.score - a.score);
 }
 
 function scoreDetectedLink(url: string, domain: string) {
