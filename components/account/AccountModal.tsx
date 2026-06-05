@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
@@ -195,27 +196,16 @@ export function AccountModal({
             onClick={onClose}
             className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.94 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              onClick={(event) => event.stopPropagation()}
-              className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/15 bg-zinc-950 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+            <CardpocModalShell
+              onClose={onClose}
+              showCloseButton
+              closeLabel={translate(t, "close", "Fechar")}
+              zIndexClassName="z-[80]"
+              className="max-w-4xl"
+              contentClassName="max-h-[90vh] overflow-y-auto p-6 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8 md:pb-6"
             >
-              <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
-              <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                aria-label={translate(t, "close", "Fechar")}
-              >
-                <X size={18} />
-              </button>
-
-              <div className="relative z-10 max-h-[90vh] overflow-y-auto p-6 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8 md:pb-6">
+              <div className="relative z-10">
                 <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                   {translate(t, "myAccount", "Minha Conta")}
                 </div>
@@ -382,8 +372,8 @@ export function AccountModal({
                   {translate(t, "logoutAccount", "Sair da conta")}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+            </CardpocModalShell>
         )}
       </AnimatePresence>
 
