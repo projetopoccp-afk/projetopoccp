@@ -143,6 +143,14 @@ const ADMIN_PACK_TYPES: {
   },
 ];
 
+const PARTNERSHIP_TYPE_OPTIONS = [
+  { id: "sponsorship", labelKey: "adminPartnershipTypeSponsorship", fallback: "Patrocínio" },
+  { id: "ambassador", labelKey: "adminPartnershipTypeAmbassador", fallback: "Embaixador" },
+  { id: "campaign", labelKey: "adminPartnershipTypeCampaign", fallback: "Campanha" },
+  { id: "event", labelKey: "adminPartnershipTypeEvent", fallback: "Evento" },
+  { id: "partnership", labelKey: "adminPartnershipTypePartnership", fallback: "Parceria" },
+];
+
 const RARITY_LEVEL: Record<Exclude<GrantRarity, "random">, number> = {
   common: 1,
   rare: 2,
@@ -172,6 +180,24 @@ function getDateLocale(language: string) {
   if (language === "es") return "es-ES";
 
   return "pt-BR";
+}
+
+function createSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function getPartnershipTypeLabel(type: string, t: TranslateFunction) {
+  const option = PARTNERSHIP_TYPE_OPTIONS.find((item) => item.id === type);
+
+  if (!option) return type;
+
+  return translate(t, option.labelKey, option.fallback);
 }
 
 function getGrantRarityLabel(
@@ -250,11 +276,26 @@ type CreatorClaim = {
 };
 
 
+type Brand = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  website_url: string | null;
+  description: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+};
+
 type CreatorPartnership = {
   id: string;
   creator_id: string;
+  brand_id: string | null;
   brand_name: string;
   partnership_type: string;
+  campaign_name: string | null;
+  public_description: string | null;
+  website_url: string | null;
   source_platform: string;
   source_url: string | null;
   evidence_text: string | null;
@@ -272,6 +313,21 @@ type CreatorPartnership = {
   rejected_at: string | null;
   created_at: string;
   updated_at: string | null;
+  brands?: Brand | null;
+};
+
+type PartnershipApprovalDraft = {
+  partnership: CreatorPartnership;
+  brandName: string;
+  brandLogoUrl: string;
+  brandWebsiteUrl: string;
+  brandDescription: string;
+  partnershipType: string;
+  campaignName: string;
+  publicDescription: string;
+  websiteUrl: string;
+  startDate: string;
+  endDate: string;
 };
 
 type AdminStats = {
@@ -355,6 +411,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [expandedPartnerships, setExpandedPartnerships] = useState<Record<string, boolean>>(
     {},
   );
+  const [partnershipApprovalDraft, setPartnershipApprovalDraft] =
+    useState<PartnershipApprovalDraft | null>(null);
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -459,7 +517,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   async function loadPartnerships() {
     const { data } = await supabase
       .from("creator_partnerships")
-      .select("*")
+      .select("*, brands(*)")
       .eq("status", "suggested")
       .order("created_at", { ascending: false });
 
@@ -773,7 +831,62 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }
 
 
-  async function approvePartnership(partnership: CreatorPartnership) {
+  function openPartnershipApproval(partnership: CreatorPartnership) {
+    const brand = partnership.brands;
+
+    setPartnershipApprovalDraft({
+      partnership,
+      brandName: brand?.name || partnership.brand_name || "",
+      brandLogoUrl: brand?.logo_url || "",
+      brandWebsiteUrl: brand?.website_url || partnership.website_url || "",
+      brandDescription: brand?.description || "",
+      partnershipType: partnership.partnership_type || "sponsorship",
+      campaignName: partnership.campaign_name || "",
+      publicDescription:
+        partnership.public_description ||
+        translate(
+          t,
+          "adminPartnershipDefaultPublicDescription",
+          "Parceria detectada automaticamente e verificada pela equipe Cardpoc.",
+        ),
+      websiteUrl: partnership.website_url || brand?.website_url || "",
+      startDate: partnership.start_date || "",
+      endDate: partnership.end_date || "",
+    });
+  }
+
+  function updatePartnershipApprovalDraft(
+    field: keyof Omit<PartnershipApprovalDraft, "partnership">,
+    value: string,
+  ) {
+    setPartnershipApprovalDraft((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        [field]: value,
+      };
+    });
+  }
+
+  async function approvePartnership() {
+    if (!partnershipApprovalDraft) return;
+
+    const { partnership } = partnershipApprovalDraft;
+    const normalizedBrandName = partnershipApprovalDraft.brandName.trim();
+    const brandSlug = createSlug(normalizedBrandName);
+
+    if (!normalizedBrandName || !brandSlug) {
+      alert(
+        translate(
+          t,
+          "adminPartnershipBrandRequired",
+          "Informe o nome da marca antes de aprovar.",
+        ),
+      );
+      return;
+    }
+
     setActionLoading(partnership.id);
 
     const adminId = await getCurrentUserId();
@@ -785,9 +898,74 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     const creator = getCreator(partnership.creator_id);
 
+    let brandId = partnership.brand_id;
+
+    const { data: existingBrand, error: existingBrandError } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("slug", brandSlug)
+      .maybeSingle();
+
+    if (existingBrandError) {
+      setActionLoading(null);
+      alert(existingBrandError.message);
+      return;
+    }
+
+    if (existingBrand?.id) {
+      brandId = existingBrand.id;
+
+      const { error: updateBrandError } = await supabase
+        .from("brands")
+        .update({
+          name: normalizedBrandName,
+          logo_url: partnershipApprovalDraft.brandLogoUrl.trim() || null,
+          website_url: partnershipApprovalDraft.brandWebsiteUrl.trim() || null,
+          description: partnershipApprovalDraft.brandDescription.trim() || null,
+        })
+        .eq("id", existingBrand.id);
+
+      if (updateBrandError) {
+        setActionLoading(null);
+        alert(updateBrandError.message);
+        return;
+      }
+    } else {
+      const { data: createdBrand, error: createBrandError } = await supabase
+        .from("brands")
+        .insert({
+          name: normalizedBrandName,
+          slug: brandSlug,
+          logo_url: partnershipApprovalDraft.brandLogoUrl.trim() || null,
+          website_url: partnershipApprovalDraft.brandWebsiteUrl.trim() || null,
+          description: partnershipApprovalDraft.brandDescription.trim() || null,
+        })
+        .select("id")
+        .single();
+
+      if (createBrandError) {
+        setActionLoading(null);
+        alert(createBrandError.message);
+        return;
+      }
+
+      brandId = createdBrand.id;
+    }
+
     const { error } = await supabase
       .from("creator_partnerships")
       .update({
+        brand_id: brandId,
+        brand_name: normalizedBrandName,
+        partnership_type: partnershipApprovalDraft.partnershipType,
+        campaign_name: partnershipApprovalDraft.campaignName.trim() || null,
+        public_description: partnershipApprovalDraft.publicDescription.trim() || null,
+        website_url:
+          partnershipApprovalDraft.websiteUrl.trim() ||
+          partnershipApprovalDraft.brandWebsiteUrl.trim() ||
+          null,
+        start_date: partnershipApprovalDraft.startDate || null,
+        end_date: partnershipApprovalDraft.endDate || null,
         status: "verified",
         verified_by: adminId,
         verified_at: new Date().toISOString(),
@@ -810,14 +988,17 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         creator_id: partnership.creator_id,
         creator_nickname: creator?.nickname,
         creator_username: creator?.username,
-        brand_name: partnership.brand_name,
-        partnership_type: partnership.partnership_type,
+        brand_id: brandId,
+        brand_name: normalizedBrandName,
+        partnership_type: partnershipApprovalDraft.partnershipType,
+        campaign_name: partnershipApprovalDraft.campaignName,
         source_platform: partnership.source_platform,
         source_url: partnership.source_url,
         confidence_score: partnership.confidence_score,
       },
     });
 
+    setPartnershipApprovalDraft(null);
     setActionLoading(null);
     await loadPartnerships();
     await loadLogs();
@@ -3097,7 +3278,7 @@ if (!response.ok) {
                             />
 
                             <StatusPill
-                              label={partnership.partnership_type}
+                              label={getPartnershipTypeLabel(partnership.partnership_type, t)}
                               tone="cyan"
                             />
 
@@ -3136,7 +3317,7 @@ if (!response.ok) {
 
                               <InfoBox
                                 label={translate(t, "adminPartnershipType", "Tipo")}
-                                value={partnership.partnership_type}
+                                value={getPartnershipTypeLabel(partnership.partnership_type, t)}
                               />
 
                               <InfoBox
@@ -3184,7 +3365,7 @@ if (!response.ok) {
 
                             <div className="flex flex-wrap gap-3 border-t border-white/10 bg-black/20 p-5">
                               <button
-                                onClick={() => approvePartnership(partnership)}
+                                onClick={() => openPartnershipApproval(partnership)}
                                 disabled={actionLoading === partnership.id}
                                 className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
                               >
@@ -3392,6 +3573,259 @@ if (!response.ok) {
             )}
 
 
+
+            <AnimatePresence>
+              {partnershipApprovalDraft && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4 backdrop-blur-xl"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 18, scale: 0.96 }}
+                    className="no-scrollbar max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[32px] border border-cyan-300/20 bg-[#05070d] p-6 shadow-2xl shadow-cyan-500/10"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-cyan-100">
+                          <ShieldCheck size={14} />
+                          {translate(t, "adminSmartApprovalBadge", "Aprovação Inteligente")}
+                        </div>
+
+                        <h3 className="mt-4 text-2xl font-black text-white">
+                          {translate(t, "adminApprovePartnershipTitle", "Aprovar parceria")}
+                        </h3>
+
+                        <p className="mt-2 max-w-2xl text-sm text-white/50">
+                          {translate(
+                            t,
+                            "adminApprovePartnershipDescription",
+                            "Revise a marca uma vez e o Cardpoc reaproveita logo, site e descrição em futuras parcerias com a mesma empresa.",
+                          )}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setPartnershipApprovalDraft(null)}
+                        className="rounded-full border border-white/10 bg-white/[0.04] p-3 text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 md:grid-cols-[220px_1fr]">
+                      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+                        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
+                          {partnershipApprovalDraft.brandLogoUrl ? (
+                            <img
+                              src={partnershipApprovalDraft.brandLogoUrl}
+                              alt={partnershipApprovalDraft.brandName}
+                              className="h-full w-full object-contain p-4"
+                            />
+                          ) : (
+                            <Handshake className="text-cyan-100/70" size={54} />
+                          )}
+                        </div>
+
+                        <p className="mt-4 text-xs text-white/40">
+                          {translate(
+                            t,
+                            "adminBrandPreviewHint",
+                            "Prévia da logo da marca. Você pode deixar vazio e completar depois.",
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipBrandName", "Nome da marca")}
+                          </span>
+                          <input
+                            value={partnershipApprovalDraft.brandName}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("brandName", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipType", "Tipo")}
+                          </span>
+                          <select
+                            value={partnershipApprovalDraft.partnershipType}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft(
+                                "partnershipType",
+                                event.target.value,
+                              )
+                            }
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-300/40"
+                          >
+                            {PARTNERSHIP_TYPE_OPTIONS.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {translate(t, option.labelKey, option.fallback)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminBrandLogoUrl", "Logo da marca")}
+                          </span>
+                          <input
+                            value={partnershipApprovalDraft.brandLogoUrl}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("brandLogoUrl", event.target.value)
+                            }
+                            placeholder="https://..."
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminBrandWebsiteUrl", "Site da marca")}
+                          </span>
+                          <input
+                            value={partnershipApprovalDraft.brandWebsiteUrl}
+                            onChange={(event) => {
+                              updatePartnershipApprovalDraft("brandWebsiteUrl", event.target.value);
+                              updatePartnershipApprovalDraft("websiteUrl", event.target.value);
+                            }}
+                            placeholder="https://..."
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminCampaignName", "Nome da campanha")}
+                          </span>
+                          <input
+                            value={partnershipApprovalDraft.campaignName}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("campaignName", event.target.value)
+                            }
+                            placeholder={translate(t, "adminCampaignNamePlaceholder", "Ex: Black Friday 2026")}
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipPublicUrl", "Link público")}
+                          </span>
+                          <input
+                            value={partnershipApprovalDraft.websiteUrl}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("websiteUrl", event.target.value)
+                            }
+                            placeholder="https://..."
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipStartDate", "Início")}
+                          </span>
+                          <input
+                            type="date"
+                            value={partnershipApprovalDraft.startDate}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("startDate", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipEndDate", "Fim")}
+                          </span>
+                          <input
+                            type="date"
+                            value={partnershipApprovalDraft.endDate}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("endDate", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block md:col-span-2">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminBrandDescription", "Descrição da marca")}
+                          </span>
+                          <textarea
+                            value={partnershipApprovalDraft.brandDescription}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("brandDescription", event.target.value)
+                            }
+                            rows={3}
+                            className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+
+                        <label className="block md:col-span-2">
+                          <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "adminPartnershipPublicDescription", "Descrição pública da parceria")}
+                          </span>
+                          <textarea
+                            value={partnershipApprovalDraft.publicDescription}
+                            onChange={(event) =>
+                              updatePartnershipApprovalDraft("publicDescription", event.target.value)
+                            }
+                            rows={4}
+                            className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 rounded-[24px] border border-white/10 bg-black/30 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                        {translate(t, "adminEvidenceText", "Evidência encontrada")}
+                      </p>
+                      <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-white/55">
+                        {partnershipApprovalDraft.partnership.evidence_text ||
+                          translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPartnershipApprovalDraft(null)}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.08]"
+                      >
+                        {translate(t, "cancel", "Cancelar")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={approvePartnership}
+                        disabled={actionLoading === partnershipApprovalDraft.partnership.id}
+                        className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                      >
+                        <Check size={16} />
+                        {actionLoading === partnershipApprovalDraft.partnership.id
+                          ? translate(t, "approving", "Aprovando...")
+                          : translate(t, "adminApproveAndPublish", "Aprovar e publicar")}
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence>
               {successToast && (
