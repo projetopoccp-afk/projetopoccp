@@ -298,6 +298,10 @@ type CreatorPartnership = {
   website_url: string | null;
   source_platform: string;
   source_url: string | null;
+  source_title: string | null;
+  source_thumbnail: string | null;
+  source_channel: string | null;
+  source_published_at: string | null;
   evidence_text: string | null;
   evidence_payload: Record<string, unknown> | null;
   detection_reason: string | null;
@@ -3911,14 +3915,121 @@ if (!response.ok) {
                       </div>
                     </div>
 
-                    <div className="mt-6 rounded-[24px] border border-white/10 bg-black/30 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                        {translate(t, "adminEvidenceText", "Evidência encontrada")}
-                      </p>
-                      <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-white/55">
-                        {partnershipApprovalDraft.partnership.evidence_text ||
-                          translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
-                      </p>
+                    <div className="mt-6 rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-100/70">
+                            {translate(t, "adminPartnershipEvidenceTitle", "Evidência do YouTube")}
+                          </p>
+                          <p className="mt-1 text-sm text-white/45">
+                            {translate(
+                              t,
+                              "adminPartnershipEvidenceHint",
+                              "Revise a origem da detecção antes de publicar a parceria.",
+                            )}
+                          </p>
+                        </div>
+
+                        {partnershipApprovalDraft.partnership.source_url && (
+                          <a
+                            href={partnershipApprovalDraft.partnership.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                          >
+                            <ExternalLink size={14} />
+                            {translate(t, "adminPartnershipOpenVideo", "Abrir vídeo")}
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+                        <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40">
+                          {partnershipApprovalDraft.partnership.source_thumbnail ? (
+                            <img
+                              src={partnershipApprovalDraft.partnership.source_thumbnail}
+                              alt={
+                                partnershipApprovalDraft.partnership.source_title ||
+                                translate(t, "adminPartnershipVideoThumbnail", "Thumbnail do vídeo")
+                              }
+                              className="aspect-video w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex aspect-video items-center justify-center bg-white/[0.04] text-white/30">
+                              <ExternalLink size={34} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid gap-3">
+                          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                            <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                              {translate(t, "adminPartnershipVideo", "Vídeo")}
+                            </p>
+                            <p className="mt-2 text-sm font-bold leading-5 text-white">
+                              {partnershipApprovalDraft.partnership.source_title ||
+                                translate(t, "adminPartnershipVideoUnavailable", "Título do vídeo indisponível")}
+                            </p>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                              <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                                {translate(t, "adminPartnershipChannel", "Canal")}
+                              </p>
+                              <p className="mt-2 truncate text-sm font-bold text-white">
+                                {partnershipApprovalDraft.partnership.source_channel ||
+                                  translate(t, "adminPartnershipUnknownChannel", "Canal não informado")}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                              <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                                {translate(t, "adminPartnershipPublishedAt", "Publicado em")}
+                              </p>
+                              <p className="mt-2 text-sm font-bold text-white">
+                                {partnershipApprovalDraft.partnership.source_published_at
+                                  ? new Date(
+                                      partnershipApprovalDraft.partnership.source_published_at,
+                                    ).toLocaleDateString(dateLocale)
+                                  : translate(t, "adminPartnershipUnknownDate", "Data não informada")}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
+                            <p className="text-xs uppercase tracking-[0.18em] text-emerald-100/60">
+                              {translate(t, "adminDetectionReason", "Motivo da detecção")}
+                            </p>
+                            <p className="mt-2 text-sm font-bold text-emerald-50">
+                              {partnershipApprovalDraft.partnership.detection_reason === "paid_product_placement"
+                                ? translate(
+                                    t,
+                                    "adminPartnershipPaidPromotion",
+                                    "Promoção paga detectada pelo YouTube",
+                                  )
+                                : partnershipApprovalDraft.partnership.detection_reason === "keyword_match"
+                                  ? translate(
+                                      t,
+                                      "adminPartnershipKeywordMatch",
+                                      "Termos de parceria encontrados no título ou descrição",
+                                    )
+                                  : partnershipApprovalDraft.partnership.detection_reason ||
+                                    translate(t, "adminPartnershipUnknownReason", "Motivo não informado")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-[24px] border border-white/10 bg-black/30 p-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                          {translate(t, "adminEvidenceText", "Evidência encontrada")}
+                        </p>
+                        <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-white/55">
+                          {partnershipApprovalDraft.partnership.evidence_text ||
+                            translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="mt-6 flex flex-wrap justify-end gap-3">
