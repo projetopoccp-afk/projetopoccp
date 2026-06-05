@@ -78,7 +78,7 @@ export function CardpocModalShell({
                   onClick={onClose}
                   aria-label={closeLabel}
                   title={closeLabel}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-red-400/25 bg-black/70 text-red-100 shadow-[0_0_24px_rgba(248,113,113,0.14)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-400/40 hover:bg-red-500/15"
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-red-300/45 bg-black/75 text-red-100 shadow-[0_0_14px_rgba(248,113,113,0.55),0_0_34px_rgba(248,113,113,0.32)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-200/70 hover:bg-red-500/20 hover:shadow-[0_0_18px_rgba(248,113,113,0.75),0_0_46px_rgba(248,113,113,0.45)]"
                 >
                   <X size={22} strokeWidth={3} />
                 </button>
