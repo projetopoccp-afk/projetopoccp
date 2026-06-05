@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ImagePlus, Save, Send, UserCheck, UserPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, UserCheck, UserPlus } from "lucide-react";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
@@ -446,9 +446,7 @@ export function CreatorPopup({
   const [shareOpen, setShareOpen] = useState(false);
   const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
   const [claimMode, setClaimMode] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const [nickname, setNickname] = useState("");
   const [title, setTitle] = useState("");
@@ -456,7 +454,6 @@ export function CreatorPopup({
   const [bio, setBio] = useState("");
   const [description, setDescription] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [socials, setSocials] = useState<SocialForm>({});
   const [youtubeChannels, setYoutubeChannels] = useState<string[]>([""]);
@@ -464,9 +461,6 @@ export function CreatorPopup({
   const [clipsLoading, setClipsLoading] = useState(false);
   const [creatorCardLevel, setCreatorCardLevel] = useState(creator?.level || 1);
   const [syncedCardProgressKey, setSyncedCardProgressKey] = useState("");
-
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const [viewCount, setViewCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
@@ -512,7 +506,6 @@ export function CreatorPopup({
     if (!creator) return;
 
     setPreparedCreatorId(null);
-    setEditMode(false);
     setClaimMode(false);
     setClaimSuccess(false);
     setClaimUrl("");
@@ -527,7 +520,6 @@ export function CreatorPopup({
     setBio(creator.bio || "");
     setDescription(creator.description || "");
     setAvatarUrl(creator.avatarUrl || "");
-    setBannerUrl(creator.bannerUrl || "");
     setTagsText((creator.tags || []).join(", "));
 
     async function loadCreatorData() {
@@ -1153,125 +1145,6 @@ export function CreatorPopup({
     setFollowLoading(false);
   }
 
-  async function uploadImage(file: File, type: "avatar" | "banner") {
-    try {
-      if (type === "avatar") {
-        setUploadingAvatar(true);
-      } else {
-        setUploadingBanner(true);
-      }
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${type}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("creator-profiles")
-        .upload(filePath, file, {
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from("creator-profiles")
-        .getPublicUrl(filePath);
-
-      if (type === "avatar") {
-        setAvatarUrl(data.publicUrl);
-      } else {
-        setBannerUrl(data.publicUrl);
-      }
-    } catch (error: any) {
-      alert(error.message);
-    } finally {
-      setUploadingAvatar(false);
-      setUploadingBanner(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!creator || !isOwner) return;
-
-    setSaving(true);
-
-    const tags = tagsText
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    const { error: profileError } = await supabase
-      .from("creator_profiles")
-      .update({
-        nickname,
-        title,
-        category,
-        bio,
-        description,
-        avatar_url: avatarUrl,
-        banner_url: bannerUrl,
-        tags,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", creatorId);
-
-    if (profileError) {
-      setSaving(false);
-      alert(profileError.message);
-      return;
-    }
-
-    await supabase.from("creator_social_links").delete().eq("creator_id", creatorId);
-
-    const socialRows = [
-      ...Object.entries(socials)
-        .filter(([platform, url]) => platform !== "youtube" && url.trim().length > 0)
-        .map(([platform, url]) => ({
-          creator_id: creatorId,
-          platform,
-          url,
-        })),
-      ...youtubeChannels
-        .map((url) => url.trim())
-        .filter(Boolean)
-        .map((url) => ({
-          creator_id: creatorId,
-          platform: "youtube",
-          url,
-        })),
-    ];
-
-    if (socialRows.length > 0) {
-      const { error: socialError } = await supabase
-        .from("creator_social_links")
-        .insert(socialRows);
-
-      if (socialError) {
-        setSaving(false);
-        alert(socialError.message);
-        return;
-      }
-    }
-
-    const updatedCreator: Creator = {
-      ...creator,
-      nickname,
-      title,
-      category,
-      bio,
-      description,
-      avatarUrl,
-      bannerUrl,
-      tags,
-    };
-
-    onCreatorUpdated?.(updatedCreator);
-
-    setSaving(false);
-    setEditMode(false);
-    alert(translate(t, "creatorPopupProfileUpdated", "Perfil atualizado com sucesso!"));
-  }
-
   async function handleClaimProfile() {
     if (!creator || !currentUserId) {
       alert(translate(t, "creatorPopupLoginToClaim", "Faça login para reivindicar este perfil."));
@@ -1506,35 +1379,6 @@ export function CreatorPopup({
                   onSubmit={handleClaimProfile}
                   onBack={() => setClaimMode(false)}
                 />
-              ) : false && editMode ? (
-                <EditPanel
-                  t={t}
-                  nickname={nickname}
-                  setNickname={setNickname}
-                  title={title}
-                  setTitle={setTitle}
-                  category={category}
-                  setCategory={setCategory}
-                  bio={bio}
-                  setBio={setBio}
-                  description={description}
-                  setDescription={setDescription}
-                  avatarUrl={avatarUrl}
-                  setAvatarUrl={setAvatarUrl}
-                  bannerUrl={bannerUrl}
-                  setBannerUrl={setBannerUrl}
-                  tagsText={tagsText}
-                  setTagsText={setTagsText}
-                  socials={socials}
-                  setSocials={setSocials}
-                  youtubeChannels={youtubeChannels}
-                  setYoutubeChannels={setYoutubeChannels}
-                  uploadingAvatar={uploadingAvatar}
-                  uploadingBanner={uploadingBanner}
-                  uploadImage={uploadImage}
-                  saving={saving}
-                  handleSave={handleSave}
-                />
               ) : (
                 <ViewPanel
                   t={t}
@@ -1651,263 +1495,6 @@ function ShareButton({
     >
       {label}
     </button>
-  );
-}
-
-function EditPanel({
-  t,
-  nickname,
-  setNickname,
-  title,
-  setTitle,
-  category,
-  setCategory,
-  bio,
-  setBio,
-  description,
-  setDescription,
-  avatarUrl,
-  setAvatarUrl,
-  bannerUrl,
-  setBannerUrl,
-  tagsText,
-  setTagsText,
-  socials,
-  setSocials,
-  youtubeChannels,
-  setYoutubeChannels,
-  uploadingAvatar,
-  uploadingBanner,
-  uploadImage,
-  saving,
-  handleSave,
-}: {
-  t: (key: any) => string;
-  nickname: string;
-  setNickname: (value: string) => void;
-  title: string;
-  setTitle: (value: string) => void;
-  category: string;
-  setCategory: (value: string) => void;
-  bio: string;
-  setBio: (value: string) => void;
-  description: string;
-  setDescription: (value: string) => void;
-  avatarUrl: string;
-  setAvatarUrl: (value: string) => void;
-  bannerUrl: string;
-  setBannerUrl: (value: string) => void;
-  tagsText: string;
-  setTagsText: (value: string) => void;
-  socials: SocialForm;
-  setSocials: React.Dispatch<React.SetStateAction<SocialForm>>;
-  youtubeChannels: string[];
-  setYoutubeChannels: React.Dispatch<React.SetStateAction<string[]>>;
-  uploadingAvatar: boolean;
-  uploadingBanner: boolean;
-  uploadImage: (file: File, type: "avatar" | "banner") => void;
-  saving: boolean;
-  handleSave: () => void;
-}) {
-  function updateYoutubeChannel(index: number, value: string) {
-    setYoutubeChannels((current) =>
-      current.map((channel, channelIndex) =>
-        channelIndex === index ? value : channel
-      )
-    );
-
-    if (index === 0) {
-      setSocials((current) => ({
-        ...current,
-        youtube: value,
-      }));
-    }
-  }
-
-  function addYoutubeChannel() {
-    setYoutubeChannels((current) => [...current, ""]);
-  }
-
-  function removeYoutubeChannel(index: number) {
-    setYoutubeChannels((current) => {
-      const nextChannels = current.filter((_, channelIndex) => channelIndex !== index);
-      const safeChannels = nextChannels.length > 0 ? nextChannels : [""];
-
-      setSocials((currentSocials) => ({
-        ...currentSocials,
-        youtube: safeChannels[0] || "",
-      }));
-
-      return safeChannels;
-    });
-  }
-
-  return (
-    <div className="pb-10 pr-16">
-      <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-        {translate(t, "creatorPopupEditModeBadge", "Edit Mode")}
-      </p>
-
-      <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupEditProfileTitle", "Editar perfil")}</h3>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <EditInput label={translate(t, "creatorPopupFieldNickname", "Nickname")} value={nickname} onChange={setNickname} />
-        <EditInput label={translate(t, "creatorPopupFieldTitle", "Title")} value={title} onChange={setTitle} />
-        <EditInput label={translate(t, "creatorPopupFieldCategory", "Categoria")} value={category} onChange={setCategory} />
-        <EditInput label={translate(t, "creatorPopupFieldAvatarUrl", "Avatar URL")} value={avatarUrl} onChange={setAvatarUrl} />
-
-        <UploadField
-          label={translate(t, "creatorPopupFieldUploadAvatar", "Upload Avatar")}
-          uploading={uploadingAvatar}
-          uploadingText={translate(t, "creatorPopupUploadingAvatar", "Enviando avatar...")}
-          chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
-          onFile={(file) => uploadImage(file, "avatar")}
-        />
-
-        {avatarUrl && (
-          <img
-            src={avatarUrl}
-            alt={translate(t, "creatorPopupAvatarPreviewAlt", "Avatar preview")}
-            className="h-28 w-28 rounded-2xl border border-white/10 object-cover"
-          />
-        )}
-
-        <div className="sm:col-span-2">
-          <EditInput label={translate(t, "creatorPopupFieldBannerUrl", "Banner URL")} value={bannerUrl} onChange={setBannerUrl} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <UploadField
-            label={translate(t, "creatorPopupFieldUploadBanner", "Upload Banner")}
-            uploading={uploadingBanner}
-            uploadingText={translate(t, "creatorPopupUploadingBanner", "Enviando banner...")}
-            chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
-            onFile={(file) => uploadImage(file, "banner")}
-          />
-        </div>
-
-        {bannerUrl && (
-          <div className="sm:col-span-2">
-            <img
-              src={bannerUrl}
-              alt={translate(t, "creatorPopupBannerPreviewAlt", "Banner preview")}
-              className="h-32 w-full rounded-2xl border border-white/10 object-cover"
-            />
-          </div>
-        )}
-
-        <div className="sm:col-span-2">
-          <EditTextarea label={translate(t, "creatorPopupFieldShortBio", "Bio curta")} value={bio} onChange={setBio} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <EditTextarea
-            label={translate(t, "creatorPopupFieldFullDescription", "Descrição completa")}
-            value={description}
-            onChange={setDescription}
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <EditInput
-            label={translate(t, "creatorPopupFieldTags", "Tags separadas por vírgula")}
-            value={tagsText}
-            onChange={setTagsText}
-            placeholder="Streamer, MMORPG, Black Desert"
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <h4 className="font-bold text-white">{translate(t, "creatorPopupSocialLinksTitle", "Redes Sociais")}</h4>
-
-        <p className="mt-2 text-sm text-white/45">
-          {translate(t, "creatorPopupSocialLinksDescription", "Adicione os links oficiais do creator.")}
-        </p>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-black/15 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/35">
-                youtube
-              </p>
-
-              <button
-                type="button"
-                onClick={addYoutubeChannel}
-                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-              >
-                {translate(t, "creatorPopupAddYoutubeChannel", "+ Add channel")}
-              </button>
-            </div>
-
-            <div className="mt-3 grid gap-3">
-              {youtubeChannels.map((channelUrl, index) => (
-                <div key={`youtube-channel-${index}`} className="flex gap-2">
-                  <input
-                    value={channelUrl}
-                    onChange={(event) =>
-                      updateYoutubeChannel(index, event.target.value)
-                    }
-                    placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} youtube ${index + 1}`}
-                    className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-                  />
-
-                  {youtubeChannels.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeYoutubeChannel(index)}
-                      className="shrink-0 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20"
-                      aria-label={translate(t, "creatorPopupRemoveYoutubeChannel", "Remove YouTube channel")}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {socialPlatforms
-            .filter((platform) => platform !== "youtube")
-            .map((platform) => (
-              <EditInput
-                key={platform}
-                label={platform}
-                value={socials[platform] || ""}
-                onChange={(value) =>
-                  setSocials((current) => ({
-                    ...current,
-                    [platform]: value,
-                  }))
-                }
-                placeholder={`${translate(t, "creatorPopupSocialLinkPlaceholderPrefix", "Link do")} ${platform}`}
-              />
-            ))}
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-        <h4 className="font-bold text-white">
-          {translate(t, "creatorPopupAutoClipsTitle", "Clips automáticos")}
-        </h4>
-
-        <p className="mt-2 text-sm text-white/45">
-          {translate(t, "creatorPopupAutoClipsDescription", "Os clips agora são puxados automaticamente da Twitch, Kick e YouTube Shorts com base nos links das redes sociais cadastradas.")}
-        </p>
-      </div>
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-50"
-      >
-        <Save size={16} />
-        {saving
-          ? translate(t, "creatorPopupSaving", "Salvando...")
-          : translate(t, "creatorPopupSaveChanges", "Salvar alterações")}
-      </button>
-    </div>
   );
 }
 
@@ -2108,16 +1695,7 @@ function ViewPanel({
     );
   }
 
-  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
-  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
-  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
-
-  const twitchFollowers = twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
-  const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
-  const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
-  const externalTotal = twitchFollowers + kickFollowers + youtubeSubscribers;
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
-
   const visibleYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels);
 
   const youtubeChannelItems = visibleYoutubeChannels.map((channel, index) => {
@@ -2128,7 +1706,7 @@ function ViewPanel({
 
     const fallbackTitle = getYoutubeChannelFallbackTitle(
       channel,
-      `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`
+      `${translate(t, "creatorPopupYoutubeChannelFallback", "Canal")} ${index + 1}`
     );
 
     return {
@@ -2140,149 +1718,94 @@ function ViewPanel({
     };
   });
 
+  const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
+  const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
+  const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
+  const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
+
+  const externalTotal = getCreatorExternalReachFromLiveStatus(liveStatus);
+  const safeTitle = title || creator.title || translate(t, "creatorGridDefaultTitle", "Rising Creator");
+  const safeDescription =
+    description ||
+    creator.description ||
+    translate(t, "creatorProfileDefaultBio", "Perfil público do criador no Cardpoc.");
+  const tags = tagsText
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const socialEntries = [
+    ...Object.entries(socials).filter(
+      ([platform, url]) => platform !== "youtube" && url.trim().length > 0
+    ),
+    ...(visibleYoutubeChannels.length > 0
+      ? [["youtube", visibleYoutubeChannels[0].url] as [string, string]]
+      : []),
+  ];
+
   return (
     <>
-      <div className="pr-16">
-        <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-          {translate(t, "creatorPopupCreatorProfileBadge", "Perfil do Criador")}
+      <section className="pr-10">
+        <p className="text-xs uppercase tracking-[0.34em] text-cyan-300">
+          {translate(t, "creatorProfilePublicProfile", "Perfil público")}
         </p>
 
-        <h3 className="mt-3 text-3xl font-bold leading-tight">
-          {bio || creator.bio}
+        <h3 className="mt-4 text-4xl font-black leading-none tracking-tight text-white">
+          {creator.nickname}
         </h3>
 
-        <p className="mt-3 text-sm font-semibold text-cyan-100">
-          {title || creator.title}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-lg font-black text-cyan-100">{safeTitle}</p>
+          <p className="text-sm font-semibold text-white/45">@{creator.username}</p>
+        </div>
+
+        <p className="mt-6 line-clamp-5 max-w-2xl text-base leading-8 text-white/66">
+          {safeDescription}
         </p>
+      </section>
 
-        <p className="mt-4 text-white/65">
-          {description || creator.description}
-        </p>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <InfoCard label={translate(t, "creatorPopupViews", "Views")} value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores do site")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
-        <InfoCard label={translate(t, "creatorPopupExternalReach", "Alcance externo")} value={externalTotal.toLocaleString("pt-BR")} color="text-emerald-200" />
-        <InfoCard label={translate(t, "creatorPopupShares", "Compartilhamentos")} value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
-      </div>
-
-      <div className="mt-8">
-        <h4 className="font-bold">{translate(t, "creatorPopupTags", "Tags")}</h4>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {tagsText
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-            .map((tag) => (
+      {tags.length > 0 && (
+        <section className="mt-7">
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/70"
+                className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100"
               >
-                {tag}
+                #{tag}
               </span>
             ))}
-        </div>
-      </div>
-
-      {(clipsLoading || visibleClips.length > 0) && (
-        <div className="mt-8">
-          <div className="flex items-center justify-between gap-3">
-            <h4 className="font-bold">
-              {translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}
-            </h4>
-
-            {hasClipCarousel && (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={goToPreviousClips}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
-                  aria-label={translate(t, "creatorPopupPreviousClips", "Clips anteriores")}
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={goToNextClips}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
-                  aria-label={translate(t, "creatorPopupNextClips", "Próximos clips")}
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            )}
           </div>
-
-          {clipsLoading ? (
-            <div className="mt-3 rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/45">
-              {translate(t, "creatorPopupClipsLoading", "Carregando clips automáticos...")}
-            </div>
-          ) : (
-            <div className="mt-3 grid gap-4 sm:grid-cols-3">
-              {visibleCarouselClips.map((clip, index) => {
-              const previewThumbnail = clip.thumbnailUrl;
-              const clipHref = getSafeClipHref(clip, socials);
-
-              return (
-                <a
-                  key={`${clip.id || clip.url || clip.title}-${clipPage}-${index}`}
-                  href={clipHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
-                >
-                  <div className="aspect-video bg-black/40">
-                    {previewThumbnail ? (
-                      <img
-                        src={previewThumbnail}
-                        alt={clip.title || translate(t, "creatorPopupClipAlt", "Clip")}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
-                        {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                      {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
-                    </p>
-
-                    <p className="mt-2 font-bold text-white">
-                      {clip.title || translate(t, "creatorPopupFeaturedClipFallback", "Clip automático")}
-                    </p>
-
-                    {clip.description && (
-                      <p className="mt-2 line-clamp-3 text-xs text-white/45">
-                        {clip.description}
-                      </p>
-                    )}
-                  </div>
-                </a>
-              );
-              })}
-            </div>
-          )}
-        </div>
+        </section>
       )}
 
-      <div className="mt-8 pb-10">
-        <h4 className="font-bold">{translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}</h4>
+      <section className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <InfoCard
+          label={translate(t, "creatorPopupViews", "Visualizações")}
+          value={viewCount.toLocaleString("pt-BR")}
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupFollowers", "Seguidores")}
+          value={followerCount.toLocaleString("pt-BR")}
+        />
+        <InfoCard
+          label={translate(t, "creatorProfileGlobalFollowers", "Seguidores globais")}
+          value={externalTotal.toLocaleString("pt-BR")}
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupShares", "Compartilhamentos")}
+          value={shareCount.toLocaleString("pt-BR")}
+        />
+      </section>
 
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          {[
-            ...Object.entries(socials).filter(
-              ([platform, url]) => platform !== "youtube" && url.trim().length > 0
-            ),
-            ...(visibleYoutubeChannels.length > 0
-              ? [["youtube", visibleYoutubeChannels[0].url] as [string, string]]
-              : []),
-          ].map(([platform, url]) => {
+      {socialEntries.length > 0 && (
+        <section className="mt-8">
+          <h4 className="text-sm font-black uppercase tracking-[0.28em] text-white/55">
+            {translate(t, "creatorPopupSocialNetworks", "Redes sociais")}
+          </h4>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {socialEntries.map(([platform, url]) => {
               const normalizedPlatform = platform.toLowerCase();
               const platformLiveStatus = getPlatformLiveStatus(
                 liveStatus,
@@ -2318,27 +1841,27 @@ function ViewPanel({
 
                       window.open(platformUrl, "_blank", "noopener,noreferrer");
                     }}
-                    className="flex h-[104px] min-w-0 flex-col justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-left text-sm text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
                   >
-                    <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                      {visibleYoutubeChannels.length > 1
-                        ? `YOUTUBE (${visibleYoutubeChannels.length})`
-                        : "YOUTUBE"}
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-black text-white">
+                        {visibleYoutubeChannels.length > 1
+                          ? `YouTube (${visibleYoutubeChannels.length})`
+                          : "YouTube"}
+                      </span>
+
+                      <span className="mt-1 block truncate text-xs text-white/45">
+                        {liveStatusLoading && !platformLiveStatus
+                          ? translate(t, "creatorPopupLoading", "Carregando...")
+                          : platformLiveStatus
+                            ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                            : visibleYoutubeChannels.length > 1
+                              ? `${visibleYoutubeChannels.length} ${translate(t, "creatorPopupYoutubeChannels", "canais")}`
+                              : translate(t, "open", "Abrir")}
+                      </span>
                     </span>
 
-                    <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
-                      {liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupLoading", "Loading...")
-                        : visibleYoutubeChannels.length > 1
-                          ? `${visibleYoutubeChannels.length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
-                          : " "}
-                    </span>
-
-                    <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                      {platformLiveStatus
-                        ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
-                        : " "}
-                    </span>
+                    <span className="text-cyan-100">↗</span>
                   </button>
                 );
               }
@@ -2349,48 +1872,121 @@ function ViewPanel({
                   href={platformUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className={`flex h-[104px] min-w-0 flex-col justify-center rounded-2xl border px-4 py-3 text-sm transition hover:scale-105 ${
-                    isPlatformLive
-                      ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
-                      : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
-                  }`}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
                 >
-                  <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                    {platformName}
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-black text-white">
+                      {platformName}
+                    </span>
+
+                    <span className="mt-1 block truncate text-xs text-white/45">
+                      {supportsLiveStatus
+                        ? liveStatusLoading && !platformLiveStatus
+                          ? translate(t, "creatorPopupCheckingLive", "Verificando live...")
+                          : isPlatformLive
+                            ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} ${translate(t, "creatorPopupViewers", "viewers")}`
+                            : translate(t, "creatorPopupStatusOffline", "Offline")
+                        : supportsExternalCount && liveStatusLoading && !platformLiveStatus
+                          ? translate(t, "creatorPopupLoading", "Carregando...")
+                          : supportsExternalCount && platformLiveStatus
+                            ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                            : translate(t, "open", "Abrir")}
+                    </span>
                   </span>
 
-                  <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
-                    {supportsLiveStatus
-                      ? liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupCheckingLive", "Checking live...")
-                        : isPlatformLive
-                          ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} ${translate(t, "creatorPopupViewers", "viewers")}`
-                          : translate(t, "creatorPopupStatusOffline", "Offline")
-                      : supportsExternalCount && liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupLoading", "Loading...")
-                        : " "}
-                  </span>
-
-                  <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                    {supportsExternalCount && platformLiveStatus
-                      ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
-                      : supportsLiveStatus &&
-                        isPlatformLive &&
-                        platformLiveStatus?.gameName
-                        ? platformLiveStatus.gameName
-                        : " "}
-                  </span>
+                  <span className="text-cyan-100">↗</span>
                 </a>
               );
             })}
-        </div>
-      </div>
+          </div>
+        </section>
+      )}
+
+      {(clipsLoading || visibleClips.length > 0) && (
+        <section className="mt-8 pb-10">
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="text-sm font-black uppercase tracking-[0.28em] text-white/55">
+              {translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}
+            </h4>
+
+            {hasClipCarousel && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPreviousClips}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                  aria-label={translate(t, "creatorPopupPreviousClips", "Clips anteriores")}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToNextClips}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                  aria-label={translate(t, "creatorPopupNextClips", "Próximos clips")}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {clipsLoading ? (
+            <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/45">
+              {translate(t, "creatorPopupClipsLoading", "Carregando clips automáticos...")}
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              {visibleCarouselClips.map((clip, index) => {
+                const previewThumbnail = clip.thumbnailUrl;
+                const clipHref = getSafeClipHref(clip, socials);
+
+                return (
+                  <a
+                    key={`${clip.id || clip.url || clip.title}-${clipPage}-${index}`}
+                    href={clipHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
+                  >
+                    <div className="aspect-video bg-black/40">
+                      {previewThumbnail ? (
+                        <img
+                          src={previewThumbnail}
+                          alt={clip.title || translate(t, "creatorPopupClipAlt", "Clip")}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
+                          {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
+                        {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
+                      </p>
+
+                      <p className="mt-2 line-clamp-2 font-bold text-white">
+                        {clip.title || translate(t, "creatorPopupFeaturedClipFallback", "Clip automático")}
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       {youtubeChannelsOpen && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
           <button
             className="absolute inset-0"
             onClick={() => setYoutubeChannelsOpen(false)}
-            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Close YouTube channels")}
+            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Fechar canais do YouTube")}
           />
 
           <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
@@ -2403,11 +1999,11 @@ function ViewPanel({
               </p>
 
               <h3 className="mt-3 text-2xl font-black">
-                {translate(t, "creatorPopupYoutubeChannelsTitle", "YouTube Channels")}
+                {translate(t, "creatorPopupYoutubeChannelsTitle", "Canais do YouTube")}
               </h3>
 
               <p className="mt-2 text-sm text-white/45">
-                {translate(t, "creatorPopupYoutubeChannelsDescription", "Choose which channel you want to open.")}
+                {translate(t, "creatorPopupYoutubeChannelsDescription", "Escolha qual canal deseja abrir.")}
               </p>
 
               <div className="mt-5 grid gap-3">
@@ -2437,7 +2033,7 @@ function ViewPanel({
                       </p>
 
                       <p className="text-sm text-white/45">
-                        {channel.subscriberCount.toLocaleString("pt-BR")} {translate(t, "creatorPopupYoutubeSubscribers", "subscribers")}
+                        {channel.subscriberCount.toLocaleString("pt-BR")} {translate(t, "creatorPopupYoutubeSubscribers", "inscritos")}
                       </p>
                     </div>
                   </a>
@@ -2448,7 +2044,7 @@ function ViewPanel({
                 onClick={() => setYoutubeChannelsOpen(false)}
                 className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
               >
-                {translate(t, "creatorPopupClose", "Close")}
+                {translate(t, "creatorPopupClose", "Fechar")}
               </button>
             </div>
           </div>
@@ -2458,44 +2054,6 @@ function ViewPanel({
   );
 }
 
-function UploadField({
-  label,
-  uploading,
-  uploadingText,
-  chooseFileText,
-  onFile,
-}: {
-  label: string;
-  uploading: boolean;
-  uploadingText: string;
-  chooseFileText: string;
-  onFile: (file: File) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <div className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]">
-        <ImagePlus size={18} />
-        {chooseFileText}
-      </div>
-
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onFile(file);
-        }}
-      />
-
-      {uploading && <p className="mt-2 text-xs text-cyan-300">{uploadingText}</p>}
-    </label>
-  );
-}
 
 function InfoCard({
   label,
@@ -2514,54 +2072,3 @@ function InfoCard({
   );
 }
 
-function EditInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-      />
-    </label>
-  );
-}
-
-function EditTextarea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-white/35">
-        {label}
-      </span>
-
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={4}
-        className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
-      />
-    </label>
-  );
-}
