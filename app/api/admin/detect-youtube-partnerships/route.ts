@@ -799,4 +799,101 @@ export async function POST(request: NextRequest) {
           channel?.contentDetails?.relatedPlaylists?.uploads;
 
         if (!uploadsPlaylistId) {
-   
+          errors.push(`Canal não encontrado: ${link.url}`);
+          continue;
+        }
+
+        const videos = await fetchRecentVideosFromUploadsPlaylist(
+          uploadsPlaylistId,
+          apiKey
+        );
+
+        scannedVideos += videos.length;
+
+        for (const video of videos) {
+          const detections = detectPartnershipsFromVideo(video);
+
+          for (const detection of detections) {
+            const { data: existing } = await supabase
+              .from("creator_partnerships")
+              .select("id")
+              .eq("creator_id", link.creator_id)
+              .eq("source_platform", "youtube")
+              .eq("brand_name", detection.brandName)
+              .in("status", ["suggested", "verified", "manual", "rejected"])
+              .maybeSingle();
+
+            if (existing?.id) {
+              duplicatesSkipped += 1;
+              continue;
+            }
+
+            const { error: insertError } = await supabase
+              .from("creator_partnerships")
+              .insert({
+                creator_id: link.creator_id,
+                brand_name: detection.brandName,
+                source_title: detection.videoTitle,
+                source_thumbnail: detection.sourceThumbnail,
+                source_channel: detection.sourceChannel,
+                source_published_at: detection.publishedAt,
+                partnership_type: detection.partnershipType,
+                campaign_name: detection.campaignName || null,
+                website_url: detection.primaryDetectedLink || null,
+                source_platform: "youtube",
+                source_url: detection.sourceUrl,
+                evidence_text: detection.evidenceText,
+                evidence_payload: {
+                  video_id: detection.videoId,
+                  video_title: detection.videoTitle,
+                  published_at: detection.publishedAt,
+                  detection_reason: detection.detectionReason,
+                  detected_links: detection.detectedLinks,
+                  primary_detected_link: detection.primaryDetectedLink,
+                  primary_detected_domain: detection.primaryDetectedDomain,
+                  coupon_codes: detection.couponCodes,
+                  inferred_campaign_name: detection.campaignName,
+                },
+                detection_reason: detection.detectionReason,
+                confidence_score: detection.confidenceScore,
+                status: "suggested",
+                is_active: true,
+                created_by: null,
+              });
+
+            if (insertError) {
+              errors.push(insertError.message);
+              continue;
+            }
+
+            suggestionsCreated += 1;
+          }
+        }
+      } catch (error) {
+        errors.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      scannedCreators,
+      scannedVideos,
+      suggestionsCreated,
+      duplicatesSkipped,
+      errors,
+    });
+  } catch (error) {
+    console.error("detect-youtube-partnerships error:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao detectar parcerias.",
+      },
+      { status: 500 }
+    );
+  }
+}
