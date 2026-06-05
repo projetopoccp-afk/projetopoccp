@@ -446,6 +446,40 @@ function inferKnownBrandFromDomain(hostname: string, domain: string) {
   return null;
 }
 
+function inferCampaignNameFromUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const host = parsedUrl.hostname.toLowerCase();
+    const path = parsedUrl.pathname.toLowerCase();
+
+    if (host.includes("marvelrivals")) return "Marvel Rivals";
+    if (host.includes("oncehuman")) return "Once Human";
+    if (host.includes("netease")) return "NetEase Games";
+
+    if (host.includes("store.steampowered.com")) {
+      const parts = parsedUrl.pathname.split("/").filter(Boolean);
+      const appIndex = parts.findIndex((part) => part === "app");
+
+      if (appIndex >= 0 && parts[appIndex + 2]) {
+        return formatBrandName(parts[appIndex + 2].replace(/_/g, " "));
+      }
+    }
+
+    const meaningfulPath = path
+      .split("/")
+      .filter(Boolean)
+      .find((part) => part.length > 3 && !/^\d+$/.test(part));
+
+    if (meaningfulPath) {
+      return formatBrandName(meaningfulPath.replace(/[-_]/g, " "));
+    }
+
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function extractLinks(text: string): DetectedLink[] {
   const matches = text.match(/https?:\/\/[^\s)\]}>"']+/gi) ?? [];
   const uniqueUrls = Array.from(new Set(matches.map(sanitizeRawUrl)));
