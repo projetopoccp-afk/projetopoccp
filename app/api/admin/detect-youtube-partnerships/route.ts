@@ -357,6 +357,8 @@ function detectPartnershipsFromVideo(video: YouTubeVideo): DetectedPartnership[]
       videoId: video.id,
       videoTitle: video.title,
       publishedAt: video.publishedAt,
+      sourceChannel: video.sourceChannel,
+      sourceThumbnail: video.sourceThumbnail,
     });
   }
 
@@ -377,6 +379,8 @@ function detectPartnershipsFromVideo(video: YouTubeVideo): DetectedPartnership[]
       videoId: video.id,
       videoTitle: video.title,
       publishedAt: video.publishedAt,
+      sourceChannel: video.sourceChannel,
+      sourceThumbnail: video.sourceThumbnail,
     });
   }
 
