@@ -1,11 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Minus, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 type CardpocModalShellProps = {
   children: ReactNode;
   onClose?: () => void;
+  onMinimize?: () => void;
+  showCloseButton?: boolean;
+  showMinimizeButton?: boolean;
+  closeLabel?: string;
+  minimizeLabel?: string;
   className?: string;
   contentClassName?: string;
   zIndexClassName?: string;
@@ -14,10 +20,18 @@ type CardpocModalShellProps = {
 export function CardpocModalShell({
   children,
   onClose,
+  onMinimize,
+  showCloseButton = false,
+  showMinimizeButton = false,
+  closeLabel = "Fechar",
+  minimizeLabel = "Minimizar",
   className = "",
   contentClassName = "",
   zIndexClassName = "z-[130]",
 }: CardpocModalShellProps) {
+  const hasControls =
+    (showMinimizeButton && onMinimize) || (showCloseButton && onClose);
+
   return (
     <motion.div
       initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
@@ -43,9 +57,35 @@ export function CardpocModalShell({
         <div className="pointer-events-none absolute bottom-[-80px] right-[-80px] h-80 w-80 rounded-full bg-cyan-400/26 blur-[95px]" />
         <div className="pointer-events-none absolute left-1/2 top-4 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-500/18 blur-[115px]" />
 
-        <div
-          className={`relative z-10 min-h-0 w-full ${contentClassName}`}
-        >
+        <div className={`relative z-10 min-h-0 w-full ${contentClassName}`}>
+          {hasControls && (
+            <div className="sticky top-4 z-50 mb-4 flex justify-end gap-3">
+              {showMinimizeButton && onMinimize && (
+                <button
+                  type="button"
+                  onClick={onMinimize}
+                  aria-label={minimizeLabel}
+                  title={minimizeLabel}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:border-cyan-300/40 hover:bg-cyan-500/15"
+                >
+                  <Minus size={22} strokeWidth={3} />
+                </button>
+              )}
+
+              {showCloseButton && onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label={closeLabel}
+                  title={closeLabel}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-red-400/25 bg-black/70 text-red-100 shadow-[0_0_24px_rgba(248,113,113,0.14)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-400/40 hover:bg-red-500/15"
+                >
+                  <X size={22} strokeWidth={3} />
+                </button>
+              )}
+            </div>
+          )}
+
           {children}
         </div>
       </motion.div>
