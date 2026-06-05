@@ -6,6 +6,7 @@ import {
   Crown,
   Eye,
   Gem,
+  Search,
   Share2,
   Sparkles,
   X,
@@ -445,6 +446,7 @@ export function CollectionModal({
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [pendingNotificationCard, setPendingNotificationCard] =
     useState<PendingNotificationCard | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -576,6 +578,29 @@ export function CollectionModal({
     };
   }, [cards]);
 
+  const filteredCards = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) return cards;
+
+    return cards.filter((card) => {
+      const creator = card.creator_profiles;
+      const searchableValues = [
+        card.rarity,
+        card.source,
+        creator?.nickname,
+        creator?.username,
+        creator?.title,
+        creator?.category,
+        ...(creator?.tags || []),
+      ];
+
+      return searchableValues
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+    });
+  }, [cards, searchTerm]);
+
   async function markCardAsSeen(card: UserCard) {
     if (card.seen_at) return;
 
@@ -621,80 +646,88 @@ export function CollectionModal({
     <>
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            transition={{ duration: 0.25 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          <CardpocModalShell
+            onClose={onClose}
+            showCloseButton
+            closeLabel={translate(t, "closeCollection", "Fechar coleção")}
+            className="max-w-6xl"
+            contentClassName="hide-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-8 pb-10"
+            zIndexClassName="z-[100]"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.94 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              onClick={(event) => event.stopPropagation()}
-              className="hide-scrollbar relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/15 bg-zinc-950 p-8 text-white shadow-[0_0_80px_rgba(0,0,0,0.9)]"
-            >
-              <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-cyan-500/20 blur-[90px]" />
-              <div className="pointer-events-none absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-purple-600/20 blur-[90px]" />
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
+                <Archive size={14} />
+                {translate(t, "collection", "Minha Coleção")}
+              </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-                aria-label={translate(t, "closeCollection", "Fechar coleção")}
-              >
-                <X size={18} />
-              </button>
+              <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)] lg:items-end">
+                <div>
+                  <h2 className="text-3xl font-black">
+                    {translate(t, "collectionTitle", "Suas cartas do Cardpoc")}
+                  </h2>
 
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                  <Archive size={14} />
-                  {translate(t, "collection", "Minha Coleção")}
+                  <p className="mt-3 max-w-2xl text-sm text-white/45">
+                    {translate(
+                      t,
+                      "collectionDescription",
+                      "Aqui ficam as cartas de criadores conquistadas por seguir, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui."
+                    )}
+                  </p>
                 </div>
 
-                <h2 className="mt-5 text-3xl font-black">
-                  {translate(t, "collectionTitle", "Suas cartas do Nexus")}
-                </h2>
+                <label className="relative block w-full">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-cyan-100/55"
+                  />
+                  <input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder={translate(
+                      t,
+                      "collectionSearchPlaceholder",
+                      "Pesquisar por carta, criador, raridade..."
+                    )}
+                    className="h-12 w-full rounded-full border border-cyan-200/15 bg-white/[0.055] pl-12 pr-4 text-sm font-medium text-white outline-none transition placeholder:text-white/35 focus:border-cyan-200/35 focus:bg-white/[0.08] focus:shadow-[0_0_28px_rgba(34,211,238,0.12)]"
+                  />
+                </label>
+              </div>
 
-                <p className="mt-3 max-w-2xl text-sm text-white/45">
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <StatCard icon={<Archive size={18} />} label={translate(t, "total", "Total")} value={stats.total} />
+                <StatCard icon={<Sparkles size={18} />} label={translate(t, "commonPlural", "Comuns")} value={stats.common} />
+                <StatCard icon={<Gem size={18} />} label={translate(t, "rarePlural", "Raras")} value={stats.rare} />
+                <StatCard icon={<Zap size={18} />} label={translate(t, "epicPlural", "Épicas")} value={stats.epic} />
+                <StatCard icon={<Crown size={18} />} label={translate(t, "legendaryPlural", "Lendárias")} value={stats.legendary} />
+              </div>
+
+              {loading ? (
+                <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-white/50">
+                  {translate(t, "loadingCollection", "Carregando coleção...")}
+                </div>
+              ) : cards.length === 0 ? (
+                <EmptyCollection />
+              ) : filteredCards.length === 0 ? (
+                <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-white/50">
                   {translate(
                     t,
-                    "collectionDescription",
-                    "Aqui ficam as cartas de creators conquistadas por follows, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui."
+                    "collectionNoSearchResults",
+                    "Nenhuma carta encontrada para essa pesquisa."
                   )}
-                </p>
-
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                  <StatCard icon={<Archive size={18} />} label={translate(t, "total", "Total")} value={stats.total} />
-                  <StatCard icon={<Sparkles size={18} />} label={translate(t, "commonPlural", "Comuns")} value={stats.common} />
-                  <StatCard icon={<Gem size={18} />} label={translate(t, "rarePlural", "Raras")} value={stats.rare} />
-                  <StatCard icon={<Zap size={18} />} label={translate(t, "epicPlural", "Épicas")} value={stats.epic} />
-                  <StatCard icon={<Crown size={18} />} label={translate(t, "legendaryPlural", "Lendárias")} value={stats.legendary} />
                 </div>
-
-                {loading ? (
-                  <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-white/50">
-                    {translate(t, "loadingCollection", "Carregando coleção...")}
-                  </div>
-                ) : cards.length === 0 ? (
-                  <EmptyCollection />
-                ) : (
-                  <div className="mt-10 grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {cards.map((card) => (
-                      <CollectionCard
-                        key={card.id}
-                        card={card}
-                        onClick={() => handleSelectCard(card)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
+              ) : (
+                <div className="mt-10 grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredCards.map((card) => (
+                    <CollectionCard
+                      key={card.id}
+                      card={card}
+                      onClick={() => handleSelectCard(card)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardpocModalShell>
         )}
       </AnimatePresence>
 
@@ -897,10 +930,11 @@ function CollectionCardShowcase({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="absolute right-6 top-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-red-400/25 bg-black/70 text-red-100 shadow-[0_0_24px_rgba(248,113,113,0.14)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-400/40 hover:bg-red-500/15"
           aria-label={translate(t, "closeCard", "Fechar carta")}
+          title={translate(t, "closeCard", "Fechar carta")}
         >
-          <X size={20} />
+          <X size={22} strokeWidth={3} />
         </button>
 
         <motion.div
