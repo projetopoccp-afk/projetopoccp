@@ -440,10 +440,16 @@ export default function RankingsPage() {
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030712] px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_34%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.16),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.58),rgba(2,6,23,0.98))]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.045)_1px,transparent_1px)] bg-[size:52px_52px] [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]" />
-      <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
+  <main className="relative min-h-screen overflow-hidden bg-[#020607] text-white">
+    <div className="pointer-events-none fixed inset-0 z-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(34,211,238,0.12),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.10),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.08),transparent_36%)]" />
+
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-35" />
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.42)_72%,rgba(0,0,0,0.88)_100%)]" />
+    </div>
+
+    <section className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
 
       <section className="relative mx-auto max-w-7xl">
         <div className="mx-auto max-w-4xl text-center">
