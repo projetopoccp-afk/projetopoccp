@@ -15,6 +15,54 @@ export const translations = {
     rankings: "Rankings",
     openRankings: "Abrir rankings",
 
+    rankingsEyebrow: "Hall da fama Cardpoc",
+    rankingsPageTitle: "Rankings",
+    rankingsPageDescription:
+      "Acompanhe os criadores e colecionadores que mais se destacam no Cardpoc.",
+    rankingsHallCreator: "Criador mais colecionado",
+    rankingsHallCollector: "Colecionador nº1",
+    rankingsCollectedCardsLabel: "cartas coletadas",
+    rankingsCreatorsTab: "Criadores",
+    rankingsCollectorsTab: "Colecionadores",
+    rankingsMockNotice:
+      "Dados temporários para validar o visual. A próxima etapa conecta ao Supabase.",
+    rankingsCreatorHighestLevel: "Maior nível",
+    rankingsCreatorHighestLevelDescription:
+      "Criadores que mais evoluíram dentro do Cardpoc.",
+    rankingsCreatorMostCollected: "Mais colecionado",
+    rankingsCreatorMostCollectedDescription:
+      "Quantidade total de cartas desse criador nas coleções.",
+    rankingsCreatorMostLegendaryCards: "Mais cartas lendárias",
+    rankingsCreatorMostLegendaryCardsDescription:
+      "Criadores com mais cartas lendárias distribuídas.",
+    rankingsCreatorMostEpicCards: "Mais cartas épicas",
+    rankingsCreatorMostEpicCardsDescription:
+      "Criadores com mais cartas épicas distribuídas.",
+    rankingsCollectorMostXp: "Mais XP",
+    rankingsCollectorMostXpDescription:
+      "Colecionadores com maior experiência acumulada.",
+    rankingsCollectorMostCards: "Mais cartas",
+    rankingsCollectorMostCardsDescription:
+      "Usuários com mais cartas na coleção.",
+    rankingsCollectorMostOpenedPacks: "Mais pacotes abertos",
+    rankingsCollectorMostOpenedPacksDescription:
+      "Quem mais abriu pacotes dentro do Cardpoc.",
+    rankingsCollectorMostFollowedCreators: "Mais criadores seguidos",
+    rankingsCollectorMostFollowedCreatorsDescription:
+      "Usuários que mais acompanham criadores na plataforma.",
+    rankingsYourPosition: "Sua posição",
+    rankingsYourPositionTitle: "Seu progresso nos rankings",
+    rankingsYourPositionDescription:
+      "Em breve este bloco mostrará sua posição real usando XP, cartas, pacotes e criadores seguidos.",
+    rankingsXpPosition: "XP",
+    rankingsCardsPosition: "Cartas",
+    rankingsPacksPosition: "Pacotes",
+    rankingsFollowingPosition: "Seguindo",
+    rankingsNextStepTitle: "Próximo passo",
+    rankingsNextStepDescription:
+      "Depois de aprovar o visual, conectamos XP, cartas, pacotes e seguidores usando os dados reais do Supabase.",
+    backToHome: "Voltar para Home",
+
     legalBackHome: "Voltar para o início",
     legalLastUpdated: "Última atualização: Junho de 2026",
     legalCardpocBadge: "Cardpoc",
@@ -1037,6 +1085,54 @@ export const translations = {
     rankings: "Rankings",
     openRankings: "Open rankings",
 
+    rankingsEyebrow: "Cardpoc Hall of Fame",
+    rankingsPageTitle: "Rankings",
+    rankingsPageDescription:
+      "Track the creators and collectors standing out the most on Cardpoc.",
+    rankingsHallCreator: "Most collected creator",
+    rankingsHallCollector: "#1 collector",
+    rankingsCollectedCardsLabel: "collected cards",
+    rankingsCreatorsTab: "Creators",
+    rankingsCollectorsTab: "Collectors",
+    rankingsMockNotice:
+      "Temporary data to validate the visual. The next step connects Supabase.",
+    rankingsCreatorHighestLevel: "Highest level",
+    rankingsCreatorHighestLevelDescription:
+      "Creators who evolved the most inside Cardpoc.",
+    rankingsCreatorMostCollected: "Most collected",
+    rankingsCreatorMostCollectedDescription:
+      "Total amount of this creator's cards in collections.",
+    rankingsCreatorMostLegendaryCards: "Most legendary cards",
+    rankingsCreatorMostLegendaryCardsDescription:
+      "Creators with the most legendary cards distributed.",
+    rankingsCreatorMostEpicCards: "Most epic cards",
+    rankingsCreatorMostEpicCardsDescription:
+      "Creators with the most epic cards distributed.",
+    rankingsCollectorMostXp: "Most XP",
+    rankingsCollectorMostXpDescription:
+      "Collectors with the highest accumulated experience.",
+    rankingsCollectorMostCards: "Most cards",
+    rankingsCollectorMostCardsDescription:
+      "Users with the most cards in their collection.",
+    rankingsCollectorMostOpenedPacks: "Most opened packs",
+    rankingsCollectorMostOpenedPacksDescription:
+      "Collectors who opened the most packs inside Cardpoc.",
+    rankingsCollectorMostFollowedCreators: "Most followed creators",
+    rankingsCollectorMostFollowedCreatorsDescription:
+      "Users who follow the most creators on the platform.",
+    rankingsYourPosition: "Your position",
+    rankingsYourPositionTitle: "Your ranking progress",
+    rankingsYourPositionDescription:
+      "Soon this block will show your real position using XP, cards, packs and followed creators.",
+    rankingsXpPosition: "XP",
+    rankingsCardsPosition: "Cards",
+    rankingsPacksPosition: "Packs",
+    rankingsFollowingPosition: "Following",
+    rankingsNextStepTitle: "Next step",
+    rankingsNextStepDescription:
+      "After approving the visual, we connect XP, cards, packs and followers using real Supabase data.",
+    backToHome: "Back to Home",
+
     legalBackHome: "Back to home",
     legalLastUpdated: "Last updated: June 2026",
     legalCardpocBadge: "Cardpoc",
@@ -2053,6 +2149,54 @@ export const translations = {
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
+
+    rankingsEyebrow: "Salón de la fama Cardpoc",
+    rankingsPageTitle: "Rankings",
+    rankingsPageDescription:
+      "Acompaña a los creadores y coleccionistas que más se destacan en Cardpoc.",
+    rankingsHallCreator: "Creador más coleccionado",
+    rankingsHallCollector: "Coleccionista nº1",
+    rankingsCollectedCardsLabel: "cartas coleccionadas",
+    rankingsCreatorsTab: "Creadores",
+    rankingsCollectorsTab: "Coleccionistas",
+    rankingsMockNotice:
+      "Datos temporales para validar el visual. El próximo paso conecta Supabase.",
+    rankingsCreatorHighestLevel: "Mayor nivel",
+    rankingsCreatorHighestLevelDescription:
+      "Creadores que más evolucionaron dentro de Cardpoc.",
+    rankingsCreatorMostCollected: "Más coleccionado",
+    rankingsCreatorMostCollectedDescription:
+      "Cantidad total de cartas de este creador en las colecciones.",
+    rankingsCreatorMostLegendaryCards: "Más cartas legendarias",
+    rankingsCreatorMostLegendaryCardsDescription:
+      "Creadores con más cartas legendarias distribuidas.",
+    rankingsCreatorMostEpicCards: "Más cartas épicas",
+    rankingsCreatorMostEpicCardsDescription:
+      "Creadores con más cartas épicas distribuidas.",
+    rankingsCollectorMostXp: "Más XP",
+    rankingsCollectorMostXpDescription:
+      "Coleccionistas con mayor experiencia acumulada.",
+    rankingsCollectorMostCards: "Más cartas",
+    rankingsCollectorMostCardsDescription:
+      "Usuarios con más cartas en la colección.",
+    rankingsCollectorMostOpenedPacks: "Más paquetes abiertos",
+    rankingsCollectorMostOpenedPacksDescription:
+      "Quienes más abrieron paquetes dentro de Cardpoc.",
+    rankingsCollectorMostFollowedCreators: "Más creadores seguidos",
+    rankingsCollectorMostFollowedCreatorsDescription:
+      "Usuarios que más acompañan creadores en la plataforma.",
+    rankingsYourPosition: "Tu posición",
+    rankingsYourPositionTitle: "Tu progreso en los rankings",
+    rankingsYourPositionDescription:
+      "Pronto este bloque mostrará tu posición real usando XP, cartas, paquetes y creadores seguidos.",
+    rankingsXpPosition: "XP",
+    rankingsCardsPosition: "Cartas",
+    rankingsPacksPosition: "Paquetes",
+    rankingsFollowingPosition: "Siguiendo",
+    rankingsNextStepTitle: "Próximo paso",
+    rankingsNextStepDescription:
+      "Después de aprobar el visual, conectamos XP, cartas, paquetes y seguidores usando los datos reales de Supabase.",
+    backToHome: "Volver al inicio",
 
     legalBackHome: "Volver al inicio",
     legalLastUpdated: "Última actualización: Junio de 2026",

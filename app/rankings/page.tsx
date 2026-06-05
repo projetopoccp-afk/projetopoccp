@@ -154,37 +154,36 @@ const creatorRankingBlocks: RankingBlock[] = [
     ],
   },
   {
-    id: "creator-searched",
-    titleKey: "rankingsCreatorMostSearched",
-    titleFallback: "Mais procurado",
-    descriptionKey: "rankingsCreatorMostSearchedDescription",
-    descriptionFallback:
-      "Perfis de criadores mais visitados nos últimos 30 dias.",
-    icon: Zap,
+    id: "creator-epic",
+    titleKey: "rankingsCreatorMostEpicCards",
+    titleFallback: "Mais cartas épicas",
+    descriptionKey: "rankingsCreatorMostEpicCardsDescription",
+    descriptionFallback: "Criadores com mais cartas épicas distribuídas.",
+    icon: Crown,
     items: [
       {
-        id: "zeusghostz-searched",
+        id: "stereonline-epic",
+        name: "StereOnline",
+        username: "stereonline",
+        value: "92",
+        detail: "épicas em coleções",
+        href: "/creator/stereonline",
+      },
+      {
+        id: "zeusghostz-epic",
         name: "ZeusGhostz",
         username: "zeusghostz",
-        value: "8.920",
-        detail: "visitas em 30 dias",
+        value: "81",
+        detail: "épicas em coleções",
         href: "/creator/zeusghostz",
       },
       {
-        id: "khoringatv-searched",
+        id: "khoringatv-epic",
         name: "KhorinGATv",
         username: "khoringatv",
-        value: "7.480",
-        detail: "visitas em 30 dias",
+        value: "74",
+        detail: "épicas em coleções",
         href: "/creator/khoringatv",
-      },
-      {
-        id: "stereonline-searched",
-        name: "StereOnline",
-        username: "stereonline",
-        value: "6.735",
-        detail: "visitas em 30 dias",
-        href: "/creator/stereonline",
       },
     ],
   },
@@ -454,7 +453,7 @@ export default function RankingsPage() {
             {translate(t, "rankingsEyebrow", "Hall da fama Cardpoc")}
           </div>
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="mt-5 text-4xl font-black tracking-tight text-white sm:text-5xl">
             {translate(t, "rankingsPageTitle", "Rankings")}
           </h1>
 
@@ -508,7 +507,7 @@ export default function RankingsPage() {
                   {translate(
                     t,
                     "rankingsHallCollector",
-                    "Colecionador com mais XP",
+                    "Colecionador nº1",
                   )}
                 </p>
                 <p className="mt-1 truncate text-2xl font-black text-white">
@@ -518,6 +517,46 @@ export default function RankingsPage() {
                   {hallOfFame.topCollector?.value ?? "0 XP"}
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[2rem] border border-cyan-300/15 bg-slate-950/62 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-cyan-100">
+                <Medal className="h-3.5 w-3.5" />
+                {translate(t, "rankingsYourPosition", "Sua posição")}
+              </p>
+              <h2 className="mt-3 text-xl font-black text-white">
+                {translate(t, "rankingsYourPositionTitle", "Seu progresso nos rankings")}
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
+                {translate(
+                  t,
+                  "rankingsYourPositionDescription",
+                  "Em breve este bloco mostrará sua posição real usando XP, cartas, pacotes e criadores seguidos.",
+                )}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+              {[
+                ["rankingsXpPosition", "XP", "#12"],
+                ["rankingsCardsPosition", "Cartas", "#4"],
+                ["rankingsPacksPosition", "Pacotes", "#8"],
+                ["rankingsFollowingPosition", "Seguindo", "#16"],
+              ].map(([labelKey, fallback, value]) => (
+                <div
+                  key={labelKey}
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center"
+                >
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    {translate(t, labelKey, fallback)}
+                  </p>
+                  <p className="mt-1 text-2xl font-black text-cyan-100">{value}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
