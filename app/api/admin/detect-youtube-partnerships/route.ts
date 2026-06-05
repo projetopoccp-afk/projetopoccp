@@ -66,6 +66,12 @@ const PARTNERSHIP_KEYWORDS = [
   "partner",
   "partnership",
   "use code",
+  "cupom de desconto",
+  "link na descrição",
+  "link na descricao",
+  "baixe o jogo",
+  "download",
+  "exitlag",
 ];
 
 const IGNORED_DOMAINS = [
@@ -81,6 +87,7 @@ const IGNORED_DOMAINS = [
   "x",
   "tiktok",
   "linktr",
+  "linktree",
   "beacons",
   "bio",
   "carrd",
@@ -91,6 +98,12 @@ const IGNORED_DOMAINS = [
   "moobot",
   "bitly",
   "tinyurl",
+  "onelink",
+  "cuttly",
+  "cutt",
+  "owly",
+  "isgd",
+  "rebrandly",
   "tco",
   "goo",
   "lnk",
@@ -109,9 +122,13 @@ const KNOWN_DOMAIN_BRANDS: Record<
   "marvelrivals.com": { brandName: "NetEase", campaignName: "Marvel Rivals", score: 96 },
   "narakathegame.com": { brandName: "NetEase", campaignName: "Naraka: Bladepoint", score: 96 },
   "identityvgame.com": { brandName: "NetEase", campaignName: "Identity V", score: 96 },
+  "seguranca.gg": { brandName: "Kaspersky", campaignName: "Segurança Gamer", score: 98 },
+  "kaspersky.com": { brandName: "Kaspersky", score: 98 },
+  "kaspersky.com.br": { brandName: "Kaspersky", score: 98 },
   "usereserva.com": { brandName: "Reserva", score: 96 },
   "reserva.com": { brandName: "Reserva", score: 94 },
-  "exitlag.com": { brandName: "ExitLag", score: 96 },
+  "exitlag.com": { brandName: "ExitLag", score: 98 },
+  "www.exitlag.com": { brandName: "ExitLag", score: 98 },
   "logitech.com": { brandName: "Logitech", score: 96 },
   "kabum.com.br": { brandName: "KaBuM", score: 96 },
   "hyperx.com": { brandName: "HyperX", score: 96 },
@@ -420,17 +437,24 @@ function formatBrandName(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function inferKnownBrandFromDomain(hostname: string, domain: string) {
+function inferKnownBrandFromDomain(hostname: string, registrableDomain: string) {
   const normalizedHost = hostname.toLowerCase();
-  const normalizedDomain = domain.toLowerCase();
+  const normalizedDomain = registrableDomain.toLowerCase();
+  const baseDomain = normalizedDomain.split(".")[0];
+
+  const directMatch =
+    KNOWN_DOMAIN_BRANDS[normalizedHost] ||
+    KNOWN_DOMAIN_BRANDS[normalizedDomain] ||
+    KNOWN_DOMAIN_BRANDS[baseDomain];
+
+  if (directMatch) return directMatch;
 
   if (
     normalizedHost.includes("netease") ||
-    normalizedDomain.includes("netease") ||
     normalizedHost.includes("oncehuman") ||
-    normalizedDomain.includes("oncehuman") ||
     normalizedHost.includes("marvelrivals") ||
-    normalizedDomain.includes("marvelrivals")
+    normalizedHost.includes("narakathegame") ||
+    normalizedHost.includes("identityv")
   ) {
     return {
       brandName: "NetEase",
@@ -438,9 +462,21 @@ function inferKnownBrandFromDomain(hostname: string, domain: string) {
         ? "Marvel Rivals"
         : normalizedHost.includes("oncehuman")
           ? "Once Human"
-          : undefined,
+          : normalizedHost.includes("narakathegame")
+            ? "Naraka: Bladepoint"
+            : normalizedHost.includes("identityv")
+              ? "Identity V"
+              : "NetEase Games",
       score: 96,
     };
+  }
+
+  if (normalizedHost.includes("exitlag")) {
+    return { brandName: "ExitLag", score: 98 };
+  }
+
+  if (normalizedHost.includes("kaspersky") || normalizedHost.includes("seguranca.gg")) {
+    return { brandName: "Kaspersky", campaignName: "Segurança Gamer", score: 98 };
   }
 
   return null;
@@ -481,9 +517,8 @@ function inferCampaignNameFromUrl(url: string) {
 }
 
 function extractLinks(text: string): DetectedLink[] {
-  const matches = text.match(/https?:\/\/[^\s)\]}>"']+/gi) ?? [];
+  const matches = text.match(/https?:\/\/[^\s)\]}>'"]+/gi) ?? [];
   const uniqueUrls = Array.from(new Set(matches.map(sanitizeRawUrl)));
-
   const detectedLinks: DetectedLink[] = [];
 
   for (const rawUrl of uniqueUrls) {
@@ -493,29 +528,27 @@ function extractLinks(text: string): DetectedLink[] {
 
     try {
       const url = new URL(normalizedUrl);
-      const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
-      const domainParts = hostname.split(".");
-      const domain =
-        domainParts.length >= 2
-          ? domainParts[domainParts.length - 2]
-          : domainParts[0];
+      const hostname = normalizeHostname(url.hostname);
+      const registrableDomain = getRegistrableDomain(hostname);
+      const baseDomain = registrableDomain.split(".")[0];
 
-      if (!domain) continue;
+      if (!registrableDomain || !baseDomain) continue;
 
-      if (IGNORED_DOMAINS.some((ignored) => domain.includes(ignored))) {
+      if (isIgnoredDomain(hostname)) {
         continue;
       }
 
-      const knownBrand = inferKnownBrandFromDomain(hostname, domain);
+      const knownBrand = inferKnownBrandFromDomain(hostname, registrableDomain);
+      const campaignName =
+        knownBrand?.campaignName || inferCampaignNameFromUrl(normalizedUrl);
 
       detectedLinks.push({
         url: normalizedUrl,
         hostname,
-        domain,
-        brandName: knownBrand?.brandName || formatBrandName(domain),
-        campaignName:
-          knownBrand?.campaignName || inferCampaignNameFromUrl(normalizedUrl),
-        score: knownBrand?.score || scoreDetectedLink(normalizedUrl, domain),
+        domain: registrableDomain,
+        brandName: knownBrand?.brandName || formatBrandName(baseDomain),
+        campaignName,
+        score: knownBrand?.score || scoreDetectedLink(normalizedUrl, registrableDomain),
       });
     } catch {
       continue;
@@ -532,6 +565,9 @@ function scoreDetectedLink(url: string, domain: string) {
   let score = 70;
 
   if (normalizedDomain.endsWith(".game") || normalizedUrl.includes("/campaign")) score += 16;
+  if (normalizedDomain.includes("exitlag")) score += 22;
+  if (normalizedDomain.includes("seguranca.gg") || normalizedDomain.includes("kaspersky")) score += 22;
+  if (normalizedDomain.includes("netease") || normalizedDomain.includes("oncehuman") || normalizedDomain.includes("marvelrivals")) score += 22;
   if (normalizedUrl.includes("steam") || normalizedUrl.includes("epicgames")) score += 8;
   if (normalizedUrl.includes("ref=") || normalizedUrl.includes("utm_")) score += 8;
   if (normalizedUrl.includes("coupon") || normalizedUrl.includes("cupom")) score += 6;
@@ -763,101 +799,4 @@ export async function POST(request: NextRequest) {
           channel?.contentDetails?.relatedPlaylists?.uploads;
 
         if (!uploadsPlaylistId) {
-          errors.push(`Canal não encontrado: ${link.url}`);
-          continue;
-        }
-
-        const videos = await fetchRecentVideosFromUploadsPlaylist(
-          uploadsPlaylistId,
-          apiKey
-        );
-
-        scannedVideos += videos.length;
-
-        for (const video of videos) {
-          const detections = detectPartnershipsFromVideo(video);
-
-          for (const detection of detections) {
-            const { data: existing } = await supabase
-              .from("creator_partnerships")
-              .select("id")
-              .eq("creator_id", link.creator_id)
-              .eq("source_platform", "youtube")
-              .eq("brand_name", detection.brandName)
-              .in("status", ["suggested", "verified", "manual", "rejected"])
-              .maybeSingle();
-
-            if (existing?.id) {
-              duplicatesSkipped += 1;
-              continue;
-            }
-
-            const { error: insertError } = await supabase
-              .from("creator_partnerships")
-              .insert({
-                creator_id: link.creator_id,
-                brand_name: detection.brandName,
-                source_title: detection.videoTitle,
-                source_thumbnail: detection.sourceThumbnail,
-                source_channel: detection.sourceChannel,
-                source_published_at: detection.publishedAt,
-                partnership_type: detection.partnershipType,
-                campaign_name: detection.campaignName || null,
-                website_url: detection.primaryDetectedLink || null,
-                source_platform: "youtube",
-                source_url: detection.sourceUrl,
-                evidence_text: detection.evidenceText,
-                evidence_payload: {
-                  video_id: detection.videoId,
-                  video_title: detection.videoTitle,
-                  published_at: detection.publishedAt,
-                  detection_reason: detection.detectionReason,
-                  detected_links: detection.detectedLinks,
-                  primary_detected_link: detection.primaryDetectedLink,
-                  primary_detected_domain: detection.primaryDetectedDomain,
-                  coupon_codes: detection.couponCodes,
-                  inferred_campaign_name: detection.campaignName,
-                },
-                detection_reason: detection.detectionReason,
-                confidence_score: detection.confidenceScore,
-                status: "suggested",
-                is_active: true,
-                created_by: null,
-              });
-
-            if (insertError) {
-              errors.push(insertError.message);
-              continue;
-            }
-
-            suggestionsCreated += 1;
-          }
-        }
-      } catch (error) {
-        errors.push(error instanceof Error ? error.message : String(error));
-      }
-    }
-
-    return NextResponse.json({
-      ok: true,
-      scannedCreators,
-      scannedVideos,
-      suggestionsCreated,
-      duplicatesSkipped,
-      errors,
-    });
-  } catch (error) {
-    console.error("detect-youtube-partnerships error:", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erro desconhecido ao detectar parcerias.",
-      },
-      { status: 500 }
-    );
-  }
-}
+   

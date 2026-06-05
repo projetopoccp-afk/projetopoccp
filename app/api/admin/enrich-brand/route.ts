@@ -10,6 +10,80 @@ type BrandEnrichmentResult = {
   enrichment_confidence: number;
 };
 
+type KnownBrandDefinition = {
+  name: string;
+  aliases: string[];
+  website_url: string;
+  logo_domain?: string;
+  description: string;
+};
+
+const KNOWN_BRANDS: KnownBrandDefinition[] = [
+  {
+    name: "NetEase",
+    aliases: ["netease", "netease games", "neteasegames", "once human", "marvel rivals", "naraka", "identity v"],
+    website_url: "https://www.neteasegames.com/",
+    logo_domain: "neteasegames.com",
+    description: "Desenvolvedora e publisher global de jogos, responsável por títulos como Marvel Rivals, Once Human, Naraka: Bladepoint e Identity V.",
+  },
+  {
+    name: "ExitLag",
+    aliases: ["exitlag", "exit lag"],
+    website_url: "https://www.exitlag.com/",
+    logo_domain: "exitlag.com",
+    description: "Serviço de otimização de rotas para reduzir latência, perda de pacote e instabilidade em jogos online.",
+  },
+  {
+    name: "Kaspersky",
+    aliases: ["kaspersky", "seguranca", "segurança", "seguranca gg", "segurança gg", "seguranca.gg"],
+    website_url: "https://www.kaspersky.com.br/",
+    logo_domain: "kaspersky.com.br",
+    description: "Empresa global de cibersegurança, conhecida por soluções de proteção digital para pessoas e empresas.",
+  },
+  {
+    name: "Reserva",
+    aliases: ["reserva", "usereserva"],
+    website_url: "https://www.usereserva.com/",
+    logo_domain: "usereserva.com",
+    description: "Marca brasileira de moda e lifestyle.",
+  },
+  {
+    name: "Logitech",
+    aliases: ["logitech", "logi"],
+    website_url: "https://www.logitech.com/",
+    logo_domain: "logitech.com",
+    description: "Marca global de periféricos, acessórios e equipamentos para produtividade, games e criação de conteúdo.",
+  },
+  {
+    name: "HyperX",
+    aliases: ["hyperx"],
+    website_url: "https://hyperx.com/",
+    logo_domain: "hyperx.com",
+    description: "Marca de periféricos gamer, headsets, microfones e acessórios para jogos e criação de conteúdo.",
+  },
+  {
+    name: "Razer",
+    aliases: ["razer"],
+    website_url: "https://www.razer.com/",
+    logo_domain: "razer.com",
+    description: "Marca global de hardware, periféricos e lifestyle gamer.",
+  },
+  {
+    name: "NVIDIA",
+    aliases: ["nvidia", "geforce"],
+    website_url: "https://www.nvidia.com/",
+    logo_domain: "nvidia.com",
+    description: "Empresa global de tecnologia conhecida por GPUs, soluções de IA e ecossistema GeForce para games e criação.",
+  },
+  {
+    name: "Discord",
+    aliases: ["discord"],
+    website_url: "https://discord.com/",
+    logo_domain: "discord.com",
+    description: "Plataforma de comunicação para comunidades, criadores, jogadores e equipes.",
+  },
+];
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,6 +111,94 @@ function normalizeDomainName(value: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, "e")
     .replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeBrandKey(value: string) {
+  return normalizeDomainName(
+    value
+      .replace(/games?\b/gi, "")
+      .replace(/oficial\b/gi, "")
+      .replace(/official\b/gi, "")
+      .replace(/brasil\b/gi, "")
+      .replace(/brazil\b/gi, ""),
+  );
+}
+
+function hasBrokenEncoding(value: string | null | undefined) {
+  if (!value) return false;
+  return value.includes(" ") || /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value);
+}
+
+function safeText(value: string | null | undefined) {
+  if (!value || hasBrokenEncoding(value)) return null;
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function cleanSiteTitle(title: string | null | undefined, fallback: string) {
+  const safe = safeText(title);
+  if (!safe) return fallback;
+
+  const firstPart = safe
+    .split("|")[0]
+    .split("—")[0]
+    .split("-")[0]
+    .trim();
+
+  return firstPart || fallback;
+}
+
+function findKnownBrand(brandName: string) {
+  const key = normalizeBrandKey(brandName);
+
+  return KNOWN_BRANDS.find((brand) =>
+    brand.aliases.some((alias) => {
+      const aliasKey = normalizeBrandKey(alias);
+      return key === aliasKey || key.includes(aliasKey) || aliasKey.includes(key);
+    }),
+  );
+}
+
+async function findExistingBrand(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  brandName: string,
+): Promise<BrandEnrichmentResult | null> {
+  const key = normalizeBrandKey(brandName);
+
+  if (!key) return null;
+
+  const { data, error } = await supabase
+    .from("brands")
+    .select("name, logo_url, website_url, description, enrichment_confidence")
+    .limit(500);
+
+  if (error || !data) return null;
+
+  const existing = data.find((brand: any) => {
+    const existingKey = normalizeBrandKey(brand.name || "");
+    return existingKey === key || existingKey.includes(key) || key.includes(existingKey);
+  });
+
+  if (!existing) return null;
+
+  return {
+    name: existing.name || brandName,
+    website_url: existing.website_url || null,
+    logo_url: existing.logo_url || null,
+    description: existing.description || null,
+    enrichment_source: "local_brand",
+    enrichment_confidence: existing.enrichment_confidence || 100,
+  };
+}
+
+function knownBrandResult(brand: KnownBrandDefinition): BrandEnrichmentResult {
+  return {
+    name: brand.name,
+    website_url: brand.website_url,
+    logo_url: faviconForDomain(brand.logo_domain ? `https://${brand.logo_domain}` : brand.website_url),
+    description: brand.description,
+    enrichment_source: "known_brand",
+    enrichment_confidence: 99,
+  };
 }
 
 function extractMeta(content: string, property: string) {
@@ -154,13 +316,15 @@ async function tryCandidateSites(brandName: string): Promise<BrandEnrichmentResu
 
     if (!metadata?.website_url) continue;
 
+    const confidence = metadata.description ? 72 : 58;
+
     return {
-      name: metadata.title || brandName,
+      name: confidence >= 70 ? cleanSiteTitle(metadata.title, brandName) : brandName,
       website_url: metadata.website_url,
-      logo_url: metadata.logo_url,
-      description: metadata.description,
+      logo_url: confidence >= 70 ? metadata.logo_url : null,
+      description: safeText(metadata.description),
       enrichment_source: "website_guess_open_graph",
-      enrichment_confidence: metadata.description ? 72 : 58,
+      enrichment_confidence: confidence,
     };
   }
 
@@ -201,9 +365,9 @@ async function searchWikipedia(brandName: string): Promise<BrandEnrichmentResult
     if (!page?.title) return null;
 
     return {
-      name: page.title,
+      name: brandName,
       website_url: page.fullurl || null,
-      logo_url: page.thumbnail?.source || null,
+      logo_url: null,
       description: page.extract ? String(page.extract).slice(0, 600) : null,
       enrichment_source: "wikipedia",
       enrichment_confidence: 55,
@@ -259,10 +423,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const siteResult = await tryCandidateSites(brandName);
-    const wikipediaResult = siteResult ? null : await searchWikipedia(brandName);
+    const existingBrand = await findExistingBrand(supabase, brandName);
+    const knownBrand = existingBrand ? null : findKnownBrand(brandName);
+    const siteResult = existingBrand || knownBrand ? null : await tryCandidateSites(brandName);
+    const wikipediaResult = existingBrand || knownBrand || siteResult ? null : await searchWikipedia(brandName);
 
-    const result: BrandEnrichmentResult = siteResult ||
+    const result: BrandEnrichmentResult =
+      existingBrand ||
+      (knownBrand ? knownBrandResult(knownBrand) : null) ||
+      siteResult ||
       wikipediaResult || {
         name: brandName,
         website_url: null,
@@ -271,6 +440,15 @@ export async function POST(request: NextRequest) {
         enrichment_source: "not_found",
         enrichment_confidence: 0,
       };
+
+    if (hasBrokenEncoding(result.name)) {
+      result.name = brandName;
+    }
+
+    if (result.enrichment_confidence < 70) {
+      result.name = brandName;
+      result.logo_url = null;
+    }
 
     return NextResponse.json({
       ok: true,
