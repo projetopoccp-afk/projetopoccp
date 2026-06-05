@@ -725,9 +725,9 @@ export const translations = {
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartilhamentos",
     creatorProfileAboutTitle: "Sobre o criador",
-    creatorProfilePartnershipsTitle: "Marcas trabalhadas",
+    creatorProfilePartnershipsTitle: "Parcerias Verificadas",
     creatorProfilePartnershipsDescription:
-      "Parcerias, patrocínios, campanhas e marcas verificadas no Cardpoc.",
+      "Parcerias e campanhas verificadas pela equipe Cardpoc.",
     creatorProfilePartnershipSince: "Desde",
     creatorProfilePartnershipWebsite: "Site",
     creatorProfilePartnershipEvidence: "Ver vídeo",
@@ -1636,7 +1636,7 @@ export const translations = {
     creatorProfileFollowers: "Followers",
     creatorProfileShares: "Shares",
     creatorProfileAboutTitle: "About the creator",
-    creatorProfilePartnershipsTitle: "Brands worked with",
+    creatorProfilePartnershipsTitle: "Verified Partnerships",
     creatorProfilePartnershipsDescription:
       "Partnerships, sponsorships, campaigns and brands verified on Cardpoc.",
     creatorProfilePartnershipSince: "Since",
@@ -2550,7 +2550,7 @@ export const translations = {
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartidos",
     creatorProfileAboutTitle: "Sobre el creador",
-    creatorProfilePartnershipsTitle: "Marcas trabajadas",
+    creatorProfilePartnershipsTitle: "Alianzas Verificadas",
     creatorProfilePartnershipsDescription:
       "Colaboraciones, patrocinios, campañas y marcas verificadas en Cardpoc.",
     creatorProfilePartnershipSince: "Desde",

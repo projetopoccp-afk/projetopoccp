@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -884,6 +884,8 @@ export function CreatorProfilePage({
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const [activeClipPlatform, setActiveClipPlatform] = useState<string>("");
+  const socialLinksDropdownRef = useRef<HTMLDivElement | null>(null);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -927,6 +929,36 @@ export function CreatorProfilePage({
       window.clearInterval(intervalId);
     };
   }, []);
+
+  useEffect(() => {
+    if (!socialLinksOpen) return;
+
+    function handleOutsideInteraction(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) return;
+
+      if (!socialLinksDropdownRef.current?.contains(target)) {
+        setSocialLinksOpen(false);
+      }
+    }
+
+    function handleEscapeKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSocialLinksOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideInteraction);
+    document.addEventListener("touchstart", handleOutsideInteraction);
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction);
+      document.removeEventListener("touchstart", handleOutsideInteraction);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [socialLinksOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1459,6 +1491,28 @@ export function CreatorProfilePage({
 
     return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
   });
+
+  const clipPlatformKey = clipPlatformSections
+    .map(([platform]) => platform)
+    .join("|");
+  const selectedClipPlatform =
+    activeClipPlatform && groupedClips[activeClipPlatform]
+      ? activeClipPlatform
+      : clipPlatformSections[0]?.[0] || "";
+  const selectedPlatformClips = selectedClipPlatform
+    ? groupedClips[selectedClipPlatform] || []
+    : [];
+
+  useEffect(() => {
+    if (!clipPlatformSections.length) {
+      if (activeClipPlatform) setActiveClipPlatform("");
+      return;
+    }
+
+    if (!activeClipPlatform || !groupedClips[activeClipPlatform]) {
+      setActiveClipPlatform(clipPlatformSections[0][0]);
+    }
+  }, [activeClipPlatform, clipPlatformKey]);
 
   const visiblePartnerships = partnerships
     .filter((partnership) =>
@@ -2421,7 +2475,7 @@ export function CreatorProfilePage({
                 </button>
               ) : null}
 
-              <div className="relative">
+              <div ref={socialLinksDropdownRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setSocialLinksOpen((current) => !current)}
@@ -2701,7 +2755,7 @@ export function CreatorProfilePage({
                       {translate(
                         t,
                         "creatorProfilePartnershipsTitle",
-                        "Marcas trabalhadas",
+                        "Parcerias Verificadas",
                       )}
                     </h2>
                     <p className="mt-1 text-sm leading-6 text-white/45">
@@ -2722,24 +2776,20 @@ export function CreatorProfilePage({
               </div>
 
               {visiblePartnerships.length > 0 ? (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {visiblePartnerships.map((partnership) => {
                     const brandName = getPartnershipDisplayName(partnership);
                     const logo = getPartnershipLogo(partnership);
                     const website = getPartnershipWebsite(partnership);
-                    const descriptionText = getPartnershipDescription(partnership);
                     const startDate =
                       partnership.start_date || partnership.source_published_at;
 
-                    return (
-                      <div
-                        key={partnership.id}
-                        className="group relative overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/25 p-4 transition hover:border-fuchsia-300/25 hover:bg-fuchsia-300/[0.04]"
-                      >
-                        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-fuchsia-500/10 blur-2xl" />
+                    const cardContent = (
+                      <div className="group relative flex min-h-[92px] overflow-hidden rounded-[1.15rem] border border-white/10 bg-black/25 p-3 transition hover:border-fuchsia-300/25 hover:bg-fuchsia-300/[0.04]">
+                        <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-fuchsia-500/10 blur-2xl" />
 
-                        <div className="relative flex items-start gap-3">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-lg font-black text-white/60">
+                        <div className="relative flex min-w-0 items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/60">
                             {logo ? (
                               <img
                                 src={logo}
@@ -2752,80 +2802,48 @@ export function CreatorProfilePage({
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="truncate text-base font-black text-white">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="truncate text-sm font-black text-white">
                                 {brandName}
                               </h3>
-                              <ShieldCheck className="h-4 w-4 shrink-0 text-cyan-200" />
+                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
                             </div>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-fuchsia-100">
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-fuchsia-100">
                                 {getPartnershipTypeLabel(
                                   partnership.partnership_type,
                                 )}
                               </span>
-
-                              {startDate ? (
-                                <span className="text-xs font-bold text-white/42">
-                                  {translate(
-                                    t,
-                                    "creatorProfilePartnershipSince",
-                                    "Desde",
-                                  )}{" "}
-                                  {formatProfileDate(startDate)}
-                                </span>
-                              ) : null}
                             </div>
+
+                            {startDate ? (
+                              <p className="mt-1.5 truncate text-[11px] font-bold text-white/42">
+                                {translate(
+                                  t,
+                                  "creatorProfilePartnershipSince",
+                                  "Desde",
+                                )}{" "}
+                                {formatProfileDate(startDate)}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
-
-                        {partnership.campaign_name ? (
-                          <p className="relative mt-3 line-clamp-1 text-xs font-bold text-cyan-100/70">
-                            {partnership.campaign_name}
-                          </p>
-                        ) : null}
-
-                        {descriptionText ? (
-                          <p className="relative mt-3 line-clamp-2 text-sm leading-6 text-white/55">
-                            {descriptionText}
-                          </p>
-                        ) : null}
-
-                        <div className="relative mt-4 flex flex-wrap gap-2">
-                          {website ? (
-                            <a
-                              href={website}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-cyan-300/30 hover:text-cyan-100"
-                            >
-                              <Globe2 className="h-3.5 w-3.5" />
-                              {translate(
-                                t,
-                                "creatorProfilePartnershipWebsite",
-                                "Site",
-                              )}
-                            </a>
-                          ) : null}
-
-                          {partnership.source_url ? (
-                            <a
-                              href={partnership.source_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-fuchsia-300/30 hover:text-fuchsia-100"
-                            >
-                              <PlayCircle className="h-3.5 w-3.5" />
-                              {translate(
-                                t,
-                                "creatorProfilePartnershipEvidence",
-                                "Ver vídeo",
-                              )}
-                            </a>
-                          ) : null}
-                        </div>
                       </div>
+                    );
+
+                    return website ? (
+                      <a
+                        key={partnership.id}
+                        href={website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block"
+                      >
+                        {cardContent}
+                      </a>
+                    ) : (
+                      <div key={partnership.id}>{cardContent}</div>
                     );
                   })}
                 </div>
@@ -3177,7 +3195,7 @@ export function CreatorProfilePage({
               </div>
 
               {clipsLoading ? (
-                <div className="mt-6 rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 text-sm font-bold text-white/50">
+                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-4 text-sm font-bold text-white/50">
                   {translate(
                     t,
                     "creatorProfileLoadingClips",
@@ -3185,16 +3203,39 @@ export function CreatorProfilePage({
                   )}
                 </div>
               ) : clips.length > 0 ? (
-                <div className="mt-5 space-y-5">
-                  {clipPlatformSections.map(([platform, platformClips]) => (
-                    <section key={platform}>
+                <div className="mt-5">
+                  {clipPlatformSections.length > 1 ? (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {clipPlatformSections.map(([platform, platformClips]) => (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => setActiveClipPlatform(platform)}
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition ${
+                            selectedClipPlatform === platform
+                              ? "border-fuchsia-300/40 bg-fuchsia-300/15 text-fuchsia-100 shadow-lg shadow-fuchsia-500/10"
+                              : "border-white/10 bg-white/[0.04] text-white/50 hover:border-cyan-300/25 hover:text-cyan-100"
+                          }`}
+                        >
+                          <PlayCircle className="h-3.5 w-3.5" />
+                          {getPlatformLabel(platform)}
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/55">
+                            {platformClips.length}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {selectedClipPlatform && selectedPlatformClips.length > 0 ? (
+                    <section>
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                          {getPlatformLabel(platform)}
+                          {getPlatformLabel(selectedClipPlatform)}
                         </p>
                         <span className="text-xs font-bold text-white/35">
-                          {platformClips.length}{" "}
-                          {platformClips.length === 1
+                          {selectedPlatformClips.length}{" "}
+                          {selectedPlatformClips.length === 1
                             ? translate(t, "creatorProfileClipSingular", "clip")
                             : translate(t, "creatorProfileClipPlural", "clips")}
                         </span>
@@ -3206,25 +3247,25 @@ export function CreatorProfilePage({
                           onClick={() => {
                             document
                               .getElementById(
-                                `creator-profile-clips-${platform}`,
+                                `creator-profile-clips-${selectedClipPlatform}`,
                               )
-                              ?.scrollBy({ left: -300, behavior: "smooth" });
+                              ?.scrollBy({ left: -320, behavior: "smooth" });
                           }}
-                          className="absolute left-1 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          className="absolute -left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-fuchsia-300/20 bg-black/80 text-fuchsia-100 shadow-2xl backdrop-blur transition hover:border-fuchsia-300/45 hover:bg-fuchsia-300/15 sm:flex"
                           aria-label={translate(
                             t,
                             "creatorProfilePreviousClips",
                             "Clipes anteriores",
                           )}
                         >
-                          <ChevronLeft className="h-4 w-4" />
+                          <ChevronLeft className="h-5 w-5" />
                         </button>
 
                         <div
-                          id={`creator-profile-clips-${platform}`}
+                          id={`creator-profile-clips-${selectedClipPlatform}`}
                           className="flex snap-x gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         >
-                          {platformClips.map((clip) => {
+                          {selectedPlatformClips.map((clip) => {
                             const thumbnail =
                               clip.thumbnailUrl || clip.thumbnail_url;
                             const viewCount =
@@ -3237,9 +3278,9 @@ export function CreatorProfilePage({
                                 href={clipHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.15rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[270px]"
+                                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.1rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[260px] lg:w-[290px]"
                               >
-                                <div className="aspect-video bg-white/[0.04]">
+                                <div className="aspect-[16/8.5] bg-white/[0.04]">
                                   {thumbnail ? (
                                     <img
                                       src={thumbnail}
@@ -3248,25 +3289,25 @@ export function CreatorProfilePage({
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-white/30">
-                                      <PlayCircle className="h-10 w-10" />
+                                      <PlayCircle className="h-8 w-8" />
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="p-3">
                                   <div className="flex items-center justify-between gap-3">
-                                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100/60">
                                       {getPlatformLabel(clip.platform)}
                                     </p>
 
                                     {viewCount > 0 ? (
-                                      <span className="text-xs font-bold text-white/40">
+                                      <span className="text-[11px] font-bold text-white/40">
                                         {formatNumber(viewCount)}
                                       </span>
                                     ) : null}
                                   </div>
 
-                                  <h3 className="mt-2 line-clamp-2 text-xs font-black leading-5 text-white sm:text-sm">
+                                  <h3 className="mt-1.5 line-clamp-2 text-xs font-black leading-5 text-white sm:text-sm">
                                     {clip.title}
                                   </h3>
                                 </div>
@@ -3280,22 +3321,22 @@ export function CreatorProfilePage({
                           onClick={() => {
                             document
                               .getElementById(
-                                `creator-profile-clips-${platform}`,
+                                `creator-profile-clips-${selectedClipPlatform}`,
                               )
-                              ?.scrollBy({ left: 300, behavior: "smooth" });
+                              ?.scrollBy({ left: 320, behavior: "smooth" });
                           }}
-                          className="absolute right-1 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          className="absolute -right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-fuchsia-300/20 bg-black/80 text-fuchsia-100 shadow-2xl backdrop-blur transition hover:border-fuchsia-300/45 hover:bg-fuchsia-300/15 sm:flex"
                           aria-label={translate(
                             t,
                             "creatorProfileNextClips",
                             "Próximos clipes",
                           )}
                         >
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-5 w-5" />
                         </button>
                       </div>
                     </section>
-                  ))}
+                  ) : null}
                 </div>
               ) : (
                 <p className="mt-5 text-sm leading-7 text-white/50">
@@ -3673,8 +3714,6 @@ export function CreatorProfilePage({
                 </p>
               ) : null}
             </div>
-
-            
 
             <div className="flex shrink-0 gap-3">
               <button
