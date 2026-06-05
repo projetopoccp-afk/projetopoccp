@@ -540,17 +540,17 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 overflow-x-hidden border-b border-white/10 bg-black/50 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 md:h-20 md:flex-row md:items-center md:justify-between md:gap-6 md:px-6 md:py-0">
-          <div className="flex w-full min-w-0 items-center justify-between gap-2 md:w-auto md:gap-3">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/50 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:h-20 md:flex-row md:items-center md:justify-between md:gap-6 md:px-6 md:py-0">
+          <div className="flex items-center justify-between gap-3">
             <Link
               href="/"
-              className="group relative flex min-w-0 max-w-[170px] shrink items-center gap-2 rounded-3xl border border-white/0 px-1 py-1 transition hover:border-cyan-300/10 hover:bg-white/[0.025] sm:max-w-none sm:gap-3"
+              className="group relative flex items-center gap-3 rounded-3xl border border-white/0 px-1 py-1 transition hover:border-cyan-300/10 hover:bg-white/[0.025]"
               aria-label="Cardpoc"
             >
               <div className="pointer-events-none absolute -inset-3 rounded-[2rem] bg-[radial-gradient(circle_at_30%_30%,rgba(34,211,238,0.16),transparent_42%),radial-gradient(circle_at_80%_75%,rgba(217,70,239,0.14),transparent_42%)] opacity-0 blur-xl transition duration-300 group-hover:opacity-100" />
 
-              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[1.1rem] border border-cyan-300/30 bg-[radial-gradient(circle_at_72%_18%,rgba(34,211,238,0.30),transparent_30%),radial-gradient(circle_at_22%_82%,rgba(217,70,239,0.20),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.10),rgba(255,255,255,0.015))] shadow-[0_0_34px_rgba(34,211,238,0.22)] transition duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-2deg] group-hover:border-cyan-200/60 group-hover:shadow-[0_0_48px_rgba(34,211,238,0.32)] sm:h-12 sm:w-12 sm:rounded-[1.25rem]">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-cyan-300/30 bg-[radial-gradient(circle_at_72%_18%,rgba(34,211,238,0.30),transparent_30%),radial-gradient(circle_at_22%_82%,rgba(217,70,239,0.20),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.10),rgba(255,255,255,0.015))] shadow-[0_0_34px_rgba(34,211,238,0.22)] transition duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-2deg] group-hover:border-cyan-200/60 group-hover:shadow-[0_0_48px_rgba(34,211,238,0.32)]">
                 <div className="absolute inset-1.5 rounded-[0.95rem] border border-white/10 bg-black/45" />
                 <div className="absolute left-1/2 top-1.5 h-1.5 w-7 -translate-x-1/2 rounded-full bg-cyan-200/70 shadow-[0_0_16px_rgba(34,211,238,0.9)]" />
                 <div className="absolute bottom-2 left-2 h-2 w-2 rounded-full bg-fuchsia-300 shadow-[0_0_16px_rgba(217,70,239,0.85)]" />
@@ -562,16 +562,16 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                 </span>
               </div>
 
-              <div className="relative flex min-w-0 flex-col leading-none sm:min-w-[168px]">
+              <div className="relative flex min-w-[140px] flex-col leading-none sm:min-w-[168px]">
                 <div className="flex items-center gap-2">
                   <span className="h-px w-4 bg-cyan-300/70 shadow-[0_0_12px_rgba(34,211,238,0.85)]" />
-                  <span className="bg-gradient-to-r from-cyan-100 via-white to-white bg-clip-text text-[12px] font-black uppercase tracking-[0.24em] text-transparent sm:text-[18px] sm:tracking-[0.34em]">
+                  <span className="bg-gradient-to-r from-cyan-100 via-white to-white bg-clip-text text-[15px] font-black uppercase tracking-[0.28em] text-transparent sm:text-[18px] sm:tracking-[0.34em]">
                     Card
                   </span>
                 </div>
 
                 <div className="-mt-0.5 flex items-center gap-2 pl-7 sm:pl-8">
-                  <span className="bg-gradient-to-r from-white via-fuchsia-100 to-cyan-100 bg-clip-text text-[15px] font-black uppercase tracking-[0.16em] text-transparent drop-shadow-[0_0_14px_rgba(217,70,239,0.22)] sm:text-[22px] sm:tracking-[0.26em]">
+                  <span className="bg-gradient-to-r from-white via-fuchsia-100 to-cyan-100 bg-clip-text text-[17px] font-black uppercase tracking-[0.20em] text-transparent drop-shadow-[0_0_14px_rgba(217,70,239,0.22)] sm:text-[22px] sm:tracking-[0.26em]">
                     Poc
                   </span>
                   <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-200 shadow-[0_0_14px_rgba(217,70,239,0.85)]" />
@@ -584,7 +584,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
             </Link>
 
             {user ? (
-              <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+              <div className="flex items-center gap-2 md:hidden">
                 <div ref={notificationBoxRef} className="relative">
                   <button
                     type="button"
@@ -622,17 +622,17 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
                 <button
                   onClick={() => setAccountOpen(true)}
-                  className="h-10 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 sm:px-4 sm:text-sm"
+                  className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
                 >
                   {translate(t, "account", "Conta")}
                 </button>
 
                 <button
                   onClick={requestLogout}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-red-300/30 hover:bg-red-300/10"
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-red-300/30 hover:bg-red-300/10"
                 >
                   <LogOut size={16} />
-                  <span className="sr-only">{translate(t, "logout", "Sair")}</span>
+                  {translate(t, "logout", "Sair")}
                 </button>
 
                 <LanguageSwitcher
@@ -645,10 +645,10 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                 />
               </div>
             ) : (
-              <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+              <div className="flex items-center gap-2 md:hidden">
                 <button
                   onClick={() => setLoginOpen(true)}
-                  className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.06] sm:px-4 sm:text-sm"
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-white/[0.06]"
                 >
                   <User size={16} />
                   {translate(t, "login", "Entrar")}
@@ -666,7 +666,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
             )}
           </div>
 
-          <div className="w-full min-w-0 md:max-w-md">
+          <div className="w-full md:max-w-md">
             <CreatorSearch
               value={effectiveSearch}
               onChange={handleSearchChange}
@@ -1000,7 +1000,7 @@ function NotificationsPopover({
         </div>
       </div>
 
-      <div className="relative z-10 max-h-[420px] overflow-hidden p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="relative z-10 max-h-[min(420px,calc(100dvh-120px))] overflow-y-auto p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {notifications.length > 0 ? (
           notifications.map((notification) => (
             <button
