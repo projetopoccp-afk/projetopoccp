@@ -5,8 +5,14 @@ type YouTubeVideo = {
   id: string;
   title: string;
   description: string;
+
   publishedAt?: string;
+
+  sourceChannel?: string;
+  sourceThumbnail?: string;
+
   hasPaidProductPlacement?: boolean;
+
   url: string;
 };
 
