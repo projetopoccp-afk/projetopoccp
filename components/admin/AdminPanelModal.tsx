@@ -2243,7 +2243,7 @@ if (!response.ok) {
               )}
             </p>
 
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {ADMIN_TABS.map((tab) => {
                 const counter = getTabCounter(tab.id);
 
@@ -2251,7 +2251,7 @@ if (!response.ok) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`group flex min-h-[56px] items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left transition ${
+                    className={`group flex min-h-[56px] min-w-0 items-center justify-between gap-2 rounded-2xl border px-4 py-2 text-left transition ${
                       activeTab === tab.id
                         ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_28px_rgba(103,232,249,0.18)]"
                         : "border-white/10 bg-white/[0.035] text-white/62 hover:border-white/18 hover:bg-white/[0.07] hover:text-white"
