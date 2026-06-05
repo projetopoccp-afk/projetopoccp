@@ -383,40 +383,50 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
+    const cronSecret = process.env.CRON_SECRET;
+const cronHeader = request.headers.get("x-cron-secret");
 
-    if (!token) {
-      return NextResponse.json(
-        { error: "Usuário não autenticado." },
-        { status: 401 }
-      );
-    }
+const isCronRequest =
+  cronSecret &&
+  cronHeader &&
+  cronHeader === cronSecret;
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
+if (!isCronRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.replace("Bearer ", "");
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Sessão inválida." },
-        { status: 401 }
-      );
-    }
+  if (!token) {
+    return NextResponse.json(
+      { error: "Usuário não autenticado." },
+      { status: 401 }
+    );
+  }
 
-    const { data: profile } = await supabase
-  .from("profiles")
-  .select("id, is_admin")
-  .eq("id", user.id)
-  .maybeSingle();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser(token);
 
-if (profile?.is_admin !== true) {
-      return NextResponse.json(
-        { error: "Apenas administradores podem executar esta ação." },
-        { status: 403 }
-      );
-    }
+  if (userError || !user) {
+    return NextResponse.json(
+      { error: "Sessão inválida." },
+      { status: 401 }
+    );
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.is_admin !== true) {
+    return NextResponse.json(
+      { error: "Apenas administradores podem executar esta ação." },
+      { status: 403 }
+    );
+  }
+}
 
     const { data: youtubeLinks, error: linksError } = await supabase
       .from("creator_social_links")

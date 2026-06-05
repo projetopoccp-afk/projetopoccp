@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/detect-youtube-partnerships",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
