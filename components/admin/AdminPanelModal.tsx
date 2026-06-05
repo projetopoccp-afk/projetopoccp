@@ -881,22 +881,29 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setActionLoading("detect-youtube-partnerships");
 
     try {
-      const response = await fetch("/api/admin/detect-youtube-partnerships", {
-        method: "POST",
-      });
+      const {
+  data: { session },
+} = await supabase.auth.getSession();
 
-      const result = await response.json().catch(() => null);
+const response = await fetch("/api/admin/detect-youtube-partnerships", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${session?.access_token ?? ""}`,
+  },
+});
 
-      if (!response.ok) {
-        throw new Error(
-          result?.error ||
-            translate(
-              t,
-              "adminPartnershipDetectionError",
-              "Não foi possível detectar parcerias do YouTube agora.",
-            ),
-        );
-      }
+const result = await response.json().catch(() => null);
+
+if (!response.ok) {
+  throw new Error(
+    result?.error ||
+      translate(
+        t,
+        "adminPartnershipDetectionError",
+        "Não foi possível detectar parcerias do YouTube agora.",
+      ),
+  );
+}
 
       await loadPartnerships();
       await loadLogs();
