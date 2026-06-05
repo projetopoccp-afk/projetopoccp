@@ -39,6 +39,8 @@ type AccountProfile = {
   username: string | null;
   avatar_url: string | null;
   is_admin: boolean | null;
+  xp?: number | null;
+  level?: number | null;
 };
 
 type NotificationType =
@@ -200,7 +202,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, username, avatar_url, is_admin")
+        .select("*")
         .eq("id", user.id)
         .single();
 
@@ -537,6 +539,10 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }
 
   const displayName = profile?.display_name || user?.name || "Creator";
+  const userLevel = Number(profile?.level ?? 0);
+  const accountMeta = userLevel > 0
+    ? `LVL ${userLevel} • ${translate(t, "collectorRole", "Colecionador")}`
+    : translate(t, "collectorRole", "Colecionador");
 
   return (
     <>
@@ -728,16 +734,22 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
               <button
                 onClick={() => setAccountOpen(true)}
-                className="group rounded-2xl px-2 py-1 text-right transition hover:bg-white/[0.04]"
-                title={translate(t, "openPanel", "Clique para abrir o painel")}
+                className="group inline-flex max-w-[190px] items-center gap-3 rounded-2xl border border-white/0 px-2.5 py-2 text-left transition hover:border-cyan-300/15 hover:bg-white/[0.04]"
+                title={translate(t, "openPanel", "Abrir painel")}
               >
-                <p className="text-sm font-semibold text-white transition group-hover:text-cyan-200">
-                  {displayName}
-                </p>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)] transition group-hover:border-cyan-200/45 group-hover:bg-cyan-300/15">
+                  <User size={16} />
+                </span>
 
-                <p className="text-xs text-cyan-100/55 transition group-hover:text-cyan-100">
-                  {translate(t, "openPanel", "Clique para abrir o painel")}
-                </p>
+                <span className="min-w-0 leading-none">
+                  <span className="block truncate text-sm font-black text-white transition group-hover:text-cyan-100">
+                    {displayName}
+                  </span>
+
+                  <span className="mt-1 block truncate text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-100/55 transition group-hover:text-cyan-100">
+                    {accountMeta}
+                  </span>
+                </span>
               </button>
 
               <button
