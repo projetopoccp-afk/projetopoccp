@@ -59,14 +59,14 @@ export function CardpocModalShell({
 
         <div className={`relative z-10 min-h-0 w-full ${contentClassName}`}>
           {hasControls && (
-            <div className="absolute right-6 top-6 z-50 flex gap-3">
+            <div className="sticky top-4 z-50 -mb-12 flex justify-end gap-3 pr-2 pointer-events-none">
               {showMinimizeButton && onMinimize && (
                 <button
                   type="button"
                   onClick={onMinimize}
                   aria-label={minimizeLabel}
                   title={minimizeLabel}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:border-cyan-300/40 hover:bg-cyan-500/15"
+                  className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:border-cyan-300/40 hover:bg-cyan-500/15"
                 >
                   <Minus size={22} strokeWidth={3} />
                 </button>
@@ -78,7 +78,7 @@ export function CardpocModalShell({
                   onClick={onClose}
                   aria-label={closeLabel}
                   title={closeLabel}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-red-300/45 bg-black/75 text-red-100 shadow-[0_0_14px_rgba(248,113,113,0.55),0_0_34px_rgba(248,113,113,0.32)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-200/70 hover:bg-red-500/20 hover:shadow-[0_0_18px_rgba(248,113,113,0.75),0_0_46px_rgba(248,113,113,0.45)]"
+                  className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-red-300/45 bg-black/75 text-red-100 shadow-[0_0_14px_rgba(248,113,113,0.55),0_0_34px_rgba(248,113,113,0.32)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-200/70 hover:bg-red-500/20 hover:shadow-[0_0_18px_rgba(248,113,113,0.75),0_0_46px_rgba(248,113,113,0.45)]"
                 >
                   <X size={22} strokeWidth={3} />
                 </button>
