@@ -29,6 +29,11 @@ import { supabase } from "@/lib/supabase/client";
 
 type TranslationKey = Parameters<ReturnType<typeof useLanguage>["t"]>[0];
 
+function translateExisting(t: unknown, key: string, fallback: string) {
+  const value = (t as Record<string, string | undefined>)[key];
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
 type AdminPanelModalProps = {
   open: boolean;
   onClose: () => void;
@@ -48,7 +53,7 @@ type AdminPackType =
 type AdminRewardType = "card" | "pack";
 type AdminRewardTarget = "user" | "all_users";
 
-const ADMIN_TABS: { id: Tab; labelKey: TranslationKey; fallback: string }[] = [
+const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "requests", labelKey: "adminRequests", fallback: "Solicitações" },
   { id: "users", labelKey: "adminUsers", fallback: "Usuários" },
   { id: "creators", labelKey: "adminProfiles", fallback: "Perfis" },
@@ -192,7 +197,7 @@ function getSupportStatusLabel(
   t: TranslateFunction,
   status: SupportConversationStatus,
 ) {
-  const labels: Record<SupportConversationStatus, [TranslationKey, string]> = {
+  const labels: Record<SupportConversationStatus, [string, string]> = {
     open: ["supportStatusOpen", "Aberto"],
     waiting_admin: ["supportStatusWaitingAdmin", "Aguardando equipe"],
     waiting_user: ["supportStatusWaitingUser", "Aguardando criador"],
@@ -200,11 +205,11 @@ function getSupportStatusLabel(
     closed: ["supportStatusClosed", "Encerrado"],
   };
   const [key, fallback] = labels[status] || labels.open;
-  return translate(t, key, fallback);
+  return translateExisting(t, key, fallback);
 }
 
 function getSupportTypeLabel(t: TranslateFunction, type: SupportConversationType) {
-  const labels: Record<SupportConversationType, [TranslationKey, string]> = {
+  const labels: Record<SupportConversationType, [string, string]> = {
     bug: ["supportTypeBug", "Bug"],
     profile_correction: ["supportTypeProfileCorrection", "Correção de perfil"],
     claim_profile: ["supportTypeClaimProfile", "Reivindicação"],
@@ -213,7 +218,7 @@ function getSupportTypeLabel(t: TranslateFunction, type: SupportConversationType
     other: ["supportTypeOther", "Outro"],
   };
   const [key, fallback] = labels[type] || labels.other;
-  return translate(t, key, fallback);
+  return translateExisting(t, key, fallback);
 }
 
 function createSlug(value: string) {
@@ -426,7 +431,7 @@ type SupportMessage = {
 
 const SUPPORT_STATUS_FILTERS: {
   id: SupportFilter;
-  labelKey: TranslationKey;
+  labelKey: string;
   fallback: string;
 }[] = [
   { id: "all", labelKey: "adminConversationFilterAll", fallback: "Todas" },
@@ -2234,7 +2239,7 @@ if (!response.ok) {
                         : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
                     }`}
                   >
-                    <span>{translate(t, tab.labelKey as TranslationKey, tab.fallback)}</span>
+                    <span>{translateExisting(t, tab.labelKey, tab.fallback)}</span>
                     {counter !== null && (
                       <span
                         className={`ml-2 rounded-full px-2 py-0.5 text-xs ${

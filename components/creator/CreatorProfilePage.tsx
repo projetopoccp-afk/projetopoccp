@@ -45,6 +45,11 @@ import type {
 
 type TranslationKey = Parameters<typeof translate>[1];
 
+function translateExisting(t: unknown, key: string, fallback: string) {
+  const value = (t as Record<string, string | undefined>)[key];
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
 type CreatorProfilePageProps = {
   username: string;
   startInEditMode?: boolean;
@@ -907,7 +912,7 @@ type SupportMessageRow = {
 
 const SUPPORT_CONVERSATION_TYPES: {
   id: SupportConversationType;
-  labelKey: TranslationKey;
+  labelKey: string;
   fallback: string;
 }[] = [
   { id: "bug", labelKey: "supportTypeBug", fallback: "Reportar bug" },
@@ -934,7 +939,7 @@ function getSupportStatusLabel(
   t: (key: any) => string,
   status: SupportConversationStatus,
 ) {
-  const labels: Record<SupportConversationStatus, [TranslationKey, string]> = {
+  const labels: Record<SupportConversationStatus, [string, string]> = {
     open: ["supportStatusOpen", "Aberto"],
     waiting_admin: ["supportStatusWaitingAdmin", "Aguardando equipe"],
     waiting_user: ["supportStatusWaitingUser", "Aguardando criador"],
@@ -942,7 +947,7 @@ function getSupportStatusLabel(
     closed: ["supportStatusClosed", "Encerrado"],
   };
   const [key, fallback] = labels[status] || labels.open;
-  return translate(t, key, fallback);
+  return translateExisting(t, key, fallback);
 }
 
 function getSupportTypeLabel(
@@ -950,7 +955,7 @@ function getSupportTypeLabel(
   type: SupportConversationType,
 ) {
   const item = SUPPORT_CONVERSATION_TYPES.find((option) => option.id === type);
-  return item ? translate(t, item.labelKey as TranslationKey, item.fallback) : translate(t, "supportTypeOther", "Outro assunto");
+  return item ? translateExisting(t, item.labelKey, item.fallback) : translateExisting(t, "supportTypeOther", "Outro assunto");
 }
 
 type SupportChatModalProps = {
@@ -1095,10 +1100,10 @@ function SupportChatModal({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">
-                {translate(t, "supportCardpocTeam", "Equipe Cardpoc")}
+                {translateExisting(t, "supportCardpocTeam", "Equipe Cardpoc")}
               </p>
               <h3 className="mt-2 text-xl font-black">
-                {translate(t, "supportConversations", "Conversas")}
+                {translateExisting(t, "supportConversations", "Conversas")}
               </h3>
             </div>
             <button
@@ -1120,19 +1125,19 @@ function SupportChatModal({
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-4 py-3 text-sm font-black text-cyan-50 transition hover:bg-cyan-300/25"
           >
             <Plus className="h-4 w-4" />
-            {translate(t, "supportNewConversation", "Nova conversa")}
+            {translateExisting(t, "supportNewConversation", "Nova conversa")}
           </button>
 
           <div className="no-scrollbar mt-5 flex max-h-[56vh] flex-col gap-3 overflow-y-auto pr-1">
             {loading ? (
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/50">
-                {translate(t, "supportLoading", "Carregando conversas...")}
+                {translateExisting(t, "supportLoading", "Carregando conversas...")}
               </div>
             ) : null}
 
             {!loading && conversations.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-white/55">
-                {translate(t, "supportEmpty", "Você ainda não abriu nenhuma conversa sobre este perfil.")}
+                {translateExisting(t, "supportEmpty", "Você ainda não abriu nenhuma conversa sobre este perfil.")}
               </div>
             ) : null}
 
@@ -1171,8 +1176,8 @@ function SupportChatModal({
             </p>
             <h4 className="mt-1 text-lg font-black">
               {creating
-                ? translate(t, "supportStartConversation", "Abrir conversa")
-                : selectedConversation?.subject || translate(t, "supportSelectConversation", "Selecione uma conversa")}
+                ? translateExisting(t, "supportStartConversation", "Abrir conversa")
+                : selectedConversation?.subject || translateExisting(t, "supportSelectConversation", "Selecione uma conversa")}
             </h4>
           </div>
 
@@ -1191,7 +1196,7 @@ function SupportChatModal({
                           : "border-white/10 bg-white/[0.035] text-white/60 hover:bg-white/[0.06]"
                       }`}
                     >
-                      {translate(t, type.labelKey as TranslationKey, type.fallback)}
+                      {translateExisting(t, type.labelKey, type.fallback)}
                     </button>
                   ))}
                 </div>
@@ -1199,14 +1204,14 @@ function SupportChatModal({
                 <input
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
-                  placeholder={translate(t, "supportSubjectPlaceholder", "Assunto da conversa")}
+                  placeholder={translateExisting(t, "supportSubjectPlaceholder", "Assunto da conversa")}
                   className="rounded-[1.2rem] border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                 />
 
                 <textarea
                   value={newMessage}
                   onChange={(event) => setNewMessage(event.target.value)}
-                  placeholder={translate(t, "supportMessagePlaceholder", "Explique o que aconteceu ou o que precisa ser ajustado...")}
+                  placeholder={translateExisting(t, "supportMessagePlaceholder", "Explique o que aconteceu ou o que precisa ser ajustado...")}
                   rows={7}
                   className="rounded-[1.2rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                 />
@@ -1218,7 +1223,7 @@ function SupportChatModal({
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-5 py-3 text-sm font-black text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {translate(t, "supportSendToTeam", "Enviar para a equipe")}
+                  {translateExisting(t, "supportSendToTeam", "Enviar para a equipe")}
                 </button>
               </div>
             </div>
@@ -1227,7 +1232,7 @@ function SupportChatModal({
               <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto p-5">
                 {messages.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translate(t, "supportNoMessages", "Nenhuma mensagem nesta conversa.")}
+                    {translateExisting(t, "supportNoMessages", "Nenhuma mensagem nesta conversa.")}
                   </div>
                 ) : null}
 
@@ -1241,7 +1246,7 @@ function SupportChatModal({
                           : "border-white/10 bg-white/[0.055] text-white/75"
                       }`}>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
-                          {isUser ? translate(t, "supportYou", "Você") : translate(t, "supportTeam", "Equipe Cardpoc")}
+                          {isUser ? translateExisting(t, "supportYou", "Você") : translateExisting(t, "supportTeam", "Equipe Cardpoc")}
                         </p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{message.message}</p>
                       </div>
@@ -1253,14 +1258,14 @@ function SupportChatModal({
               <div className="border-t border-white/10 p-4">
                 {selectedConversation?.status === "closed" ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/55">
-                    {translate(t, "supportClosedConversation", "Esta conversa foi encerrada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.")}
+                    {translateExisting(t, "supportClosedConversation", "Esta conversa foi encerrada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.")}
                   </div>
                 ) : (
                   <div className="flex gap-3">
                     <textarea
                       value={reply}
                       onChange={(event) => setReply(event.target.value)}
-                      placeholder={translate(t, "supportReplyPlaceholder", "Escreva uma resposta...")}
+                      placeholder={translateExisting(t, "supportReplyPlaceholder", "Escreva uma resposta...")}
                       rows={2}
                       className="min-h-[48px] flex-1 resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                     />
