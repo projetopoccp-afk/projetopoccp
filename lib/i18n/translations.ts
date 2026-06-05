@@ -598,6 +598,7 @@ export const translations = {
     homePagePillarCards: "Cartas Digitais",
     homePageGuideOpenAria: "Entender o Cardpoc",
     homePageGuideTooltip: "O que é o Cardpoc?",
+    homePageGuideBubble: "Dúvidas?",
     homePageGuideBadge: "Central de ajuda",
     homePageGuideTitle: "Central de Ajuda Cardpoc",
     homePageGuideDescription:
@@ -1606,6 +1607,7 @@ export const translations = {
     homePagePillarCards: "Digital Cards",
     homePageGuideOpenAria: "Understand Cardpoc",
     homePageGuideTooltip: "What is Cardpoc?",
+    homePageGuideBubble: "Questions?",
     homePageGuideBadge: "Help center",
     homePageGuideTitle: "Cardpoc Help Center",
     homePageGuideDescription:
@@ -2607,6 +2609,7 @@ export const translations = {
     homePagePillarCards: "Cartas Digitales",
     homePageGuideOpenAria: "Entender Cardpoc",
     homePageGuideTooltip: "¿Qué es Cardpoc?",
+    homePageGuideBubble: "¿Dudas?",
     homePageGuideBadge: "Centro de ayuda",
     homePageGuideTitle: "Centro de Ayuda Cardpoc",
     homePageGuideDescription:

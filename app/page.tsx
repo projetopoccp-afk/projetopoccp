@@ -24,6 +24,7 @@ export default function HomePage() {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [showCardpocGuide, setShowCardpocGuide] = useState(false);
+  const [hasSeenCardpocGuide, setHasSeenCardpocGuide] = useState(false);
   const [guideSearch, setGuideSearch] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [customFaqArticles, setCustomFaqArticles] = useState<FaqArticle[]>([]);
@@ -51,6 +52,17 @@ export default function HomePage() {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  useEffect(() => {
+    setHasSeenCardpocGuide(localStorage.getItem("cardpoc-help-seen") === "true");
+  }, []);
+
+  function openCardpocGuide() {
+    localStorage.setItem("cardpoc-help-seen", "true");
+    setHasSeenCardpocGuide(true);
+    setShowCardpocGuide(true);
+  }
+
 
   useEffect(() => {
     let mounted = true;
@@ -294,15 +306,6 @@ export default function HomePage() {
             )}
           </p>
 
-          <button
-            type="button"
-            onClick={() => setShowCardpocGuide(true)}
-            className="mt-5 inline-flex items-center gap-3 rounded-full border border-purple-300/25 bg-white/[0.035] px-5 py-2.5 text-xs font-black uppercase tracking-[0.2em] text-white/80 shadow-[0_0_26px_rgba(168,85,247,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-50"
-          >
-            <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.95)]" />
-            {translate(t, "homePageNewHereButton", "É novo aqui?")}
-          </button>
-
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
             <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
               {translate(t, "homePagePillarLives", "Lives")}
@@ -322,18 +325,31 @@ export default function HomePage() {
 
       <CreatorGrid search={search} />
 
-      <button
-        type="button"
-        onClick={() => setShowCardpocGuide(true)}
-        className="fixed bottom-5 right-5 z-40 group flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/40 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.25)]"
-        aria-label={translate(t, "homePageGuideOpenAria", "Entender o Cardpoc")}
-      >
-        <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-400/10 via-transparent to-purple-500/10 opacity-80" />
-        <span className="relative text-lg">◈</span>
-        <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-full border border-white/10 bg-black/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/70 shadow-2xl backdrop-blur-xl group-hover:block">
-          {translate(t, "homePageGuideTooltip", "O que é o Cardpoc?")}
-        </span>
-      </button>
+      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+        {!hasSeenCardpocGuide && (
+          <button
+            type="button"
+            onClick={openCardpocGuide}
+            className="relative rounded-full border border-amber-200/35 bg-amber-300 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-black shadow-[0_0_26px_rgba(251,191,36,0.22)] transition hover:-translate-y-0.5 hover:bg-amber-200"
+          >
+            {translate(t, "homePageGuideBubble", "Dúvidas?")}
+            <span className="absolute -bottom-1.5 right-5 h-3 w-3 rotate-45 border-b border-r border-amber-200/35 bg-amber-300" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={openCardpocGuide}
+          className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/40 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.25)]"
+          aria-label={translate(t, "homePageGuideOpenAria", "Entender o Cardpoc")}
+        >
+          <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-400/10 via-transparent to-purple-500/10 opacity-80" />
+          <span className="relative text-lg">◈</span>
+          <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-full border border-white/10 bg-black/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/70 shadow-2xl backdrop-blur-xl group-hover:block">
+            {translate(t, "homePageGuideTooltip", "O que é o Cardpoc?")}
+          </span>
+        </button>
+      </div>
 
       {showCardpocGuide && (
         <div
