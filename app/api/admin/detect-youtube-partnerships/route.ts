@@ -13,6 +13,8 @@ type YouTubeVideo = {
 type DetectedPartnership = {
   brandName: string;
   partnershipType: string;
+  sourceChannel?: string;
+  sourceThumbnail?: string;
   detectionReason: string;
   confidenceScore: number;
   evidenceText: string;
@@ -257,14 +259,25 @@ async function fetchRecentVideosFromUploadsPlaylist(
   }
 
   return (videosData.items ?? []).map((item: any) => ({
-    id: item.id,
-    title: item.snippet?.title ?? "",
-    description: item.snippet?.description ?? "",
-    publishedAt: item.snippet?.publishedAt,
-    hasPaidProductPlacement:
-      item.paidProductPlacementDetails?.hasPaidProductPlacement === true,
-    url: `https://www.youtube.com/watch?v=${item.id}`,
-  }));
+  id: item.id,
+  title: item.snippet?.title ?? "",
+  description: item.snippet?.description ?? "",
+  publishedAt: item.snippet?.publishedAt,
+
+  sourceChannel: item.snippet?.channelTitle ?? "",
+
+  sourceThumbnail:
+    item.snippet?.thumbnails?.maxres?.url ||
+    item.snippet?.thumbnails?.high?.url ||
+    item.snippet?.thumbnails?.medium?.url ||
+    item.snippet?.thumbnails?.default?.url ||
+    "",
+
+  hasPaidProductPlacement:
+    item.paidProductPlacementDetails?.hasPaidProductPlacement === true,
+
+  url: `https://www.youtube.com/watch?v=${item.id}`,
+}));
 }
 
 function hasPartnershipKeyword(text: string) {
@@ -488,6 +501,10 @@ if (!isCronRequest) {
               .insert({
                 creator_id: link.creator_id,
                 brand_name: detection.brandName,
+                source_title: detection.videoTitle,
+                source_thumbnail: detection.sourceThumbnail,
+                source_channel: detection.sourceChannel,
+                source_published_at: detection.publishedAt,
                 partnership_type: detection.partnershipType,
                 source_platform: "youtube",
                 source_url: detection.sourceUrl,
