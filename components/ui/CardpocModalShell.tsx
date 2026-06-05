@@ -21,24 +21,27 @@ export function CardpocModalShell({
   return (
     <motion.div
       initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-      animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
+      animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
       exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
       transition={{ duration: 0.25 }}
       onClick={onClose}
-      className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center overflow-hidden bg-black/82 p-3 text-white sm:p-4`}
+      className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center overflow-hidden bg-black/70 p-3 text-white sm:p-4`}
     >
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.94 }}
+        initial={{ opacity: 0, y: 26, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.94 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+        exit={{ opacity: 0, y: 18, scale: 0.96 }}
+        transition={{ duration: 0.32, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className={`relative flex h-[calc(100vh-1.5rem)] max-h-[790px] w-full max-w-7xl overflow-hidden rounded-[34px] border border-white/15 bg-[radial-gradient(circle_at_top_left,rgba(236,72,153,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.14),transparent_34%),linear-gradient(135deg,#06070b_0%,#07080d_48%,#02040a_100%)] shadow-[0_0_90px_rgba(0,0,0,0.92)] ${className}`}
+        className={`relative flex h-[calc(100vh-1.5rem)] max-h-[790px] w-full max-w-7xl overflow-hidden rounded-[34px] border border-cyan-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(236,72,153,0.22),transparent_34%),radial-gradient(circle_at_85%_100%,rgba(34,211,238,0.24),transparent_36%),radial-gradient(circle_at_50%_8%,rgba(168,85,247,0.16),transparent_38%),linear-gradient(135deg,#101322_0%,#0b1020_46%,#050813_100%)] shadow-[0_0_90px_rgba(34,211,238,0.13),0_0_120px_rgba(0,0,0,0.82)] ${className}`}
       >
-        <div className="pointer-events-none absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:48px_48px]" />
-        <div className="pointer-events-none absolute left-[-80px] top-[-80px] h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[100px]" />
-        <div className="pointer-events-none absolute bottom-[-90px] right-[-90px] h-72 w-72 rounded-full bg-cyan-400/18 blur-[100px]" />
-        <div className="pointer-events-none absolute left-1/2 top-8 h-1/3 w-1/3 -translate-x-1/2 rounded-full bg-purple-500/10 blur-[120px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.34] [background-image:linear-gradient(rgba(255,255,255,0.085)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.085)_1px,transparent_1px)] [background-size:42px_42px]" />
+
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.08)_45%,rgba(0,0,0,0.42)_100%)]" />
+
+        <div className="pointer-events-none absolute left-[-70px] top-[-70px] h-80 w-80 rounded-full bg-fuchsia-500/28 blur-[95px]" />
+        <div className="pointer-events-none absolute bottom-[-80px] right-[-80px] h-80 w-80 rounded-full bg-cyan-400/26 blur-[95px]" />
+        <div className="pointer-events-none absolute left-1/2 top-4 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-500/18 blur-[115px]" />
 
         <div className={`relative z-10 h-full w-full ${contentClassName}`}>
           {children}
