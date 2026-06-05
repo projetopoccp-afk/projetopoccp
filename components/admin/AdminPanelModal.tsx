@@ -413,6 +413,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   );
   const [partnershipApprovalDraft, setPartnershipApprovalDraft] =
     useState<PartnershipApprovalDraft | null>(null);
+  const [brandEnrichmentLoading, setBrandEnrichmentLoading] = useState(false);
+  const [brandEnrichmentConfidence, setBrandEnrichmentConfidence] =
+    useState<number | null>(null);
+  const [brandEnrichmentSource, setBrandEnrichmentSource] =
+    useState<string | null>(null);
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -834,6 +839,10 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   function openPartnershipApproval(partnership: CreatorPartnership) {
     const brand = partnership.brands;
 
+    setBrandEnrichmentLoading(false);
+    setBrandEnrichmentConfidence(null);
+    setBrandEnrichmentSource(null);
+
     setPartnershipApprovalDraft({
       partnership,
       brandName: brand?.name || partnership.brand_name || "",
@@ -867,6 +876,77 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         [field]: value,
       };
     });
+  }
+
+  async function enrichBrand() {
+    if (!partnershipApprovalDraft?.brandName.trim()) return;
+
+    try {
+      setBrandEnrichmentLoading(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch("/api/admin/enrich-brand", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({
+          brandName: partnershipApprovalDraft.brandName,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.brand) {
+        throw new Error(
+          result?.error ||
+            translate(
+              t,
+              "adminBrandEnrichmentError",
+              "Não foi possível pesquisar os dados da marca.",
+            ),
+        );
+      }
+
+      setPartnershipApprovalDraft((current) =>
+        current
+          ? {
+              ...current,
+              brandName: result.brand.name || current.brandName,
+              brandLogoUrl: result.brand.logo_url || current.brandLogoUrl,
+              brandWebsiteUrl:
+                result.brand.website_url || current.brandWebsiteUrl,
+              websiteUrl:
+                current.websiteUrl || result.brand.website_url || current.websiteUrl,
+              brandDescription:
+                result.brand.description || current.brandDescription,
+            }
+          : null,
+      );
+
+      setBrandEnrichmentConfidence(
+        typeof result.brand.enrichment_confidence === "number"
+          ? result.brand.enrichment_confidence
+          : null,
+      );
+      setBrandEnrichmentSource(result.brand.enrichment_source || null);
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : translate(
+              t,
+              "adminBrandEnrichmentError",
+              "Não foi possível pesquisar os dados da marca.",
+            ),
+      );
+    } finally {
+      setBrandEnrichmentLoading(false);
+    }
   }
 
   async function approvePartnership() {
@@ -922,6 +1002,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           logo_url: partnershipApprovalDraft.brandLogoUrl.trim() || null,
           website_url: partnershipApprovalDraft.brandWebsiteUrl.trim() || null,
           description: partnershipApprovalDraft.brandDescription.trim() || null,
+          enrichment_source: brandEnrichmentSource,
+          enrichment_confidence: brandEnrichmentConfidence || 0,
+          external_logo_source: partnershipApprovalDraft.brandLogoUrl.trim()
+            ? "brand_enrichment"
+            : null,
+          last_enriched_at: brandEnrichmentConfidence !== null
+            ? new Date().toISOString()
+            : null,
         })
         .eq("id", existingBrand.id);
 
@@ -939,6 +1027,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           logo_url: partnershipApprovalDraft.brandLogoUrl.trim() || null,
           website_url: partnershipApprovalDraft.brandWebsiteUrl.trim() || null,
           description: partnershipApprovalDraft.brandDescription.trim() || null,
+          enrichment_source: brandEnrichmentSource,
+          enrichment_confidence: brandEnrichmentConfidence || 0,
+          external_logo_source: partnershipApprovalDraft.brandLogoUrl.trim()
+            ? "brand_enrichment"
+            : null,
+          last_enriched_at: brandEnrichmentConfidence !== null
+            ? new Date().toISOString()
+            : null,
         })
         .select("id")
         .single();
@@ -999,6 +1095,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     });
 
     setPartnershipApprovalDraft(null);
+    setBrandEnrichmentConfidence(null);
+    setBrandEnrichmentSource(null);
     setActionLoading(null);
     await loadPartnerships();
     await loadLogs();
@@ -3610,7 +3708,11 @@ if (!response.ok) {
 
                       <button
                         type="button"
-                        onClick={() => setPartnershipApprovalDraft(null)}
+                        onClick={() => {
+                          setPartnershipApprovalDraft(null);
+                          setBrandEnrichmentConfidence(null);
+                          setBrandEnrichmentSource(null);
+                        }}
                         className="rounded-full border border-white/10 bg-white/[0.04] p-3 text-white/60 transition hover:bg-white/[0.08] hover:text-white"
                       >
                         <X size={18} />
@@ -3638,6 +3740,24 @@ if (!response.ok) {
                             "Prévia da logo da marca. Você pode deixar vazio e completar depois.",
                           )}
                         </p>
+
+                        <button
+                          type="button"
+                          onClick={enrichBrand}
+                          disabled={brandEnrichmentLoading}
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Search size={16} />
+                          {brandEnrichmentLoading
+                            ? translate(t, "adminBrandSearching", "Pesquisando marca...")
+                            : translate(t, "adminBrandSearch", "Pesquisar marca")}
+                        </button>
+
+                        {brandEnrichmentConfidence !== null && (
+                          <p className="mt-3 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100">
+                            {translate(t, "adminBrandConfidence", "Confiança da busca")}: {brandEnrichmentConfidence}%
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
@@ -3804,7 +3924,11 @@ if (!response.ok) {
                     <div className="mt-6 flex flex-wrap justify-end gap-3">
                       <button
                         type="button"
-                        onClick={() => setPartnershipApprovalDraft(null)}
+                        onClick={() => {
+                          setPartnershipApprovalDraft(null);
+                          setBrandEnrichmentConfidence(null);
+                          setBrandEnrichmentSource(null);
+                        }}
                         className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.08]"
                       >
                         {translate(t, "cancel", "Cancelar")}
