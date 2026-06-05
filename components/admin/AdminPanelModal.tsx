@@ -27,6 +27,8 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
 
+type TranslationKey = Parameters<ReturnType<typeof useLanguage>["t"]>[0];
+
 type AdminPanelModalProps = {
   open: boolean;
   onClose: () => void;
@@ -46,7 +48,7 @@ type AdminPackType =
 type AdminRewardType = "card" | "pack";
 type AdminRewardTarget = "user" | "all_users";
 
-const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
+const ADMIN_TABS: { id: Tab; labelKey: TranslationKey; fallback: string }[] = [
   { id: "requests", labelKey: "adminRequests", fallback: "Solicitações" },
   { id: "users", labelKey: "adminUsers", fallback: "Usuários" },
   { id: "creators", labelKey: "adminProfiles", fallback: "Perfis" },
@@ -60,9 +62,9 @@ const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
 
 const GRANT_RARITIES: {
   id: GrantRarity;
-  labelKey: string;
+  labelKey: TranslationKey;
   fallback: string;
-  descriptionKey: string;
+  descriptionKey: TranslationKey;
   descriptionFallback: string;
 }[] = [
   {
@@ -104,9 +106,9 @@ const GRANT_RARITIES: {
 
 const ADMIN_PACK_TYPES: {
   id: AdminPackType;
-  labelKey: string;
+  labelKey: TranslationKey;
   fallback: string;
-  descriptionKey: string;
+  descriptionKey: TranslationKey;
   descriptionFallback: string;
 }[] = [
   {
@@ -190,7 +192,7 @@ function getSupportStatusLabel(
   t: TranslateFunction,
   status: SupportConversationStatus,
 ) {
-  const labels: Record<SupportConversationStatus, [string, string]> = {
+  const labels: Record<SupportConversationStatus, [TranslationKey, string]> = {
     open: ["supportStatusOpen", "Aberto"],
     waiting_admin: ["supportStatusWaitingAdmin", "Aguardando equipe"],
     waiting_user: ["supportStatusWaitingUser", "Aguardando criador"],
@@ -202,7 +204,7 @@ function getSupportStatusLabel(
 }
 
 function getSupportTypeLabel(t: TranslateFunction, type: SupportConversationType) {
-  const labels: Record<SupportConversationType, [string, string]> = {
+  const labels: Record<SupportConversationType, [TranslationKey, string]> = {
     bug: ["supportTypeBug", "Bug"],
     profile_correction: ["supportTypeProfileCorrection", "Correção de perfil"],
     claim_profile: ["supportTypeClaimProfile", "Reivindicação"],
@@ -424,7 +426,7 @@ type SupportMessage = {
 
 const SUPPORT_STATUS_FILTERS: {
   id: SupportFilter;
-  labelKey: string;
+  labelKey: TranslationKey;
   fallback: string;
 }[] = [
   { id: "all", labelKey: "adminConversationFilterAll", fallback: "Todas" },

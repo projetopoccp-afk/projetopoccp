@@ -43,6 +43,8 @@ import type {
   SocialPlatform,
 } from "@/types/creator";
 
+type TranslationKey = Parameters<typeof translate>[1];
+
 type CreatorProfilePageProps = {
   username: string;
   startInEditMode?: boolean;
@@ -905,7 +907,7 @@ type SupportMessageRow = {
 
 const SUPPORT_CONVERSATION_TYPES: {
   id: SupportConversationType;
-  labelKey: string;
+  labelKey: TranslationKey;
   fallback: string;
 }[] = [
   { id: "bug", labelKey: "supportTypeBug", fallback: "Reportar bug" },
@@ -932,7 +934,7 @@ function getSupportStatusLabel(
   t: (key: any) => string,
   status: SupportConversationStatus,
 ) {
-  const labels: Record<SupportConversationStatus, [string, string]> = {
+  const labels: Record<SupportConversationStatus, [TranslationKey, string]> = {
     open: ["supportStatusOpen", "Aberto"],
     waiting_admin: ["supportStatusWaitingAdmin", "Aguardando equipe"],
     waiting_user: ["supportStatusWaitingUser", "Aguardando criador"],
