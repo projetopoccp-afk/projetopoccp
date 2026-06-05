@@ -8,6 +8,7 @@ import {
   Gem,
   Heart,
   Loader2,
+  Medal,
   PackageOpen,
   Sparkles,
   Star,
