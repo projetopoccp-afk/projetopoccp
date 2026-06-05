@@ -725,6 +725,29 @@ export const translations = {
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartilhamentos",
     creatorProfileAboutTitle: "Sobre o criador",
+    creatorProfilePartnershipsTitle: "Marcas trabalhadas",
+    creatorProfilePartnershipsDescription:
+      "Parcerias, patrocínios, campanhas e marcas verificadas no Cardpoc.",
+    creatorProfilePartnershipSince: "Desde",
+    creatorProfilePartnershipWebsite: "Site",
+    creatorProfilePartnershipEvidence: "Ver vídeo",
+    creatorProfileNoPartnerships:
+      "Nenhuma parceria verificada publicada ainda.",
+    creatorProfileManualPartnershipTitle: "Adicionar parceria manual",
+    creatorProfileManualPartnershipDescription:
+      "Parcerias adicionadas pelo criador aparecem publicamente sem passar pela fila automática.",
+    creatorProfileManualPartnershipBrand: "Nome da marca",
+    creatorProfileManualPartnershipCampaign: "Campanha ou ação",
+    creatorProfileManualPartnershipPublicDescription:
+      "Descrição pública da parceria",
+    creatorProfileManualPartnershipSave: "Adicionar parceria",
+    creatorProfileManualPartnershipRequired:
+      "Informe o nome da marca para adicionar a parceria.",
+    creatorProfilePartnershipTypeSponsorship: "Patrocínio",
+    creatorProfilePartnershipTypeAmbassador: "Embaixador",
+    creatorProfilePartnershipTypeCampaign: "Campanha",
+    creatorProfilePartnershipTypeEvent: "Evento",
+    creatorProfilePartnershipTypePartnership: "Parceria",
     creatorProfileFeaturedClips: "Clipes em destaque",
     creatorProfileNoClips:
       "Este criador ainda não possui clipes públicos em destaque.",
@@ -1613,6 +1636,29 @@ export const translations = {
     creatorProfileFollowers: "Followers",
     creatorProfileShares: "Shares",
     creatorProfileAboutTitle: "About the creator",
+    creatorProfilePartnershipsTitle: "Brands worked with",
+    creatorProfilePartnershipsDescription:
+      "Partnerships, sponsorships, campaigns and brands verified on Cardpoc.",
+    creatorProfilePartnershipSince: "Since",
+    creatorProfilePartnershipWebsite: "Website",
+    creatorProfilePartnershipEvidence: "View video",
+    creatorProfileNoPartnerships:
+      "No verified partnerships published yet.",
+    creatorProfileManualPartnershipTitle: "Add manual partnership",
+    creatorProfileManualPartnershipDescription:
+      "Partnerships added by the creator appear publicly without entering the automatic review queue.",
+    creatorProfileManualPartnershipBrand: "Brand name",
+    creatorProfileManualPartnershipCampaign: "Campaign or action",
+    creatorProfileManualPartnershipPublicDescription:
+      "Public partnership description",
+    creatorProfileManualPartnershipSave: "Add partnership",
+    creatorProfileManualPartnershipRequired:
+      "Enter the brand name to add the partnership.",
+    creatorProfilePartnershipTypeSponsorship: "Sponsorship",
+    creatorProfilePartnershipTypeAmbassador: "Ambassador",
+    creatorProfilePartnershipTypeCampaign: "Campaign",
+    creatorProfilePartnershipTypeEvent: "Event",
+    creatorProfilePartnershipTypePartnership: "Partnership",
     creatorProfileFeaturedClips: "Featured clips",
     creatorProfileNoClips:
       "This creator does not have public featured clips yet.",
@@ -2504,6 +2550,29 @@ export const translations = {
     creatorProfileFollowers: "Seguidores",
     creatorProfileShares: "Compartidos",
     creatorProfileAboutTitle: "Sobre el creador",
+    creatorProfilePartnershipsTitle: "Marcas trabajadas",
+    creatorProfilePartnershipsDescription:
+      "Colaboraciones, patrocinios, campañas y marcas verificadas en Cardpoc.",
+    creatorProfilePartnershipSince: "Desde",
+    creatorProfilePartnershipWebsite: "Sitio",
+    creatorProfilePartnershipEvidence: "Ver video",
+    creatorProfileNoPartnerships:
+      "Aún no hay colaboraciones verificadas publicadas.",
+    creatorProfileManualPartnershipTitle: "Añadir colaboración manual",
+    creatorProfileManualPartnershipDescription:
+      "Las colaboraciones añadidas por el creador aparecen públicamente sin pasar por la fila automática.",
+    creatorProfileManualPartnershipBrand: "Nombre de la marca",
+    creatorProfileManualPartnershipCampaign: "Campaña o acción",
+    creatorProfileManualPartnershipPublicDescription:
+      "Descripción pública de la colaboración",
+    creatorProfileManualPartnershipSave: "Añadir colaboración",
+    creatorProfileManualPartnershipRequired:
+      "Informa el nombre de la marca para añadir la colaboración.",
+    creatorProfilePartnershipTypeSponsorship: "Patrocinio",
+    creatorProfilePartnershipTypeAmbassador: "Embajador",
+    creatorProfilePartnershipTypeCampaign: "Campaña",
+    creatorProfilePartnershipTypeEvent: "Evento",
+    creatorProfilePartnershipTypePartnership: "Colaboración",
     creatorProfileFeaturedClips: "Clips destacados",
     creatorProfileNoClips:
       "Este creador aún no tiene clips públicos destacados.",

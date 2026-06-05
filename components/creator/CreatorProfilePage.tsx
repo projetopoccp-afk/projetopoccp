@@ -106,6 +106,47 @@ type AutoClip = {
   view_count?: number | null;
 };
 
+type PartnershipBrand = {
+  id: string;
+  name: string;
+  slug: string | null;
+  logo_url: string | null;
+  website_url: string | null;
+  description: string | null;
+};
+
+type CreatorPartnershipRow = {
+  id: string;
+  creator_id: string;
+  brand_id: string | null;
+  brand_name: string;
+  partnership_type: string | null;
+  source_platform: string | null;
+  source_url: string | null;
+  source_title: string | null;
+  source_thumbnail: string | null;
+  source_channel: string | null;
+  source_published_at: string | null;
+  campaign_name: string | null;
+  public_description: string | null;
+  website_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string | null;
+  is_active: boolean | null;
+  brands?: PartnershipBrand | PartnershipBrand[] | null;
+};
+
+type ManualPartnershipDraft = {
+  brandName: string;
+  partnershipType: string;
+  campaignName: string;
+  websiteUrl: string;
+  publicDescription: string;
+  startDate: string;
+  endDate: string;
+};
+
 type LiveStatus = {
   platform?: string;
   username?: string;
@@ -222,6 +263,97 @@ function formatNumber(value: number) {
     notation: value >= 10000 ? "compact" : "standard",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatProfileDate(value?: string | null) {
+  if (!value) return "";
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) return "";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsedDate);
+}
+
+function getPartnershipBrand(partnership: CreatorPartnershipRow) {
+  if (Array.isArray(partnership.brands)) {
+    return partnership.brands[0] || null;
+  }
+
+  return partnership.brands || null;
+}
+
+function getPartnershipDateValue(partnership: CreatorPartnershipRow) {
+  return (
+    partnership.start_date ||
+    partnership.source_published_at ||
+    partnership.end_date ||
+    ""
+  );
+}
+
+function getPartnershipTimestamp(partnership: CreatorPartnershipRow) {
+  const dateValue = getPartnershipDateValue(partnership);
+  const timestamp = dateValue ? new Date(dateValue).getTime() : 0;
+
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function getPartnershipDisplayName(partnership: CreatorPartnershipRow) {
+  return getPartnershipBrand(partnership)?.name || partnership.brand_name;
+}
+
+function getPartnershipLogo(partnership: CreatorPartnershipRow) {
+  return getPartnershipBrand(partnership)?.logo_url || null;
+}
+
+function getPartnershipWebsite(partnership: CreatorPartnershipRow) {
+  return (
+    partnership.website_url ||
+    getPartnershipBrand(partnership)?.website_url ||
+    null
+  );
+}
+
+function getPartnershipDescription(partnership: CreatorPartnershipRow) {
+  return (
+    partnership.public_description ||
+    getPartnershipBrand(partnership)?.description ||
+    ""
+  );
+}
+
+function getPartnershipTypeLabel(type?: string | null) {
+  const normalizedType = String(type || "").toLowerCase();
+
+  const labels: Record<string, string> = {
+    sponsorship: "Patrocínio",
+    sponsor: "Patrocínio",
+    ambassador: "Embaixador",
+    ambassadorship: "Embaixador",
+    campaign: "Campanha",
+    event: "Evento",
+    partnership: "Parceria",
+    affiliate: "Afiliado",
+  };
+
+  return labels[normalizedType] || "Parceria";
+}
+
+function createEmptyManualPartnershipDraft(): ManualPartnershipDraft {
+  return {
+    brandName: "",
+    partnershipType: "sponsorship",
+    campaignName: "",
+    websiteUrl: "",
+    publicDescription: "",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: "",
+  };
 }
 
 function getPlatformLabel(platform: string) {
@@ -728,6 +860,11 @@ export function CreatorProfilePage({
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [clips, setClips] = useState<AutoClip[]>([]);
   const [clipsLoading, setClipsLoading] = useState(false);
+  const [partnerships, setPartnerships] = useState<CreatorPartnershipRow[]>([]);
+  const [manualPartnershipDraft, setManualPartnershipDraft] =
+    useState<ManualPartnershipDraft>(() => createEmptyManualPartnershipDraft());
+  const [manualPartnershipSaving, setManualPartnershipSaving] = useState(false);
+  const [manualPartnershipError, setManualPartnershipError] = useState<string | null>(null);
   const [stats, setStats] = useState<CreatorStats>({
     views: 0,
     followers: 0,
@@ -873,6 +1010,7 @@ export function CreatorProfilePage({
         setProfile(null);
         setSocialLinks([]);
         setClips([]);
+        setPartnerships([]);
         setLiveStatus({});
         setStats({
           views: 0,
@@ -891,6 +1029,7 @@ export function CreatorProfilePage({
         { data: socialData },
         { count: viewCount },
         { count: followerCount },
+        { data: partnershipData },
       ] = await Promise.all([
         supabase
           .from("creator_social_links")
@@ -905,11 +1044,51 @@ export function CreatorProfilePage({
           .from("creator_followers")
           .select("id", { count: "exact", head: true })
           .eq("creator_id", typedProfile.id),
+        supabase
+          .from("creator_partnerships")
+          .select(
+            `
+            id,
+            creator_id,
+            brand_id,
+            brand_name,
+            partnership_type,
+            source_platform,
+            source_url,
+            source_title,
+            source_thumbnail,
+            source_channel,
+            source_published_at,
+            campaign_name,
+            public_description,
+            website_url,
+            start_date,
+            end_date,
+            status,
+            is_active,
+            brands (
+              id,
+              name,
+              slug,
+              logo_url,
+              website_url,
+              description
+            )
+          `,
+          )
+          .eq("creator_id", typedProfile.id)
+          .eq("is_active", true)
+          .in("status", ["verified", "manual"]),
       ]);
 
       if (cancelled) return;
 
       setSocialLinks((socialData || []) as SocialLink[]);
+      setPartnerships(((partnershipData || []) as CreatorPartnershipRow[]).sort(
+        (partnershipA, partnershipB) =>
+          getPartnershipTimestamp(partnershipB) -
+          getPartnershipTimestamp(partnershipA),
+      ));
       setStats({
         views: viewCount || 0,
         followers: followerCount || 0,
@@ -922,6 +1101,7 @@ export function CreatorProfilePage({
       loadCreatorProfile();
     } else {
       setProfile(null);
+      setPartnerships([]);
       setLoading(false);
     }
 
@@ -1280,6 +1460,27 @@ export function CreatorProfilePage({
     return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
   });
 
+  const visiblePartnerships = partnerships
+    .filter((partnership) =>
+      Boolean(
+        partnership.is_active !== false &&
+          ["verified", "manual"].includes(String(partnership.status || "")),
+      ),
+    )
+    .sort(
+      (partnershipA, partnershipB) =>
+        getPartnershipTimestamp(partnershipB) -
+        getPartnershipTimestamp(partnershipA),
+    )
+    .slice(0, 12);
+
+  const partnershipHistoryCount = partnerships.filter((partnership) =>
+    Boolean(
+      partnership.is_active !== false &&
+        ["verified", "manual"].includes(String(partnership.status || "")),
+    ),
+  ).length;
+
   async function refreshCreatorProfile() {
     if (!decodedUsername) return;
 
@@ -1326,6 +1527,7 @@ export function CreatorProfilePage({
       { data: socialData },
       { count: viewCount },
       { count: followerCount },
+      { data: partnershipData },
     ] = await Promise.all([
       supabase
         .from("creator_social_links")
@@ -1340,9 +1542,49 @@ export function CreatorProfilePage({
         .from("creator_followers")
         .select("id", { count: "exact", head: true })
         .eq("creator_id", typedProfile.id),
+      supabase
+        .from("creator_partnerships")
+        .select(
+          `
+          id,
+          creator_id,
+          brand_id,
+          brand_name,
+          partnership_type,
+          source_platform,
+          source_url,
+          source_title,
+          source_thumbnail,
+          source_channel,
+          source_published_at,
+          campaign_name,
+          public_description,
+          website_url,
+          start_date,
+          end_date,
+          status,
+          is_active,
+          brands (
+            id,
+            name,
+            slug,
+            logo_url,
+            website_url,
+            description
+          )
+        `,
+        )
+        .eq("creator_id", typedProfile.id)
+        .eq("is_active", true)
+        .in("status", ["verified", "manual"]),
     ]);
 
     setSocialLinks((socialData || []) as SocialLink[]);
+    setPartnerships(((partnershipData || []) as CreatorPartnershipRow[]).sort(
+      (partnershipA, partnershipB) =>
+        getPartnershipTimestamp(partnershipB) -
+        getPartnershipTimestamp(partnershipA),
+    ));
     setStats({
       views: viewCount || 0,
       followers: followerCount || 0,
@@ -1434,6 +1676,73 @@ export function CreatorProfilePage({
     if (startInEditMode) {
       router.replace(creatorPublicPath);
     }
+  }
+
+  function handleManualPartnershipDraftChange(
+    field: keyof ManualPartnershipDraft,
+    value: string,
+  ) {
+    setManualPartnershipDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    setManualPartnershipError(null);
+  }
+
+  async function handleAddManualPartnership() {
+    if (!profile || !currentUserId || !canManageProfile) return;
+
+    const brandName = manualPartnershipDraft.brandName.trim();
+
+    if (!brandName) {
+      setManualPartnershipError(
+        translate(
+          t,
+          "creatorProfileManualPartnershipRequired",
+          "Informe o nome da marca para adicionar a parceria.",
+        ),
+      );
+      return;
+    }
+
+    setManualPartnershipSaving(true);
+    setManualPartnershipError(null);
+
+    const { data: matchingBrand } = await supabase
+      .from("brands")
+      .select("id")
+      .ilike("name", brandName)
+      .maybeSingle();
+
+    const { error } = await supabase.from("creator_partnerships").insert({
+      creator_id: profile.id,
+      brand_id: matchingBrand?.id || null,
+      brand_name: brandName,
+      partnership_type: manualPartnershipDraft.partnershipType || "sponsorship",
+      source_platform: "manual",
+      source_url: manualPartnershipDraft.websiteUrl.trim() || null,
+      website_url: manualPartnershipDraft.websiteUrl.trim() || null,
+      campaign_name: manualPartnershipDraft.campaignName.trim() || null,
+      public_description:
+        manualPartnershipDraft.publicDescription.trim() || null,
+      start_date: manualPartnershipDraft.startDate || null,
+      end_date: manualPartnershipDraft.endDate || null,
+      confidence_score: 100,
+      detection_reason: "manual_creator_submission",
+      status: "manual",
+      is_active: true,
+      created_by: currentUserId,
+    });
+
+    if (error) {
+      setManualPartnershipSaving(false);
+      setManualPartnershipError(error.message);
+      return;
+    }
+
+    setManualPartnershipDraft(createEmptyManualPartnershipDraft());
+    setManualPartnershipSaving(false);
+    await refreshCreatorProfile();
   }
 
   async function handleSaveProfileEdit() {
@@ -2359,7 +2668,7 @@ export function CreatorProfilePage({
 
         <section className="mt-8">
           <div className="space-y-6">
-            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-8">
+            <article className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-5 w-5 text-cyan-200" />
                 <h2 className="text-2xl font-black tracking-tight">
@@ -2381,6 +2690,335 @@ export function CreatorProfilePage({
                   {description}
                 </p>
               )}
+            </article>
+
+            <article className="rounded-[2rem] border border-fuchsia-300/15 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-fuchsia-200" />
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight">
+                      {translate(
+                        t,
+                        "creatorProfilePartnershipsTitle",
+                        "Marcas trabalhadas",
+                      )}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-white/45">
+                      {translate(
+                        t,
+                        "creatorProfilePartnershipsDescription",
+                        "Parcerias, patrocínios, campanhas e marcas verificadas no Cardpoc.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {partnershipHistoryCount > 12 ? (
+                  <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-1 text-xs font-black text-fuchsia-100">
+                    +{partnershipHistoryCount - 12}
+                  </span>
+                ) : null}
+              </div>
+
+              {visiblePartnerships.length > 0 ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {visiblePartnerships.map((partnership) => {
+                    const brandName = getPartnershipDisplayName(partnership);
+                    const logo = getPartnershipLogo(partnership);
+                    const website = getPartnershipWebsite(partnership);
+                    const descriptionText = getPartnershipDescription(partnership);
+                    const startDate =
+                      partnership.start_date || partnership.source_published_at;
+
+                    return (
+                      <div
+                        key={partnership.id}
+                        className="group relative overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/25 p-4 transition hover:border-fuchsia-300/25 hover:bg-fuchsia-300/[0.04]"
+                      >
+                        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-fuchsia-500/10 blur-2xl" />
+
+                        <div className="relative flex items-start gap-3">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-lg font-black text-white/60">
+                            {logo ? (
+                              <img
+                                src={logo}
+                                alt={brandName}
+                                className="h-full w-full object-contain p-2"
+                              />
+                            ) : (
+                              brandName.slice(0, 2).toUpperCase()
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="truncate text-base font-black text-white">
+                                {brandName}
+                              </h3>
+                              <ShieldCheck className="h-4 w-4 shrink-0 text-cyan-200" />
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-fuchsia-100">
+                                {getPartnershipTypeLabel(
+                                  partnership.partnership_type,
+                                )}
+                              </span>
+
+                              {startDate ? (
+                                <span className="text-xs font-bold text-white/42">
+                                  {translate(
+                                    t,
+                                    "creatorProfilePartnershipSince",
+                                    "Desde",
+                                  )}{" "}
+                                  {formatProfileDate(startDate)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        {partnership.campaign_name ? (
+                          <p className="relative mt-3 line-clamp-1 text-xs font-bold text-cyan-100/70">
+                            {partnership.campaign_name}
+                          </p>
+                        ) : null}
+
+                        {descriptionText ? (
+                          <p className="relative mt-3 line-clamp-2 text-sm leading-6 text-white/55">
+                            {descriptionText}
+                          </p>
+                        ) : null}
+
+                        <div className="relative mt-4 flex flex-wrap gap-2">
+                          {website ? (
+                            <a
+                              href={website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                            >
+                              <Globe2 className="h-3.5 w-3.5" />
+                              {translate(
+                                t,
+                                "creatorProfilePartnershipWebsite",
+                                "Site",
+                              )}
+                            </a>
+                          ) : null}
+
+                          {partnership.source_url ? (
+                            <a
+                              href={partnership.source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-fuchsia-300/30 hover:text-fuchsia-100"
+                            >
+                              <PlayCircle className="h-3.5 w-3.5" />
+                              {translate(
+                                t,
+                                "creatorProfilePartnershipEvidence",
+                                "Ver vídeo",
+                              )}
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-5 text-sm leading-7 text-white/50">
+                  {translate(
+                    t,
+                    "creatorProfileNoPartnerships",
+                    "Nenhuma parceria verificada publicada ainda.",
+                  )}
+                </p>
+              )}
+
+              {isEditing && editDraft ? (
+                <div className="mt-5 rounded-[1.35rem] border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-[0.2em] text-cyan-100/80">
+                        {translate(
+                          t,
+                          "creatorProfileManualPartnershipTitle",
+                          "Adicionar parceria manual",
+                        )}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-white/45">
+                        {translate(
+                          t,
+                          "creatorProfileManualPartnershipDescription",
+                          "Parcerias adicionadas pelo criador aparecem publicamente sem passar pela fila automática.",
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <input
+                      value={manualPartnershipDraft.brandName}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "brandName",
+                          event.target.value,
+                        )
+                      }
+                      placeholder={translate(
+                        t,
+                        "creatorProfileManualPartnershipBrand",
+                        "Nome da marca",
+                      )}
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                    />
+
+                    <select
+                      value={manualPartnershipDraft.partnershipType}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "partnershipType",
+                          event.target.value,
+                        )
+                      }
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                    >
+                      <option value="sponsorship">
+                        {translate(
+                          t,
+                          "creatorProfilePartnershipTypeSponsorship",
+                          "Patrocínio",
+                        )}
+                      </option>
+                      <option value="ambassador">
+                        {translate(
+                          t,
+                          "creatorProfilePartnershipTypeAmbassador",
+                          "Embaixador",
+                        )}
+                      </option>
+                      <option value="campaign">
+                        {translate(
+                          t,
+                          "creatorProfilePartnershipTypeCampaign",
+                          "Campanha",
+                        )}
+                      </option>
+                      <option value="event">
+                        {translate(
+                          t,
+                          "creatorProfilePartnershipTypeEvent",
+                          "Evento",
+                        )}
+                      </option>
+                      <option value="partnership">
+                        {translate(
+                          t,
+                          "creatorProfilePartnershipTypePartnership",
+                          "Parceria",
+                        )}
+                      </option>
+                    </select>
+
+                    <input
+                      value={manualPartnershipDraft.campaignName}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "campaignName",
+                          event.target.value,
+                        )
+                      }
+                      placeholder={translate(
+                        t,
+                        "creatorProfileManualPartnershipCampaign",
+                        "Campanha ou ação",
+                      )}
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                    />
+
+                    <input
+                      value={manualPartnershipDraft.websiteUrl}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "websiteUrl",
+                          event.target.value,
+                        )
+                      }
+                      placeholder="https://"
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                    />
+
+                    <input
+                      type="date"
+                      value={manualPartnershipDraft.startDate}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "startDate",
+                          event.target.value,
+                        )
+                      }
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
+                    />
+
+                    <input
+                      type="date"
+                      value={manualPartnershipDraft.endDate}
+                      onChange={(event) =>
+                        handleManualPartnershipDraftChange(
+                          "endDate",
+                          event.target.value,
+                        )
+                      }
+                      className="rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
+                    />
+                  </div>
+
+                  <textarea
+                    value={manualPartnershipDraft.publicDescription}
+                    onChange={(event) =>
+                      handleManualPartnershipDraftChange(
+                        "publicDescription",
+                        event.target.value,
+                      )
+                    }
+                    rows={3}
+                    placeholder={translate(
+                      t,
+                      "creatorProfileManualPartnershipPublicDescription",
+                      "Descrição pública da parceria",
+                    )}
+                    className="mt-3 w-full resize-none rounded-[1rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                  />
+
+                  {manualPartnershipError ? (
+                    <p className="mt-3 text-sm font-bold text-red-200">
+                      {manualPartnershipError}
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleAddManualPartnership}
+                    disabled={manualPartnershipSaving}
+                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {manualPartnershipSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    {translate(
+                      t,
+                      "creatorProfileManualPartnershipSave",
+                      "Adicionar parceria",
+                    )}
+                  </button>
+                </div>
+              ) : null}
             </article>
 
             {isEditing && editDraft ? (
@@ -2547,7 +3185,7 @@ export function CreatorProfilePage({
                   )}
                 </div>
               ) : clips.length > 0 ? (
-                <div className="mt-6 space-y-7">
+                <div className="mt-5 space-y-5">
                   {clipPlatformSections.map(([platform, platformClips]) => (
                     <section key={platform}>
                       <div className="mb-3 flex items-center justify-between gap-3">
@@ -2570,21 +3208,21 @@ export function CreatorProfilePage({
                               .getElementById(
                                 `creator-profile-clips-${platform}`,
                               )
-                              ?.scrollBy({ left: -380, behavior: "smooth" });
+                              ?.scrollBy({ left: -300, behavior: "smooth" });
                           }}
-                          className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          className="absolute left-1 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
                           aria-label={translate(
                             t,
                             "creatorProfilePreviousClips",
                             "Clipes anteriores",
                           )}
                         >
-                          <ChevronLeft className="h-5 w-5" />
+                          <ChevronLeft className="h-4 w-4" />
                         </button>
 
                         <div
                           id={`creator-profile-clips-${platform}`}
-                          className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                          className="flex snap-x gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         >
                           {platformClips.map((clip) => {
                             const thumbnail =
@@ -2599,7 +3237,7 @@ export function CreatorProfilePage({
                                 href={clipHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[340px]"
+                                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.15rem] border border-white/10 bg-black/30 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04] sm:w-[270px]"
                               >
                                 <div className="aspect-video bg-white/[0.04]">
                                   {thumbnail ? (
@@ -2615,7 +3253,7 @@ export function CreatorProfilePage({
                                   )}
                                 </div>
 
-                                <div className="p-4">
+                                <div className="p-3">
                                   <div className="flex items-center justify-between gap-3">
                                     <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
                                       {getPlatformLabel(clip.platform)}
@@ -2628,7 +3266,7 @@ export function CreatorProfilePage({
                                     ) : null}
                                   </div>
 
-                                  <h3 className="mt-2 line-clamp-2 text-sm font-black leading-6 text-white">
+                                  <h3 className="mt-2 line-clamp-2 text-xs font-black leading-5 text-white sm:text-sm">
                                     {clip.title}
                                   </h3>
                                 </div>
@@ -2644,16 +3282,16 @@ export function CreatorProfilePage({
                               .getElementById(
                                 `creator-profile-clips-${platform}`,
                               )
-                              ?.scrollBy({ left: 380, behavior: "smooth" });
+                              ?.scrollBy({ left: 300, behavior: "smooth" });
                           }}
-                          className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
+                          className="absolute right-1 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/75 text-white/75 shadow-2xl backdrop-blur transition hover:border-cyan-300/30 hover:bg-cyan-300/15 hover:text-cyan-100 sm:flex"
                           aria-label={translate(
                             t,
                             "creatorProfileNextClips",
                             "Próximos clipes",
                           )}
                         >
-                          <ChevronRight className="h-5 w-5" />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     </section>
