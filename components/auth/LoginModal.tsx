@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 type LoginModalProps = {
   open: boolean;
@@ -91,33 +92,12 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   return (
     <AnimatePresence>
       {shouldShowModal && (
-        <motion.div
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(14px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[80] flex items-center justify-center overflow-hidden bg-black/84 p-4"
+        <CardpocModalShell
+          onClose={handleClose}
+          zIndexClassName="z-[80]"
+          className="h-auto max-h-[calc(100vh-2rem)] max-w-lg"
+          contentClassName="overflow-y-auto p-7 sm:p-8"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(34,211,238,0.14),transparent_38%),radial-gradient(circle_at_18%_82%,rgba(217,70,239,0.14),transparent_34%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:42px_42px] opacity-35" />
-
-          <button
-            onClick={handleClose}
-            className="absolute inset-0"
-            aria-label={tx("loginModalCloseLoginAria", "Fechar login")}
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.94 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="relative w-full max-w-lg overflow-hidden rounded-[34px] border border-white/15 bg-zinc-950/96 p-7 text-white shadow-[0_0_90px_rgba(0,0,0,0.9)] sm:p-8"
-          >
-            <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-cyan-500/20 blur-[95px]" />
-            <div className="absolute -bottom-28 -right-24 h-64 w-64 rounded-full bg-purple-600/22 blur-[95px]" />
-            <div className="absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
-
             <button
               onClick={handleClose}
               className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
@@ -286,8 +266,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 )}
               </p>
             </div>
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );

@@ -1,8 +1,9 @@
 "use client";
 
 import { LogOut, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 type LogoutConfirmModalProps = {
   open: boolean;
@@ -32,24 +33,12 @@ export function LogoutConfirmModal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 px-4 backdrop-blur-xl"
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(18px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          onMouseDown={onClose}
+        <CardpocModalShell
+          onClose={onClose}
+          zIndexClassName="z-[90]"
+          className="h-auto max-h-[calc(100vh-2rem)] max-w-sm"
+          contentClassName="p-6"
         >
-          <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-[2rem] border border-white/10 bg-[#070915]/95 p-6 text-white shadow-2xl shadow-black/60"
-            initial={{ opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 260, damping: 24 }}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-red-500/20 blur-3xl" />
-            <div className="absolute -bottom-20 -left-16 h-44 w-44 rounded-full bg-cyan-400/10 blur-3xl" />
-
             <button
               type="button"
               onClick={onClose}
@@ -94,8 +83,7 @@ export function LogoutConfirmModal({
                 </button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+        </CardpocModalShell>
       )}
     </AnimatePresence>
   );
