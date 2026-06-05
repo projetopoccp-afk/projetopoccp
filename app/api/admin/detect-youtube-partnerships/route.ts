@@ -16,6 +16,15 @@ type YouTubeVideo = {
   url: string;
 };
 
+type DetectedLink = {
+  url: string;
+  hostname: string;
+  domain: string;
+  brandName?: string;
+  campaignName?: string;
+  score: number;
+};
+
 type DetectedPartnership = {
   brandName: string;
   partnershipType: string;
@@ -28,6 +37,11 @@ type DetectedPartnership = {
   videoId: string;
   videoTitle: string;
   publishedAt?: string;
+  detectedLinks: DetectedLink[];
+  primaryDetectedLink?: string;
+  primaryDetectedDomain?: string;
+  campaignName?: string;
+  couponCodes: string[];
 };
 
 const PARTNERSHIP_KEYWORDS = [
@@ -36,15 +50,22 @@ const PARTNERSHIP_KEYWORDS = [
   "publi",
   "publicidade",
   "parceria",
+  "parceria paga",
+  "promoção paga",
+  "promocao paga",
   "cupom",
   "desconto",
   "use o cupom",
   "use meu cupom",
   "código",
+  "codigo",
   "sponsor",
   "sponsored",
+  "paid promotion",
+  "paid product placement",
   "partner",
   "partnership",
+  "use code",
 ];
 
 const IGNORED_DOMAINS = [
@@ -61,9 +82,57 @@ const IGNORED_DOMAINS = [
   "tiktok",
   "linktr",
   "beacons",
+  "bio",
+  "carrd",
+  "solo",
   "streamlabs",
   "streamelements",
+  "nightbot",
+  "moobot",
+  "bitly",
+  "tinyurl",
+  "tco",
+  "goo",
+  "lnk",
+  "whatsapp",
+  "telegram",
 ];
+
+const KNOWN_DOMAIN_BRANDS: Record<
+  string,
+  { brandName: string; campaignName?: string; score?: number }
+> = {
+  "neteasegames.com": { brandName: "NetEase", campaignName: "NetEase Games", score: 98 },
+  "netease.com": { brandName: "NetEase", score: 98 },
+  "oncehuman.game": { brandName: "NetEase", campaignName: "Once Human", score: 96 },
+  "oncehuman.com": { brandName: "NetEase", campaignName: "Once Human", score: 96 },
+  "marvelrivals.com": { brandName: "NetEase", campaignName: "Marvel Rivals", score: 96 },
+  "narakathegame.com": { brandName: "NetEase", campaignName: "Naraka: Bladepoint", score: 96 },
+  "identityvgame.com": { brandName: "NetEase", campaignName: "Identity V", score: 96 },
+  "usereserva.com": { brandName: "Reserva", score: 96 },
+  "reserva.com": { brandName: "Reserva", score: 94 },
+  "exitlag.com": { brandName: "ExitLag", score: 96 },
+  "logitech.com": { brandName: "Logitech", score: 96 },
+  "kabum.com.br": { brandName: "KaBuM", score: 96 },
+  "hyperx.com": { brandName: "HyperX", score: 96 },
+  "razer.com": { brandName: "Razer", score: 96 },
+  "redragon.com.br": { brandName: "Redragon", score: 94 },
+  "nvidia.com": { brandName: "NVIDIA", score: 96 },
+  "intel.com": { brandName: "Intel", score: 96 },
+  "amd.com": { brandName: "AMD", score: 96 },
+  "samsung.com": { brandName: "Samsung", score: 96 },
+  "opera.com": { brandName: "Opera GX", score: 92 },
+  "steelseries.com": { brandName: "SteelSeries", score: 96 },
+  "corsair.com": { brandName: "Corsair", score: 96 },
+  "riotgames.com": { brandName: "Riot Games", score: 96 },
+  "ubisoft.com": { brandName: "Ubisoft", score: 96 },
+  "bandainamcoent.com": { brandName: "Bandai Namco", score: 96 },
+  "pearlabyss.com": { brandName: "Pearl Abyss", score: 96 },
+  "blackdesertonline.com": { brandName: "Pearl Abyss", campaignName: "Black Desert", score: 96 },
+  "playblackdesert.com": { brandName: "Pearl Abyss", campaignName: "Black Desert", score: 96 },
+  "steampowered.com": { brandName: "Steam", campaignName: "Steam", score: 65 },
+  "epicgames.com": { brandName: "Epic Games", score: 75 },
+};
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -265,25 +334,25 @@ async function fetchRecentVideosFromUploadsPlaylist(
   }
 
   return (videosData.items ?? []).map((item: any) => ({
-  id: item.id,
-  title: item.snippet?.title ?? "",
-  description: item.snippet?.description ?? "",
-  publishedAt: item.snippet?.publishedAt,
+    id: item.id,
+    title: item.snippet?.title ?? "",
+    description: item.snippet?.description ?? "",
+    publishedAt: item.snippet?.publishedAt,
 
-  sourceChannel: item.snippet?.channelTitle ?? "",
+    sourceChannel: item.snippet?.channelTitle ?? "",
 
-  sourceThumbnail:
-    item.snippet?.thumbnails?.maxres?.url ||
-    item.snippet?.thumbnails?.high?.url ||
-    item.snippet?.thumbnails?.medium?.url ||
-    item.snippet?.thumbnails?.default?.url ||
-    "",
+    sourceThumbnail:
+      item.snippet?.thumbnails?.maxres?.url ||
+      item.snippet?.thumbnails?.high?.url ||
+      item.snippet?.thumbnails?.medium?.url ||
+      item.snippet?.thumbnails?.default?.url ||
+      "",
 
-  hasPaidProductPlacement:
-    item.paidProductPlacementDetails?.hasPaidProductPlacement === true,
+    hasPaidProductPlacement:
+      item.paidProductPlacementDetails?.hasPaidProductPlacement === true,
 
-  url: `https://www.youtube.com/watch?v=${item.id}`,
-}));
+    url: `https://www.youtube.com/watch?v=${item.id}`,
+  }));
 }
 
 function hasPartnershipKeyword(text: string) {
@@ -294,54 +363,188 @@ function hasPartnershipKeyword(text: string) {
   );
 }
 
-function extractDomains(text: string) {
-  const matches = text.match(/https?:\/\/[^\s)]+/gi) ?? [];
+function sanitizeRawUrl(rawUrl: string) {
+  return rawUrl
+    .trim()
+    .replace(/[),.;\]}>]+$/g, "")
+    .replace(/^[({\[<]+/g, "");
+}
 
-  return matches
-    .map((rawUrl) => {
-      try {
-        const url = new URL(rawUrl);
-        const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
-        const parts = hostname.split(".");
-        const domain = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+function normalizeHostname(hostname: string) {
+  return hostname.replace(/^www\./, "").toLowerCase();
+}
 
-        if (!domain) return null;
+function getRegistrableDomain(hostname: string) {
+  const cleanHostname = normalizeHostname(hostname);
+  const parts = cleanHostname.split(".").filter(Boolean);
 
-        if (IGNORED_DOMAINS.some((ignored) => domain.includes(ignored))) {
-          return null;
-        }
+  if (parts.length <= 2) return cleanHostname;
 
-        return domain;
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean) as string[];
+  const lastTwo = parts.slice(-2).join(".");
+  const lastThree = parts.slice(-3).join(".");
+
+  if (lastTwo === "com.br" || lastTwo === "co.uk" || lastTwo === "com.au") {
+    return lastThree;
+  }
+
+  return lastTwo;
+}
+
+function isIgnoredDomain(hostname: string) {
+  const domain = getRegistrableDomain(hostname);
+  const base = domain.split(".")[0];
+
+  return IGNORED_DOMAINS.some(
+    (ignored) => base === ignored || domain.includes(`${ignored}.`)
+  );
+}
+
+function normalizePossibleUrl(rawUrl: string) {
+  const sanitized = sanitizeRawUrl(rawUrl);
+
+  if (!sanitized) return null;
+
+  if (/^https?:\/\//i.test(sanitized)) return sanitized;
+
+  if (/^www\./i.test(sanitized)) return `https://${sanitized}`;
+
+  return null;
 }
 
 function formatBrandName(value: string) {
   return value
     .replace(/[-_]/g, " ")
+    .replace(/\b(game|games|oficial|official|brasil|brazil)\b/gi, "")
     .trim()
+    .replace(/\s+/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function extractLinks(text: string): DetectedLink[] {
+  const matches = text.match(/(?:https?:\/\/|www\.)[^\s)\]}<>"']+/gi) ?? [];
+  const uniqueUrls = Array.from(new Set(matches.map(sanitizeRawUrl)));
+
+  return uniqueUrls
+    .map((rawUrl) => {
+      const normalizedUrl = normalizePossibleUrl(rawUrl);
+
+      if (!normalizedUrl) return null;
+
+      try {
+        const url = new URL(normalizedUrl);
+        const hostname = normalizeHostname(url.hostname);
+        const domain = getRegistrableDomain(hostname);
+
+        if (!domain || isIgnoredDomain(domain)) return null;
+
+        const knownBrand = KNOWN_DOMAIN_BRANDS[domain] || KNOWN_DOMAIN_BRANDS[hostname];
+        const domainName = domain.split(".")[0];
+
+        return {
+          url: url.toString(),
+          hostname,
+          domain,
+          brandName: knownBrand?.brandName || formatBrandName(domainName),
+          campaignName: knownBrand?.campaignName,
+          score: knownBrand?.score || scoreDetectedLink(url.toString(), domain),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score) as DetectedLink[];
+}
+
+function scoreDetectedLink(url: string, domain: string) {
+  const normalizedUrl = url.toLowerCase();
+  const normalizedDomain = domain.toLowerCase();
+
+  let score = 70;
+
+  if (normalizedDomain.endsWith(".game") || normalizedUrl.includes("/campaign")) score += 16;
+  if (normalizedUrl.includes("steam") || normalizedUrl.includes("epicgames")) score += 8;
+  if (normalizedUrl.includes("ref=") || normalizedUrl.includes("utm_")) score += 8;
+  if (normalizedUrl.includes("coupon") || normalizedUrl.includes("cupom")) score += 6;
+  if (normalizedUrl.includes("discord") || normalizedUrl.includes("invite")) score -= 20;
+
+  return Math.max(0, Math.min(score, 98));
+}
+
+function extractDomains(text: string) {
+  return Array.from(new Set(extractLinks(text).map((link) => link.brandName).filter(Boolean))) as string[];
+}
+
+function extractCouponCodes(text: string) {
+  const patterns = [
+    /(?:cupom|coupon|c[oó]digo|codigo|code)[:\s-]+([a-zA-Z0-9_-]{4,32})/gi,
+    /(?:use\s+(?:o\s+)?(?:cupom|coupon|c[oó]digo|codigo|code))[:\s-]+([a-zA-Z0-9_-]{4,32})/gi,
+  ];
+
+  const codes = new Set<string>();
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(text)) !== null) {
+      const code = match[1]?.trim();
+
+      if (!code) continue;
+
+      const normalized = code.replace(/[.,;:!?]+$/g, "");
+
+      if (/^https?$/i.test(normalized)) continue;
+      if (/^(cupom|coupon|codigo|código|code)$/i.test(normalized)) continue;
+
+      codes.add(normalized);
+    }
+  }
+
+  return Array.from(codes);
 }
 
 function detectBrandNearKeywords(text: string) {
   const patterns = [
-    /(?:cupom|código|code)\s+([a-zA-Z0-9_-]{3,30})/i,
-    /(?:parceria com|patrocinado por|patrocinada por|sponsored by|partnered with)\s+([a-zA-Z0-9À-ÿ\s._-]{3,40})/i,
-    /(?:use o cupom|use meu cupom|use code)\s+([a-zA-Z0-9_-]{3,30})/i,
+    /(?:parceria com|patrocinado por|patrocinada por|sponsored by|partnered with|presented by|apresentado por|powered by)\s+([a-zA-Z0-9À-ÿ\s._-]{3,60})/i,
+    /(?:em parceria com|em collab com|collab com)\s+([a-zA-Z0-9À-ÿ\s._-]{3,60})/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
 
     if (match?.[1]) {
-      return formatBrandName(match[1].split("\n")[0].trim());
+      const rawBrand = match[1]
+        .split("\n")[0]
+        .split(".")[0]
+        .split("|")[0]
+        .trim();
+
+      if (/^[a-zA-Z0-9_-]{4,32}$/.test(rawBrand) && /\d/.test(rawBrand)) {
+        return null;
+      }
+
+      return formatBrandName(rawBrand);
     }
   }
 
   return null;
+}
+
+function pickPrimaryDetectedLink(links: DetectedLink[]) {
+  return links[0] ?? null;
+}
+
+function buildEvidenceText(video: YouTubeVideo, text: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const relevantLines = lines.filter((line) => hasPartnershipKeyword(line) || /https?:\/\/|www\./i.test(line));
+
+  const evidence = relevantLines.length > 0 ? relevantLines.join("\n") : video.title;
+
+  return evidence.slice(0, 900);
 }
 
 function detectPartnershipsFromVideo(video: YouTubeVideo): DetectedPartnership[] {
@@ -349,44 +552,61 @@ function detectPartnershipsFromVideo(video: YouTubeVideo): DetectedPartnership[]
   const detected: DetectedPartnership[] = [];
 
   const hasKeyword = hasPartnershipKeyword(text);
-  const brandFromKeyword = detectBrandNearKeywords(text);
-  const domains = Array.from(new Set(extractDomains(text)));
+  const explicitBrand = detectBrandNearKeywords(text);
+  const detectedLinks = extractLinks(text);
+  const primaryLink = pickPrimaryDetectedLink(detectedLinks);
+  const couponCodes = extractCouponCodes(text);
+
+  const inferredBrandName =
+    primaryLink?.brandName || explicitBrand || "Marca não identificada";
+
+  const inferredCampaignName = primaryLink?.campaignName;
+  const evidenceText = buildEvidenceText(video, text);
 
   if (video.hasPaidProductPlacement) {
     detected.push({
-      brandName: brandFromKeyword || domains[0] ? formatBrandName(brandFromKeyword || domains[0]) : "Marca não identificada",
-      partnershipType: "sponsorship",
-      detectionReason: "paid_product_placement",
-      confidenceScore: brandFromKeyword || domains[0] ? 90 : 82,
-      evidenceText: video.title,
+      brandName: inferredBrandName,
+      partnershipType: inferredCampaignName ? "campaign" : "sponsorship",
+      detectionReason: primaryLink
+        ? "paid_product_placement_with_campaign_link"
+        : "paid_product_placement",
+      confidenceScore: primaryLink ? Math.max(90, primaryLink.score) : explicitBrand ? 88 : 82,
+      evidenceText,
       sourceUrl: video.url,
       videoId: video.id,
       videoTitle: video.title,
       publishedAt: video.publishedAt,
       sourceChannel: video.sourceChannel,
       sourceThumbnail: video.sourceThumbnail,
+      detectedLinks,
+      primaryDetectedLink: primaryLink?.url,
+      primaryDetectedDomain: primaryLink?.domain,
+      campaignName: inferredCampaignName,
+      couponCodes,
     });
   }
 
-  if (hasKeyword) {
-    const brandName =
-      brandFromKeyword ||
-      (domains[0] ? formatBrandName(domains[0]) : "Marca não identificada");
-
+  if (hasKeyword && (primaryLink || explicitBrand)) {
     detected.push({
-      brandName,
-      partnershipType: text.toLowerCase().includes("cupom")
-        ? "campaign"
-        : "sponsorship",
-      detectionReason: "keyword_match",
-      confidenceScore: brandFromKeyword || domains[0] ? 78 : 60,
-      evidenceText: text.slice(0, 600),
+      brandName: inferredBrandName,
+      partnershipType:
+        inferredCampaignName || text.toLowerCase().includes("cupom")
+          ? "campaign"
+          : "sponsorship",
+      detectionReason: primaryLink ? "campaign_link_keyword_match" : "keyword_match",
+      confidenceScore: primaryLink ? Math.max(78, primaryLink.score) : 68,
+      evidenceText,
       sourceUrl: video.url,
       videoId: video.id,
       videoTitle: video.title,
       publishedAt: video.publishedAt,
       sourceChannel: video.sourceChannel,
       sourceThumbnail: video.sourceThumbnail,
+      detectedLinks,
+      primaryDetectedLink: primaryLink?.url,
+      primaryDetectedDomain: primaryLink?.domain,
+      campaignName: inferredCampaignName,
+      couponCodes,
     });
   }
 
@@ -407,51 +627,48 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     const cronSecret = process.env.CRON_SECRET;
-const cronHeader =
-  request.headers.get("x-cron-secret") ||
-  request.nextUrl.searchParams.get("cron_secret");
+    const cronHeader =
+      request.headers.get("x-cron-secret") ||
+      request.nextUrl.searchParams.get("cron_secret");
 
-const isCronRequest =
-  cronSecret &&
-  cronHeader &&
-  cronHeader === cronSecret;
+    const isCronRequest = cronSecret && cronHeader && cronHeader === cronSecret;
 
-if (!isCronRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
+    if (!isCronRequest) {
+      const authHeader = request.headers.get("authorization");
+      const token = authHeader?.replace("Bearer ", "");
 
-  if (!token) {
-    return NextResponse.json(
-      { error: "Usuário não autenticado." },
-      { status: 401 }
-    );
-  }
+      if (!token) {
+        return NextResponse.json(
+          { error: "Usuário não autenticado." },
+          { status: 401 }
+        );
+      }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser(token);
 
-  if (userError || !user) {
-    return NextResponse.json(
-      { error: "Sessão inválida." },
-      { status: 401 }
-    );
-  }
+      if (userError || !user) {
+        return NextResponse.json(
+          { error: "Sessão inválida." },
+          { status: 401 }
+        );
+      }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
 
-  if (profile?.is_admin !== true) {
-    return NextResponse.json(
-      { error: "Apenas administradores podem executar esta ação." },
-      { status: 403 }
-    );
-  }
-}
+      if (profile?.is_admin !== true) {
+        return NextResponse.json(
+          { error: "Apenas administradores podem executar esta ação." },
+          { status: 403 }
+        );
+      }
+    }
 
     const { data: youtubeLinks, error: linksError } = await supabase
       .from("creator_social_links")
@@ -498,7 +715,7 @@ if (!isCronRequest) {
               .eq("creator_id", link.creator_id)
               .eq("source_platform", "youtube")
               .eq("brand_name", detection.brandName)
-              .in("status", ["suggested", "verified", "manual"])
+              .in("status", ["suggested", "verified", "manual", "rejected"])
               .maybeSingle();
 
             if (existing?.id) {
@@ -516,6 +733,8 @@ if (!isCronRequest) {
                 source_channel: detection.sourceChannel,
                 source_published_at: detection.publishedAt,
                 partnership_type: detection.partnershipType,
+                campaign_name: detection.campaignName || null,
+                website_url: detection.primaryDetectedLink || null,
                 source_platform: "youtube",
                 source_url: detection.sourceUrl,
                 evidence_text: detection.evidenceText,
@@ -524,6 +743,11 @@ if (!isCronRequest) {
                   video_title: detection.videoTitle,
                   published_at: detection.publishedAt,
                   detection_reason: detection.detectionReason,
+                  detected_links: detection.detectedLinks,
+                  primary_detected_link: detection.primaryDetectedLink,
+                  primary_detected_domain: detection.primaryDetectedDomain,
+                  coupon_codes: detection.couponCodes,
+                  inferred_campaign_name: detection.campaignName,
                 },
                 detection_reason: detection.detectionReason,
                 confidence_score: detection.confidenceScore,
