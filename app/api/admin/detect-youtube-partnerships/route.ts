@@ -406,12 +406,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, role")
-      .eq("id", user.id)
-      .maybeSingle();
+  .from("profiles")
+  .select("id, is_admin")
+  .eq("id", user.id)
+  .maybeSingle();
 
-    if (profile?.role !== "admin") {
+if (profile?.is_admin !== true) {
       return NextResponse.json(
         { error: "Apenas administradores podem executar esta ação." },
         { status: 403 }
