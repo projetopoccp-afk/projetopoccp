@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
+  AlertCircle,
   Crown,
   Gem,
   Heart,
-  Medal,
+  Loader2,
   PackageOpen,
   Sparkles,
   Star,
@@ -16,8 +16,57 @@ import {
   Zap,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/lib/supabase/client";
 
 type RankingTab = "creators" | "collectors";
+type RankingStatus = "idle" | "loading" | "ready" | "error";
+type RarityKey = "common" | "rare" | "epic" | "legendary";
+
+type CreatorProfileRow = Record<string, unknown> & {
+  id?: string;
+  name?: string | null;
+  nickname?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+  image_url?: string | null;
+  avatar_url?: string | null;
+};
+
+type UserProfileRow = Record<string, unknown> & {
+  id?: string;
+  username?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  name?: string | null;
+  avatar_url?: string | null;
+  image_url?: string | null;
+  xp?: number | null;
+  level?: number | null;
+};
+
+type UserCardRow = Record<string, unknown> & {
+  id?: string;
+  user_id?: string | null;
+  creator_id?: string | null;
+  creator_profile_id?: string | null;
+  rarity?: string | null;
+};
+
+type PackOpeningRow = Record<string, unknown> & {
+  id?: string;
+  user_id?: string | null;
+  opened_by?: string | null;
+  profile_id?: string | null;
+};
+
+type CreatorFollowerRow = Record<string, unknown> & {
+  id?: string;
+  user_id?: string | null;
+  follower_id?: string | null;
+  profile_id?: string | null;
+  creator_id?: string | null;
+  creator_profile_id?: string | null;
+};
 
 type RankingItem = {
   id: string;
@@ -27,6 +76,7 @@ type RankingItem = {
   value: string;
   detail: string;
   href?: string;
+  rawValue: number;
 };
 
 type RankingBlock = {
@@ -39,283 +89,93 @@ type RankingBlock = {
   items: RankingItem[];
 };
 
+type UserPositionMetric = {
+  id: string;
+  labelKey: string;
+  labelFallback: string;
+  value: string;
+};
+
 function translate(t: unknown, key: string, fallback: string) {
   try {
     const translateFn = t as (key: any, fallback?: string) => string;
     const value = translateFn(key as any, fallback);
-    return value || fallback;
+
+    if (!value || value === key) {
+      return fallback;
+    }
+
+    return value;
   } catch {
     return fallback;
   }
 }
 
-const creatorRankingBlocks: RankingBlock[] = [
-  {
-    id: "creator-level",
-    titleKey: "rankingsCreatorHighestLevel",
-    titleFallback: "Maior nível",
-    descriptionKey: "rankingsCreatorHighestLevelDescription",
-    descriptionFallback: "Criadores que mais evoluíram dentro do Cardpoc.",
-    icon: Star,
-    items: [
-      {
-        id: "stereonline-level",
-        name: "StereOnline",
-        username: "stereonline",
-        value: "LVL 42",
-        detail: "128.400 XP global",
-        href: "/creator/stereonline",
-      },
-      {
-        id: "zeusghostz-level",
-        name: "ZeusGhostz",
-        username: "zeusghostz",
-        value: "LVL 39",
-        detail: "116.900 XP global",
-        href: "/creator/zeusghostz",
-      },
-      {
-        id: "khoringatv-level",
-        name: "KhorinGATv",
-        username: "khoringatv",
-        value: "LVL 35",
-        detail: "98.200 XP global",
-        href: "/creator/khoringatv",
-      },
-    ],
-  },
-  {
-    id: "creator-collected",
-    titleKey: "rankingsCreatorMostCollected",
-    titleFallback: "Mais colecionado",
-    descriptionKey: "rankingsCreatorMostCollectedDescription",
-    descriptionFallback:
-      "Quantidade total de cartas desse criador nas coleções.",
-    icon: Sparkles,
-    items: [
-      {
-        id: "zeusghostz-collected",
-        name: "ZeusGhostz",
-        username: "zeusghostz",
-        value: "1.284",
-        detail: "cartas coletadas",
-        href: "/creator/zeusghostz",
-      },
-      {
-        id: "stereonline-collected",
-        name: "StereOnline",
-        username: "stereonline",
-        value: "1.109",
-        detail: "cartas coletadas",
-        href: "/creator/stereonline",
-      },
-      {
-        id: "khoringatv-collected",
-        name: "KhorinGATv",
-        username: "khoringatv",
-        value: "936",
-        detail: "cartas coletadas",
-        href: "/creator/khoringatv",
-      },
-    ],
-  },
-  {
-    id: "creator-legendary",
-    titleKey: "rankingsCreatorMostLegendaryCards",
-    titleFallback: "Mais cartas lendárias",
-    descriptionKey: "rankingsCreatorMostLegendaryCardsDescription",
-    descriptionFallback: "Criadores com mais cartas lendárias distribuídas.",
-    icon: Gem,
-    items: [
-      {
-        id: "stereonline-legendary",
-        name: "StereOnline",
-        username: "stereonline",
-        value: "47",
-        detail: "lendárias em coleções",
-        href: "/creator/stereonline",
-      },
-      {
-        id: "sacizera-legendary",
-        name: "SacizeraGames",
-        username: "sacizeragames",
-        value: "41",
-        detail: "lendárias em coleções",
-        href: "/creator/sacizeragames",
-      },
-      {
-        id: "zeusghostz-legendary",
-        name: "ZeusGhostz",
-        username: "zeusghostz",
-        value: "38",
-        detail: "lendárias em coleções",
-        href: "/creator/zeusghostz",
-      },
-    ],
-  },
-  {
-    id: "creator-epic",
-    titleKey: "rankingsCreatorMostEpicCards",
-    titleFallback: "Mais cartas épicas",
-    descriptionKey: "rankingsCreatorMostEpicCardsDescription",
-    descriptionFallback: "Criadores com mais cartas épicas distribuídas.",
-    icon: Crown,
-    items: [
-      {
-        id: "stereonline-epic",
-        name: "StereOnline",
-        username: "stereonline",
-        value: "92",
-        detail: "épicas em coleções",
-        href: "/creator/stereonline",
-      },
-      {
-        id: "zeusghostz-epic",
-        name: "ZeusGhostz",
-        username: "zeusghostz",
-        value: "81",
-        detail: "épicas em coleções",
-        href: "/creator/zeusghostz",
-      },
-      {
-        id: "khoringatv-epic",
-        name: "KhorinGATv",
-        username: "khoringatv",
-        value: "74",
-        detail: "épicas em coleções",
-        href: "/creator/khoringatv",
-      },
-    ],
-  },
-];
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
 
-const collectorRankingBlocks: RankingBlock[] = [
-  {
-    id: "collector-xp",
-    titleKey: "rankingsCollectorMostXp",
-    titleFallback: "Mais XP",
-    descriptionKey: "rankingsCollectorMostXpDescription",
-    descriptionFallback: "Colecionadores com maior experiência acumulada.",
-    icon: Zap,
-    items: [
-      {
-        id: "jean-xp",
-        name: "Jean Silva",
-        username: "jean",
-        value: "24.850 XP",
-        detail: "nível 18",
-      },
-      {
-        id: "collector-a-xp",
-        name: "NexusHunter",
-        username: "nexushunter",
-        value: "21.300 XP",
-        detail: "nível 16",
-      },
-      {
-        id: "collector-b-xp",
-        name: "CardMage",
-        username: "cardmage",
-        value: "19.760 XP",
-        detail: "nível 15",
-      },
-    ],
-  },
-  {
-    id: "collector-cards",
-    titleKey: "rankingsCollectorMostCards",
-    titleFallback: "Mais cartas",
-    descriptionKey: "rankingsCollectorMostCardsDescription",
-    descriptionFallback: "Usuários com mais cartas na coleção.",
-    icon: Sparkles,
-    items: [
-      {
-        id: "collector-a-cards",
-        name: "NexusHunter",
-        username: "nexushunter",
-        value: "312",
-        detail: "cartas coletadas",
-      },
-      {
-        id: "jean-cards",
-        name: "Jean Silva",
-        username: "jean",
-        value: "286",
-        detail: "cartas coletadas",
-      },
-      {
-        id: "collector-c-cards",
-        name: "RareDropBR",
-        username: "raredropbr",
-        value: "241",
-        detail: "cartas coletadas",
-      },
-    ],
-  },
-  {
-    id: "collector-packs",
-    titleKey: "rankingsCollectorMostOpenedPacks",
-    titleFallback: "Mais pacotes abertos",
-    descriptionKey: "rankingsCollectorMostOpenedPacksDescription",
-    descriptionFallback: "Quem mais abriu pacotes dentro do Cardpoc.",
-    icon: PackageOpen,
-    items: [
-      {
-        id: "collector-c-packs",
-        name: "RareDropBR",
-        username: "raredropbr",
-        value: "94",
-        detail: "pacotes abertos",
-      },
-      {
-        id: "jean-packs",
-        name: "Jean Silva",
-        username: "jean",
-        value: "81",
-        detail: "pacotes abertos",
-      },
-      {
-        id: "collector-b-packs",
-        name: "CardMage",
-        username: "cardmage",
-        value: "76",
-        detail: "pacotes abertos",
-      },
-    ],
-  },
-  {
-    id: "collector-following",
-    titleKey: "rankingsCollectorMostFollowedCreators",
-    titleFallback: "Mais criadores seguidos",
-    descriptionKey: "rankingsCollectorMostFollowedCreatorsDescription",
-    descriptionFallback:
-      "Usuários que mais acompanham criadores na plataforma.",
-    icon: Heart,
-    items: [
-      {
-        id: "jean-following",
-        name: "Jean Silva",
-        username: "jean",
-        value: "64",
-        detail: "criadores seguidos",
-      },
-      {
-        id: "collector-a-following",
-        name: "NexusHunter",
-        username: "nexushunter",
-        value: "57",
-        detail: "criadores seguidos",
-      },
-      {
-        id: "collector-d-following",
-        name: "PixelScout",
-        username: "pixelscout",
-        value: "52",
-        detail: "criadores seguidos",
-      },
-    ],
-  },
-];
+function normalizeRarity(value: unknown): RarityKey | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (["common", "comum"].includes(normalized)) {
+    return "common";
+  }
+
+  if (["rare", "raro", "rara"].includes(normalized)) {
+    return "rare";
+  }
+
+  if (["epic", "epico", "épico", "epica", "épica"].includes(normalized)) {
+    return "epic";
+  }
+
+  if (["legendary", "lendario", "lendário", "lendaria", "lendária"].includes(normalized)) {
+    return "legendary";
+  }
+
+  return null;
+}
+
+function getCreatorIdFromCard(card: UserCardRow) {
+  return String(card.creator_id ?? card.creator_profile_id ?? "");
+}
+
+function getUserIdFromPackOpening(opening: PackOpeningRow) {
+  return String(opening.user_id ?? opening.opened_by ?? opening.profile_id ?? "");
+}
+
+function getUserIdFromFollower(row: CreatorFollowerRow) {
+  return String(row.user_id ?? row.follower_id ?? "");
+}
+
+function getCreatorIdFromFollower(row: CreatorFollowerRow) {
+  return String(row.creator_id ?? row.creator_profile_id ?? row.profile_id ?? "");
+}
+
+function getCreatorName(creator: CreatorProfileRow) {
+  return (
+    creator.nickname ||
+    creator.display_name ||
+    creator.name ||
+    creator.username ||
+    "Criador Cardpoc"
+  );
+}
+
+function getUserName(profile: UserProfileRow) {
+  return (
+    profile.display_name ||
+    profile.full_name ||
+    profile.name ||
+    profile.username ||
+    "Colecionador Cardpoc"
+  );
+}
 
 function getRankBadgeClass(position: number) {
   if (position === 1) {
@@ -333,14 +193,75 @@ function getRankBadgeClass(position: number) {
   return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
 }
 
-function RankingCard({ block }: { block: RankingBlock }) {
+function sortRankingItems(items: RankingItem[]) {
+  return [...items]
+    .filter((item) => item.rawValue > 0)
+    .sort((a, b) => b.rawValue - a.rawValue)
+    .slice(0, 10);
+}
+
+function rankPosition(items: RankingItem[], userId?: string | null) {
+  if (!userId) {
+    return "—";
+  }
+
+  const index = items.findIndex((item) => item.id === userId);
+
+  if (index < 0) {
+    return "—";
+  }
+
+  return `#${index + 1}`;
+}
+
+function buildCreatorRankingItem(
+  creator: CreatorProfileRow,
+  value: number,
+  detail: string,
+): RankingItem {
+  const id = String(creator.id ?? creator.username ?? crypto.randomUUID());
+  const username = creator.username ?? undefined;
+
+  return {
+    id,
+    name: getCreatorName(creator),
+    username,
+    avatarUrl: String(creator.image_url ?? creator.avatar_url ?? "") || undefined,
+    value: formatNumber(value),
+    detail,
+    href: username ? `/creator/${username}` : undefined,
+    rawValue: value,
+  };
+}
+
+function buildCollectorRankingItem(
+  profile: UserProfileRow,
+  value: number,
+  detail: string,
+): RankingItem {
+  const id = String(profile.id ?? profile.username ?? crypto.randomUUID());
+  const username = profile.username ?? undefined;
+
+  return {
+    id,
+    name: getUserName(profile),
+    username,
+    avatarUrl: String(profile.avatar_url ?? profile.image_url ?? "") || undefined,
+    value: formatNumber(value),
+    detail,
+    rawValue: value,
+  };
+}
+
+function RankingCard({ block, status }: { block: RankingBlock; status: RankingStatus }) {
   const { t } = useLanguage();
   const Icon = block.icon;
+  const isLoading = status === "loading" || status === "idle";
 
   return (
-    <article className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/72 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-cyan-300/35 hover:shadow-[0_28px_110px_rgba(34,211,238,0.13)]">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-cyan-400/12 blur-3xl transition duration-300 group-hover:bg-cyan-300/18" />
-      <div className="pointer-events-none absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-violet-500/12 blur-3xl" />
+    <article className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/28 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-cyan-300/35 hover:shadow-[0_28px_110px_rgba(34,211,238,0.13)]">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-cyan-400/10 blur-3xl transition duration-300 group-hover:bg-cyan-300/16" />
+      <div className="pointer-events-none absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
 
       <div className="relative flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 shadow-[0_0_32px_rgba(34,211,238,0.16)]">
@@ -358,59 +279,74 @@ function RankingCard({ block }: { block: RankingBlock }) {
       </div>
 
       <div className="relative mt-5 space-y-3">
-        {block.items.map((item, index) => {
-          const position = index + 1;
-          const content = (
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition duration-300 hover:border-cyan-300/25 hover:bg-cyan-300/[0.055]">
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-black ${getRankBadgeClass(
-                  position,
-                )}`}
-              >
-                #{position}
-              </div>
+        {isLoading ? (
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.025] text-sm font-bold text-slate-400">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-cyan-100" />
+            {translate(t, "rankingsLoading", "Carregando dados reais...")}
+          </div>
+        ) : block.items.length === 0 ? (
+          <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-white/12 bg-white/[0.025] px-5 text-center">
+            <AlertCircle className="h-5 w-5 text-cyan-100/80" />
+            <p className="mt-3 text-sm font-black text-white">
+              {translate(t, "rankingsEmptyTitle", "Sem dados suficientes")}
+            </p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+              {translate(
+                t,
+                "rankingsEmptyDescription",
+                "Este ranking aparece quando houver registros reais suficientes no Supabase.",
+              )}
+            </p>
+          </div>
+        ) : (
+          block.items.map((item, index) => {
+            const position = index + 1;
+            const content = (
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition duration-300 hover:border-cyan-300/25 hover:bg-cyan-300/[0.055]">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-black ${getRankBadgeClass(
+                    position,
+                  )}`}
+                >
+                  #{position}
+                </div>
 
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-300/15 via-violet-400/10 to-fuchsia-500/15 text-sm font-black text-white">
-                {item.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  item.name.slice(0, 2).toUpperCase()
-                )}
-              </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-300/15 via-violet-400/10 to-fuchsia-500/15 text-sm font-black text-white">
+                  {item.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    item.name.slice(0, 2).toUpperCase()
+                  )}
+                </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-extrabold text-white">
-                  {item.name}
-                </p>
-                <p className="truncate text-xs text-slate-500">
-                  {item.username ? `@${item.username}` : item.detail}
-                </p>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-extrabold text-white">{item.name}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {item.username ? `@${item.username}` : item.detail}
+                  </p>
+                </div>
 
-              <div className="text-right">
-                <p className="text-sm font-black text-cyan-100">{item.value}</p>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  {item.detail}
-                </p>
+                <div className="text-right">
+                  <p className="text-sm font-black text-cyan-100">{item.value}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    {item.detail}
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-
-          if (item.href) {
-            return (
-              <Link key={item.id} href={item.href} className="block">
-                {content}
-              </Link>
             );
-          }
 
-          return <div key={item.id}>{content}</div>;
-        })}
+            if (item.href) {
+              return (
+                <Link key={item.id} href={item.href} className="block">
+                  {content}
+                </Link>
+              );
+            }
+
+            return <div key={item.id}>{content}</div>;
+          })
+        )}
       </div>
     </article>
   );
@@ -419,41 +355,123 @@ function RankingCard({ block }: { block: RankingBlock }) {
 export default function RankingsPage() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<RankingTab>("creators");
+  const [status, setStatus] = useState<RankingStatus>("idle");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [creatorBlocks, setCreatorBlocks] = useState<RankingBlock[]>([]);
+  const [collectorBlocks, setCollectorBlocks] = useState<RankingBlock[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRankings() {
+      setStatus("loading");
+
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id ?? null;
+
+      const [creatorsResult, profilesResult, cardsResult, openingsResult, followsResult] =
+        await Promise.all([
+          supabase.from("creator_profiles").select("*"),
+          supabase.from("profiles").select("*"),
+          supabase.from("user_cards").select("*"),
+          supabase.from("pack_openings").select("*"),
+          supabase.from("creator_followers").select("*"),
+        ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      const hasHardError = Boolean(creatorsResult.error || profilesResult.error || cardsResult.error);
+
+      if (hasHardError) {
+        console.error("Rankings load error", {
+          creators: creatorsResult.error,
+          profiles: profilesResult.error,
+          cards: cardsResult.error,
+          openings: openingsResult.error,
+          follows: followsResult.error,
+        });
+        setCurrentUserId(userId);
+        setCreatorBlocks(buildCreatorBlocks([], []));
+        setCollectorBlocks(buildCollectorBlocks([], [], [], [], userId));
+        setStatus("error");
+        return;
+      }
+
+      const creators = (creatorsResult.data ?? []) as CreatorProfileRow[];
+      const profiles = (profilesResult.data ?? []) as UserProfileRow[];
+      const cards = (cardsResult.data ?? []) as UserCardRow[];
+      const openings = ((openingsResult.data ?? []) as PackOpeningRow[]) ?? [];
+      const follows = ((followsResult.data ?? []) as CreatorFollowerRow[]) ?? [];
+
+      setCurrentUserId(userId);
+      setCreatorBlocks(buildCreatorBlocks(creators, cards));
+      setCollectorBlocks(buildCollectorBlocks(profiles, cards, openings, follows, userId));
+      setStatus("ready");
+    }
+
+    loadRankings();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const activeBlocks = useMemo(() => {
-    return activeTab === "creators"
-      ? creatorRankingBlocks
-      : collectorRankingBlocks;
-  }, [activeTab]);
+    return activeTab === "creators" ? creatorBlocks : collectorBlocks;
+  }, [activeTab, creatorBlocks, collectorBlocks]);
 
-  const hallOfFame = useMemo(() => {
-    const mostCollectedCreator = creatorRankingBlocks.find(
-      (block) => block.id === "creator-collected",
-    )?.items[0];
+  const userPositionMetrics = useMemo<UserPositionMetric[]>(() => {
+    const xpItems = collectorBlocks.find((block) => block.id === "collector-xp")?.items ?? [];
+    const cardItems = collectorBlocks.find((block) => block.id === "collector-cards")?.items ?? [];
+    const packItems = collectorBlocks.find((block) => block.id === "collector-packs")?.items ?? [];
+    const followingItems = collectorBlocks.find((block) => block.id === "collector-following")?.items ?? [];
 
-    const topCollector = collectorRankingBlocks.find(
-      (block) => block.id === "collector-xp",
-    )?.items[0];
-
-    return { mostCollectedCreator, topCollector };
-  }, []);
+    return [
+      {
+        id: "xp-position",
+        labelKey: "rankingsXpPosition",
+        labelFallback: "XP",
+        value: rankPosition(xpItems, currentUserId),
+      },
+      {
+        id: "cards-position",
+        labelKey: "rankingsCardsPosition",
+        labelFallback: "Cartas",
+        value: rankPosition(cardItems, currentUserId),
+      },
+      {
+        id: "packs-position",
+        labelKey: "rankingsPacksPosition",
+        labelFallback: "Pacotes",
+        value: rankPosition(packItems, currentUserId),
+      },
+      {
+        id: "following-position",
+        labelKey: "rankingsFollowingPosition",
+        labelFallback: "Seguindo",
+        value: rankPosition(followingItems, currentUserId),
+      },
+    ];
+  }, [collectorBlocks, currentUserId]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020607] text-white">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(34,211,238,0.12),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.10),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.08),transparent_36%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-35" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.42)_72%,rgba(0,0,0,0.88)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.10),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.08),transparent_26%),radial-gradient(circle_at_50%_105%,rgba(14,165,233,0.07),transparent_34%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-30" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.44)_72%,rgba(0,0,0,0.9)_100%)]" />
       </div>
 
       <section className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100 shadow-[0_0_32px_rgba(34,211,238,0.13)]">
             <Trophy className="h-4 w-4" />
-            {translate(t, "rankingsEyebrow", "Hall da fama Cardpoc")}
+            {translate(t, "rankingsEyebrow", "Ranking Cardpoc")}
           </div>
 
-          <h1 className="mt-5 text-4xl font-black tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
             {translate(t, "rankingsPageTitle", "Rankings")}
           </h1>
 
@@ -461,107 +479,53 @@ export default function RankingsPage() {
             {translate(
               t,
               "rankingsPageDescription",
-              "Veja quem domina o Cardpoc: criadores mais colecionados, cartas lendárias e colecionadores que mais evoluíram.",
+              "Acompanhe rankings reais de criadores e colecionadores com base nos dados do Cardpoc.",
             )}
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-[2rem] border border-amber-300/20 bg-amber-300/[0.055] p-5 shadow-[0_24px_90px_rgba(251,191,36,0.08)] backdrop-blur-xl">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-amber-300/15 blur-3xl" />
-            <div className="relative flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/10 text-amber-100">
-                <Crown className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/80">
-                  {translate(
-                    t,
-                    "rankingsHallCreator",
-                    "Criador mais colecionado",
-                  )}
-                </p>
-                <p className="mt-1 truncate text-2xl font-black text-white">
-                  {hallOfFame.mostCollectedCreator?.name ?? "Cardpoc"}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {hallOfFame.mostCollectedCreator?.value ?? "0"}{" "}
-                  {translate(
-                    t,
-                    "rankingsCollectedCardsLabel",
-                    "cartas coletadas",
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-cyan-300/[0.055] p-5 shadow-[0_24px_90px_rgba(34,211,238,0.08)] backdrop-blur-xl">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-cyan-300/15 blur-3xl" />
-            <div className="relative flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-100">
-                <Medal className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-100/80">
-                  {translate(
-                    t,
-                    "rankingsHallCollector",
-                    "Colecionador nº1",
-                  )}
-                </p>
-                <p className="mt-1 truncate text-2xl font-black text-white">
-                  {hallOfFame.topCollector?.name ?? "Cardpoc"}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {hallOfFame.topCollector?.value ?? "0 XP"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-[2rem] border border-cyan-300/15 bg-slate-950/62 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-cyan-100">
+        <div className="mt-10 rounded-[2rem] border border-cyan-300/15 bg-black/24 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.26)]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
                 <Medal className="h-3.5 w-3.5" />
                 {translate(t, "rankingsYourPosition", "Sua posição")}
-              </p>
-              <h2 className="mt-3 text-xl font-black text-white">
-                {translate(t, "rankingsYourPositionTitle", "Seu progresso nos rankings")}
+              </div>
+              <h2 className="mt-4 text-xl font-black text-white">
+                {translate(t, "rankingsYourProgressTitle", "Seu progresso nos rankings")}
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
-                {translate(
-                  t,
-                  "rankingsYourPositionDescription",
-                  "Em breve este bloco mostrará sua posição real usando XP, cartas, pacotes e criadores seguidos.",
-                )}
+                {currentUserId
+                  ? translate(
+                      t,
+                      "rankingsYourProgressDescription",
+                      "Estas posições usam apenas dados reais do seu usuário no Cardpoc.",
+                    )
+                  : translate(
+                      t,
+                      "rankingsYourProgressLoggedOutDescription",
+                      "Entre na sua conta para ver sua posição real em XP, cartas, pacotes e criadores seguidos.",
+                    )}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
-              {[
-                ["rankingsXpPosition", "XP", "#12"],
-                ["rankingsCardsPosition", "Cartas", "#4"],
-                ["rankingsPacksPosition", "Pacotes", "#8"],
-                ["rankingsFollowingPosition", "Seguindo", "#16"],
-              ].map(([labelKey, fallback, value]) => (
+              {userPositionMetrics.map((metric) => (
                 <div
-                  key={labelKey}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center"
+                  key={metric.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-center"
                 >
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-                    {translate(t, labelKey, fallback)}
+                    {translate(t, metric.labelKey, metric.labelFallback)}
                   </p>
-                  <p className="mt-1 text-2xl font-black text-cyan-100">{value}</p>
+                  <p className="mt-1 text-2xl font-black text-cyan-100">{metric.value}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-stretch justify-between gap-4 rounded-[2rem] border border-white/10 bg-white/[0.035] p-3 backdrop-blur-xl sm:flex-row sm:items-center">
+        <div className="mt-8 flex flex-col items-stretch justify-between gap-4 rounded-[2rem] border border-white/10 bg-black/20 p-3 sm:flex-row sm:items-center">
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <button
               type="button"
@@ -591,45 +555,250 @@ export default function RankingsPage() {
           </div>
 
           <p className="px-2 text-center text-xs font-semibold text-slate-500 sm:text-right">
-            {translate(
-              t,
-              "rankingsMockNotice",
-              "Dados temporários para validar o visual. A próxima etapa conecta ao Supabase.",
-            )}
+            {status === "error"
+              ? translate(t, "rankingsErrorNotice", "Não foi possível carregar alguns dados agora.")
+              : translate(t, "rankingsRealDataNotice", "Dados reais do Supabase.")}
           </p>
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           {activeBlocks.map((block) => (
-            <RankingCard key={block.id} block={block} />
+            <RankingCard key={block.id} block={block} status={status} />
           ))}
-        </div>
-
-        <div className="mt-8 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5 backdrop-blur-xl">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-black text-white">
-                {translate(t, "rankingsNextStepTitle", "Próximo passo")}
-              </h2>
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
-                {translate(
-                  t,
-                  "rankingsNextStepDescription",
-                  "Depois de aprovar o visual, conectamos XP, cartas, pacotes e seguidores usando os dados reais do Supabase.",
-                )}
-              </p>
-            </div>
-
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-50 transition hover:border-cyan-200/45 hover:bg-cyan-300/15"
-            >
-              {translate(t, "backToHome", "Voltar para Home")}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
         </div>
       </section>
     </main>
   );
+}
+
+function buildCreatorBlocks(
+  creators: CreatorProfileRow[],
+  cards: UserCardRow[],
+): RankingBlock[] {
+  const creatorById = new Map<string, CreatorProfileRow>();
+
+  creators.forEach((creator) => {
+    if (creator.id) {
+      creatorById.set(String(creator.id), creator);
+    }
+  });
+
+  const totalCardsByCreator = new Map<string, number>();
+  const legendaryCardsByCreator = new Map<string, number>();
+  const epicCardsByCreator = new Map<string, number>();
+  const rareCardsByCreator = new Map<string, number>();
+
+  cards.forEach((card) => {
+    const creatorId = getCreatorIdFromCard(card);
+
+    if (!creatorId) {
+      return;
+    }
+
+    totalCardsByCreator.set(creatorId, (totalCardsByCreator.get(creatorId) ?? 0) + 1);
+
+    const rarity = normalizeRarity(card.rarity);
+
+    if (rarity === "legendary") {
+      legendaryCardsByCreator.set(
+        creatorId,
+        (legendaryCardsByCreator.get(creatorId) ?? 0) + 1,
+      );
+    }
+
+    if (rarity === "epic") {
+      epicCardsByCreator.set(creatorId, (epicCardsByCreator.get(creatorId) ?? 0) + 1);
+    }
+
+    if (rarity === "rare") {
+      rareCardsByCreator.set(creatorId, (rareCardsByCreator.get(creatorId) ?? 0) + 1);
+    }
+  });
+
+  const buildItems = (source: Map<string, number>, detail: string) => {
+    return sortRankingItems(
+      Array.from(source.entries()).flatMap(([creatorId, value]) => {
+        const creator = creatorById.get(creatorId);
+
+        if (!creator) {
+          return [];
+        }
+
+        return [buildCreatorRankingItem(creator, value, detail)];
+      }),
+    );
+  };
+
+  return [
+    {
+      id: "creator-collected",
+      titleKey: "rankingsCreatorMostCollected",
+      titleFallback: "Mais colecionado",
+      descriptionKey: "rankingsCreatorMostCollectedDescription",
+      descriptionFallback: "Quantidade total de cartas desse criador nas coleções.",
+      icon: Sparkles,
+      items: buildItems(totalCardsByCreator, "cartas coletadas"),
+    },
+    {
+      id: "creator-legendary",
+      titleKey: "rankingsCreatorMostLegendaryCards",
+      titleFallback: "Mais cartas lendárias",
+      descriptionKey: "rankingsCreatorMostLegendaryCardsDescription",
+      descriptionFallback: "Criadores com mais cartas lendárias distribuídas.",
+      icon: Gem,
+      items: buildItems(legendaryCardsByCreator, "lendárias em coleções"),
+    },
+    {
+      id: "creator-epic",
+      titleKey: "rankingsCreatorMostEpicCards",
+      titleFallback: "Mais cartas épicas",
+      descriptionKey: "rankingsCreatorMostEpicCardsDescription",
+      descriptionFallback: "Criadores com mais cartas épicas distribuídas.",
+      icon: Crown,
+      items: buildItems(epicCardsByCreator, "épicas em coleções"),
+    },
+    {
+      id: "creator-rare",
+      titleKey: "rankingsCreatorMostRareCards",
+      titleFallback: "Mais cartas raras",
+      descriptionKey: "rankingsCreatorMostRareCardsDescription",
+      descriptionFallback: "Criadores com mais cartas raras distribuídas.",
+      icon: Star,
+      items: buildItems(rareCardsByCreator, "raras em coleções"),
+    },
+  ];
+}
+
+function buildCollectorBlocks(
+  profiles: UserProfileRow[],
+  cards: UserCardRow[],
+  openings: PackOpeningRow[],
+  follows: CreatorFollowerRow[],
+  currentUserId: string | null,
+): RankingBlock[] {
+  const profileById = new Map<string, UserProfileRow>();
+
+  profiles.forEach((profile) => {
+    if (profile.id) {
+      profileById.set(String(profile.id), profile);
+    }
+  });
+
+  if (currentUserId && !profileById.has(currentUserId)) {
+    profileById.set(currentUserId, { id: currentUserId, username: "" });
+  }
+
+  const cardsByUser = new Map<string, number>();
+  const packsByUser = new Map<string, number>();
+  const followingByUser = new Map<string, Set<string>>();
+
+  cards.forEach((card) => {
+    const userId = String(card.user_id ?? "");
+
+    if (!userId) {
+      return;
+    }
+
+    cardsByUser.set(userId, (cardsByUser.get(userId) ?? 0) + 1);
+  });
+
+  openings.forEach((opening) => {
+    const userId = getUserIdFromPackOpening(opening);
+
+    if (!userId) {
+      return;
+    }
+
+    packsByUser.set(userId, (packsByUser.get(userId) ?? 0) + 1);
+  });
+
+  follows.forEach((follow) => {
+    const userId = getUserIdFromFollower(follow);
+    const creatorId = getCreatorIdFromFollower(follow);
+
+    if (!userId || !creatorId) {
+      return;
+    }
+
+    if (!followingByUser.has(userId)) {
+      followingByUser.set(userId, new Set<string>());
+    }
+
+    followingByUser.get(userId)?.add(creatorId);
+  });
+
+  const buildUserItemsFromMap = (source: Map<string, number>, detail: string) => {
+    return sortRankingItems(
+      Array.from(source.entries()).flatMap(([userId, value]) => {
+        const profile = profileById.get(userId);
+
+        if (!profile) {
+          return [];
+        }
+
+        return [buildCollectorRankingItem(profile, value, detail)];
+      }),
+    );
+  };
+
+  const xpItems = sortRankingItems(
+    profiles.map((profile) => {
+      const xp = Number(profile.xp ?? 0);
+      const level = Number(profile.level ?? 0);
+      const detail = level > 0 ? `nível ${level}` : "XP acumulado";
+
+      return buildCollectorRankingItem(profile, xp, detail);
+    }),
+  );
+
+  const followingItems = sortRankingItems(
+    Array.from(followingByUser.entries()).flatMap(([userId, creatorIds]) => {
+      const profile = profileById.get(userId);
+
+      if (!profile) {
+        return [];
+      }
+
+      return [buildCollectorRankingItem(profile, creatorIds.size, "criadores seguidos")];
+    }),
+  );
+
+  return [
+    {
+      id: "collector-xp",
+      titleKey: "rankingsCollectorMostXp",
+      titleFallback: "Mais XP",
+      descriptionKey: "rankingsCollectorMostXpDescription",
+      descriptionFallback: "Colecionadores com maior experiência acumulada.",
+      icon: Zap,
+      items: xpItems,
+    },
+    {
+      id: "collector-cards",
+      titleKey: "rankingsCollectorMostCards",
+      titleFallback: "Mais cartas",
+      descriptionKey: "rankingsCollectorMostCardsDescription",
+      descriptionFallback: "Usuários com mais cartas na coleção.",
+      icon: Sparkles,
+      items: buildUserItemsFromMap(cardsByUser, "cartas coletadas"),
+    },
+    {
+      id: "collector-packs",
+      titleKey: "rankingsCollectorMostOpenedPacks",
+      titleFallback: "Mais pacotes abertos",
+      descriptionKey: "rankingsCollectorMostOpenedPacksDescription",
+      descriptionFallback: "Quem mais abriu pacotes dentro do Cardpoc.",
+      icon: PackageOpen,
+      items: buildUserItemsFromMap(packsByUser, "pacotes abertos"),
+    },
+    {
+      id: "collector-following",
+      titleKey: "rankingsCollectorMostFollowedCreators",
+      titleFallback: "Mais criadores seguidos",
+      descriptionKey: "rankingsCollectorMostFollowedCreatorsDescription",
+      descriptionFallback: "Usuários que mais acompanham criadores na plataforma.",
+      icon: Heart,
+      items: followingItems,
+    },
+  ];
 }
