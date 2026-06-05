@@ -652,16 +652,17 @@ export function CollectionModal({
             contentClassName="hide-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-8 pb-10"
             zIndexClassName="z-[100]"
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "closeCollection", "Fechar coleção")}
-            >
-              <X size={18} />
-            </button>
-
             <div className="relative z-10">
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+                  aria-label={translate(t, "closeCollection", "Fechar coleção")}
+                >
+                  <X size={18} />
+                </button>
+              </div>
               <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                 <Archive size={14} />
                 {translate(t, "collection", "Minha Coleção")}
