@@ -403,7 +403,7 @@ type SupportConversationType =
   | "card_pack_problem"
   | "suggestion"
   | "other";
-type SupportFilter = "all" | SupportConversationStatus;
+type SupportFilter = "active" | "all" | SupportConversationStatus;
 
 type SupportConversation = {
   id: string;
@@ -434,6 +434,7 @@ const SUPPORT_STATUS_FILTERS: {
   labelKey: string;
   fallback: string;
 }[] = [
+  { id: "active", labelKey: "adminConversationFilterActive", fallback: "Ativas" },
   { id: "all", labelKey: "adminConversationFilterAll", fallback: "Todas" },
   { id: "open", labelKey: "supportStatusOpen", fallback: "Abertas" },
   { id: "waiting_admin", labelKey: "supportStatusWaitingAdmin", fallback: "Aguardando equipe" },
@@ -441,6 +442,13 @@ const SUPPORT_STATUS_FILTERS: {
   { id: "resolved", labelKey: "supportStatusResolved", fallback: "Resolvidas" },
   { id: "closed", labelKey: "supportStatusClosed", fallback: "Encerradas" },
 ];
+
+const ACTIVE_SUPPORT_STATUSES: SupportConversationStatus[] = ["open", "waiting_admin", "waiting_user"];
+const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = ["resolved", "closed"];
+
+function isSupportConversationFinal(status: SupportConversationStatus) {
+  return FINAL_SUPPORT_STATUSES.includes(status);
+}
 
 export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const { language, t } = useLanguage();
@@ -475,7 +483,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
   const [conversationSearch, setConversationSearch] = useState("");
-  const [conversationStatusFilter, setConversationStatusFilter] = useState<SupportFilter>("all");
+  const [conversationStatusFilter, setConversationStatusFilter] = useState<SupportFilter>("active");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [conversationReply, setConversationReply] = useState("");
   const [cardCreatorSearch, setCardCreatorSearch] = useState("");
@@ -1652,7 +1660,7 @@ if (!response.ok) {
     if (tabId === "cards") return `${creators.length} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
     if (tabId === "claims") return claims.length;
     if (tabId === "partnerships") return partnerships.length;
-    if (tabId === "conversations") return supportConversations.length;
+    if (tabId === "conversations") return supportConversations.filter((conversation) => ACTIVE_SUPPORT_STATUSES.includes(conversation.status)).length;
     if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
     if (tabId === "statistics") return null;
 
@@ -2111,8 +2119,15 @@ if (!response.ok) {
       accumulator[conversation.status] += 1;
       return accumulator;
     },
-    { all: 0, open: 0, waiting_admin: 0, waiting_user: 0, resolved: 0, closed: 0 },
+    { active: 0, all: 0, open: 0, waiting_admin: 0, waiting_user: 0, resolved: 0, closed: 0 },
   );
+
+  const activeSupportConversationCount = ACTIVE_SUPPORT_STATUSES.reduce(
+    (total, status) => total + conversationStatusCounts[status],
+    0,
+  );
+
+  conversationStatusCounts.active = activeSupportConversationCount;
 
   const filteredSupportConversations = supportConversations.filter((conversation) => {
     const search = conversationSearch.toLowerCase().trim();
@@ -2120,7 +2135,10 @@ if (!response.ok) {
     const creator = getCreator(conversation.creator_id);
 
     const matchesStatus =
-      conversationStatusFilter === "all" || conversation.status === conversationStatusFilter;
+      conversationStatusFilter === "all" ||
+      (conversationStatusFilter === "active"
+        ? ACTIVE_SUPPORT_STATUSES.includes(conversation.status)
+        : conversation.status === conversationStatusFilter);
 
     const searchableText = [
       conversation.subject,
@@ -2225,7 +2243,7 @@ if (!response.ok) {
               )}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
               {ADMIN_TABS.map((tab) => {
                 const counter = getTabCounter(tab.id);
 
@@ -2233,19 +2251,22 @@ if (!response.ok) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    className={`group flex min-h-[56px] items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left transition ${
                       activeTab === tab.id
-                        ? "bg-cyan-300 text-black"
-                        : "border border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+                        ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_28px_rgba(103,232,249,0.18)]"
+                        : "border-white/10 bg-white/[0.035] text-white/62 hover:border-white/18 hover:bg-white/[0.07] hover:text-white"
                     }`}
                   >
-                    <span>{translateExisting(t, tab.labelKey, tab.fallback)}</span>
+                    <span className="line-clamp-2 text-[12px] font-black leading-tight">
+                      {translateExisting(t, tab.labelKey, tab.fallback)}
+                    </span>
+
                     {counter !== null && (
                       <span
-                        className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                        className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-black leading-none ${
                           activeTab === tab.id
                             ? "bg-black/15 text-black"
-                            : "bg-white/10 text-white/70"
+                            : "bg-white/10 text-white/70 group-hover:bg-white/15"
                         }`}
                       >
                         {counter}
@@ -3759,7 +3780,7 @@ if (!response.ok) {
 
                     <div className="flex flex-wrap gap-2">
                       <StatusPill
-                        label={`${supportConversations.length} ${translate(t, "adminConversationsTotal", "conversas")}`}
+                        label={`${activeSupportConversationCount} ${translateExisting(t, "adminActiveConversations", "ativas")}`}
                         tone="cyan"
                       />
                       <StatusPill
@@ -3798,7 +3819,7 @@ if (!response.ok) {
                                 : "border-white/10 bg-black/20 text-white/60 hover:bg-white/[0.06] hover:text-white"
                             }`}
                           >
-                            {translate(t, filter.labelKey, filter.fallback)}
+                            {translateExisting(t, filter.labelKey, filter.fallback)}
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] ${
                                 selected ? "bg-black/15 text-black" : "bg-white/10 text-white/60"
@@ -3949,7 +3970,7 @@ if (!response.ok) {
                             >
                               {SUPPORT_STATUS_FILTERS.filter((filter) => filter.id !== "all").map((filter) => (
                                 <option key={filter.id} value={filter.id} className="bg-zinc-950 text-white">
-                                  {translate(t, filter.labelKey, filter.fallback)}
+                                  {translateExisting(t, filter.labelKey, filter.fallback)}
                                 </option>
                               ))}
                             </select>
@@ -4012,12 +4033,12 @@ if (!response.ok) {
                         </div>
 
                         <div className="mt-5 border-t border-white/10 pt-4">
-                          {selectedSupportConversation.status === "closed" ? (
+                          {isSupportConversationFinal(selectedSupportConversation.status) ? (
                             <div className="rounded-3xl border border-white/10 bg-black/30 p-4 text-sm text-white/45">
                               {translate(
                                 t,
                                 "adminClosedConversationHint",
-                                "Esta conversa está encerrada. Reabra alterando o status antes de responder.",
+                                "Esta conversa foi finalizada. Reabra alterando o status para Aberto/Aguardando antes de responder.",
                               )}
                             </div>
                           ) : (

@@ -910,6 +910,12 @@ type SupportMessageRow = {
   read_at: string | null;
 };
 
+const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = ["resolved", "closed"];
+
+function isSupportConversationFinal(status: SupportConversationStatus) {
+  return FINAL_SUPPORT_STATUSES.includes(status);
+}
+
 const SUPPORT_CONVERSATION_TYPES: {
   id: SupportConversationType;
   labelKey: string;
@@ -1069,7 +1075,7 @@ function SupportChatModal({
 
   async function handleSendReply() {
     if (!currentUserId || !selectedConversation || !reply.trim()) return;
-    if (selectedConversation.status === "closed") return;
+    if (isSupportConversationFinal(selectedConversation.status)) return;
 
     setSaving(true);
     await supabase.from("support_messages").insert({
@@ -1256,9 +1262,9 @@ function SupportChatModal({
               </div>
 
               <div className="border-t border-white/10 p-4">
-                {selectedConversation?.status === "closed" ? (
+                {selectedConversation && isSupportConversationFinal(selectedConversation.status) ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/55">
-                    {translateExisting(t, "supportClosedConversation", "Esta conversa foi encerrada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.")}
+                    {translateExisting(t, "supportClosedConversation", "Esta conversa foi finalizada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.")}
                   </div>
                 ) : (
                   <div className="flex gap-3">
