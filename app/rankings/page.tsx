@@ -118,7 +118,7 @@ function translate(t: unknown, key: string, fallback: string) {
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("pt-BR").format(value);
+  return new Intl.NumberFormat().format(value);
 }
 
 function normalizeRarity(value: unknown): RarityKey | null {
@@ -169,7 +169,7 @@ function getCreatorName(creator: CreatorProfileRow) {
     creator.display_name ||
     creator.name ||
     creator.username ||
-    "Criador Cardpoc"
+    "Cardpoc"
   );
 }
 
@@ -179,7 +179,7 @@ function getUserName(profile: UserProfileRow) {
     profile.full_name ||
     profile.name ||
     profile.username ||
-    "Colecionador Cardpoc"
+    "Cardpoc"
   );
 }
 
@@ -308,7 +308,7 @@ function RankingCard({ block, status }: { block: RankingBlock; status: RankingSt
               {translate(
                 t,
                 "rankingsEmptyDescription",
-                "Este ranking aparece quando houver registros reais suficientes no Supabase.",
+                "Este ranking aparece quando houver registros reais suficientes no Cardpoc.",
               )}
             </p>
           </div>
@@ -497,7 +497,7 @@ export default function RankingsPage() {
               {translate(
                 t,
                 "rankingsPageDescription",
-                "Acompanhe rankings reais de criadores e colecionadores com base nos dados do Cardpoc.",
+                "Acompanhe os criadores e colecionadores que mais se destacam no Cardpoc.",
               )}
             </p>
           </div>
@@ -505,7 +505,7 @@ export default function RankingsPage() {
           <div className="hidden rounded-3xl border border-white/10 bg-black/20 px-4 py-3 text-right text-xs font-semibold text-slate-500 shadow-[0_18px_70px_rgba(0,0,0,0.24)] sm:block">
             {status === "error"
               ? translate(t, "rankingsErrorNotice", "Não foi possível carregar alguns dados agora.")
-              : translate(t, "rankingsRealDataNotice", "Dados reais do Supabase.")}
+              : translate(t, "rankingsRealDataNotice", "Rankings atualizados com dados reais.")}
           </div>
         </div>
 
@@ -524,7 +524,7 @@ export default function RankingsPage() {
                   ? translate(
                       t,
                       "rankingsYourProgressDescription",
-                      "Estas posições usam apenas dados reais do seu usuário no Cardpoc.",
+                      "Acompanhe sua evolução em XP, cartas, pacotes e criadores seguidos.",
                     )
                   : translate(
                       t,
@@ -582,7 +582,7 @@ export default function RankingsPage() {
           <p className="px-2 text-center text-xs font-semibold text-slate-500 sm:text-right">
             {status === "error"
               ? translate(t, "rankingsErrorNotice", "Não foi possível carregar alguns dados agora.")
-              : translate(t, "rankingsRealDataNotice", "Dados reais do Supabase.")}
+              : translate(t, "rankingsRealDataNotice", "Rankings atualizados com dados reais.")}
           </p>
         </div>
 
