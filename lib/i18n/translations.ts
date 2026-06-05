@@ -26,6 +26,14 @@ export const translations = {
     rankingsCollectorsTab: "Colecionadores",
     rankingsMockNotice:
       "Dados temporários para validar o visual. A próxima etapa conecta ao Supabase.",
+    rankingsRealDataNotice:
+      "Os rankings são calculados com dados reais do Cardpoc.",
+    rankingsLoading: "Carregando rankings...",
+    rankingsErrorNotice:
+      "Não foi possível carregar os rankings no momento.",
+    rankingsEmptyTitle: "Nenhum dado disponível",
+    rankingsEmptyDescription:
+      "Ainda não há informações suficientes para exibir este ranking.",
     rankingsCreatorHighestLevel: "Maior nível",
     rankingsCreatorHighestLevelDescription:
       "Criadores que mais evoluíram dentro do Cardpoc.",
@@ -38,6 +46,9 @@ export const translations = {
     rankingsCreatorMostEpicCards: "Mais cartas épicas",
     rankingsCreatorMostEpicCardsDescription:
       "Criadores com mais cartas épicas distribuídas.",
+    rankingsCreatorMostRareCards: "Mais cartas raras",
+    rankingsCreatorMostRareCardsDescription:
+      "Criadores com mais cartas raras distribuídas.",
     rankingsCollectorMostXp: "Mais XP",
     rankingsCollectorMostXpDescription:
       "Colecionadores com maior experiência acumulada.",
@@ -54,6 +65,11 @@ export const translations = {
     rankingsYourPositionTitle: "Seu progresso nos rankings",
     rankingsYourPositionDescription:
       "Em breve este bloco mostrará sua posição real usando XP, cartas, pacotes e criadores seguidos.",
+    rankingsYourProgressTitle: "Sua posição",
+    rankingsYourProgressDescription:
+      "Acompanhe sua evolução dentro da plataforma.",
+    rankingsYourProgressLoggedOutDescription:
+      "Faça login para visualizar sua posição nos rankings.",
     rankingsXpPosition: "XP",
     rankingsCardsPosition: "Cartas",
     rankingsPacksPosition: "Pacotes",
@@ -1096,6 +1112,14 @@ export const translations = {
     rankingsCollectorsTab: "Collectors",
     rankingsMockNotice:
       "Temporary data to validate the visual. The next step connects Supabase.",
+    rankingsRealDataNotice:
+      "Rankings are calculated using real Cardpoc data.",
+    rankingsLoading: "Loading rankings...",
+    rankingsErrorNotice:
+      "Unable to load rankings right now.",
+    rankingsEmptyTitle: "No data available",
+    rankingsEmptyDescription:
+      "There is not enough information to display this ranking yet.",
     rankingsCreatorHighestLevel: "Highest level",
     rankingsCreatorHighestLevelDescription:
       "Creators who evolved the most inside Cardpoc.",
@@ -1108,6 +1132,9 @@ export const translations = {
     rankingsCreatorMostEpicCards: "Most epic cards",
     rankingsCreatorMostEpicCardsDescription:
       "Creators with the most epic cards distributed.",
+    rankingsCreatorMostRareCards: "Most rare cards",
+    rankingsCreatorMostRareCardsDescription:
+      "Creators with the most rare cards distributed.",
     rankingsCollectorMostXp: "Most XP",
     rankingsCollectorMostXpDescription:
       "Collectors with the highest accumulated experience.",
@@ -1124,6 +1151,11 @@ export const translations = {
     rankingsYourPositionTitle: "Your ranking progress",
     rankingsYourPositionDescription:
       "Soon this block will show your real position using XP, cards, packs and followed creators.",
+    rankingsYourProgressTitle: "Your position",
+    rankingsYourProgressDescription:
+      "Track your progress across the platform.",
+    rankingsYourProgressLoggedOutDescription:
+      "Sign in to view your ranking positions.",
     rankingsXpPosition: "XP",
     rankingsCardsPosition: "Cards",
     rankingsPacksPosition: "Packs",
@@ -2161,6 +2193,14 @@ export const translations = {
     rankingsCollectorsTab: "Coleccionistas",
     rankingsMockNotice:
       "Datos temporales para validar el visual. El próximo paso conecta Supabase.",
+    rankingsRealDataNotice:
+      "Los rankings se calculan con datos reales de Cardpoc.",
+    rankingsLoading: "Cargando rankings...",
+    rankingsErrorNotice:
+      "No fue posible cargar los rankings en este momento.",
+    rankingsEmptyTitle: "No hay datos disponibles",
+    rankingsEmptyDescription:
+      "Aún no hay información suficiente para mostrar este ranking.",
     rankingsCreatorHighestLevel: "Mayor nivel",
     rankingsCreatorHighestLevelDescription:
       "Creadores que más evolucionaron dentro de Cardpoc.",
@@ -2173,6 +2213,9 @@ export const translations = {
     rankingsCreatorMostEpicCards: "Más cartas épicas",
     rankingsCreatorMostEpicCardsDescription:
       "Creadores con más cartas épicas distribuidas.",
+    rankingsCreatorMostRareCards: "Más cartas raras",
+    rankingsCreatorMostRareCardsDescription:
+      "Creadores con más cartas raras distribuidas.",
     rankingsCollectorMostXp: "Más XP",
     rankingsCollectorMostXpDescription:
       "Coleccionistas con mayor experiencia acumulada.",
@@ -2189,6 +2232,11 @@ export const translations = {
     rankingsYourPositionTitle: "Tu progreso en los rankings",
     rankingsYourPositionDescription:
       "Pronto este bloque mostrará tu posición real usando XP, cartas, paquetes y creadores seguidos.",
+    rankingsYourProgressTitle: "Tu posición",
+    rankingsYourProgressDescription:
+      "Sigue tu progreso dentro de la plataforma.",
+    rankingsYourProgressLoggedOutDescription:
+      "Inicia sesión para ver tu posición en los rankings.",
     rankingsXpPosition: "XP",
     rankingsCardsPosition: "Cartas",
     rankingsPacksPosition: "Paquetes",
