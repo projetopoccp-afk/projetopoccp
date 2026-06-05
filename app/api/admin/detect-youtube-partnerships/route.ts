@@ -420,6 +420,32 @@ function formatBrandName(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function inferKnownBrandFromDomain(hostname: string, domain: string) {
+  const normalizedHost = hostname.toLowerCase();
+  const normalizedDomain = domain.toLowerCase();
+
+  if (
+    normalizedHost.includes("netease") ||
+    normalizedDomain.includes("netease") ||
+    normalizedHost.includes("oncehuman") ||
+    normalizedDomain.includes("oncehuman") ||
+    normalizedHost.includes("marvelrivals") ||
+    normalizedDomain.includes("marvelrivals")
+  ) {
+    return {
+      brandName: "NetEase",
+      campaignName: normalizedHost.includes("marvelrivals")
+        ? "Marvel Rivals"
+        : normalizedHost.includes("oncehuman")
+          ? "Once Human"
+          : undefined,
+      score: 96,
+    };
+  }
+
+  return null;
+}
+
 function extractLinks(text: string): DetectedLink[] {
   const matches = text.match(/https?:\/\/[^\s)\]}>"']+/gi) ?? [];
   const uniqueUrls = Array.from(new Set(matches.map(sanitizeRawUrl)));
