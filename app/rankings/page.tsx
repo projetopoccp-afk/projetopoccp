@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
+import { GlowBackground } from "@/components/effects/GlowBackground";
+import { ParticleBackground } from "@/components/effects/ParticleBackground";
 
 type RankingTab = "creators" | "collectors";
 type RankingStatus = "idle" | "loading" | "ready" | "error";
@@ -459,33 +461,38 @@ export default function RankingsPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020607] text-white">
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.10),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.08),transparent_26%),radial-gradient(circle_at_50%_105%,rgba(14,165,233,0.07),transparent_34%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-30" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.44)_72%,rgba(0,0,0,0.9)_100%)]" />
-      </div>
+      <GlowBackground />
+      <ParticleBackground />
 
-      <section className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100 shadow-[0_0_32px_rgba(34,211,238,0.13)]">
-            <Trophy className="h-4 w-4" />
-            {translate(t, "rankingsEyebrow", "Ranking Cardpoc")}
+      <section className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-16 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100 shadow-[0_0_32px_rgba(34,211,238,0.13)]">
+              <Trophy className="h-4 w-4" />
+              {translate(t, "rankingsEyebrow", "Ranking Cardpoc")}
+            </div>
+
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+              {translate(t, "rankingsPageTitle", "Rankings")}
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+              {translate(
+                t,
+                "rankingsPageDescription",
+                "Acompanhe rankings reais de criadores e colecionadores com base nos dados do Cardpoc.",
+              )}
+            </p>
           </div>
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {translate(t, "rankingsPageTitle", "Rankings")}
-          </h1>
-
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-            {translate(
-              t,
-              "rankingsPageDescription",
-              "Acompanhe rankings reais de criadores e colecionadores com base nos dados do Cardpoc.",
-            )}
-          </p>
+          <div className="hidden rounded-3xl border border-white/10 bg-black/20 px-4 py-3 text-right text-xs font-semibold text-slate-500 shadow-[0_18px_70px_rgba(0,0,0,0.24)] sm:block">
+            {status === "error"
+              ? translate(t, "rankingsErrorNotice", "Não foi possível carregar alguns dados agora.")
+              : translate(t, "rankingsRealDataNotice", "Dados reais do Supabase.")}
+          </div>
         </div>
 
-        <div className="mt-10 rounded-[2rem] border border-cyan-300/15 bg-black/24 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.26)]">
+        <div className="mt-6 rounded-[2rem] border border-cyan-300/15 bg-black/24 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.26)]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
