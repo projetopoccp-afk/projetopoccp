@@ -10,7 +10,6 @@ import {
   Target,
   Trophy,
   Users,
-  X,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
@@ -411,23 +410,11 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
       {open && (
         <CardpocModalShell
           onClose={onClose}
+          showCloseButton
+          closeLabel={translate(t, "missionsModalCloseAria", "Fechar missões")}
           zIndexClassName="z-[120]"
           className="h-auto max-h-[92vh] max-w-6xl rounded-[32px]"
         >
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-5 top-5 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(
-                t,
-                "missionsModalCloseAria",
-                "Fechar missões",
-              )}
-            >
-              <X size={18} />
-            </button>
-
             <div className="relative z-10 max-h-[92vh] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8">
               <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-cyan-100 shadow-lg shadow-cyan-500/10">
                 <Target size={14} />
