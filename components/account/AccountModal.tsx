@@ -11,9 +11,9 @@ import {
   UserRound,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
 import { UserProfileModal } from "@/components/account/UserProfileModal";
@@ -187,16 +187,14 @@ export function AccountModal({
     <>
       <AnimatePresence>
         {open && (
-            <CardpocModalShell
-              onClose={onClose}
-              showCloseButton
-              closeLabel={translate(t, "close", "Fechar")}
-              zIndexClassName="z-[80]"
-              className="max-w-4xl"
-              contentClassName="max-h-[90vh] overflow-y-auto p-6 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8 md:pb-6"
-            >
-
-              <div className="relative z-10">
+          <CardpocModalShell
+            onClose={onClose}
+            showCloseButton
+            closeLabel={translate(t, "close", "Fechar")}
+            zIndexClassName="z-[80]"
+            className="max-w-4xl"
+            contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 pb-5 md:p-8 md:pb-6"
+          >
                 <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
                   {translate(t, "myAccount", "Minha Conta")}
                 </div>
@@ -362,9 +360,7 @@ export function AccountModal({
                   <LogOut size={18} />
                   {translate(t, "logoutAccount", "Sair da conta")}
                 </button>
-              </div>
-            </div>
-            </CardpocModalShell>
+          </CardpocModalShell>
         )}
       </AnimatePresence>
 
