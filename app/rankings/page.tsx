@@ -78,6 +78,9 @@ type RankingItem = {
   avatarUrl?: string;
   value: string;
   detail: string;
+  detailKey?: string;
+  detailFallback?: string;
+  detailValue?: string;
   href?: string;
   rawValue: number;
 };
@@ -220,7 +223,8 @@ function rankPosition(items: RankingItem[], userId?: string | null) {
 function buildCreatorRankingItem(
   creator: CreatorProfileRow,
   value: number,
-  detail: string,
+  detailKey: string,
+  detailFallback: string,
 ): RankingItem {
   const id = String(creator.id ?? creator.username ?? crypto.randomUUID());
   const username = creator.username ?? undefined;
@@ -231,7 +235,9 @@ function buildCreatorRankingItem(
     username,
     avatarUrl: String(creator.image_url ?? creator.avatar_url ?? "") || undefined,
     value: formatNumber(value),
-    detail,
+    detail: detailFallback,
+    detailKey,
+    detailFallback,
     href: username ? `/creator/${username}` : undefined,
     rawValue: value,
   };
@@ -240,7 +246,9 @@ function buildCreatorRankingItem(
 function buildCollectorRankingItem(
   profile: UserProfileRow,
   value: number,
-  detail: string,
+  detailKey: string,
+  detailFallback: string,
+  detailValue?: string,
 ): RankingItem {
   const id = String(profile.id ?? profile.username ?? crypto.randomUUID());
   const username = profile.username ?? undefined;
@@ -251,7 +259,10 @@ function buildCollectorRankingItem(
     username,
     avatarUrl: String(profile.avatar_url ?? profile.image_url ?? "") || undefined,
     value: formatNumber(value),
-    detail,
+    detail: detailValue ? `${detailFallback} ${detailValue}` : detailFallback,
+    detailKey,
+    detailFallback,
+    detailValue,
     rawValue: value,
   };
 }
@@ -304,6 +315,12 @@ function RankingCard({ block, status }: { block: RankingBlock; status: RankingSt
         ) : (
           block.items.map((item, index) => {
             const position = index + 1;
+            const translatedDetail = item.detailKey
+              ? `${translate(t, item.detailKey, item.detailFallback ?? item.detail)}${
+                  item.detailValue ? ` ${item.detailValue}` : ""
+                }`
+              : item.detail;
+
             const content = (
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition duration-300 hover:border-cyan-300/25 hover:bg-cyan-300/[0.055]">
                 <div
@@ -326,14 +343,14 @@ function RankingCard({ block, status }: { block: RankingBlock; status: RankingSt
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold text-white">{item.name}</p>
                   <p className="truncate text-xs text-slate-500">
-                    {item.username ? `@${item.username}` : item.detail}
+                    {item.username ? `@${item.username}` : translatedDetail}
                   </p>
                 </div>
 
                 <div className="text-right">
                   <p className="text-sm font-black text-cyan-100">{item.value}</p>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {item.detail}
+                    {translatedDetail}
                   </p>
                 </div>
               </div>
@@ -623,7 +640,11 @@ function buildCreatorBlocks(
     }
   });
 
-  const buildItems = (source: Map<string, number>, detail: string) => {
+  const buildItems = (
+    source: Map<string, number>,
+    detailKey: string,
+    detailFallback: string,
+  ) => {
     return sortRankingItems(
       Array.from(source.entries()).flatMap(([creatorId, value]) => {
         const creator = creatorById.get(creatorId);
@@ -632,7 +653,7 @@ function buildCreatorBlocks(
           return [];
         }
 
-        return [buildCreatorRankingItem(creator, value, detail)];
+        return [buildCreatorRankingItem(creator, value, detailKey, detailFallback)];
       }),
     );
   };
@@ -645,7 +666,7 @@ function buildCreatorBlocks(
       descriptionKey: "rankingsCreatorMostCollectedDescription",
       descriptionFallback: "Quantidade total de cartas desse criador nas coleções.",
       icon: Sparkles,
-      items: buildItems(totalCardsByCreator, "cartas coletadas"),
+      items: buildItems(totalCardsByCreator, "rankingsCollectedCardsLabel", "cartas coletadas"),
     },
     {
       id: "creator-legendary",
@@ -654,7 +675,7 @@ function buildCreatorBlocks(
       descriptionKey: "rankingsCreatorMostLegendaryCardsDescription",
       descriptionFallback: "Criadores com mais cartas lendárias distribuídas.",
       icon: Gem,
-      items: buildItems(legendaryCardsByCreator, "lendárias em coleções"),
+      items: buildItems(legendaryCardsByCreator, "rankingsLegendaryCardsInCollectionsLabel", "lendárias em coleções"),
     },
     {
       id: "creator-epic",
@@ -663,7 +684,7 @@ function buildCreatorBlocks(
       descriptionKey: "rankingsCreatorMostEpicCardsDescription",
       descriptionFallback: "Criadores com mais cartas épicas distribuídas.",
       icon: Crown,
-      items: buildItems(epicCardsByCreator, "épicas em coleções"),
+      items: buildItems(epicCardsByCreator, "rankingsEpicCardsInCollectionsLabel", "épicas em coleções"),
     },
     {
       id: "creator-rare",
@@ -672,7 +693,7 @@ function buildCreatorBlocks(
       descriptionKey: "rankingsCreatorMostRareCardsDescription",
       descriptionFallback: "Criadores com mais cartas raras distribuídas.",
       icon: Star,
-      items: buildItems(rareCardsByCreator, "raras em coleções"),
+      items: buildItems(rareCardsByCreator, "rankingsRareCardsInCollectionsLabel", "raras em coleções"),
     },
   ];
 }
@@ -735,7 +756,11 @@ function buildCollectorBlocks(
     followingByUser.get(userId)?.add(creatorId);
   });
 
-  const buildUserItemsFromMap = (source: Map<string, number>, detail: string) => {
+  const buildUserItemsFromMap = (
+    source: Map<string, number>,
+    detailKey: string,
+    detailFallback: string,
+  ) => {
     return sortRankingItems(
       Array.from(source.entries()).flatMap(([userId, value]) => {
         const profile = profileById.get(userId);
@@ -744,7 +769,7 @@ function buildCollectorBlocks(
           return [];
         }
 
-        return [buildCollectorRankingItem(profile, value, detail)];
+        return [buildCollectorRankingItem(profile, value, detailKey, detailFallback)];
       }),
     );
   };
@@ -753,9 +778,20 @@ function buildCollectorBlocks(
     profiles.map((profile) => {
       const xp = Number(profile.xp ?? 0);
       const level = Number(profile.level ?? 0);
-      const detail = level > 0 ? `nível ${level}` : "XP acumulado";
-
-      return buildCollectorRankingItem(profile, xp, detail);
+      return level > 0
+        ? buildCollectorRankingItem(
+            profile,
+            xp,
+            "rankingsLevelDetailLabel",
+            "nível",
+            String(level),
+          )
+        : buildCollectorRankingItem(
+            profile,
+            xp,
+            "rankingsAccumulatedXpLabel",
+            "XP acumulado",
+          );
     }),
   );
 
@@ -767,7 +803,14 @@ function buildCollectorBlocks(
         return [];
       }
 
-      return [buildCollectorRankingItem(profile, creatorIds.size, "criadores seguidos")];
+      return [
+        buildCollectorRankingItem(
+          profile,
+          creatorIds.size,
+          "rankingsFollowedCreatorsLabel",
+          "criadores seguidos",
+        ),
+      ];
     }),
   );
 
@@ -788,7 +831,11 @@ function buildCollectorBlocks(
       descriptionKey: "rankingsCollectorMostCardsDescription",
       descriptionFallback: "Usuários com mais cartas na coleção.",
       icon: Sparkles,
-      items: buildUserItemsFromMap(cardsByUser, "cartas coletadas"),
+      items: buildUserItemsFromMap(
+        cardsByUser,
+        "rankingsCollectedCardsLabel",
+        "cartas coletadas",
+      ),
     },
     {
       id: "collector-packs",
@@ -797,7 +844,11 @@ function buildCollectorBlocks(
       descriptionKey: "rankingsCollectorMostOpenedPacksDescription",
       descriptionFallback: "Quem mais abriu pacotes dentro do Cardpoc.",
       icon: PackageOpen,
-      items: buildUserItemsFromMap(packsByUser, "pacotes abertos"),
+      items: buildUserItemsFromMap(
+        packsByUser,
+        "rankingsOpenedPacksLabel",
+        "pacotes abertos",
+      ),
     },
     {
       id: "collector-following",
