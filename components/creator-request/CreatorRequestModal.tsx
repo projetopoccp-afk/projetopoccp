@@ -409,15 +409,18 @@ export function CreatorRequestModal({
         <CardpocModalShell
           onClose={onClose}
           className="max-w-3xl"
-          contentClassName="no-scrollbar overflow-y-auto p-8 text-white"
+          contentClassName="no-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-8 text-white"
           zIndexClassName="z-[90]"
         >
-            <button
-              onClick={onClose}
-              className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 hover:text-white"
-            >
-              <X size={18} />
-            </button>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={onClose}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+                aria-label={translate(t, "close", "Fechar")}
+              >
+                <X size={18} />
+              </button>
+            </div>
 
             <div className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
               {translate(t, "creatorRequestModalBadge", "Creator Request")}
