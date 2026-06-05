@@ -2071,4 +2071,3 @@ function InfoCard({
     </div>
   );
 }
-
