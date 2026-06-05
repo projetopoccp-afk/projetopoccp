@@ -933,25 +933,27 @@ function CollectionCardShowcase({
         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
         transition={{ duration: 0.25 }}
         onClick={onClose}
-        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
+        className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/90 p-4"
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-          aria-label={translate(t, "closeCard", "Fechar carta")}
-        >
-          <X size={20} />
-        </button>
-
         <motion.div
           initial={{ opacity: 0, scale: 0.82, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
           onClick={(event) => event.stopPropagation()}
-          className="relative z-20 flex flex-col items-center gap-5"
+          className="relative z-20 my-auto flex w-full max-w-md flex-col items-center gap-5 py-4"
         >
+          <div className="flex w-full justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+              aria-label={translate(t, "closeCard", "Fechar carta")}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
           <div className="flex flex-wrap items-center justify-center gap-2">
             {isCardNew(card) && (
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
