@@ -6,6 +6,7 @@ import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { CreatorGrid } from "@/components/home/CreatorGrid";
 import { LoadingScreen } from "@/components/loading/LoadingScreen";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
@@ -352,29 +353,20 @@ export default function HomePage() {
       </div>
 
       {showCardpocGuide && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-          aria-label={translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
-          onClick={() => setShowCardpocGuide(false)}
+        <CardpocModalShell
+          onClose={() => setShowCardpocGuide(false)}
+          showCloseButton
+          closeLabel={translate(t, "close", "Fechar")}
+          zIndexClassName="z-50"
+          className="max-w-4xl"
+          contentClassName="flex max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden"
         >
           <div
-            className="relative flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[32px] border border-cyan-300/20 bg-[#050812]/95 shadow-[0_0_60px_rgba(34,211,238,0.16)]"
-            onClick={(event) => event.stopPropagation()}
+            className="flex min-h-0 flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label={translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
           >
-            <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-cyan-400/20 blur-3xl" />
-            <div className="absolute -bottom-20 -right-16 h-48 w-48 rounded-full bg-purple-500/20 blur-3xl" />
-
-            <button
-              type="button"
-              onClick={() => setShowCardpocGuide(false)}
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:border-cyan-300/30 hover:text-white"
-              aria-label={translate(t, "close", "Fechar")}
-            >
-              ×
-            </button>
-
             <div className="relative border-b border-white/10 p-6 pr-16 sm:p-8 sm:pr-20">
               <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
                 <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
@@ -487,7 +479,7 @@ export default function HomePage() {
               )}
             </div>
           </div>
-        </div>
+        </CardpocModalShell>
       )}
     </main>
   );
