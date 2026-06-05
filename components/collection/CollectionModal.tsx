@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { TiltCard } from "@/components/cards/TiltCard";
+import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Creator } from "@/types/creator";
