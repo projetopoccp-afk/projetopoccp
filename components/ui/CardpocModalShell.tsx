@@ -33,7 +33,7 @@ export function CardpocModalShell({
         exit={{ opacity: 0, y: 18, scale: 0.96 }}
         transition={{ duration: 0.32, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className={`relative flex h-[calc(100vh-1.5rem)] max-h-[790px] w-full max-w-7xl overflow-hidden rounded-[34px] border border-cyan-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(236,72,153,0.22),transparent_34%),radial-gradient(circle_at_85%_100%,rgba(34,211,238,0.24),transparent_36%),radial-gradient(circle_at_50%_8%,rgba(168,85,247,0.16),transparent_38%),linear-gradient(135deg,#101322_0%,#0b1020_46%,#050813_100%)] shadow-[0_0_90px_rgba(34,211,238,0.13),0_0_120px_rgba(0,0,0,0.82)] ${className}`}
+        className={`relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-7xl overflow-hidden rounded-[34px] border border-cyan-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(236,72,153,0.22),transparent_34%),radial-gradient(circle_at_85%_100%,rgba(34,211,238,0.24),transparent_36%),radial-gradient(circle_at_50%_8%,rgba(168,85,247,0.16),transparent_38%),linear-gradient(135deg,#101322_0%,#0b1020_46%,#050813_100%)] shadow-[0_0_90px_rgba(34,211,238,0.13),0_0_120px_rgba(0,0,0,0.82)] ${className}`}
       >
         <div className="pointer-events-none absolute inset-0 opacity-[0.34] [background-image:linear-gradient(rgba(255,255,255,0.085)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.085)_1px,transparent_1px)] [background-size:42px_42px]" />
 
@@ -43,7 +43,9 @@ export function CardpocModalShell({
         <div className="pointer-events-none absolute bottom-[-80px] right-[-80px] h-80 w-80 rounded-full bg-cyan-400/26 blur-[95px]" />
         <div className="pointer-events-none absolute left-1/2 top-4 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-500/18 blur-[115px]" />
 
-        <div className={`relative z-10 h-full w-full ${contentClassName}`}>
+        <div
+          className={`relative z-10 min-h-0 w-full ${contentClassName}`}
+        >
           {children}
         </div>
       </motion.div>
