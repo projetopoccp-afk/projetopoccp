@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   Gift,
+  Handshake,
   History,
   Ban,
   BarChart3,
@@ -29,7 +30,7 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "logs" | "statistics";
+type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "partnerships" | "logs" | "statistics";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
@@ -49,6 +50,7 @@ const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "creators", labelKey: "adminProfiles", fallback: "Perfis" },
   { id: "cards", labelKey: "adminManageCards", fallback: "Gerenciar Cartas" },
   { id: "claims", labelKey: "adminClaims", fallback: "Reivindicações" },
+  { id: "partnerships", labelKey: "adminPartnerships", fallback: "Parcerias Detectadas" },
   { id: "logs", labelKey: "adminActivities", fallback: "Atividades" },
   { id: "statistics", labelKey: "adminStatistics", fallback: "Estatísticas" },
 ];
@@ -247,6 +249,31 @@ type CreatorClaim = {
   created_at: string;
 };
 
+
+type CreatorPartnership = {
+  id: string;
+  creator_id: string;
+  brand_name: string;
+  partnership_type: string;
+  source_platform: string;
+  source_url: string | null;
+  evidence_text: string | null;
+  evidence_payload: Record<string, unknown> | null;
+  detection_reason: string | null;
+  confidence_score: number | null;
+  status: "suggested" | "verified" | "rejected" | "manual";
+  is_active: boolean | null;
+  start_date: string | null;
+  end_date: string | null;
+  created_by: string | null;
+  verified_by: string | null;
+  rejected_by: string | null;
+  verified_at: string | null;
+  rejected_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+};
+
 type AdminStats = {
   visits: number;
   logins: number;
@@ -279,6 +306,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [users, setUsers] = useState<ProfileUser[]>([]);
   const [creators, setCreators] = useState<CreatorProfile[]>([]);
   const [claims, setClaims] = useState<CreatorClaim[]>([]);
+  const [partnerships, setPartnerships] = useState<CreatorPartnership[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     visits: 0,
@@ -295,6 +323,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [requestSearch, setRequestSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
   const [claimSearch, setClaimSearch] = useState("");
+  const [partnershipSearch, setPartnershipSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
   const [cardCreatorSearch, setCardCreatorSearch] = useState("");
   const [cardUserSearch, setCardUserSearch] = useState("");
@@ -321,6 +350,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     Record<string, boolean>
   >({});
   const [expandedClaims, setExpandedClaims] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [expandedPartnerships, setExpandedPartnerships] = useState<Record<string, boolean>>(
     {},
   );
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
@@ -423,6 +455,17 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setClaims((data || []) as CreatorClaim[]);
   }
 
+
+  async function loadPartnerships() {
+    const { data } = await supabase
+      .from("creator_partnerships")
+      .select("*")
+      .eq("status", "suggested")
+      .order("created_at", { ascending: false });
+
+    setPartnerships((data || []) as CreatorPartnership[]);
+  }
+
   async function loadLogs() {
     const { data } = await supabase
       .from("admin_logs")
@@ -474,6 +517,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       loadUsers(),
       loadCreators(),
       loadClaims(),
+      loadPartnerships(),
       loadLogs(),
       loadStats(),
     ]);
@@ -726,6 +770,157 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
     setActionLoading(null);
     await loadPanel();
+  }
+
+
+  async function approvePartnership(partnership: CreatorPartnership) {
+    setActionLoading(partnership.id);
+
+    const adminId = await getCurrentUserId();
+
+    if (!adminId) {
+      setActionLoading(null);
+      return;
+    }
+
+    const creator = getCreator(partnership.creator_id);
+
+    const { error } = await supabase
+      .from("creator_partnerships")
+      .update({
+        status: "verified",
+        verified_by: adminId,
+        verified_at: new Date().toISOString(),
+        rejected_by: null,
+        rejected_at: null,
+      })
+      .eq("id", partnership.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "approve_creator_partnership",
+      targetType: "creator_partnership",
+      targetId: partnership.id,
+      metadata: {
+        creator_id: partnership.creator_id,
+        creator_nickname: creator?.nickname,
+        creator_username: creator?.username,
+        brand_name: partnership.brand_name,
+        partnership_type: partnership.partnership_type,
+        source_platform: partnership.source_platform,
+        source_url: partnership.source_url,
+        confidence_score: partnership.confidence_score,
+      },
+    });
+
+    setActionLoading(null);
+    await loadPartnerships();
+    await loadLogs();
+    showAdminSuccess(
+      translate(t, "adminPartnershipApprovedSuccess", "Parceria aprovada com sucesso."),
+    );
+  }
+
+  async function rejectPartnership(partnership: CreatorPartnership) {
+    setActionLoading(partnership.id);
+
+    const adminId = await getCurrentUserId();
+
+    if (!adminId) {
+      setActionLoading(null);
+      return;
+    }
+
+    const creator = getCreator(partnership.creator_id);
+
+    const { error } = await supabase
+      .from("creator_partnerships")
+      .update({
+        status: "rejected",
+        rejected_by: adminId,
+        rejected_at: new Date().toISOString(),
+      })
+      .eq("id", partnership.id);
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action: "reject_creator_partnership",
+      targetType: "creator_partnership",
+      targetId: partnership.id,
+      metadata: {
+        creator_id: partnership.creator_id,
+        creator_nickname: creator?.nickname,
+        creator_username: creator?.username,
+        brand_name: partnership.brand_name,
+        partnership_type: partnership.partnership_type,
+        source_platform: partnership.source_platform,
+        source_url: partnership.source_url,
+        confidence_score: partnership.confidence_score,
+      },
+    });
+
+    setActionLoading(null);
+    await loadPartnerships();
+    await loadLogs();
+    showAdminSuccess(
+      translate(t, "adminPartnershipRejectedSuccess", "Parceria rejeitada."),
+    );
+  }
+
+  async function detectYouTubePartnerships() {
+    setActionLoading("detect-youtube-partnerships");
+
+    try {
+      const response = await fetch("/api/admin/detect-youtube-partnerships", {
+        method: "POST",
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ||
+            translate(
+              t,
+              "adminPartnershipDetectionError",
+              "Não foi possível detectar parcerias do YouTube agora.",
+            ),
+        );
+      }
+
+      await loadPartnerships();
+      await loadLogs();
+
+      showAdminSuccess(
+        translate(
+          t,
+          "adminPartnershipDetectionSuccess",
+          "Detecção do YouTube concluída.",
+        ),
+      );
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : translate(
+              t,
+              "adminPartnershipDetectionError",
+              "Não foi possível detectar parcerias do YouTube agora.",
+            ),
+      );
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function toggleAdmin(targetUser: ProfileUser) {
@@ -986,6 +1181,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     if (tabId === "creators") return creators.length;
     if (tabId === "cards") return `${creators.length} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
     if (tabId === "claims") return claims.length;
+    if (tabId === "partnerships") return partnerships.length;
     if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
     if (tabId === "statistics") return null;
 
@@ -1056,6 +1252,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         t,
         "adminActivityGiveawayPacks",
         "{actor} enviou pacotes em giveaway.",
+      ),
+      approve_creator_partnership: translate(
+        t,
+        "adminActivityApprovedPartnership",
+        "{actor} aprovou a parceria de {target}.",
+      ),
+      reject_creator_partnership: translate(
+        t,
+        "adminActivityRejectedPartnership",
+        "{actor} rejeitou a parceria de {target}.",
       ),
       ban_user: translate(t, "adminActivityBannedUser", "{actor} baniu {target}."),
       unban_user: translate(
@@ -1363,6 +1569,27 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       claim.verification_platform,
       claim.verification_url,
       claim.verification_code,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search);
+  });
+
+
+  const filteredPartnerships = partnerships.filter((partnership) => {
+    const search = partnershipSearch.toLowerCase().trim();
+    const creator = getCreator(partnership.creator_id);
+
+    const searchableText = [
+      partnership.brand_name,
+      partnership.partnership_type,
+      partnership.source_platform,
+      partnership.source_url,
+      partnership.evidence_text,
+      partnership.detection_reason,
+      creator?.nickname,
+      creator?.username,
     ]
       .join(" ")
       .toLowerCase();
@@ -2762,6 +2989,224 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
               </div>
             )}
 
+
+            {!loading && activeTab === "partnerships" && (
+              <div className="mt-8">
+                <div className="rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
+                        <Handshake size={14} />
+                        {translate(t, "adminPartnershipsBadge", "YouTube Detector")}
+                      </div>
+
+                      <h3 className="mt-4 text-2xl font-black text-white">
+                        {translate(t, "adminPartnershipsTitle", "Parcerias Detectadas")}
+                      </h3>
+
+                      <p className="mt-2 max-w-2xl text-sm text-white/50">
+                        {translate(
+                          t,
+                          "adminPartnershipsDescription",
+                          "Sugestões encontradas automaticamente ficam aqui para aprovação. Parcerias criadas manualmente pelo criador não passam por esta fila.",
+                        )}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={detectYouTubePartnerships}
+                      disabled={actionLoading === "detect-youtube-partnerships"}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                    >
+                      <Search size={16} />
+                      {actionLoading === "detect-youtube-partnerships"
+                        ? translate(t, "adminPartnershipDetecting", "Detectando...")
+                        : translate(t, "adminDetectYouTubePartnerships", "Detectar YouTube")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <SearchInput
+                    value={partnershipSearch}
+                    onChange={setPartnershipSearch}
+                    placeholder={translate(
+                      t,
+                      "adminSearchPartnershipPlaceholder",
+                      "Buscar por marca, criador, plataforma ou evidência...",
+                    )}
+                  />
+                </div>
+
+                <div className="mt-5 grid gap-4">
+                  {filteredPartnerships.length === 0 && (
+                    <EmptyBox
+                      text={translate(
+                        t,
+                        "adminNoDetectedPartnerships",
+                        "Nenhuma parceria detectada aguardando aprovação.",
+                      )}
+                    />
+                  )}
+
+                  {filteredPartnerships.map((partnership) => {
+                    const creator = getCreator(partnership.creator_id);
+                    const isExpanded = expandedPartnerships[partnership.id] ?? false;
+                    const confidenceScore = partnership.confidence_score ?? 0;
+
+                    return (
+                      <div
+                        key={partnership.id}
+                        className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] backdrop-blur-xl"
+                      >
+                        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
+                              <Handshake size={30} />
+                            </div>
+
+                            <div>
+                              <h3 className="text-xl font-black text-white">
+                                {partnership.brand_name}
+                              </h3>
+
+                              <p className="text-sm text-white/45">
+                                {creator
+                                  ? `${creator.nickname} • @${creator.username}`
+                                  : translate(t, "creatorNotFound", "Creator não encontrado")}
+                              </p>
+
+                              <p className="mt-1 text-xs text-white/35">
+                                {translate(t, "adminPartnershipSource", "Fonte")}:{" "}
+                                {partnership.source_platform}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            <StatusPill
+                              label={`${confidenceScore}% ${translate(t, "adminConfidence", "confiança")}`}
+                              tone={confidenceScore >= 80 ? "green" : confidenceScore >= 60 ? "yellow" : "cyan"}
+                            />
+
+                            <StatusPill
+                              label={partnership.partnership_type}
+                              tone="cyan"
+                            />
+
+                            <button
+                              onClick={() =>
+                                setExpandedPartnerships((current) => ({
+                                  ...current,
+                                  [partnership.id]: !isExpanded,
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  {translate(t, "collapse", "Recolher")}
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  {translate(t, "expand", "Expandir")}
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <>
+                            <div className="grid gap-4 border-t border-white/10 p-5 md:grid-cols-2">
+                              <InfoBox
+                                label={translate(t, "adminPartnershipBrand", "Marca")}
+                                value={partnership.brand_name}
+                                highlight
+                              />
+
+                              <InfoBox
+                                label={translate(t, "adminPartnershipType", "Tipo")}
+                                value={partnership.partnership_type}
+                              />
+
+                              <InfoBox
+                                label={translate(t, "adminDetectionReason", "Motivo da detecção")}
+                                value={
+                                  partnership.detection_reason ||
+                                  translate(t, "notInformed", "Não informado")
+                                }
+                              />
+
+                              <InfoBox
+                                label={translate(t, "createdAt", "Criado em")}
+                                value={new Date(partnership.created_at).toLocaleString(dateLocale)}
+                              />
+
+                              <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
+                                <p className="text-xs text-white/40">
+                                  {translate(t, "adminEvidenceText", "Evidência encontrada")}
+                                </p>
+
+                                <p className="mt-2 whitespace-pre-wrap text-sm text-white/70">
+                                  {partnership.evidence_text ||
+                                    translate(t, "adminNoEvidenceText", "Sem texto de evidência.")}
+                                </p>
+                              </div>
+
+                              {partnership.source_url && (
+                                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:col-span-2">
+                                  <p className="text-xs text-white/40">
+                                    {translate(t, "adminSourceUrl", "URL da fonte")}
+                                  </p>
+
+                                  <a
+                                    href={partnership.source_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-2 inline-flex items-center gap-2 break-all text-sm font-bold text-cyan-100 hover:text-cyan-200"
+                                  >
+                                    <ExternalLink size={16} />
+                                    {partnership.source_url}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-3 border-t border-white/10 bg-black/20 p-5">
+                              <button
+                                onClick={() => approvePartnership(partnership)}
+                                disabled={actionLoading === partnership.id}
+                                className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                              >
+                                <Check size={16} />
+                                {actionLoading === partnership.id
+                                  ? translate(t, "approving", "Aprovando...")
+                                  : translate(t, "approve", "Aprovar")}
+                              </button>
+
+                              <button
+                                onClick={() => rejectPartnership(partnership)}
+                                disabled={actionLoading === partnership.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                              >
+                                <X size={16} />
+                                {actionLoading === partnership.id
+                                  ? translate(t, "processing", "Processando...")
+                                  : translate(t, "reject", "Rejeitar")}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {!loading && activeTab === "logs" && (
               <div className="mt-8">
                 <SearchInput
@@ -3055,12 +3500,14 @@ function StatusPill({
   tone = "default",
 }: {
   label: string;
-  tone?: "default" | "cyan" | "yellow" | "red";
+  tone?: "default" | "cyan" | "yellow" | "red" | "green";
 }) {
   const toneClass =
     tone === "cyan"
       ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
-      : tone === "yellow"
+      : tone === "green"
+        ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+        : tone === "yellow"
         ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-100"
         : tone === "red"
           ? "border-red-300/20 bg-red-300/10 text-red-100"

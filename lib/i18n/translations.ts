@@ -823,6 +823,35 @@ export const translations = {
     adminActivityBannedUser: "{actor} baniu {target}.",
     adminActivityUnbannedUser: "{actor} desbaniu {target}.",
     adminActivityGeneric: "{actor} realizou uma ação administrativa em {target}.",
+    adminPartnerships: "Parcerias Detectadas",
+    adminPartnershipsBadge: "Detector YouTube",
+    adminPartnershipsTitle: "Parcerias Detectadas",
+    adminPartnershipsDescription:
+      "Sugestões encontradas automaticamente ficam aqui para aprovação. Parcerias criadas manualmente pelo criador não passam por esta fila.",
+    adminDetectYouTubePartnerships: "Detectar YouTube",
+    adminPartnershipDetecting: "Detectando...",
+    adminSearchPartnershipPlaceholder:
+      "Buscar por marca, criador, plataforma ou evidência...",
+    adminNoDetectedPartnerships:
+      "Nenhuma parceria detectada aguardando aprovação.",
+    adminPartnershipSource: "Fonte",
+    adminConfidence: "confiança",
+    adminPartnershipBrand: "Marca",
+    adminPartnershipType: "Tipo",
+    adminDetectionReason: "Motivo da detecção",
+    adminEvidenceText: "Evidência encontrada",
+    adminNoEvidenceText: "Sem texto de evidência.",
+    adminSourceUrl: "URL da fonte",
+    adminPartnershipApprovedSuccess: "Parceria aprovada com sucesso.",
+    adminPartnershipRejectedSuccess: "Parceria rejeitada.",
+    adminPartnershipDetectionSuccess: "Detecção do YouTube concluída.",
+    adminPartnershipDetectionError:
+      "Não foi possível detectar parcerias do YouTube agora.",
+    adminActivityApprovedPartnership:
+      "{actor} aprovou a parceria de {target}.",
+    adminActivityRejectedPartnership:
+      "{actor} rejeitou a parceria de {target}.",
+
     email: "Email",
 },
 
@@ -1645,6 +1674,35 @@ export const translations = {
     adminActivityBannedUser: "{actor} banned {target}.",
     adminActivityUnbannedUser: "{actor} unbanned {target}.",
     adminActivityGeneric: "{actor} performed an admin action on {target}.",
+    adminPartnerships: "Detected Partnerships",
+    adminPartnershipsBadge: "YouTube Detector",
+    adminPartnershipsTitle: "Detected Partnerships",
+    adminPartnershipsDescription:
+      "Automatically detected suggestions stay here for approval. Partnerships created manually by the creator do not go through this queue.",
+    adminDetectYouTubePartnerships: "Detect YouTube",
+    adminPartnershipDetecting: "Detecting...",
+    adminSearchPartnershipPlaceholder:
+      "Search by brand, creator, platform or evidence...",
+    adminNoDetectedPartnerships:
+      "No detected partnerships awaiting approval.",
+    adminPartnershipSource: "Source",
+    adminConfidence: "confidence",
+    adminPartnershipBrand: "Brand",
+    adminPartnershipType: "Type",
+    adminDetectionReason: "Detection reason",
+    adminEvidenceText: "Evidence found",
+    adminNoEvidenceText: "No evidence text.",
+    adminSourceUrl: "Source URL",
+    adminPartnershipApprovedSuccess: "Partnership approved successfully.",
+    adminPartnershipRejectedSuccess: "Partnership rejected.",
+    adminPartnershipDetectionSuccess: "YouTube detection finished.",
+    adminPartnershipDetectionError:
+      "Could not detect YouTube partnerships right now.",
+    adminActivityApprovedPartnership:
+      "{actor} approved {target}'s partnership.",
+    adminActivityRejectedPartnership:
+      "{actor} rejected {target}'s partnership.",
+
     email: "Email",
 },
 
@@ -2472,6 +2530,35 @@ export const translations = {
     adminActivityBannedUser: "{actor} baneó a {target}.",
     adminActivityUnbannedUser: "{actor} desbaneó a {target}.",
     adminActivityGeneric: "{actor} realizó una acción administrativa en {target}.",
+    adminPartnerships: "Alianzas Detectadas",
+    adminPartnershipsBadge: "Detector YouTube",
+    adminPartnershipsTitle: "Alianzas Detectadas",
+    adminPartnershipsDescription:
+      "Las sugerencias detectadas automáticamente quedan aquí para aprobación. Las alianzas creadas manualmente por el creador no pasan por esta fila.",
+    adminDetectYouTubePartnerships: "Detectar YouTube",
+    adminPartnershipDetecting: "Detectando...",
+    adminSearchPartnershipPlaceholder:
+      "Buscar por marca, creador, plataforma o evidencia...",
+    adminNoDetectedPartnerships:
+      "No hay alianzas detectadas esperando aprobación.",
+    adminPartnershipSource: "Fuente",
+    adminConfidence: "confianza",
+    adminPartnershipBrand: "Marca",
+    adminPartnershipType: "Tipo",
+    adminDetectionReason: "Motivo de la detección",
+    adminEvidenceText: "Evidencia encontrada",
+    adminNoEvidenceText: "Sin texto de evidencia.",
+    adminSourceUrl: "URL de la fuente",
+    adminPartnershipApprovedSuccess: "Alianza aprobada correctamente.",
+    adminPartnershipRejectedSuccess: "Alianza rechazada.",
+    adminPartnershipDetectionSuccess: "Detección de YouTube finalizada.",
+    adminPartnershipDetectionError:
+      "No fue posible detectar alianzas de YouTube ahora.",
+    adminActivityApprovedPartnership:
+      "{actor} aprobó la alianza de {target}.",
+    adminActivityRejectedPartnership:
+      "{actor} rechazó la alianza de {target}.",
+
     email: "Email",
 },
 } as const;
