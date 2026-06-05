@@ -737,7 +737,13 @@ export const translations = {
     creatorProfileManualPartnershipDescription:
       "Parcerias adicionadas pelo criador aparecem publicamente sem passar pela fila automática.",
     creatorProfileManualPartnershipBrand: "Nome da marca",
+    creatorProfileManualPartnershipLogoUrl: "Logo da marca (URL da imagem)",
+    creatorProfileManualPartnershipBrandWebsite: "Site oficial da marca",
     creatorProfileManualPartnershipCampaign: "Campanha ou ação",
+    creatorProfileManualPartnershipPublicLink: "Link público da parceria",
+    creatorProfileManualPartnershipBrandDescription: "Descrição da marca",
+    creatorProfileManualPartnershipStartDate: "Data de início",
+    creatorProfileManualPartnershipEndDate: "Data de fim",
     creatorProfileManualPartnershipPublicDescription:
       "Descrição pública da parceria",
     creatorProfileManualPartnershipSave: "Adicionar parceria",
@@ -1648,7 +1654,13 @@ export const translations = {
     creatorProfileManualPartnershipDescription:
       "Partnerships added by the creator appear publicly without entering the automatic review queue.",
     creatorProfileManualPartnershipBrand: "Brand name",
+    creatorProfileManualPartnershipLogoUrl: "Brand logo (image URL)",
+    creatorProfileManualPartnershipBrandWebsite: "Official brand website",
     creatorProfileManualPartnershipCampaign: "Campaign or action",
+    creatorProfileManualPartnershipPublicLink: "Public partnership link",
+    creatorProfileManualPartnershipBrandDescription: "Brand description",
+    creatorProfileManualPartnershipStartDate: "Start date",
+    creatorProfileManualPartnershipEndDate: "End date",
     creatorProfileManualPartnershipPublicDescription:
       "Public partnership description",
     creatorProfileManualPartnershipSave: "Add partnership",
@@ -2562,7 +2574,13 @@ export const translations = {
     creatorProfileManualPartnershipDescription:
       "Las colaboraciones añadidas por el creador aparecen públicamente sin pasar por la fila automática.",
     creatorProfileManualPartnershipBrand: "Nombre de la marca",
+    creatorProfileManualPartnershipLogoUrl: "Logo de la marca (URL de imagen)",
+    creatorProfileManualPartnershipBrandWebsite: "Sitio oficial de la marca",
     creatorProfileManualPartnershipCampaign: "Campaña o acción",
+    creatorProfileManualPartnershipPublicLink: "Enlace público de la colaboración",
+    creatorProfileManualPartnershipBrandDescription: "Descripción de la marca",
+    creatorProfileManualPartnershipStartDate: "Fecha de inicio",
+    creatorProfileManualPartnershipEndDate: "Fecha de fin",
     creatorProfileManualPartnershipPublicDescription:
       "Descripción pública de la colaboración",
     creatorProfileManualPartnershipSave: "Añadir colaboración",
