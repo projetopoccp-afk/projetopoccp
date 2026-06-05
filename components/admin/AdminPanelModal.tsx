@@ -464,6 +464,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [partnerships, setPartnerships] = useState<CreatorPartnership[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [supportConversations, setSupportConversations] = useState<SupportConversation[]>([]);
+  const [userCardsCount, setUserCardsCount] = useState(0);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     visits: 0,
@@ -644,6 +645,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     const rows = (data || []) as SupportConversation[];
     setSupportConversations(rows);
     setSelectedConversationId((current) => current || rows[0]?.id || null);
+
+    const { count: userCardsTotal } = await supabase
+      .from("user_cards")
+      .select("id", { count: "exact", head: true });
+
+setUserCardsCount(userCardsTotal ?? 0);
   }
 
   async function loadSupportMessages(conversationId: string | null) {
@@ -1657,7 +1664,7 @@ if (!response.ok) {
     if (tabId === "requests") return requests.length;
     if (tabId === "users") return users.length;
     if (tabId === "creators") return creators.length;
-    if (tabId === "cards") return `${creators.length} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
+    if (tabId === "cards") return `${userCardsCount} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
     if (tabId === "claims") return claims.length;
     if (tabId === "partnerships") return partnerships.length;
     if (tabId === "conversations") return supportConversations.filter((conversation) => ACTIVE_SUPPORT_STATUSES.includes(conversation.status)).length;
