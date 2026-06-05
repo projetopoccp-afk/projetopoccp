@@ -39,36 +39,36 @@ export function CardpocModalShell({
       exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
       transition={{ duration: 0.25 }}
       onClick={onClose}
-      className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center overflow-hidden bg-black/70 p-3 text-white sm:p-4`}
+      className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center overflow-hidden bg-black/70 p-2 text-white sm:p-4`}
     >
       <motion.div
-        initial={{ opacity: 0, y: 26, scale: 0.96 }}
+        initial={{ opacity: 0, y: 22, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.96 }}
+        exit={{ opacity: 0, y: 16, scale: 0.97 }}
         transition={{ duration: 0.32, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className={`relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-7xl overflow-hidden rounded-[34px] border border-cyan-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(236,72,153,0.22),transparent_34%),radial-gradient(circle_at_85%_100%,rgba(34,211,238,0.24),transparent_36%),radial-gradient(circle_at_50%_8%,rgba(168,85,247,0.16),transparent_38%),linear-gradient(135deg,#101322_0%,#0b1020_46%,#050813_100%)] shadow-[0_0_90px_rgba(34,211,238,0.13),0_0_120px_rgba(0,0,0,0.82)] ${className}`}
+        className={`relative flex max-h-[calc(100dvh-1rem)] w-full max-w-7xl overflow-hidden rounded-[24px] border border-cyan-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(236,72,153,0.22),transparent_34%),radial-gradient(circle_at_85%_100%,rgba(34,211,238,0.24),transparent_36%),radial-gradient(circle_at_50%_8%,rgba(168,85,247,0.16),transparent_38%),linear-gradient(135deg,#101322_0%,#0b1020_46%,#050813_100%)] shadow-[0_0_70px_rgba(34,211,238,0.12),0_0_100px_rgba(0,0,0,0.82)] sm:max-h-[calc(100vh-1.5rem)] sm:rounded-[34px] sm:shadow-[0_0_90px_rgba(34,211,238,0.13),0_0_120px_rgba(0,0,0,0.82)] ${className}`}
       >
-        <div className="pointer-events-none absolute inset-0 opacity-[0.34] [background-image:linear-gradient(rgba(255,255,255,0.085)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.085)_1px,transparent_1px)] [background-size:42px_42px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(rgba(255,255,255,0.085)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.085)_1px,transparent_1px)] [background-size:34px_34px] sm:opacity-[0.34] sm:[background-size:42px_42px]" />
 
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.08)_45%,rgba(0,0,0,0.42)_100%)]" />
 
-        <div className="pointer-events-none absolute left-[-70px] top-[-70px] h-80 w-80 rounded-full bg-fuchsia-500/28 blur-[95px]" />
-        <div className="pointer-events-none absolute bottom-[-80px] right-[-80px] h-80 w-80 rounded-full bg-cyan-400/26 blur-[95px]" />
-        <div className="pointer-events-none absolute left-1/2 top-4 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-500/18 blur-[115px]" />
+        <div className="pointer-events-none absolute left-[-90px] top-[-90px] h-64 w-64 rounded-full bg-fuchsia-500/24 blur-[85px] sm:left-[-70px] sm:top-[-70px] sm:h-80 sm:w-80 sm:bg-fuchsia-500/28 sm:blur-[95px]" />
+        <div className="pointer-events-none absolute bottom-[-90px] right-[-90px] h-64 w-64 rounded-full bg-cyan-400/22 blur-[85px] sm:bottom-[-80px] sm:right-[-80px] sm:h-80 sm:w-80 sm:bg-cyan-400/26 sm:blur-[95px]" />
+        <div className="pointer-events-none absolute left-1/2 top-3 h-56 w-56 -translate-x-1/2 rounded-full bg-purple-500/14 blur-[105px] sm:top-4 sm:h-72 sm:w-72 sm:bg-purple-500/18 sm:blur-[115px]" />
 
         <div className={`relative z-10 min-h-0 w-full ${contentClassName}`}>
           {hasControls && (
-            <div className="sticky top-4 z-50 -mb-12 flex justify-end gap-3 pr-2 pointer-events-none">
+            <div className="pointer-events-none sticky top-3 z-50 -mb-10 flex justify-end gap-2 pr-2 sm:top-4 sm:-mb-12 sm:gap-3">
               {showMinimizeButton && onMinimize && (
                 <button
                   type="button"
                   onClick={onMinimize}
                   aria-label={minimizeLabel}
                   title={minimizeLabel}
-                  className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:border-cyan-300/40 hover:bg-cyan-500/15"
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/35 bg-black/75 text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.42),0_0_28px_rgba(34,211,238,0.22)] backdrop-blur-md transition-all hover:scale-105 hover:border-cyan-200/70 hover:bg-cyan-500/20 hover:shadow-[0_0_18px_rgba(34,211,238,0.72),0_0_44px_rgba(34,211,238,0.42)] sm:h-12 sm:w-12"
                 >
-                  <Minus size={22} strokeWidth={3} />
+                  <Minus size={20} strokeWidth={3} className="sm:h-[22px] sm:w-[22px]" />
                 </button>
               )}
 
@@ -78,9 +78,9 @@ export function CardpocModalShell({
                   onClick={onClose}
                   aria-label={closeLabel}
                   title={closeLabel}
-                  className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-red-300/45 bg-black/75 text-red-100 shadow-[0_0_14px_rgba(248,113,113,0.55),0_0_34px_rgba(248,113,113,0.32)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-200/70 hover:bg-red-500/20 hover:shadow-[0_0_18px_rgba(248,113,113,0.75),0_0_46px_rgba(248,113,113,0.45)]"
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-red-300/45 bg-black/75 text-red-100 shadow-[0_0_14px_rgba(248,113,113,0.55),0_0_34px_rgba(248,113,113,0.32)] backdrop-blur-md transition-all hover:scale-105 hover:border-red-200/70 hover:bg-red-500/20 hover:shadow-[0_0_18px_rgba(248,113,113,0.75),0_0_46px_rgba(248,113,113,0.45)] sm:h-12 sm:w-12"
                 >
-                  <X size={22} strokeWidth={3} />
+                  <X size={20} strokeWidth={3} className="sm:h-[22px] sm:w-[22px]" />
                 </button>
               )}
             </div>
