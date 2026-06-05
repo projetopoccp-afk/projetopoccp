@@ -398,7 +398,7 @@ export default function HomePage() {
               </label>
             </div>
 
-            <div className="relative flex-1 overflow-y-auto p-6 sm:p-8">
+            <div className="relative flex-1 hide-scrollbar overflow-y-auto p-6 sm:p-8">
               {filteredFaqArticles.length > 0 ? (
                 <div className="grid gap-3">
                   {filteredFaqArticles.map((article) => (
