@@ -1000,7 +1000,7 @@ function NotificationsPopover({
         </div>
       </div>
 
-      <div className="relative z-10 max-h-[420px] overflow-y-auto p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="relative z-10 max-h-[420px] overflow-hidden p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {notifications.length > 0 ? (
           notifications.map((notification) => (
             <button
