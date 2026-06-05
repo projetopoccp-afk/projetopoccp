@@ -518,7 +518,7 @@ const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = [
   "resolved",
   "closed",
 ];
-const CREATOR_IMAGE_BUCKET = "creator-images";
+const CREATOR_IMAGE_BUCKET = "creator-profiles";
 
 function isSupportConversationFinal(status: SupportConversationStatus) {
   return FINAL_SUPPORT_STATUSES.includes(status);
