@@ -6,6 +6,7 @@ import {
   Crown,
   Eye,
   Gem,
+  Search,
   Share2,
   Sparkles,
   X,
@@ -445,6 +446,7 @@ export function CollectionModal({
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [pendingNotificationCard, setPendingNotificationCard] =
     useState<PendingNotificationCard | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -576,6 +578,29 @@ export function CollectionModal({
     };
   }, [cards]);
 
+  const filteredCards = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) return cards;
+
+    return cards.filter((card) => {
+      const creator = card.creator_profiles;
+      const searchableValues = [
+        card.rarity,
+        card.source,
+        creator?.nickname,
+        creator?.username,
+        creator?.title,
+        creator?.category,
+        ...(creator?.tags || []),
+      ];
+
+      return searchableValues
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+    });
+  }, [cards, searchTerm]);
+
   async function markCardAsSeen(card: UserCard) {
     if (card.seen_at) return;
 
@@ -642,17 +667,38 @@ export function CollectionModal({
                 {translate(t, "collection", "Minha Coleção")}
               </div>
 
-              <h2 className="mt-5 text-3xl font-black">
-                {translate(t, "collectionTitle", "Suas cartas do Nexus")}
-              </h2>
+              <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)] lg:items-end">
+                <div>
+                  <h2 className="text-3xl font-black">
+                    {translate(t, "collectionTitle", "Suas cartas do Cardpoc")}
+                  </h2>
 
-              <p className="mt-3 max-w-2xl text-sm text-white/45">
-                {translate(
-                  t,
-                  "collectionDescription",
-                  "Aqui ficam as cartas de creators conquistadas por follows, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui."
-                )}
-              </p>
+                  <p className="mt-3 max-w-2xl text-sm text-white/45">
+                    {translate(
+                      t,
+                      "collectionDescription",
+                      "Aqui ficam as cartas de criadores conquistadas por seguir, pacotes, missões e eventos. Notificações de carta podem abrir a carta específica diretamente aqui."
+                    )}
+                  </p>
+                </div>
+
+                <label className="relative block w-full">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-cyan-100/55"
+                  />
+                  <input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder={translate(
+                      t,
+                      "collectionSearchPlaceholder",
+                      "Pesquisar por carta, criador, raridade..."
+                    )}
+                    className="h-12 w-full rounded-full border border-cyan-200/15 bg-white/[0.055] pl-12 pr-4 text-sm font-medium text-white outline-none transition placeholder:text-white/35 focus:border-cyan-200/35 focus:bg-white/[0.08] focus:shadow-[0_0_28px_rgba(34,211,238,0.12)]"
+                  />
+                </label>
+              </div>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <StatCard icon={<Archive size={18} />} label={translate(t, "total", "Total")} value={stats.total} />
@@ -668,9 +714,17 @@ export function CollectionModal({
                 </div>
               ) : cards.length === 0 ? (
                 <EmptyCollection />
+              ) : filteredCards.length === 0 ? (
+                <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-white/50">
+                  {translate(
+                    t,
+                    "collectionNoSearchResults",
+                    "Nenhuma carta encontrada para essa pesquisa."
+                  )}
+                </div>
               ) : (
                 <div className="mt-10 grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {cards.map((card) => (
+                  {filteredCards.map((card) => (
                     <CollectionCard
                       key={card.id}
                       card={card}
