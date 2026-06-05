@@ -9,9 +9,8 @@ import {
   ShieldCheck,
   Target,
   UserRound,
-  X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
 
 import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
@@ -188,14 +187,6 @@ export function AccountModal({
     <>
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            transition={{ duration: 0.25 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4"
-          >
             <CardpocModalShell
               onClose={onClose}
               showCloseButton
