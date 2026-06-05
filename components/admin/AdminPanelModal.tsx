@@ -12,6 +12,8 @@ import {
   Gift,
   Handshake,
   History,
+  MessageCircle,
+  Send,
   Ban,
   BarChart3,
   RotateCcw,
@@ -30,7 +32,7 @@ type AdminPanelModalProps = {
   onClose: () => void;
 };
 
-type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "partnerships" | "logs" | "statistics";
+type Tab = "requests" | "users" | "creators" | "cards" | "claims" | "partnerships" | "conversations" | "logs" | "statistics";
 
 type GrantRarity = "common" | "rare" | "epic" | "legendary" | "random";
 
@@ -51,6 +53,7 @@ const ADMIN_TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: "cards", labelKey: "adminManageCards", fallback: "Gerenciar Cartas" },
   { id: "claims", labelKey: "adminClaims", fallback: "Reivindicações" },
   { id: "partnerships", labelKey: "adminPartnerships", fallback: "Parcerias Detectadas" },
+  { id: "conversations", labelKey: "adminConversations", fallback: "Conversas" },
   { id: "logs", labelKey: "adminActivities", fallback: "Atividades" },
   { id: "statistics", labelKey: "adminStatistics", fallback: "Estatísticas" },
 ];
@@ -180,6 +183,35 @@ function getDateLocale(language: string) {
   if (language === "es") return "es-ES";
 
   return "pt-BR";
+}
+
+
+function getSupportStatusLabel(
+  t: TranslateFunction,
+  status: SupportConversationStatus,
+) {
+  const labels: Record<SupportConversationStatus, [string, string]> = {
+    open: ["supportStatusOpen", "Aberto"],
+    waiting_admin: ["supportStatusWaitingAdmin", "Aguardando equipe"],
+    waiting_user: ["supportStatusWaitingUser", "Aguardando criador"],
+    resolved: ["supportStatusResolved", "Resolvido"],
+    closed: ["supportStatusClosed", "Encerrado"],
+  };
+  const [key, fallback] = labels[status] || labels.open;
+  return translate(t, key, fallback);
+}
+
+function getSupportTypeLabel(t: TranslateFunction, type: SupportConversationType) {
+  const labels: Record<SupportConversationType, [string, string]> = {
+    bug: ["supportTypeBug", "Bug"],
+    profile_correction: ["supportTypeProfileCorrection", "Correção de perfil"],
+    claim_profile: ["supportTypeClaimProfile", "Reivindicação"],
+    card_pack_problem: ["supportTypeCardPackProblem", "Carta/Pacote"],
+    suggestion: ["supportTypeSuggestion", "Sugestão"],
+    other: ["supportTypeOther", "Outro"],
+  };
+  const [key, fallback] = labels[type] || labels.other;
+  return translate(t, key, fallback);
 }
 
 function createSlug(value: string) {
@@ -355,6 +387,54 @@ type AdminLog = {
   created_at: string;
 };
 
+
+type SupportConversationStatus = "open" | "waiting_admin" | "waiting_user" | "resolved" | "closed";
+type SupportConversationType =
+  | "bug"
+  | "profile_correction"
+  | "claim_profile"
+  | "card_pack_problem"
+  | "suggestion"
+  | "other";
+type SupportFilter = "all" | SupportConversationStatus;
+
+type SupportConversation = {
+  id: string;
+  user_id: string;
+  creator_id: string | null;
+  type: SupportConversationType;
+  subject: string;
+  status: SupportConversationStatus;
+  priority: string | null;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+};
+
+type SupportMessage = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  sender_role: "user" | "admin" | "system";
+  message: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+const SUPPORT_STATUS_FILTERS: {
+  id: SupportFilter;
+  labelKey: string;
+  fallback: string;
+}[] = [
+  { id: "all", labelKey: "adminConversationFilterAll", fallback: "Todas" },
+  { id: "open", labelKey: "supportStatusOpen", fallback: "Abertas" },
+  { id: "waiting_admin", labelKey: "supportStatusWaitingAdmin", fallback: "Aguardando equipe" },
+  { id: "waiting_user", labelKey: "supportStatusWaitingUser", fallback: "Aguardando criador" },
+  { id: "resolved", labelKey: "supportStatusResolved", fallback: "Resolvidas" },
+  { id: "closed", labelKey: "supportStatusClosed", fallback: "Encerradas" },
+];
+
 export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const { language, t } = useLanguage();
   const dateLocale = getDateLocale(language);
@@ -368,6 +448,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [claims, setClaims] = useState<CreatorClaim[]>([]);
   const [partnerships, setPartnerships] = useState<CreatorPartnership[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [supportConversations, setSupportConversations] = useState<SupportConversation[]>([]);
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     visits: 0,
     logins: 0,
@@ -385,6 +467,10 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [claimSearch, setClaimSearch] = useState("");
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
+  const [conversationSearch, setConversationSearch] = useState("");
+  const [conversationStatusFilter, setConversationStatusFilter] = useState<SupportFilter>("all");
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [conversationReply, setConversationReply] = useState("");
   const [cardCreatorSearch, setCardCreatorSearch] = useState("");
   const [cardUserSearch, setCardUserSearch] = useState("");
   const [selectedCardCreatorId, setSelectedCardCreatorId] = useState("");
@@ -533,6 +619,79 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     setPartnerships((data || []) as CreatorPartnership[]);
   }
 
+
+  async function loadSupportConversations() {
+    const { data } = await supabase
+      .from("support_conversations")
+      .select("*")
+      .order("last_message_at", { ascending: false });
+
+    const rows = (data || []) as SupportConversation[];
+    setSupportConversations(rows);
+    setSelectedConversationId((current) => current || rows[0]?.id || null);
+  }
+
+  async function loadSupportMessages(conversationId: string | null) {
+    if (!conversationId) {
+      setSupportMessages([]);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("support_messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    setSupportMessages((data || []) as SupportMessage[]);
+  }
+
+  async function updateSupportConversationStatus(
+    conversationId: string,
+    status: SupportConversationStatus,
+  ) {
+    setActionLoading(conversationId);
+
+    await supabase
+      .from("support_conversations")
+      .update({
+        status,
+        closed_at: status === "closed" ? new Date().toISOString() : null,
+      })
+      .eq("id", conversationId);
+
+    await createAdminLog({
+      action: "update_support_conversation_status",
+      targetType: "support_conversation",
+      targetId: conversationId,
+      metadata: { status },
+    });
+
+    await loadSupportConversations();
+    setActionLoading(null);
+  }
+
+  async function sendSupportReply() {
+    const conversation = supportConversations.find((item) => item.id === selectedConversationId) || null;
+    const adminId = await getCurrentUserId();
+
+    if (!conversation || !adminId || !conversationReply.trim() || conversation.status === "closed") return;
+
+    setActionLoading(conversation.id);
+
+    await supabase.from("support_messages").insert({
+      conversation_id: conversation.id,
+      sender_id: adminId,
+      sender_role: "admin",
+      message: conversationReply.trim(),
+    });
+
+    setConversationReply("");
+    await loadSupportConversations();
+    await loadSupportMessages(conversation.id);
+    setActionLoading(null);
+  }
+
   async function loadLogs() {
     const { data } = await supabase
       .from("admin_logs")
@@ -585,6 +744,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       loadCreators(),
       loadClaims(),
       loadPartnerships(),
+      loadSupportConversations(),
       loadLogs(),
       loadStats(),
     ]);
@@ -597,6 +757,12 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       loadPanel();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open && activeTab === "conversations") {
+      loadSupportMessages(selectedConversationId);
+    }
+  }, [open, activeTab, selectedConversationId]);
 
   function getOwner(userId: string | null) {
     if (!userId) return null;
@@ -1479,6 +1645,7 @@ if (!response.ok) {
     if (tabId === "cards") return `${creators.length} ${translate(t, "adminCardsPacksShort", "Cartas/Pacotes")}`;
     if (tabId === "claims") return claims.length;
     if (tabId === "partnerships") return partnerships.length;
+    if (tabId === "conversations") return supportConversations.length;
     if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
     if (tabId === "statistics") return null;
 
@@ -1929,6 +2096,61 @@ if (!response.ok) {
   const selectedCardUser =
     users.find((user) => user.id === selectedCardUserId) || null;
 
+
+
+  const conversationStatusCounts = supportConversations.reduce<Record<SupportFilter, number>>(
+    (accumulator, conversation) => {
+      accumulator.all += 1;
+      accumulator[conversation.status] += 1;
+      return accumulator;
+    },
+    { all: 0, open: 0, waiting_admin: 0, waiting_user: 0, resolved: 0, closed: 0 },
+  );
+
+  const filteredSupportConversations = supportConversations.filter((conversation) => {
+    const search = conversationSearch.toLowerCase().trim();
+    const owner = getOwner(conversation.user_id);
+    const creator = getCreator(conversation.creator_id);
+
+    const matchesStatus =
+      conversationStatusFilter === "all" || conversation.status === conversationStatusFilter;
+
+    const searchableText = [
+      conversation.subject,
+      conversation.type,
+      conversation.status,
+      owner?.email,
+      owner?.display_name,
+      owner?.username,
+      creator?.nickname,
+      creator?.username,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return matchesStatus && searchableText.includes(search);
+  });
+
+  const selectedSupportConversation =
+    filteredSupportConversations.find((conversation) => conversation.id === selectedConversationId) ||
+    filteredSupportConversations[0] ||
+    null;
+
+  useEffect(() => {
+    if (activeTab !== "conversations") return;
+    if (filteredSupportConversations.length === 0) {
+      setSelectedConversationId(null);
+      return;
+    }
+
+    const selectedStillVisible = filteredSupportConversations.some(
+      (conversation) => conversation.id === selectedConversationId,
+    );
+
+    if (!selectedStillVisible) {
+      setSelectedConversationId(filteredSupportConversations[0].id);
+    }
+  }, [activeTab, conversationStatusFilter, conversationSearch, supportConversations.length]);
 
   const filteredLogs = logs.filter((log) => {
     const search = logSearch.toLowerCase().trim();
