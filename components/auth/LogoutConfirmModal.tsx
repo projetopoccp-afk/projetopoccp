@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, X } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
@@ -35,19 +35,12 @@ export function LogoutConfirmModal({
       {open && (
         <CardpocModalShell
           onClose={onClose}
+          showCloseButton
+          closeLabel={translate(t, "logoutConfirmClose", "Fechar confirmação")}
           zIndexClassName="z-[90]"
-          className="h-auto max-h-[calc(100vh-2rem)] max-w-sm"
+          className="h-auto max-w-sm"
           contentClassName="p-6"
         >
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={translate(t, "logoutConfirmClose", "Fechar confirmação")}
-              className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-
             <div className="relative">
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-300/20 bg-red-300/10 text-red-100">
                 <LogOut size={22} />
