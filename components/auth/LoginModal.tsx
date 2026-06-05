@@ -95,8 +95,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         <CardpocModalShell
           onClose={handleClose}
           zIndexClassName="z-[80]"
-          className="h-auto max-h-[calc(100vh-2rem)] max-w-lg"
-          contentClassName="overflow-y-auto p-7 sm:p-8"
+          className="max-w-lg"
+          contentClassName="hide-scrollbar max-h-[calc(100vh-2rem)] overflow-y-auto p-7 sm:p-8"
         >
             <button
               onClick={handleClose}
