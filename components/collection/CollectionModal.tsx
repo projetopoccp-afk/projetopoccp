@@ -653,11 +653,11 @@ export function CollectionModal({
             zIndexClassName="z-[100]"
           >
             <div className="relative z-10">
-              <div className="sticky top-0 z-40 -mx-8 -mt-8 mb-4 flex justify-end bg-gradient-to-b from-[#101322]/95 via-[#101322]/75 to-transparent p-8 pb-4 backdrop-blur-sm">
+              <div className="sticky top-5 z-50 mb-4 ml-auto flex w-fit justify-end">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-full border border-white/10 bg-black/30 p-2 text-white/70 shadow-[0_0_24px_rgba(34,211,238,0.16)] transition hover:bg-white/10 hover:text-white"
+                  className="rounded-full border border-white/10 bg-black/45 p-2 text-white/70 shadow-[0_0_24px_rgba(0,0,0,0.45)] transition hover:bg-white/10 hover:text-white"
                   aria-label={translate(t, "closeCollection", "Fechar coleção")}
                 >
                   <X size={18} />
@@ -933,27 +933,25 @@ function CollectionCardShowcase({
         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
         transition={{ duration: 0.25 }}
         onClick={onClose}
-        className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/90 p-4"
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
       >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-6 top-6 z-30 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+          aria-label={translate(t, "closeCard", "Fechar carta")}
+        >
+          <X size={20} />
+        </button>
+
         <motion.div
           initial={{ opacity: 0, scale: 0.82, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
           onClick={(event) => event.stopPropagation()}
-          className="relative z-20 my-auto flex w-full max-w-md flex-col items-center gap-5 py-4"
+          className="relative z-20 flex flex-col items-center gap-5"
         >
-          <div className="flex w-full justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-              aria-label={translate(t, "closeCard", "Fechar carta")}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
           <div className="flex flex-wrap items-center justify-center gap-2">
             {isCardNew(card) && (
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
