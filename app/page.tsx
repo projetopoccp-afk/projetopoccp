@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
@@ -8,6 +8,15 @@ import { CreatorGrid } from "@/components/home/CreatorGrid";
 import { LoadingScreen } from "@/components/loading/LoadingScreen";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
+import { supabase } from "@/lib/supabase/client";
+
+type FaqArticle = {
+  id: string;
+  title: string;
+  content: string;
+  sort_order?: number | null;
+  isCustom?: boolean;
+};
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
@@ -15,6 +24,13 @@ export default function HomePage() {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [showCardpocGuide, setShowCardpocGuide] = useState(false);
+  const [guideSearch, setGuideSearch] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [customFaqArticles, setCustomFaqArticles] = useState<FaqArticle[]>([]);
+  const [newFaqTitle, setNewFaqTitle] = useState("");
+  const [newFaqContent, setNewFaqContent] = useState("");
+  const [savingFaq, setSavingFaq] = useState(false);
+  const [faqFeedback, setFaqFeedback] = useState("");
 
   useEffect(() => {
     const hasSeenLoading = sessionStorage.getItem(
@@ -36,6 +52,225 @@ export default function HomePage() {
     }
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadGuideData() {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData.user;
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (mounted) {
+          setIsAdmin(Boolean(profileData?.is_admin));
+        }
+      }
+
+      const { data: faqData, error: faqError } = await supabase
+        .from("faq_articles")
+        .select("id,title,content,sort_order,is_active")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (!mounted || faqError) return;
+
+      setCustomFaqArticles(
+        (faqData ?? []).map((article) => ({
+          id: article.id,
+          title: article.title,
+          content: article.content,
+          sort_order: article.sort_order,
+          isCustom: true,
+        }))
+      );
+    }
+
+    loadGuideData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const defaultFaqArticles = useMemo<FaqArticle[]>(
+    () => [
+      {
+        id: "what-is-cardpoc",
+        title: translate(t, "homePageFaqWhatIsTitle", "O que é o Cardpoc?"),
+        content: translate(
+          t,
+          "homePageFaqWhatIsContent",
+          "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais. Cada criador funciona como um perfil vivo, com estatísticas, redes sociais, clips, cartas e evolução."
+        ),
+      },
+      {
+        id: "profiles",
+        title: translate(t, "homePageFaqProfilesTitle", "O que são perfis de criadores?"),
+        content: translate(
+          t,
+          "homePageFaqProfilesContent",
+          "Perfis de criadores reúnem informações públicas como bio, links sociais, clips, lives, seguidores globais, cartas e histórico dentro do Cardpoc. Alguns perfis ainda podem estar sem dono até serem reivindicados ou aprovados."
+        ),
+      },
+      {
+        id: "get-profile",
+        title: translate(t, "homePageFaqGetProfileTitle", "Como faço para ter um perfil?"),
+        content: translate(
+          t,
+          "homePageFaqGetProfileContent",
+          "Criadores podem solicitar um perfil ou reivindicar um perfil já existente. A equipe Cardpoc analisa a solicitação para evitar perfis falsos, dados incorretos ou uso indevido de imagem."
+        ),
+      },
+      {
+        id: "first-card",
+        title: translate(t, "homePageFaqFirstCardTitle", "Como consigo uma carta comum?"),
+        content: translate(
+          t,
+          "homePageFaqFirstCardContent",
+          "A forma mais simples de conquistar uma carta comum é seguir um criador dentro do Cardpoc quando essa recompensa estiver disponível. Cartas comuns são a entrada da coleção e ajudam você a começar seu álbum de criadores."
+        ),
+      },
+      {
+        id: "cards-packs",
+        title: translate(t, "homePageFaqCardsPacksTitle", "Como consigo cartas e pacotes?"),
+        content: translate(
+          t,
+          "homePageFaqCardsPacksContent",
+          "Você pode ganhar cartas e pacotes através de ações da plataforma, missões, eventos, recompensas, distribuições administrativas e futuras campanhas. Pacotes podem revelar cartas de diferentes raridades."
+        ),
+      },
+      {
+        id: "rarities",
+        title: translate(t, "homePageFaqRaritiesTitle", "Como funcionam as raridades?"),
+        content: translate(
+          t,
+          "homePageFaqRaritiesContent",
+          "As cartas podem ser comuns, raras, épicas, lendárias ou míticas. Raridades maiores são mais especiais, podem ter visuais mais fortes e normalmente dependem de pacotes, eventos, recompensas ou distribuições específicas."
+        ),
+      },
+      {
+        id: "xp-levels",
+        title: translate(t, "homePageFaqXpLevelsTitle", "Como ganho XP e subo de nível?"),
+        content: translate(
+          t,
+          "homePageFaqXpLevelsContent",
+          "XP pode ser ganho ao interagir com o Cardpoc, seguir criadores, conquistar cartas, abrir pacotes, completar missões e participar de ações futuras. O nível mostra sua evolução como colecionador dentro da plataforma."
+        ),
+      },
+      {
+        id: "login-needed",
+        title: translate(t, "homePageFaqLoginTitle", "Preciso estar logado?"),
+        content: translate(
+          t,
+          "homePageFaqLoginContent",
+          "Você pode explorar perfis públicos sem login, mas precisa entrar para seguir criadores, guardar cartas na coleção, ganhar XP, abrir pacotes, receber notificações e participar da progressão."
+        ),
+      },
+      {
+        id: "plain-images",
+        title: translate(t, "homePageFaqPlainImagesTitle", "Por que algumas cartas usam imagem comum?"),
+        content: translate(
+          t,
+          "homePageFaqPlainImagesContent",
+          "Algumas cartas podem usar imagem comum porque o criador ainda não aprovou ou autorizou o uso de uma arte editada para o Cardpoc. Nesses casos, a imagem pode ser atualizada depois com aprovação ou solicitação do próprio criador."
+        ),
+      },
+      {
+        id: "global-followers",
+        title: translate(t, "homePageFaqGlobalFollowersTitle", "O que são seguidores globais?"),
+        content: translate(
+          t,
+          "homePageFaqGlobalFollowersContent",
+          "Seguidores globais são uma soma das audiências públicas do criador em plataformas conectadas ao perfil, como Twitch, YouTube, Kick, Instagram, TikTok e outras redes quando disponíveis."
+        ),
+      },
+      {
+        id: "support",
+        title: translate(t, "homePageFaqSupportTitle", "Como falar com a equipe Cardpoc?"),
+        content: translate(
+          t,
+          "homePageFaqSupportContent",
+          "Usuários e criadores podem usar os canais de suporte dentro da plataforma para reportar bugs, pedir correções, tirar dúvidas, solicitar reivindicação de perfil ou falar sobre cartas e pacotes."
+        ),
+      },
+    ],
+    [t]
+  );
+
+  const faqArticles = useMemo(
+    () => [...defaultFaqArticles, ...customFaqArticles],
+    [customFaqArticles, defaultFaqArticles]
+  );
+
+  const filteredFaqArticles = useMemo(() => {
+    const normalizedSearch = guideSearch.trim().toLowerCase();
+
+    if (!normalizedSearch) return faqArticles;
+
+    return faqArticles.filter((article) => {
+      const searchable = `${article.title} ${article.content}`.toLowerCase();
+      return searchable.includes(normalizedSearch);
+    });
+  }, [faqArticles, guideSearch]);
+
+  async function handleCreateFaqArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const title = newFaqTitle.trim();
+    const content = newFaqContent.trim();
+
+    if (!title || !content) return;
+
+    setSavingFaq(true);
+    setFaqFeedback("");
+
+    const nextSortOrder = customFaqArticles.length + defaultFaqArticles.length + 1;
+
+    const { data, error } = await supabase
+      .from("faq_articles")
+      .insert({
+        title,
+        content,
+        sort_order: nextSortOrder,
+        is_active: true,
+      })
+      .select("id,title,content,sort_order")
+      .single();
+
+    setSavingFaq(false);
+
+    if (error || !data) {
+      setFaqFeedback(
+        translate(
+          t,
+          "homePageFaqAdminError",
+          "Não foi possível salvar. Confira se a tabela faq_articles existe no Supabase."
+        )
+      );
+      return;
+    }
+
+    setCustomFaqArticles((current) => [
+      ...current,
+      {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        sort_order: data.sort_order,
+        isCustom: true,
+      },
+    ]);
+    setNewFaqTitle("");
+    setNewFaqContent("");
+    setFaqFeedback(translate(t, "homePageFaqAdminSuccess", "Tópico adicionado."));
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <AnimatePresence>
@@ -45,24 +280,28 @@ export default function HomePage() {
       <GlowBackground />
       <ParticleBackground />
 
-
       <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
         <div className="mx-auto flex flex-col items-center text-center">
           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
-            {translate(t, "homePageBadge", "Colecione Criadores")}
+            {translate(t, "homePageBadge", "Conheça e colecione criadores")}
           </div>
 
-          <h1 className="mt-5 bg-gradient-to-r from-white via-cyan-100 to-purple-200 bg-clip-text text-3xl font-black uppercase tracking-[0.22em] text-transparent sm:text-5xl">
-            {translate(t, "homePageTitle", "Colecione Criadores")}
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-sm font-medium text-white/55 sm:text-base">
+          <p className="mt-5 max-w-2xl text-sm font-medium text-white/55 sm:text-base">
             {translate(
               t,
               "homePageDescription",
               "Descubra criadores de conteúdo, acompanhe lives, clips e estatísticas, ganhe cartas digitais e complete sua coleção."
             )}
           </p>
+
+          <button
+            type="button"
+            onClick={() => setShowCardpocGuide(true)}
+            className="mt-5 inline-flex items-center gap-3 rounded-full border border-purple-300/25 bg-white/[0.035] px-5 py-2.5 text-xs font-black uppercase tracking-[0.2em] text-white/80 shadow-[0_0_26px_rgba(168,85,247,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-50"
+          >
+            <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.95)]" />
+            {translate(t, "homePageNewHereButton", "É novo aqui?")}
+          </button>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
             <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
@@ -98,14 +337,14 @@ export default function HomePage() {
 
       {showCardpocGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
-          aria-label={translate(t, "homePageGuideTitle", "O que é o Cardpoc?")}
+          aria-label={translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
           onClick={() => setShowCardpocGuide(false)}
         >
           <div
-            className="relative w-full max-w-lg overflow-hidden rounded-[32px] border border-cyan-300/20 bg-[#050812]/95 p-6 shadow-[0_0_60px_rgba(34,211,238,0.16)]"
+            className="relative flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[32px] border border-cyan-300/20 bg-[#050812]/95 shadow-[0_0_60px_rgba(34,211,238,0.16)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -114,70 +353,122 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setShowCardpocGuide(false)}
-              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:border-cyan-300/30 hover:text-white"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:border-cyan-300/30 hover:text-white"
               aria-label={translate(t, "close", "Fechar")}
             >
               ×
             </button>
 
-            <div className="relative">
+            <div className="relative border-b border-white/10 p-6 pr-16 sm:p-8 sm:pr-20">
               <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
                 <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
-                {translate(t, "homePageGuideBadge", "Guia rápido")}
+                {translate(t, "homePageGuideBadge", "Central de ajuda")}
               </div>
 
-              <h2 className="text-2xl font-black uppercase tracking-[0.12em] text-white sm:text-3xl">
-                {translate(t, "homePageGuideTitle", "O que é o Cardpoc?")}
+              <h2 className="text-2xl font-black uppercase tracking-[0.12em] text-white sm:text-4xl">
+                {translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-white/60">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/60">
                 {translate(
                   t,
                   "homePageGuideDescription",
-                  "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais."
+                  "Tire dúvidas sobre cartas, pacotes, XP, níveis, raridades, perfis de criadores e como participar do Cardpoc."
                 )}
               </p>
 
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-100">
-                    {translate(t, "homePageGuideDiscoverTitle", "Descubra")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    {translate(
-                      t,
-                      "homePageGuideDiscoverDescription",
-                      "Encontre streamers, youtubers, tiktokers e criadores de diversas plataformas."
-                    )}
-                  </p>
-                </div>
+              <label className="mt-6 block">
+                <span className="sr-only">
+                  {translate(t, "homePageFaqSearchLabel", "Pesquisar no guia")}
+                </span>
+                <input
+                  value={guideSearch}
+                  onChange={(event) => setGuideSearch(event.target.value)}
+                  placeholder={translate(t, "homePageFaqSearchPlaceholder", "Pesquisar por XP, cartas, pacotes, perfil...")}
+                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-5 py-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-cyan-300/40 focus:bg-cyan-300/[0.04]"
+                />
+              </label>
+            </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-sm font-black uppercase tracking-[0.16em] text-purple-100">
-                    {translate(t, "homePageGuideCollectTitle", "Colecione")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    {translate(
-                      t,
-                      "homePageGuideCollectDescription",
-                      "Ganhe cartas digitais, abra packs, siga criadores e complete sua coleção."
-                    )}
-                  </p>
+            <div className="relative flex-1 overflow-y-auto p-6 sm:p-8">
+              {filteredFaqArticles.length > 0 ? (
+                <div className="grid gap-3">
+                  {filteredFaqArticles.map((article) => (
+                    <details
+                      key={article.id}
+                      className="group rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition open:border-cyan-300/25 open:bg-cyan-300/[0.045]"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left">
+                        <span className="text-sm font-black uppercase tracking-[0.12em] text-white">
+                          {article.title}
+                        </span>
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/25 text-white/50 transition group-open:rotate-45 group-open:text-cyan-100">
+                          +
+                        </span>
+                      </summary>
+                      <p className="mt-3 text-sm leading-6 text-white/58">
+                        {article.content}
+                      </p>
+                    </details>
+                  ))}
                 </div>
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-sm font-semibold text-white/55">
+                  {translate(t, "homePageFaqNoResults", "Nenhum tópico encontrado para essa busca.")}
+                </div>
+              )}
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-100">
-                    {translate(t, "homePageGuideFollowTitle", "Acompanhe")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    {translate(
-                      t,
-                      "homePageGuideFollowDescription",
-                      "Veja lives, clips, estatísticas, redes sociais e evolução dos criadores em um só perfil."
-                    )}
-                  </p>
-                </div>
-              </div>
+              {isAdmin && (
+                <form
+                  onSubmit={handleCreateFaqArticle}
+                  className="mt-6 rounded-3xl border border-amber-300/20 bg-amber-300/[0.04] p-5"
+                >
+                  <div className="mb-4">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100">
+                      {translate(t, "homePageFaqAdminTitle", "Administração do FAQ")}
+                    </p>
+                    <p className="mt-2 text-sm text-white/52">
+                      {translate(
+                        t,
+                        "homePageFaqAdminDescription",
+                        "Adicione novas explicações para usuários sem precisar alterar o código da home."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <input
+                      value={newFaqTitle}
+                      onChange={(event) => setNewFaqTitle(event.target.value)}
+                      placeholder={translate(t, "homePageFaqAdminTitlePlaceholder", "Título do tópico")}
+                      className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-amber-200/35"
+                    />
+                    <textarea
+                      value={newFaqContent}
+                      onChange={(event) => setNewFaqContent(event.target.value)}
+                      placeholder={translate(t, "homePageFaqAdminContentPlaceholder", "Explicação do tópico")}
+                      rows={4}
+                      className="resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/28 focus:border-amber-200/35"
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="submit"
+                        disabled={savingFaq || !newFaqTitle.trim() || !newFaqContent.trim()}
+                        className="rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {savingFaq
+                          ? translate(t, "homePageFaqAdminSaving", "Salvando...")
+                          : translate(t, "homePageFaqAdminAdd", "Adicionar tópico")}
+                      </button>
+                      {faqFeedback && (
+                        <span className="text-sm font-semibold text-white/55">
+                          {faqFeedback}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>

@@ -588,7 +588,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "Um pacote misterioso com chance aleatória para qualquer raridade.",
     packsModalRandomRarity: "Aleatória",
-    homePageBadge: "Colecione Criadores",
+    homePageBadge: "Conheça e colecione criadores",
     homePageTitle: "Colecione Criadores",
     homePageDescription:
       "Descubra criadores de conteúdo, acompanhe lives, clips e estatísticas, ganhe cartas digitais e complete sua coleção.",
@@ -598,10 +598,10 @@ export const translations = {
     homePagePillarCards: "Cartas Digitais",
     homePageGuideOpenAria: "Entender o Cardpoc",
     homePageGuideTooltip: "O que é o Cardpoc?",
-    homePageGuideBadge: "Guia rápido",
-    homePageGuideTitle: "O que é o Cardpoc?",
+    homePageGuideBadge: "Central de ajuda",
+    homePageGuideTitle: "Central de Ajuda Cardpoc",
     homePageGuideDescription:
-      "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais.",
+      "Tire dúvidas sobre cartas, pacotes, XP, níveis, raridades, perfis de criadores e como participar do Cardpoc.",
     homePageGuideDiscoverTitle: "Descubra",
     homePageGuideDiscoverDescription:
       "Encontre streamers, youtubers, tiktokers e criadores de diversas plataformas.",
@@ -611,6 +611,53 @@ export const translations = {
     homePageGuideFollowTitle: "Acompanhe",
     homePageGuideFollowDescription:
       "Veja lives, clips, estatísticas, redes sociais e evolução dos criadores em um só perfil.",
+    homePageNewHereButton: "É novo aqui?",
+    homePageFaqSearchLabel: "Pesquisar no guia",
+    homePageFaqSearchPlaceholder: "Pesquisar por XP, cartas, pacotes, perfil...",
+    homePageFaqNoResults: "Nenhum tópico encontrado para essa busca.",
+    homePageFaqWhatIsTitle: "O que é o Cardpoc?",
+    homePageFaqWhatIsContent:
+      "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais. Cada criador funciona como um perfil vivo, com estatísticas, redes sociais, clips, cartas e evolução.",
+    homePageFaqProfilesTitle: "O que são perfis de criadores?",
+    homePageFaqProfilesContent:
+      "Perfis de criadores reúnem informações públicas como bio, links sociais, clips, lives, seguidores globais, cartas e histórico dentro do Cardpoc. Alguns perfis ainda podem estar sem dono até serem reivindicados ou aprovados.",
+    homePageFaqGetProfileTitle: "Como faço para ter um perfil?",
+    homePageFaqGetProfileContent:
+      "Criadores podem solicitar um perfil ou reivindicar um perfil já existente. A equipe Cardpoc analisa a solicitação para evitar perfis falsos, dados incorretos ou uso indevido de imagem.",
+    homePageFaqFirstCardTitle: "Como consigo uma carta comum?",
+    homePageFaqFirstCardContent:
+      "A forma mais simples de conquistar uma carta comum é seguir um criador dentro do Cardpoc quando essa recompensa estiver disponível. Cartas comuns são a entrada da coleção e ajudam você a começar seu álbum de criadores.",
+    homePageFaqCardsPacksTitle: "Como consigo cartas e pacotes?",
+    homePageFaqCardsPacksContent:
+      "Você pode ganhar cartas e pacotes através de ações da plataforma, missões, eventos, recompensas, distribuições administrativas e futuras campanhas. Pacotes podem revelar cartas de diferentes raridades.",
+    homePageFaqRaritiesTitle: "Como funcionam as raridades?",
+    homePageFaqRaritiesContent:
+      "As cartas podem ser comuns, raras, épicas, lendárias ou míticas. Raridades maiores são mais especiais, podem ter visuais mais fortes e normalmente dependem de pacotes, eventos, recompensas ou distribuições específicas.",
+    homePageFaqXpLevelsTitle: "Como ganho XP e subo de nível?",
+    homePageFaqXpLevelsContent:
+      "XP pode ser ganho ao interagir com o Cardpoc, seguir criadores, conquistar cartas, abrir pacotes, completar missões e participar de ações futuras. O nível mostra sua evolução como colecionador dentro da plataforma.",
+    homePageFaqLoginTitle: "Preciso estar logado?",
+    homePageFaqLoginContent:
+      "Você pode explorar perfis públicos sem login, mas precisa entrar para seguir criadores, guardar cartas na coleção, ganhar XP, abrir pacotes, receber notificações e participar da progressão.",
+    homePageFaqPlainImagesTitle: "Por que algumas cartas usam imagem comum?",
+    homePageFaqPlainImagesContent:
+      "Algumas cartas podem usar imagem comum porque o criador ainda não aprovou ou autorizou o uso de uma arte editada para o Cardpoc. Nesses casos, a imagem pode ser atualizada depois com aprovação ou solicitação do próprio criador.",
+    homePageFaqGlobalFollowersTitle: "O que são seguidores globais?",
+    homePageFaqGlobalFollowersContent:
+      "Seguidores globais são uma soma das audiências públicas do criador em plataformas conectadas ao perfil, como Twitch, YouTube, Kick, Instagram, TikTok e outras redes quando disponíveis.",
+    homePageFaqSupportTitle: "Como falar com a equipe Cardpoc?",
+    homePageFaqSupportContent:
+      "Usuários e criadores podem usar os canais de suporte dentro da plataforma para reportar bugs, pedir correções, tirar dúvidas, solicitar reivindicação de perfil ou falar sobre cartas e pacotes.",
+    homePageFaqAdminTitle: "Administração do FAQ",
+    homePageFaqAdminDescription:
+      "Adicione novas explicações para usuários sem precisar alterar o código da home.",
+    homePageFaqAdminTitlePlaceholder: "Título do tópico",
+    homePageFaqAdminContentPlaceholder: "Explicação do tópico",
+    homePageFaqAdminAdd: "Adicionar tópico",
+    homePageFaqAdminSaving: "Salvando...",
+    homePageFaqAdminSuccess: "Tópico adicionado.",
+    homePageFaqAdminError:
+      "Não foi possível salvar. Confira se a tabela faq_articles existe no Supabase.",
     packsModalLegendaryPackName: "Pacote Lendário",
     packsModalEpicPackName: "Pacote Épico",
     packsModalRarePackName: "Pacote Raro",
@@ -1549,7 +1596,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "A mystery pack with a random chance for any rarity.",
     packsModalRandomRarity: "Random",
-    homePageBadge: "Collect Creators",
+    homePageBadge: "Discover and collect creators",
     homePageTitle: "Collect Creators",
     homePageDescription:
       "Discover content creators, follow lives, clips and stats, earn digital cards and complete your collection.",
@@ -1559,10 +1606,10 @@ export const translations = {
     homePagePillarCards: "Digital Cards",
     homePageGuideOpenAria: "Understand Cardpoc",
     homePageGuideTooltip: "What is Cardpoc?",
-    homePageGuideBadge: "Quick guide",
-    homePageGuideTitle: "What is Cardpoc?",
+    homePageGuideBadge: "Help center",
+    homePageGuideTitle: "Cardpoc Help Center",
     homePageGuideDescription:
-      "Cardpoc is a platform to discover, follow and collect content creators through digital cards.",
+      "Learn about cards, packs, XP, levels, rarities, creator profiles and how to participate in Cardpoc.",
     homePageGuideDiscoverTitle: "Discover",
     homePageGuideDiscoverDescription:
       "Find streamers, YouTubers, TikTokers and creators from multiple platforms.",
@@ -1572,6 +1619,53 @@ export const translations = {
     homePageGuideFollowTitle: "Follow",
     homePageGuideFollowDescription:
       "See lives, clips, stats, social links and creator growth in one profile.",
+    homePageNewHereButton: "New here?",
+    homePageFaqSearchLabel: "Search the guide",
+    homePageFaqSearchPlaceholder: "Search for XP, cards, packs, profile...",
+    homePageFaqNoResults: "No topic found for this search.",
+    homePageFaqWhatIsTitle: "What is Cardpoc?",
+    homePageFaqWhatIsContent:
+      "Cardpoc is a platform to discover, follow and collect content creators through digital cards. Each creator works like a living profile with stats, social links, clips, cards and progression.",
+    homePageFaqProfilesTitle: "What are creator profiles?",
+    homePageFaqProfilesContent:
+      "Creator profiles gather public information such as bio, social links, clips, lives, global followers, cards and Cardpoc history. Some profiles may remain unowned until they are claimed or approved.",
+    homePageFaqGetProfileTitle: "How do I get a profile?",
+    homePageFaqGetProfileContent:
+      "Creators can request a profile or claim an existing one. The Cardpoc team reviews requests to prevent fake profiles, incorrect data or improper image usage.",
+    homePageFaqFirstCardTitle: "How do I get a common card?",
+    homePageFaqFirstCardContent:
+      "The simplest way to earn a common card is to follow a creator inside Cardpoc when that reward is available. Common cards are the entry point of the collection and help you start your creator album.",
+    homePageFaqCardsPacksTitle: "How do I get cards and packs?",
+    homePageFaqCardsPacksContent:
+      "You can earn cards and packs through platform actions, missions, events, rewards, admin distributions and future campaigns. Packs may reveal cards from different rarities.",
+    homePageFaqRaritiesTitle: "How do rarities work?",
+    homePageFaqRaritiesContent:
+      "Cards can be common, rare, epic, legendary or mythic. Higher rarities are more special, may have stronger visuals and usually depend on packs, events, rewards or specific distributions.",
+    homePageFaqXpLevelsTitle: "How do I earn XP and level up?",
+    homePageFaqXpLevelsContent:
+      "XP can be earned by interacting with Cardpoc, following creators, collecting cards, opening packs, completing missions and joining future actions. Your level shows your collector progression inside the platform.",
+    homePageFaqLoginTitle: "Do I need to be logged in?",
+    homePageFaqLoginContent:
+      "You can explore public profiles without logging in, but you need an account to follow creators, keep cards in your collection, earn XP, open packs, receive notifications and progress.",
+    homePageFaqPlainImagesTitle: "Why do some cards use a simple image?",
+    homePageFaqPlainImagesContent:
+      "Some cards may use a simple image because the creator has not yet approved or authorized an edited artwork for Cardpoc. In those cases, the image can be updated later with approval or by request from the creator.",
+    homePageFaqGlobalFollowersTitle: "What are global followers?",
+    homePageFaqGlobalFollowersContent:
+      "Global followers are a sum of the creator's public audiences on platforms connected to the profile, such as Twitch, YouTube, Kick, Instagram, TikTok and other networks when available.",
+    homePageFaqSupportTitle: "How do I contact the Cardpoc team?",
+    homePageFaqSupportContent:
+      "Users and creators can use the support channels inside the platform to report bugs, request corrections, ask questions, claim a profile or talk about cards and packs.",
+    homePageFaqAdminTitle: "FAQ administration",
+    homePageFaqAdminDescription:
+      "Add new explanations for users without changing the home page code.",
+    homePageFaqAdminTitlePlaceholder: "Topic title",
+    homePageFaqAdminContentPlaceholder: "Topic explanation",
+    homePageFaqAdminAdd: "Add topic",
+    homePageFaqAdminSaving: "Saving...",
+    homePageFaqAdminSuccess: "Topic added.",
+    homePageFaqAdminError:
+      "Could not save. Check if the faq_articles table exists in Supabase.",
     packsModalLegendaryPackName: "Legendary Pack",
     packsModalEpicPackName: "Epic Pack",
     packsModalRarePackName: "Rare Pack",
@@ -2503,7 +2597,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "Un pack misterioso con probabilidad aleatoria para cualquier rareza.",
     packsModalRandomRarity: "Aleatoria",
-    homePageBadge: "Colecciona Creadores",
+    homePageBadge: "Conoce y colecciona creadores",
     homePageTitle: "Colecciona Creadores",
     homePageDescription:
       "Descubre creadores de contenido, sigue lives, clips y estadísticas, gana cartas digitales y completa tu colección.",
@@ -2513,10 +2607,10 @@ export const translations = {
     homePagePillarCards: "Cartas Digitales",
     homePageGuideOpenAria: "Entender Cardpoc",
     homePageGuideTooltip: "¿Qué es Cardpoc?",
-    homePageGuideBadge: "Guía rápida",
-    homePageGuideTitle: "¿Qué es Cardpoc?",
+    homePageGuideBadge: "Centro de ayuda",
+    homePageGuideTitle: "Centro de Ayuda Cardpoc",
     homePageGuideDescription:
-      "Cardpoc es una plataforma para descubrir, seguir y coleccionar creadores de contenido a través de cartas digitales.",
+      "Resuelve dudas sobre cartas, packs, XP, niveles, rarezas, perfiles de creadores y cómo participar en Cardpoc.",
     homePageGuideDiscoverTitle: "Descubre",
     homePageGuideDiscoverDescription:
       "Encuentra streamers, youtubers, tiktokers y creadores de distintas plataformas.",
@@ -2526,6 +2620,53 @@ export const translations = {
     homePageGuideFollowTitle: "Acompaña",
     homePageGuideFollowDescription:
       "Ve lives, clips, estadísticas, redes sociales y evolución de los creadores en un solo perfil.",
+    homePageNewHereButton: "¿Eres nuevo aquí?",
+    homePageFaqSearchLabel: "Buscar en la guía",
+    homePageFaqSearchPlaceholder: "Buscar por XP, cartas, packs, perfil...",
+    homePageFaqNoResults: "No se encontró ningún tema para esta búsqueda.",
+    homePageFaqWhatIsTitle: "¿Qué es Cardpoc?",
+    homePageFaqWhatIsContent:
+      "Cardpoc es una plataforma para descubrir, seguir y coleccionar creadores de contenido a través de cartas digitales. Cada creador funciona como un perfil vivo, con estadísticas, redes sociales, clips, cartas y evolución.",
+    homePageFaqProfilesTitle: "¿Qué son los perfiles de creadores?",
+    homePageFaqProfilesContent:
+      "Los perfiles de creadores reúnen información pública como bio, redes sociales, clips, lives, seguidores globales, cartas e historial dentro de Cardpoc. Algunos perfiles pueden seguir sin dueño hasta ser reclamados o aprobados.",
+    homePageFaqGetProfileTitle: "¿Cómo puedo tener un perfil?",
+    homePageFaqGetProfileContent:
+      "Los creadores pueden solicitar un perfil o reclamar uno existente. El equipo Cardpoc revisa la solicitud para evitar perfiles falsos, datos incorrectos o uso indebido de imagen.",
+    homePageFaqFirstCardTitle: "¿Cómo consigo una carta común?",
+    homePageFaqFirstCardContent:
+      "La forma más simple de conseguir una carta común es seguir a un creador dentro de Cardpoc cuando esa recompensa esté disponible. Las cartas comunes son la entrada a la colección y ayudan a comenzar tu álbum de creadores.",
+    homePageFaqCardsPacksTitle: "¿Cómo consigo cartas y packs?",
+    homePageFaqCardsPacksContent:
+      "Puedes ganar cartas y packs mediante acciones de la plataforma, misiones, eventos, recompensas, distribuciones administrativas y futuras campañas. Los packs pueden revelar cartas de distintas rarezas.",
+    homePageFaqRaritiesTitle: "¿Cómo funcionan las rarezas?",
+    homePageFaqRaritiesContent:
+      "Las cartas pueden ser comunes, raras, épicas, legendarias o míticas. Las rarezas mayores son más especiales, pueden tener visuales más fuertes y normalmente dependen de packs, eventos, recompensas o distribuciones específicas.",
+    homePageFaqXpLevelsTitle: "¿Cómo gano XP y subo de nivel?",
+    homePageFaqXpLevelsContent:
+      "Puedes ganar XP al interactuar con Cardpoc, seguir creadores, conseguir cartas, abrir packs, completar misiones y participar en acciones futuras. El nivel muestra tu evolución como coleccionista dentro de la plataforma.",
+    homePageFaqLoginTitle: "¿Necesito iniciar sesión?",
+    homePageFaqLoginContent:
+      "Puedes explorar perfiles públicos sin iniciar sesión, pero necesitas entrar para seguir creadores, guardar cartas en tu colección, ganar XP, abrir packs, recibir notificaciones y progresar.",
+    homePageFaqPlainImagesTitle: "¿Por qué algunas cartas usan una imagen común?",
+    homePageFaqPlainImagesContent:
+      "Algunas cartas pueden usar una imagen común porque el creador aún no aprobó o autorizó el uso de una arte editada para Cardpoc. En esos casos, la imagen puede actualizarse después con aprobación o solicitud del propio creador.",
+    homePageFaqGlobalFollowersTitle: "¿Qué son los seguidores globales?",
+    homePageFaqGlobalFollowersContent:
+      "Los seguidores globales son una suma de las audiencias públicas del creador en plataformas conectadas al perfil, como Twitch, YouTube, Kick, Instagram, TikTok y otras redes cuando estén disponibles.",
+    homePageFaqSupportTitle: "¿Cómo hablo con el equipo Cardpoc?",
+    homePageFaqSupportContent:
+      "Usuarios y creadores pueden usar los canales de soporte dentro de la plataforma para reportar bugs, pedir correcciones, hacer preguntas, solicitar un perfil o hablar sobre cartas y packs.",
+    homePageFaqAdminTitle: "Administración del FAQ",
+    homePageFaqAdminDescription:
+      "Agrega nuevas explicaciones para usuarios sin cambiar el código de la home.",
+    homePageFaqAdminTitlePlaceholder: "Título del tema",
+    homePageFaqAdminContentPlaceholder: "Explicación del tema",
+    homePageFaqAdminAdd: "Agregar tema",
+    homePageFaqAdminSaving: "Guardando...",
+    homePageFaqAdminSuccess: "Tema agregado.",
+    homePageFaqAdminError:
+      "No fue posible guardar. Revisa si la tabla faq_articles existe en Supabase.",
     packsModalLegendaryPackName: "Pack Legendario",
     packsModalEpicPackName: "Pack Épico",
     packsModalRarePackName: "Pack Raro",
