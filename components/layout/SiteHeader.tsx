@@ -666,6 +666,22 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
             )}
           </div>
 
+          <Link
+            href="/rankings"
+            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-yellow-300/20 bg-yellow-300/[0.06] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-yellow-100 shadow-[0_0_26px_rgba(250,204,21,0.08)] transition hover:-translate-y-0.5 hover:border-yellow-200/45 hover:bg-yellow-300/[0.10] hover:shadow-[0_0_34px_rgba(250,204,21,0.16)] md:w-auto md:shrink-0"
+            aria-label={translate(t, "openRankings", "Abrir rankings")}
+            title={translate(t, "openRankings", "Abrir rankings")}
+          >
+            <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(250,204,21,0.20),transparent_34%),radial-gradient(circle_at_80%_80%,rgba(34,211,238,0.10),transparent_40%)] opacity-70 transition group-hover:opacity-100" />
+            <Trophy
+              size={17}
+              className="relative drop-shadow-[0_0_12px_rgba(250,204,21,0.65)]"
+            />
+            <span className="relative">
+              {translate(t, "rankings", "Rankings")}
+            </span>
+          </Link>
+
           <div className="w-full md:max-w-md">
             <CreatorSearch
               value={effectiveSearch}
