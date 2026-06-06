@@ -30,7 +30,7 @@ type LiveDropsModalProps = {
   liveTitle?: string | null;
 };
 
-type RewardType = "xp" | "pack_common";
+type RewardType = "xp" | "random_pack";
 
 type DurationMinutes = 5 | 10 | 30;
 
@@ -52,7 +52,7 @@ export function LiveDropsModal({
   liveTitle,
 }: LiveDropsModalProps) {
   const { t } = useLanguage();
-  const [rewardType, setRewardType] = useState<RewardType>("pack_common");
+  const [rewardType, setRewardType] = useState<RewardType>("random_pack");
   const [durationMinutes, setDurationMinutes] = useState<DurationMinutes>(10);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

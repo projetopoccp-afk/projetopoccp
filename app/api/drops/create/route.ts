@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
     const creatorId = String(body.creatorId || "").trim();
     const platform = String(body.platform || "kick").trim().toLowerCase();
     const keyword = String(body.keyword || "CARDPOC").trim().toUpperCase();
-    const rewardType = String(body.rewardType || "pack_common").trim().toLowerCase();
+    const rewardType = String(body.rewardType || "random_pack")
+      .trim()
+      .toLowerCase();
     const viewerCount = Math.max(0, Math.floor(Number(body.viewerCount) || 0));
     const dropPercentage = Math.max(1, Math.min(100, Math.floor(Number(body.dropPercentage) || 15)));
     const durationMinutes = clampDurationMinutes(Math.floor(Number(body.durationMinutes) || 10));
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "missing_keyword" }, { status: 400 });
     }
 
-    if (!["xp", "pack_common"].includes(rewardType)) {
+    if (!["xp", "random_pack"].includes(rewardType)) {
       return NextResponse.json({ error: "unsupported_reward_type" }, { status: 400 });
     }
 
