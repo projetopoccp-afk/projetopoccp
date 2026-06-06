@@ -445,39 +445,34 @@ export function LiveDropsModal({
                   ) : null}
                 </div>
 
-                <div className="min-h-[86px] min-w-0 border-white/10 md:border-l md:pl-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                    {translate(t, "liveDropsParticipants", "Participantes")}
-                  </p>
+                <div className="min-w-0 border-white/10 md:border-l md:pl-5">
+  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+    {translate(t, "liveDropsParticipants", "Participantes")}
+  </p>
 
-                  {visibleFeaturedEntries.length > 0 ? (
-                    <div className="mt-3 flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
-                      {visibleFeaturedEntries.map((entry) => (
-                        <span
-                          key={entry.id}
-                          className="inline-flex max-w-[190px] items-center gap-1.5 truncate rounded-full border border-cyan-300/20 bg-black/25 px-2.5 py-1.5 text-[11px] font-black text-cyan-50/90 shadow-[0_0_18px_rgba(34,211,238,0.06)]"
-                          title={`${getPlatformLabel(entry.platform)} · ${entry.platform_username || "—"}`}
-                        >
-                          <span className="shrink-0 text-cyan-100/55">
-                            {getPlatformLabel(entry.platform)}
-                          </span>
-                          <span className="shrink-0 text-white/25">·</span>
-                          <span className="truncate text-white/85">
-                            {entry.platform_username || "—"}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex h-full min-h-[62px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
-                      {translate(
-                        t,
-                        "liveDropsWaitingParticipants",
-                        "Aguardando participantes no chat.",
-                      )}
-                    </div>
-                  )}
-                </div>
+  <div className="mt-3 h-[76px] overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3">
+    {visibleFeaturedEntries.length > 0 ? (
+      <div className="flex max-h-full flex-wrap content-start gap-2 overflow-hidden">
+        {visibleFeaturedEntries.map((entry) => (
+          <span
+            key={entry.id}
+            className="max-w-[160px] truncate rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-cyan-50"
+          >
+            {entry.platform} · {entry.platform_username}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <div className="flex h-full items-center text-sm font-bold text-white/45">
+        {translate(
+          t,
+          "liveDropsWaitingParticipants",
+          "Aguardando participantes no chat.",
+        )}
+      </div>
+    )}
+  </div>
+</div>
               </div>
             </div>
 
