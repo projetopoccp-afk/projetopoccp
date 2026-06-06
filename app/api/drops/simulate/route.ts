@@ -96,7 +96,6 @@ async function createBestEffortNotification(params: {
         drop_id: dropId,
         reward_type: rewardType,
       },
-      read: false,
     })
     .then(({ error }) => {
       if (error) {
