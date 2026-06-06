@@ -88,6 +88,10 @@ function getRewardLabel(t: TranslationFn, rewardType: string) {
   return rewardType;
 }
 
+function getDurationLabel(t: TranslationFn, minutes: DurationMinutes) {
+  return `${minutes} ${translate(t, "liveDropsMinutes", "min")}`;
+}
+
 export function LiveDropsModal({
   open,
   onClose,
@@ -415,7 +419,10 @@ export function LiveDropsModal({
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
                             <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-100/55">
-                              {drop.keyword} · {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)}
+                              {drop.keyword}
+                            </p>
+                            <p className="mt-2 text-sm font-bold text-emerald-50/80">
+                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
                             </p>
                           </div>
 
@@ -471,8 +478,11 @@ export function LiveDropsModal({
                             <p className="font-black text-white/80">
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
-                            <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
-                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} · {formatDateTime(drop.created_at)}
+                            <p className="mt-2 text-sm font-bold text-white/65">
+                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
+                            </p>
+                            <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
+                              {translate(t, "liveDropsCreatedAt", "Criado")}: {formatDateTime(drop.created_at)}
                             </p>
                           </div>
 
@@ -570,6 +580,53 @@ export function LiveDropsModal({
                   "Nesta primeira versão o drop é criado; a leitura automática do chat entra na próxima etapa.",
                 )}
               </p>
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-cyan-300/15 bg-cyan-300/[0.06] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">
+                <CheckCircle2 className="h-4 w-4" />
+                {translate(t, "liveDropsSummaryTitle", "Resumo do drop")}
+              </p>
+
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
+                    {translate(t, "liveDropsLiveStatus", "Status")}
+                  </p>
+                  <p className={isLive ? "mt-2 font-black text-emerald-100" : "mt-2 font-black text-white/45"}>
+                    {isLive
+                      ? translate(t, "liveDropsOnline", "Ao vivo")
+                      : translate(t, "liveDropsOffline", "Offline")}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
+                    {translate(t, "liveDropsAvailable", "Drops disponíveis")}
+                  </p>
+                  <p className="mt-2 font-black text-cyan-50">
+                    {formatNumber(maxClaims)} · {DROP_PERCENTAGE}%
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
+                    {translate(t, "liveDropsReward", "Recompensa")}
+                  </p>
+                  <p className="mt-2 font-black text-white/85">
+                    {getRewardLabel(t, rewardType)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
+                    {translate(t, "liveDropsDuration", "Duração")}
+                  </p>
+                  <p className="mt-2 font-black text-white/85">
+                    {getDurationLabel(t, durationMinutes)} · {DEFAULT_KEYWORD}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {successMessage ? (
