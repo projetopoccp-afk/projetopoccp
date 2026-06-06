@@ -51,6 +51,8 @@ export async function GET() {
   });
 }
 
+console.log("KICK WEBHOOK POST RECEIVED");
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
