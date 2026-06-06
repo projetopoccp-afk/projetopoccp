@@ -123,9 +123,7 @@ async function grantRandomPack(params: {
     throw new Error("random_pack_not_found");
   }
 
-  const { data: grantedPackId, error: grantError } = await supabaseAdmin.rpc(
-    "grant_user_pack",
-    {
+  const { data: grantedPackId, error: grantError } = await supabaseAdmin.rpc("grant_user_pack_system", {
       p_target_user_id: userId,
       p_pack_id: pack.id,
       p_source: "live_drop_simulation",
