@@ -153,20 +153,20 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
     intensity: 0.66,
     particles: [
       { left: "11%", top: "70%", size: "8px", tx: "36px", ty: "-88px", rotate: "72deg", duration: 5.8, delay: 0, shape: "rune", opacity: 0.58 },
-      { left: "20%", top: "30%", size: "22px", tx: "58px", ty: "-22px", rotate: "-18deg", duration: 3.9, delay: -1.1, shape: "arc", opacity: 0.38 },
+      { left: "20%", top: "30%", size: "34px", tx: "54px", ty: "-20px", rotate: "-18deg", duration: 3.2, delay: -1.1, shape: "arc", opacity: 0.78 },
       { left: "31%", top: "84%", size: "7px", tx: "28px", ty: "-106px", rotate: "-120deg", duration: 6.4, delay: -2.2, shape: "rune", opacity: 0.5 },
-      { left: "44%", top: "24%", size: "18px", tx: "-46px", ty: "-18px", rotate: "34deg", duration: 3.4, delay: -2.9, shape: "arc", opacity: 0.34 },
+      { left: "44%", top: "24%", size: "30px", tx: "-44px", ty: "-18px", rotate: "34deg", duration: 3.0, delay: -2.9, shape: "arc", opacity: 0.72 },
       { left: "57%", top: "72%", size: "8px", tx: "-26px", ty: "-98px", rotate: "140deg", duration: 6.1, delay: -4.2, shape: "rune", opacity: 0.56 },
       { left: "74%", top: "24%", size: "7px", tx: "-64px", ty: "12px", rotate: "96deg", duration: 5.7, delay: -1.7, shape: "rune", opacity: 0.46 },
-      { left: "84%", top: "56%", size: "24px", tx: "-74px", ty: "-44px", rotate: "-42deg", duration: 4.1, delay: -5.1, shape: "arc", opacity: 0.36 },
+      { left: "84%", top: "56%", size: "38px", tx: "-70px", ty: "-42px", rotate: "-42deg", duration: 3.4, delay: -5.1, shape: "arc", opacity: 0.74 },
       { left: "9%", top: "44%", size: "4px", tx: "62px", ty: "-20px", rotate: "0deg", duration: 5.4, delay: -2.4, shape: "star", opacity: 0.42 },
       { left: "38%", top: "14%", size: "7px", tx: "18px", ty: "44px", rotate: "-150deg", duration: 6.8, delay: -5.8, shape: "rune", opacity: 0.44 },
-      { left: "66%", top: "44%", size: "20px", tx: "-58px", ty: "24px", rotate: "18deg", duration: 3.7, delay: -3.5, shape: "arc", opacity: 0.32 },
+      { left: "66%", top: "44%", size: "32px", tx: "-56px", ty: "24px", rotate: "18deg", duration: 3.1, delay: -3.5, shape: "arc", opacity: 0.7 },
       { left: "49%", top: "88%", size: "6px", tx: "10px", ty: "-96px", rotate: "210deg", duration: 6.2, delay: -6.8, shape: "rune", opacity: 0.38 },
       { left: "24%", top: "56%", size: "3px", tx: "48px", ty: "-46px", rotate: "-20deg", duration: 4.9, delay: -4.6, shape: "star", opacity: 0.46 },
       { left: "82%", top: "82%", size: "7px", tx: "-76px", ty: "-92px", rotate: "166deg", duration: 6.7, delay: -5.5, shape: "rune", opacity: 0.36 },
       { left: "54%", top: "18%", size: "3px", tx: "-22px", ty: "64px", rotate: "0deg", duration: 4.7, delay: -7.2, shape: "star", opacity: 0.42 },
-      { left: "15%", top: "91%", size: "18px", tx: "76px", ty: "-108px", rotate: "52deg", duration: 4.3, delay: -8, shape: "arc", opacity: 0.28 },
+      { left: "15%", top: "91%", size: "34px", tx: "72px", ty: "-100px", rotate: "52deg", duration: 3.5, delay: -8, shape: "arc", opacity: 0.62 },
       { left: "72%", top: "68%", size: "6px", tx: "-58px", ty: "-80px", rotate: "-210deg", duration: 6.5, delay: -8.6, shape: "rune", opacity: 0.4 },
     ],
   },
@@ -603,16 +603,17 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             }
 
             .creator-particle-arc {
-              height: 2px !important;
+              height: 3px !important;
               border-radius: 999px;
               background:
-                linear-gradient(90deg, transparent 0 5%, rgba(255,255,255,0.95) 18%, var(--rarity-particle) 34%, transparent 48%, var(--rarity-secondary) 62%, transparent 100%);
-              clip-path: polygon(0 54%, 18% 54%, 28% 16%, 42% 80%, 55% 38%, 68% 62%, 100% 62%, 100% 100%, 0 100%);
+                linear-gradient(90deg, transparent 0 4%, rgba(236,253,245,1) 12%, var(--rarity-particle) 24%, transparent 34%, rgba(167,243,208,0.98) 45%, var(--rarity-secondary) 58%, transparent 72%, rgba(236,253,245,0.9) 82%, transparent 100%);
+              clip-path: polygon(0 54%, 10% 54%, 18% 18%, 28% 76%, 38% 34%, 49% 70%, 60% 26%, 72% 62%, 100% 62%, 100% 100%, 0 100%);
               box-shadow:
-                0 0 6px rgba(209,250,229,0.55),
-                0 0 14px var(--rarity-secondary);
+                0 0 8px rgba(209,250,229,0.88),
+                0 0 18px rgba(52,211,153,0.72),
+                0 0 28px rgba(16,185,129,0.42);
               animation-name: creatorEpicElectricArc;
-              animation-timing-function: steps(4, end);
+              animation-timing-function: steps(3, end);
               animation-iteration-count: infinite;
             }
 
@@ -693,37 +694,72 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               animation: creatorRareCrossPulse 1.9s steps(3, end) infinite;
             }
 
-            /* EPIC — esmeralda arcana com raios elétricos sutis, sem oval girando */
+            /* EPIC — esmeralda arcana com raios elétricos sutis visíveis */
             .creator-card-epic .creator-effect-texture {
-              opacity: 0.44;
+              opacity: 0.5;
               background-image:
-                linear-gradient(118deg, transparent 0 18%, rgba(110,231,183,0.12) 19%, transparent 21% 100%),
-                linear-gradient(62deg, transparent 0 54%, rgba(52,211,153,0.11) 55%, transparent 57% 100%),
-                radial-gradient(circle at 18% 72%, rgba(6,95,70,0.24), transparent 20%),
-                radial-gradient(circle at 78% 24%, rgba(16,185,129,0.18), transparent 19%);
+                linear-gradient(118deg, transparent 0 15%, rgba(110,231,183,0.16) 16%, transparent 18% 100%),
+                linear-gradient(62deg, transparent 0 58%, rgba(52,211,153,0.14) 59%, transparent 61% 100%),
+                radial-gradient(circle at 18% 72%, rgba(6,95,70,0.26), transparent 20%),
+                radial-gradient(circle at 78% 24%, rgba(16,185,129,0.2), transparent 19%);
               background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
               filter: none;
-              animation: creatorEpicStaticCharge 5.8s ease-in-out infinite;
+              animation: creatorEpicStaticCharge 5.4s ease-in-out infinite;
             }
 
             .creator-card-epic .creator-effect-aura {
-              opacity: 0.42;
+              opacity: 0.5;
               background:
-                linear-gradient(132deg, transparent 0 29%, rgba(209,250,229,0.18) 30%, rgba(52,211,153,0.1) 31%, transparent 33% 100%),
-                linear-gradient(48deg, transparent 0 64%, rgba(110,231,183,0.16) 65%, transparent 67% 100%),
+                linear-gradient(132deg, transparent 0 24%, rgba(209,250,229,0.28) 25%, rgba(52,211,153,0.18) 26%, transparent 29% 100%),
+                linear-gradient(48deg, transparent 0 67%, rgba(110,231,183,0.24) 68%, rgba(16,185,129,0.12) 69%, transparent 72% 100%),
                 radial-gradient(circle at 50% 52%, rgba(16,185,129,0.12), transparent 35%);
               transform: none;
-              animation: creatorEpicElectricFlicker 3.2s steps(5, end) infinite;
+              animation: creatorEpicElectricFlicker 2.6s steps(5, end) infinite;
             }
 
             .creator-card-epic .creator-effect-special {
-              opacity: 0.36;
+              opacity: 0.56;
+              overflow: hidden;
               background-image:
-                radial-gradient(circle, rgba(209,250,229,0.46) 0 1px, transparent 1.7px),
-                linear-gradient(112deg, transparent 0 22%, rgba(167,243,208,0.16) 23%, transparent 25% 100%),
-                linear-gradient(74deg, transparent 0 70%, rgba(52,211,153,0.14) 71%, transparent 73% 100%);
-              background-size: 46px 46px, 100% 100%, 100% 100%;
-              animation: creatorEpicRuneSpark 7.5s ease-in-out infinite;
+                radial-gradient(circle, rgba(209,250,229,0.5) 0 1px, transparent 1.7px),
+                linear-gradient(112deg, transparent 0 22%, rgba(167,243,208,0.18) 23%, transparent 25% 100%);
+              background-size: 42px 42px, 100% 100%;
+              animation: creatorEpicRuneSpark 6.8s ease-in-out infinite;
+            }
+
+            .creator-card-epic .creator-effect-special::before,
+            .creator-card-epic .creator-effect-special::after {
+              content: "";
+              position: absolute;
+              left: -12%;
+              width: 124%;
+              height: 42px;
+              opacity: 0;
+              border-radius: 999px;
+              background:
+                linear-gradient(90deg, transparent 0 8%, rgba(236,253,245,0.98) 12%, rgba(52,211,153,0.82) 17%, transparent 23%, rgba(167,243,208,0.9) 31%, transparent 37%, rgba(16,185,129,0.78) 48%, rgba(236,253,245,0.88) 52%, transparent 60%, rgba(52,211,153,0.7) 70%, transparent 84%);
+              clip-path: polygon(0 58%, 8% 58%, 12% 28%, 17% 74%, 23% 42%, 29% 64%, 35% 22%, 43% 70%, 50% 36%, 57% 62%, 65% 30%, 74% 66%, 82% 46%, 92% 58%, 100% 58%, 100% 100%, 0 100%);
+              box-shadow:
+                0 0 10px rgba(236,253,245,0.65),
+                0 0 24px rgba(52,211,153,0.58),
+                0 0 42px rgba(16,185,129,0.3);
+              filter: drop-shadow(0 0 7px rgba(167,243,208,0.7));
+              mix-blend-mode: screen;
+              transform-origin: center;
+              animation: creatorEpicVisibleLightning 3.4s steps(4, end) infinite;
+            }
+
+            .creator-card-epic .creator-effect-special::before {
+              top: 28%;
+              transform: rotate(-18deg) translateX(-18%);
+              animation-delay: -0.8s;
+            }
+
+            .creator-card-epic .creator-effect-special::after {
+              top: 58%;
+              transform: rotate(21deg) translateX(16%);
+              animation-delay: -2.15s;
+              opacity: 0;
             }
 
             /* LEGENDARY — ouro celestial, raios, flare premium e partículas solares */
@@ -934,28 +970,64 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             }
 
             @keyframes creatorEpicElectricArc {
-              0%, 10%, 100% {
-                transform: translate3d(0, 0, 0) rotate(0deg) scaleX(0.35);
+              0%, 8%, 100% {
+                transform: translate3d(0, 0, 0) rotate(0deg) scaleX(0.45);
                 opacity: 0;
                 filter: brightness(1);
               }
-              18% {
-                opacity: var(--particle-opacity, 0.34);
-                transform: translate3d(calc(var(--particle-x) * 0.16), calc(var(--particle-y) * 0.16), 0) rotate(calc(var(--particle-rotate) * 0.2)) scaleX(0.85);
-                filter: brightness(1.55);
+              14% {
+                opacity: var(--particle-opacity, 0.72);
+                transform: translate3d(calc(var(--particle-x) * 0.12), calc(var(--particle-y) * 0.12), 0) rotate(calc(var(--particle-rotate) * 0.16)) scaleX(1.18);
+                filter: brightness(2.05);
               }
-              28% {
+              20% {
+                opacity: 0.18;
+              }
+              32% {
+                opacity: var(--particle-opacity, 0.68);
+                transform: translate3d(calc(var(--particle-x) * 0.36), calc(var(--particle-y) * 0.3), 0) rotate(calc(var(--particle-rotate) * 0.42)) scaleX(1.32);
+                filter: brightness(2.15);
+              }
+              44% {
                 opacity: 0.12;
               }
-              42% {
-                opacity: var(--particle-opacity, 0.32);
-                transform: translate3d(calc(var(--particle-x) * 0.42), calc(var(--particle-y) * 0.36), 0) rotate(calc(var(--particle-rotate) * 0.5)) scaleX(1.1);
-                filter: brightness(1.7);
+              56% {
+                opacity: var(--particle-opacity, 0.52);
+                transform: translate3d(calc(var(--particle-x) * 0.62), calc(var(--particle-y) * 0.58), 0) rotate(calc(var(--particle-rotate) * 0.72)) scaleX(1);
+                filter: brightness(1.85);
               }
-              62%, 100% {
-                transform: translate3d(var(--particle-x), var(--particle-y), 0) rotate(var(--particle-rotate)) scaleX(0.45);
+              68%, 100% {
+                transform: translate3d(var(--particle-x), var(--particle-y), 0) rotate(var(--particle-rotate)) scaleX(0.52);
                 opacity: 0;
                 filter: brightness(1);
+              }
+            }
+
+            @keyframes creatorEpicVisibleLightning {
+              0%, 18%, 100% {
+                opacity: 0;
+                filter: brightness(1) drop-shadow(0 0 4px rgba(167,243,208,0.25));
+              }
+              22% {
+                opacity: 0.72;
+                filter: brightness(1.8) drop-shadow(0 0 8px rgba(167,243,208,0.75));
+              }
+              26% {
+                opacity: 0.18;
+              }
+              34% {
+                opacity: 0.64;
+                filter: brightness(1.95) drop-shadow(0 0 10px rgba(52,211,153,0.85));
+              }
+              42% {
+                opacity: 0.08;
+              }
+              54% {
+                opacity: 0.46;
+                filter: brightness(1.55) drop-shadow(0 0 7px rgba(167,243,208,0.55));
+              }
+              62%, 100% {
+                opacity: 0;
               }
             }
 
