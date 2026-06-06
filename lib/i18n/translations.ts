@@ -914,6 +914,12 @@ export const translations = {
     liveDropsRewardXp: "XP",
     liveDropsDuration: "Duração",
     liveDropsMinutes: "min",
+    liveDropsCustomDurationHint:
+      "Digite quantos minutos o drop ficará aberto. O criador só pode criar 1 drop a cada 2 horas.",
+    liveDropsCooldownActive:
+      "Você já criou um drop recentemente. Próximo drop liberado às",
+    liveDropsCooldownActiveFallback:
+      "Você já criou um drop recentemente. Tente novamente mais tarde.",
     liveDropsKeyword: "Palavra-chave",
     liveDropsFutureNote:
       "Nesta primeira versão o drop é criado; a leitura automática do chat entra na próxima etapa.",
@@ -2049,6 +2055,12 @@ export const translations = {
     liveDropsRewardXp: "XP",
     liveDropsDuration: "Duration",
     liveDropsMinutes: "min",
+    liveDropsCustomDurationHint:
+      "Enter how many minutes the drop will stay open. The creator can create 1 drop every 2 hours.",
+    liveDropsCooldownActive:
+      "You created a drop recently. Next drop unlocks at",
+    liveDropsCooldownActiveFallback:
+      "You created a drop recently. Try again later.",
     liveDropsKeyword: "Keyword",
     liveDropsFutureNote:
       "In this first version the drop is created; automatic Kick chat reading comes in the next step.",
@@ -3189,6 +3201,12 @@ export const translations = {
     liveDropsRewardXp: "XP",
     liveDropsDuration: "Duración",
     liveDropsMinutes: "min",
+    liveDropsCustomDurationHint:
+      "Ingresa cuántos minutos el drop permanecerá abierto. El creador puede crear 1 drop cada 2 horas.",
+    liveDropsCooldownActive:
+      "Ya creaste un drop recientemente. El próximo drop se libera a las",
+    liveDropsCooldownActiveFallback:
+      "Ya creaste un drop recientemente. Inténtalo nuevamente más tarde.",
     liveDropsKeyword: "Palabra clave",
     liveDropsFutureNote:
       "En esta primera versión se crea el drop; la lectura automática del chat de Kick entra en la próxima etapa.",

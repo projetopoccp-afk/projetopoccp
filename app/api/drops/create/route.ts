@@ -15,6 +15,11 @@ type CreateDropBody = {
   dropPercentage?: number;
 };
 
+const DROP_CREATE_COOLDOWN_HOURS = 2;
+const DEFAULT_PLATFORM = "kick";
+const DEFAULT_KEYWORD = "CARDPOC";
+const DEFAULT_DROP_PERCENTAGE = 15;
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -51,46 +56,98 @@ function createSupabaseAdminClient() {
   );
 }
 
-function clampDurationMinutes(value: number) {
-  if ([5, 10, 30].includes(value)) return value;
-  return 10;
+function sanitizeKeyword(value: unknown) {
+  const keyword = String(value || DEFAULT_KEYWORD)
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+
+  return keyword || DEFAULT_KEYWORD;
+}
+
+function sanitizePlatform(value: unknown) {
+  const platform = String(value || DEFAULT_PLATFORM).trim().toLowerCase();
+
+  return platform || DEFAULT_PLATFORM;
+}
+
+function sanitizeRewardType(value: unknown) {
+  const rewardType = String(value || "random_pack").trim().toLowerCase();
+
+  if (rewardType === "xp") return "xp";
+  if (rewardType === "random_pack") return "random_pack";
+
+  return "";
+}
+
+function sanitizePositiveInteger(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  const integer = Math.floor(parsed);
+
+  if (!Number.isFinite(integer) || integer < 1) {
+    return fallback;
+  }
+
+  return integer;
+}
+
+function addHours(date: Date, hours: number) {
+  return new Date(date.getTime() + hours * 60 * 60 * 1000);
+}
+
+function addMinutes(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60 * 1000);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as CreateDropBody;
+
     const accessToken = body.accessToken;
+    const creatorId = String(body.creatorId || "").trim();
+    const platform = sanitizePlatform(body.platform);
+    const keyword = sanitizeKeyword(body.keyword);
+    const rewardType = sanitizeRewardType(body.rewardType);
+    const durationMinutes = sanitizePositiveInteger(body.durationMinutes, 10);
+    const viewerCount = Math.max(
+      0,
+      Math.floor(Number(body.viewerCount) || 0),
+    );
+    const dropPercentage = sanitizePositiveInteger(
+      body.dropPercentage,
+      DEFAULT_DROP_PERCENTAGE,
+    );
 
     if (!accessToken) {
-      return NextResponse.json({ error: "missing_supabase_access_token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "missing_supabase_access_token" },
+        { status: 401 },
+      );
     }
-
-    const creatorId = String(body.creatorId || "").trim();
-    const platform = String(body.platform || "kick").trim().toLowerCase();
-    const keyword = String(body.keyword || "CARDPOC").trim().toUpperCase();
-    const rewardType = String(body.rewardType || "random_pack").trim().toLowerCase();
-    const viewerCount = Math.max(0, Math.floor(Number(body.viewerCount) || 0));
-    const dropPercentage = Math.max(1, Math.min(100, Math.floor(Number(body.dropPercentage) || 15)));
-    const durationMinutes = clampDurationMinutes(Math.floor(Number(body.durationMinutes) || 10));
 
     if (!creatorId) {
       return NextResponse.json({ error: "missing_creator_id" }, { status: 400 });
     }
 
     if (platform !== "kick") {
-      return NextResponse.json({ error: "unsupported_platform" }, { status: 400 });
+      return NextResponse.json(
+        { error: "unsupported_drop_platform" },
+        { status: 400 },
+      );
     }
 
-    if (!keyword) {
-      return NextResponse.json({ error: "missing_keyword" }, { status: 400 });
-    }
-
-    if (!["xp", "random_pack"].includes(rewardType)) {
-      return NextResponse.json({ error: "unsupported_reward_type" }, { status: 400 });
+    if (!rewardType) {
+      return NextResponse.json(
+        { error: "unsupported_reward_type" },
+        { status: 400 },
+      );
     }
 
     if (viewerCount <= 0) {
-      return NextResponse.json({ error: "invalid_viewer_count" }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid_viewer_count" },
+        { status: 400 },
+      );
     }
 
     const supabaseAuth = createSupabaseAnonClient();
@@ -100,7 +157,10 @@ export async function POST(request: NextRequest) {
     } = await supabaseAuth.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json({ error: "invalid_supabase_session" }, { status: 401 });
+      return NextResponse.json(
+        { error: "invalid_supabase_session" },
+        { status: 401 },
+      );
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
@@ -128,11 +188,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "not_allowed" }, { status: 403 });
     }
 
-    const startsAt = new Date();
-    const endsAt = new Date(startsAt.getTime() + durationMinutes * 60 * 1000);
-    const maxClaims = Math.max(1, Math.floor(viewerCount * (dropPercentage / 100)));
+    const now = new Date();
+    const cooldownStart = addHours(now, -DROP_CREATE_COOLDOWN_HOURS).toISOString();
 
-    const { data: drop, error: insertError } = await supabaseAdmin
+    const { data: recentDrop, error: recentDropError } = await supabaseAdmin
+      .from("creator_drops")
+      .select("id,created_at")
+      .eq("creator_id", creatorId)
+      .gte("created_at", cooldownStart)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentDropError) {
+      console.error("Drop cooldown lookup error:", recentDropError);
+
+      return NextResponse.json(
+        { error: "drop_cooldown_lookup_failed" },
+        { status: 500 },
+      );
+    }
+
+    if (recentDrop?.created_at) {
+      const nextAvailableAt = addHours(
+        new Date(recentDrop.created_at),
+        DROP_CREATE_COOLDOWN_HOURS,
+      );
+
+      const remainingMilliseconds = Math.max(
+        0,
+        nextAvailableAt.getTime() - now.getTime(),
+      );
+
+      return NextResponse.json(
+        {
+          error: "drop_cooldown_active",
+          lastDropId: recentDrop.id,
+          lastDropCreatedAt: recentDrop.created_at,
+          nextAvailableAt: nextAvailableAt.toISOString(),
+          remainingMinutes: Math.ceil(remainingMilliseconds / 60000),
+        },
+        { status: 429 },
+      );
+    }
+
+    const maxClaims = Math.max(
+      1,
+      Math.floor(viewerCount * (dropPercentage / 100)),
+    );
+
+    const startsAt = now;
+    const endsAt = addMinutes(now, durationMinutes);
+
+    const { data: createdDrop, error: createError } = await supabaseAdmin
       .from("creator_drops")
       .insert({
         creator_id: creatorId,
@@ -149,17 +257,30 @@ export async function POST(request: NextRequest) {
         is_active: true,
         created_by: user.id,
       })
-      .select("id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at")
+      .select("*")
       .single();
 
-    if (insertError) {
-      console.error("Create drop insert error:", insertError);
-      return NextResponse.json({ error: "drop_insert_failed" }, { status: 500 });
+    if (createError || !createdDrop) {
+      console.error("Drop create insert error:", createError);
+
+      return NextResponse.json(
+        { error: "drop_create_failed" },
+        { status: 500 },
+      );
     }
 
-    return NextResponse.json({ drop });
+    return NextResponse.json({
+      ok: true,
+      drop: createdDrop,
+      cooldownHours: DROP_CREATE_COOLDOWN_HOURS,
+      nextAvailableAt: addHours(now, DROP_CREATE_COOLDOWN_HOURS).toISOString(),
+    });
   } catch (error) {
-    console.error("Create drop error:", error);
-    return NextResponse.json({ error: "drop_create_failed" }, { status: 500 });
+    console.error("Create drop route error:", error);
+
+    return NextResponse.json(
+      { error: "drop_create_failed" },
+      { status: 500 },
+    );
   }
 }

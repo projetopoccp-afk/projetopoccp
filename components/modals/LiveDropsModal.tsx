@@ -35,8 +35,6 @@ type LiveDropsModalProps = {
 
 type RewardType = "xp" | "random_pack";
 
-type DurationMinutes = 5 | 10 | 30;
-
 type DropEntryRecord = {
   id: string;
   drop_id: string;
@@ -98,7 +96,7 @@ function getRewardLabel(t: TranslationFn, rewardType: string) {
   return rewardType;
 }
 
-function getDurationLabel(t: TranslationFn, minutes: DurationMinutes) {
+function getDurationLabel(t: TranslationFn, minutes: number) {
   return `${minutes} ${translate(t, "liveDropsMinutes", "min")}`;
 }
 
@@ -130,7 +128,7 @@ export function LiveDropsModal({
 }: LiveDropsModalProps) {
   const { t } = useLanguage();
   const [rewardType, setRewardType] = useState<RewardType>("random_pack");
-  const [durationMinutes, setDurationMinutes] = useState<DurationMinutes>(10);
+  const [durationMinutes, setDurationMinutes] = useState<number>(10);
   const [saving, setSaving] = useState(false);
   const [loadingDrops, setLoadingDrops] = useState(false);
   const [endingDropId, setEndingDropId] = useState<string | null>(null);
@@ -145,6 +143,10 @@ export function LiveDropsModal({
     return Math.max(1, Math.floor(normalizedViewerCount * (DROP_PERCENTAGE / 100)));
   }, [isLive, normalizedViewerCount]);
 
+  const safeDurationMinutes = useMemo(() => {
+    return Math.max(1, Math.floor(Number(durationMinutes) || 1));
+  }, [durationMinutes]);
+
   const activeDrops = useMemo(() => drops.filter(isDropCurrentlyActive), [drops]);
   const historyDrops = useMemo(() => drops.filter((drop) => !isDropCurrentlyActive(drop)), [drops]);
   const featuredActiveDrop = activeDrops[0];
@@ -153,7 +155,7 @@ export function LiveDropsModal({
     [featuredActiveDrop?.entries],
   );
 
-  const canActivate = isLive && normalizedViewerCount > 0 && maxClaims > 0 && !saving;
+  const canActivate = isLive && normalizedViewerCount > 0 && maxClaims > 0 && safeDurationMinutes >= 1 && !saving;
 
   const getSessionAccessToken = useCallback(async () => {
     const {
@@ -243,7 +245,7 @@ export function LiveDropsModal({
           platform,
           keyword: DEFAULT_KEYWORD,
           rewardType,
-          durationMinutes,
+          durationMinutes: safeDurationMinutes,
           viewerCount: normalizedViewerCount,
           dropPercentage: DROP_PERCENTAGE,
         }),
@@ -251,6 +253,35 @@ export function LiveDropsModal({
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
+
+        if (payload?.error === "drop_cooldown_active") {
+          const nextAvailableAt = payload?.nextAvailableAt
+            ? new Date(payload.nextAvailableAt)
+            : null;
+
+          const formattedNextAvailableAt =
+            nextAvailableAt && !Number.isNaN(nextAvailableAt.getTime())
+              ? nextAvailableAt.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : null;
+
+          throw new Error(
+            formattedNextAvailableAt
+              ? `${translate(
+                  t,
+                  "liveDropsCooldownActive",
+                  "Você já criou um drop recentemente. Próximo drop liberado às",
+                )} ${formattedNextAvailableAt}.`
+              : translate(
+                  t,
+                  "liveDropsCooldownActiveFallback",
+                  "Você já criou um drop recentemente. Tente novamente mais tarde.",
+                ),
+          );
+        }
+
         throw new Error(payload?.error || "drop_create_failed");
       }
 
@@ -264,13 +295,16 @@ export function LiveDropsModal({
       await loadDrops();
     } catch (dropError) {
       console.error("Erro ao criar drop:", dropError);
-      setError(
-        translate(
-          t,
-          "liveDropsCreateError",
-          "Não foi possível ativar o drop agora.",
-        ),
-      );
+      const message =
+        dropError instanceof Error && dropError.message
+          ? dropError.message
+          : translate(
+              t,
+              "liveDropsCreateError",
+              "Não foi possível ativar o drop agora.",
+            );
+
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -686,21 +720,37 @@ export function LiveDropsModal({
                 {translate(t, "liveDropsDuration", "Duração")}
               </p>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                {[5, 10, 30].map((minutes) => (
-                  <button
-                    key={minutes}
-                    type="button"
-                    onClick={() => setDurationMinutes(minutes as DurationMinutes)}
-                    className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${
-                      durationMinutes === minutes
-                        ? "border-amber-300/35 bg-amber-300/12 text-amber-50"
-                        : "border-white/10 bg-black/20 text-white/55 hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    {minutes} {translate(t, "liveDropsMinutes", "min")}
-                  </button>
-                ))}
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={durationMinutes}
+                    onChange={(event) => {
+                      const nextValue = Math.max(
+                        1,
+                        Math.floor(Number(event.target.value) || 1),
+                      );
+
+                      setDurationMinutes(nextValue);
+                    }}
+                    className="h-12 w-28 rounded-2xl border border-amber-300/20 bg-black/30 px-4 text-center text-lg font-black text-amber-50 outline-none transition placeholder:text-white/25 focus:border-amber-200/45 focus:bg-amber-300/10"
+                  />
+
+                  <span className="text-sm font-black uppercase tracking-[0.18em] text-white/60">
+                    {translate(t, "liveDropsMinutes", "min")}
+                  </span>
+                </label>
+
+                <p className="mt-3 text-xs leading-5 text-white/40">
+                  {translate(
+                    t,
+                    "liveDropsCustomDurationHint",
+                    "Digite quantos minutos o drop ficará aberto. O criador só pode criar 1 drop a cada 2 horas.",
+                  )}
+                </p>
               </div>
             </div>
 
@@ -761,7 +811,7 @@ export function LiveDropsModal({
                     {translate(t, "liveDropsDuration", "Duração")}
                   </p>
                   <p className="mt-2 font-black text-white/85">
-                    {getDurationLabel(t, durationMinutes)} · {DEFAULT_KEYWORD}
+                    {getDurationLabel(t, safeDurationMinutes)} · {DEFAULT_KEYWORD}
                   </p>
                 </div>
               </div>
