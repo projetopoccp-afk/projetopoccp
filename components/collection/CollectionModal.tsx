@@ -644,6 +644,13 @@ function CollectionCard({
         <CreatorCard creator={creator} onClick={() => onClick()} />
         <CollectionCardOverlay card={card} compact />
       </div>
+
+      <CollectionCardMeta
+        source={card.source}
+        obtainedAt={card.obtained_at}
+        locale={getDateLocale(language)}
+        sourceLabel={translate(t, "collectionCardSource", "Origem")}
+      />
     </div>
   );
 }
