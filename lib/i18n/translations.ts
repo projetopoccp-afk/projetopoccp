@@ -992,6 +992,11 @@ export const translations = {
       en: "claimed",
       es: "rescatados",
     },
+    liveDropsCreatedAt: {
+      pt: "Criado",
+      en: "Created",
+      es: "Creado",
+    },
 
     adminSearchRequestPlaceholder:
       "Buscar solicitações por email, nome, username, categoria ou código...",
