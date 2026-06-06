@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ExternalLink,
   Eye,
+  Gift,
   Globe2,
   Loader2,
   MessageCircle,
@@ -30,6 +31,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
+import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
@@ -1342,6 +1344,7 @@ export function CreatorProfilePage({
   const [claimSuccess, setClaimSuccess] = useState(false);
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
+  const [liveDropsOpen, setLiveDropsOpen] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -2789,6 +2792,15 @@ export function CreatorProfilePage({
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
+                onClick={() => setLiveDropsOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-amber-100 backdrop-blur transition hover:bg-amber-300/20"
+              >
+                <Gift className="h-4 w-4" />
+                {translate(t, "creatorProfileLiveDropsButton", "Drops de Live")}
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setSupportChatOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-cyan-100 backdrop-blur transition hover:bg-cyan-300/20"
               >
@@ -3922,6 +3934,19 @@ export function CreatorProfilePage({
 
         </section>
       </div>
+
+      {profile ? (
+        <LiveDropsModal
+          open={liveDropsOpen}
+          onClose={() => setLiveDropsOpen(false)}
+          creatorId={profile.id}
+          creatorName={profile.nickname || profile.username}
+          platform="kick"
+          isLive={Boolean(kickStatus?.isLive)}
+          viewerCount={kickStatus?.viewerCount || 0}
+          liveTitle={kickStatus?.title || null}
+        />
+      ) : null}
 
       {livePlatformsOpen ? (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 px-4 py-6 sm:px-6">
