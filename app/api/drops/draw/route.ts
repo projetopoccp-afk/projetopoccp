@@ -40,6 +40,74 @@ function shuffleArray<T>(items: T[]) {
   return copy;
 }
 
+async function createDropNotificationOnce(params: {
+  supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>;
+  userId: string;
+  dropId: string;
+  creatorId: string | null;
+  platform: string;
+  platformUsername: string | null;
+  rewardType: string;
+  packId: string | null;
+}) {
+  const {
+    supabaseAdmin,
+    userId,
+    dropId,
+    creatorId,
+    platform,
+    platformUsername,
+    rewardType,
+    packId,
+  } = params;
+
+  const { data: existingNotification, error: existingNotificationError } =
+    await supabaseAdmin
+      .from("user_notifications")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("type", "package_received")
+      .contains("metadata", {
+        drop_id: dropId,
+        source: "live_drop_draw",
+      })
+      .maybeSingle();
+
+  if (existingNotificationError) {
+    console.error(
+      "Drop draw existing notification lookup error:",
+      existingNotificationError,
+    );
+  }
+
+  if (existingNotification) {
+    return;
+  }
+
+  const { error: notificationError } = await supabaseAdmin
+    .from("user_notifications")
+    .insert({
+      user_id: userId,
+      type: "package_received",
+      title: "🎁 Drop recebido",
+      message:
+        "Você foi sorteado em um Drop de Live e recebeu um Pack Aleatório.",
+      metadata: {
+        drop_id: dropId,
+        creator_id: creatorId,
+        platform,
+        platform_username: platformUsername,
+        reward_type: rewardType,
+        pack_id: packId,
+        source: "live_drop_draw",
+      },
+    });
+
+  if (notificationError) {
+    console.error("Drop draw notification error:", notificationError);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as DrawDropBody;
@@ -68,21 +136,25 @@ export async function POST(request: Request) {
 
     if (claimedError) {
       console.error("Drop draw claimed lookup error:", claimedError);
-      return NextResponse.json({ error: "claimed_lookup_failed" }, { status: 500 });
+
+      return NextResponse.json(
+        { error: "claimed_lookup_failed" },
+        { status: 500 },
+      );
     }
 
     const claimedUserIds = new Set(
       (alreadyClaimed || []).map((claim) => claim.user_id),
     );
 
-    const remainingSlots =
-      Number(drop.max_claims || 0) - Number(alreadyClaimed?.length || 0);
+    const alreadyClaimedCount = Number(alreadyClaimed?.length || 0);
+    const remainingSlots = Number(drop.max_claims || 0) - alreadyClaimedCount;
 
     if (remainingSlots <= 0) {
       await supabaseAdmin
         .from("creator_drops")
         .update({
-          current_claims: Number(alreadyClaimed?.length || 0),
+          current_claims: alreadyClaimedCount,
           is_active: false,
         })
         .eq("id", drop.id);
@@ -97,7 +169,11 @@ export async function POST(request: Request) {
 
     if (entriesError) {
       console.error("Drop draw entries lookup error:", entriesError);
-      return NextResponse.json({ error: "entries_lookup_failed" }, { status: 500 });
+
+      return NextResponse.json(
+        { error: "entries_lookup_failed" },
+        { status: 500 },
+      );
     }
 
     const eligibleEntries = ((entries || []) as DropEntry[]).filter(
@@ -108,12 +184,15 @@ export async function POST(request: Request) {
       await supabaseAdmin
         .from("creator_drops")
         .update({
-          current_claims: Number(alreadyClaimed?.length || 0),
+          current_claims: alreadyClaimedCount,
           is_active: false,
         })
         .eq("id", drop.id);
 
-      return NextResponse.json({ error: "no_eligible_entries" }, { status: 404 });
+      return NextResponse.json(
+        { error: "no_eligible_entries" },
+        { status: 404 },
+      );
     }
 
     const winners = shuffleArray(eligibleEntries).slice(0, remainingSlots);
@@ -131,7 +210,11 @@ export async function POST(request: Request) {
 
     if (drop.reward_type === "random_pack" && (packError || !randomPack?.id)) {
       console.error("Drop draw random pack lookup error:", packError);
-      return NextResponse.json({ error: "random_pack_not_found" }, { status: 500 });
+
+      return NextResponse.json(
+        { error: "random_pack_not_found" },
+        { status: 500 },
+      );
     }
 
     const awardedUsers: Array<{
@@ -158,6 +241,7 @@ export async function POST(request: Request) {
             userId: winner.user_id,
             grantError,
           });
+
           continue;
         }
 
@@ -179,30 +263,20 @@ export async function POST(request: Request) {
           userId: winner.user_id,
           claimError,
         });
+
         continue;
       }
 
-      const { error: notificationError } = await supabaseAdmin
-        .from("user_notifications")
-        .insert({
-          user_id: winner.user_id,
-          type: "package_received",
-          title: "🎁 Drop recebido",
-          message: "Você foi sorteado em um Drop de Live e recebeu um Pack Aleatório.",
-          metadata: {
-            drop_id: drop.id,
-            creator_id: drop.creator_id,
-            platform: winner.platform || "kick",
-            platform_username: winner.platform_username,
-            reward_type: drop.reward_type,
-            pack_id: grantedPackId,
-            source: "live_drop_draw",
-          },
-        });
-
-      if (notificationError) {
-        console.error("Drop draw notification error:", notificationError);
-      }
+      await createDropNotificationOnce({
+        supabaseAdmin,
+        userId: winner.user_id,
+        dropId: drop.id,
+        creatorId: drop.creator_id ?? null,
+        platform: winner.platform || "kick",
+        platformUsername: winner.platform_username,
+        rewardType: drop.reward_type,
+        packId: grantedPackId,
+      });
 
       awardedUsers.push({
         userId: winner.user_id,
@@ -211,7 +285,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const finalClaims = Number(alreadyClaimed?.length || 0) + awardedUsers.length;
+    const finalClaims = alreadyClaimedCount + awardedUsers.length;
 
     await supabaseAdmin
       .from("creator_drops")
@@ -233,6 +307,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Drop draw unexpected error:", error);
+
     return NextResponse.json({ error: "unexpected_error" }, { status: 500 });
   }
 }
