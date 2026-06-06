@@ -118,27 +118,6 @@ function getVisibleEntries(entries?: DropEntryRecord[]) {
   return (entries || []).slice(-14);
 }
 
-function normalizeDropEntry(value: unknown): DropEntryRecord | null {
-  if (!value || typeof value !== "object") return null;
-
-  const entry = value as Partial<DropEntryRecord>;
-
-  if (!entry.id || !entry.drop_id || !entry.user_id) return null;
-
-  return {
-    id: String(entry.id),
-    drop_id: String(entry.drop_id),
-    user_id: String(entry.user_id),
-    platform: String(entry.platform || "kick"),
-    platform_username: entry.platform_username
-      ? String(entry.platform_username)
-      : null,
-    entered_at: entry.entered_at
-      ? String(entry.entered_at)
-      : new Date().toISOString(),
-  };
-}
-
 export function LiveDropsModal({
   open,
   onClose,
@@ -160,34 +139,21 @@ export function LiveDropsModal({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const normalizedViewerCount = Math.max(
-    0,
-    Math.floor(Number(viewerCount) || 0),
-  );
+  const normalizedViewerCount = Math.max(0, Math.floor(Number(viewerCount) || 0));
   const maxClaims = useMemo(() => {
     if (!isLive || normalizedViewerCount <= 0) return 0;
-    return Math.max(
-      1,
-      Math.floor(normalizedViewerCount * (DROP_PERCENTAGE / 100)),
-    );
+    return Math.max(1, Math.floor(normalizedViewerCount * (DROP_PERCENTAGE / 100)));
   }, [isLive, normalizedViewerCount]);
 
-  const activeDrops = useMemo(
-    () => drops.filter(isDropCurrentlyActive),
-    [drops],
-  );
-  const historyDrops = useMemo(
-    () => drops.filter((drop) => !isDropCurrentlyActive(drop)),
-    [drops],
-  );
+  const activeDrops = useMemo(() => drops.filter(isDropCurrentlyActive), [drops]);
+  const historyDrops = useMemo(() => drops.filter((drop) => !isDropCurrentlyActive(drop)), [drops]);
   const featuredActiveDrop = activeDrops[0];
   const visibleFeaturedEntries = useMemo(
     () => getVisibleEntries(featuredActiveDrop?.entries),
     [featuredActiveDrop?.entries],
   );
 
-  const canActivate =
-    isLive && normalizedViewerCount > 0 && maxClaims > 0 && !saving;
+  const canActivate = isLive && normalizedViewerCount > 0 && maxClaims > 0 && !saving;
 
   const getSessionAccessToken = useCallback(async () => {
     const {
@@ -243,126 +209,18 @@ export function LiveDropsModal({
   }, [creatorId, getSessionAccessToken, open, t]);
 
   useEffect(() => {
-  if (!open) return;
+    if (!open) return;
 
-  loadDrops();
+    void loadDrops();
 
-  const interval = setInterval(() => {
-    loadDrops();
-  }, 3000);
-
-  return () => {
-    clearInterval(interval);
-  };
-}, [open, loadDrops]);
-
-  const handleRealtimeEntryInsert = useCallback((entry: DropEntryRecord) => {
-    setDrops((currentDrops) =>
-      currentDrops.map((drop) => {
-        if (drop.id !== entry.drop_id) return drop;
-
-        const currentEntries = drop.entries || [];
-        const alreadyExists = currentEntries.some(
-          (item) => item.id === entry.id,
-        );
-
-        if (alreadyExists) {
-          return {
-            ...drop,
-            entries: currentEntries.map((item) =>
-              item.id === entry.id ? entry : item,
-            ),
-          };
-        }
-
-        return {
-          ...drop,
-          entries: [...currentEntries, entry].sort(
-            (firstEntry, secondEntry) =>
-              new Date(firstEntry.entered_at).getTime() -
-              new Date(secondEntry.entered_at).getTime(),
-          ),
-        };
-      }),
-    );
-  }, []);
-
-  const handleRealtimeEntryDelete = useCallback((entry: DropEntryRecord) => {
-    setDrops((currentDrops) =>
-      currentDrops.map((drop) => {
-        if (drop.id !== entry.drop_id) return drop;
-
-        return {
-          ...drop,
-          entries: (drop.entries || []).filter((item) => item.id !== entry.id),
-        };
-      }),
-    );
-  }, []);
-
-  useEffect(() => {
-    if (!open || !featuredActiveDrop?.id) return;
-
-    const channel = supabase
-      .channel(`live-drop-entries-${featuredActiveDrop.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "drop_entries",
-          filter: `drop_id=eq.${featuredActiveDrop.id}`,
-        },
-        (payload) => {
-          const entry = normalizeDropEntry(payload.new);
-          if (!entry) return;
-          handleRealtimeEntryInsert(entry);
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "drop_entries",
-          filter: `drop_id=eq.${featuredActiveDrop.id}`,
-        },
-        (payload) => {
-          const entry = normalizeDropEntry(payload.new);
-          if (!entry) return;
-          handleRealtimeEntryInsert(entry);
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "drop_entries",
-          filter: `drop_id=eq.${featuredActiveDrop.id}`,
-        },
-        (payload) => {
-          const entry = normalizeDropEntry(payload.old);
-          if (!entry) return;
-          handleRealtimeEntryDelete(entry);
-        },
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          void loadDrops();
-        }
-      });
+    const interval = window.setInterval(() => {
+      void loadDrops();
+    }, 3000);
 
     return () => {
-      void supabase.removeChannel(channel);
+      window.clearInterval(interval);
     };
-  }, [
-    featuredActiveDrop?.id,
-    handleRealtimeEntryDelete,
-    handleRealtimeEntryInsert,
-    loadDrops,
-    open,
-  ]);
+  }, [loadDrops, open]);
 
   async function handleActivateDrop() {
     if (!canActivate) return;
@@ -443,9 +301,7 @@ export function LiveDropsModal({
         throw new Error(payload?.error || "drop_end_failed");
       }
 
-      setSuccessMessage(
-        translate(t, "liveDropsEnded", "Drop encerrado com sucesso."),
-      );
+      setSuccessMessage(translate(t, "liveDropsEnded", "Drop encerrado com sucesso."));
       await loadDrops();
     } catch (endError) {
       console.error("Erro ao encerrar drop:", endError);
@@ -491,17 +347,11 @@ export function LiveDropsModal({
         throw new Error(payload?.error || "drop_simulate_failed");
       }
 
-      const username = String(
-        payload?.winnerUsername || payload?.winnerEmail || "",
-      ).trim();
+      const username = String(payload?.winnerUsername || payload?.winnerEmail || "").trim();
       setSuccessMessage(
         username
           ? `${translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso:")} ${username}`
-          : translate(
-              t,
-              "liveDropsSimulatedWinner",
-              "Vencedor simulado com sucesso.",
-            ),
+          : translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso."),
       );
 
       await loadDrops();
@@ -509,8 +359,7 @@ export function LiveDropsModal({
       console.error("Erro ao simular vencedor:", simulateError);
 
       const message =
-        simulateError instanceof Error &&
-        simulateError.message === "no_eligible_user"
+        simulateError instanceof Error && simulateError.message === "no_eligible_user"
           ? translate(
               t,
               "liveDropsNoEligibleWinner",
@@ -561,20 +410,10 @@ export function LiveDropsModal({
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-white/45">
-                  <Radio
-                    className={
-                      isLive ? "h-4 w-4 text-red-200" : "h-4 w-4 text-white/35"
-                    }
-                  />
+                  <Radio className={isLive ? "h-4 w-4 text-red-200" : "h-4 w-4 text-white/35"} />
                   {translate(t, "liveDropsLiveStatus", "Status")}
                 </div>
-                <p
-                  className={
-                    isLive
-                      ? "mt-3 text-lg font-black text-emerald-100"
-                      : "mt-3 text-lg font-black text-white/45"
-                  }
-                >
+                <p className={isLive ? "mt-3 text-lg font-black text-emerald-100" : "mt-3 text-lg font-black text-white/45"}>
                   {isLive
                     ? translate(t, "liveDropsOnline", "Ao vivo")
                     : translate(t, "liveDropsOffline", "Offline")}
@@ -596,14 +435,12 @@ export function LiveDropsModal({
                   <Percent className="h-4 w-4 text-amber-100" />
                   {translate(t, "liveDropsPercentage", "Porcentagem")}
                 </div>
-                <p className="mt-3 text-lg font-black text-amber-50">
-                  {DROP_PERCENTAGE}%
-                </p>
+                <p className="mt-3 text-lg font-black text-amber-50">{DROP_PERCENTAGE}%</p>
               </div>
             </div>
 
             <div className="mt-5 rounded-[24px] border border-emerald-300/20 bg-emerald-300/10 p-5">
-              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)] md:items-stretch">
+              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)_150px] md:items-stretch">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-100/65">
                     {translate(t, "liveDropsAvailable", "Drops disponíveis")}
@@ -613,38 +450,42 @@ export function LiveDropsModal({
                   </p>
 
                   {liveTitle ? (
-                    <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">
-                      {liveTitle}
-                    </p>
+                    <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">{liveTitle}</p>
                   ) : null}
                 </div>
 
-                <div className="min-w-0 border-white/10 md:border-l md:pl-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                    {translate(t, "liveDropsParticipants", "Participantes")}
-                  </p>
-
-                  <div className="mt-3 h-[76px] overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3">
-                    {visibleFeaturedEntries.length > 0 ? (
-                      <div className="flex max-h-full flex-wrap content-start gap-2 overflow-hidden">
-                        {visibleFeaturedEntries.map((entry) => (
-                          <span
-                            key={entry.id}
-                            className="max-w-[160px] truncate rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-cyan-50"
-                          >
-                            {entry.platform} · {entry.platform_username}
+                <div className="min-h-[86px] min-w-0 border-white/10 md:border-l md:pl-5">
+                  {visibleFeaturedEntries.length > 0 ? (
+                    <div className="flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
+                      {visibleFeaturedEntries.map((entry) => (
+                        <span
+                          key={entry.id}
+                          className="inline-flex max-w-[190px] items-center gap-1.5 truncate rounded-full border border-cyan-300/20 bg-black/25 px-2.5 py-1.5 text-[11px] font-black text-cyan-50/90 shadow-[0_0_18px_rgba(34,211,238,0.06)]"
+                          title={`${getPlatformLabel(entry.platform)} · ${entry.platform_username || "—"}`}
+                        >
+                          <span className="shrink-0 text-cyan-100/55">
+                            {getPlatformLabel(entry.platform)}
                           </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex h-full items-center text-sm font-bold text-white/45">
-                        {translate(
-                          t,
-                          "liveDropsWaitingParticipants",
-                          "Aguardando participantes no chat.",
-                        )}
-                      </div>
-                    )}
+                          <span className="shrink-0 text-white/25">·</span>
+                          <span className="truncate text-white/85">
+                            {entry.platform_username || "—"}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex h-full min-h-[70px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
+                      {DEFAULT_KEYWORD}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-start justify-start md:justify-end">
+                  <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Kick</p>
+                    <p className="mt-1 max-w-[220px] truncate text-sm font-black text-white md:max-w-[120px]">
+                      {creatorName}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -684,13 +525,7 @@ export function LiveDropsModal({
                     disabled={loadingDrops}
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/50 transition hover:bg-white/[0.06] disabled:opacity-50"
                   >
-                    <RefreshCw
-                      className={
-                        loadingDrops
-                          ? "h-3.5 w-3.5 animate-spin"
-                          : "h-3.5 w-3.5"
-                      }
-                    />
+                    <RefreshCw className={loadingDrops ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
                     {translate(t, "liveDropsRefresh", "Atualizar")}
                   </button>
                 </div>
@@ -716,13 +551,7 @@ export function LiveDropsModal({
                               {drop.keyword}
                             </p>
                             <p className="mt-2 text-sm font-bold text-emerald-50/80">
-                              {formatNumber(drop.current_claims)} /{" "}
-                              {formatNumber(drop.max_claims)}{" "}
-                              {translate(
-                                t,
-                                "liveDropsClaimsLabel",
-                                "resgatados",
-                              )}
+                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
                             </p>
                           </div>
 
@@ -733,18 +562,14 @@ export function LiveDropsModal({
 
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
                           <span>
-                            {translate(t, "liveDropsEndsAt", "Termina")}:{" "}
-                            {formatDateTime(drop.ends_at)}
+                            {translate(t, "liveDropsEndsAt", "Termina")}: {formatDateTime(drop.ends_at)}
                           </span>
 
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => void handleSimulateWinner(drop.id)}
-                              disabled={
-                                simulatingDropId === drop.id ||
-                                endingDropId === drop.id
-                              }
+                              disabled={simulatingDropId === drop.id || endingDropId === drop.id}
                               className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-300/15 disabled:opacity-50"
                             >
                               {simulatingDropId === drop.id ? (
@@ -753,25 +578,14 @@ export function LiveDropsModal({
                                 <Gift className="h-3.5 w-3.5" />
                               )}
                               {simulatingDropId === drop.id
-                                ? translate(
-                                    t,
-                                    "liveDropsSimulatingWinner",
-                                    "Sorteando...",
-                                  )
-                                : translate(
-                                    t,
-                                    "liveDropsSimulateWinner",
-                                    "Simular vencedor",
-                                  )}
+                                ? translate(t, "liveDropsSimulatingWinner", "Sorteando...")
+                                : translate(t, "liveDropsSimulateWinner", "Simular vencedor")}
                             </button>
 
                             <button
                               type="button"
                               onClick={() => void handleEndDrop(drop.id)}
-                              disabled={
-                                endingDropId === drop.id ||
-                                simulatingDropId === drop.id
-                              }
+                              disabled={endingDropId === drop.id || simulatingDropId === drop.id}
                               className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-500/15 disabled:opacity-50"
                             >
                               {endingDropId === drop.id ? (
@@ -787,11 +601,7 @@ export function LiveDropsModal({
                     ))
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
-                      {translate(
-                        t,
-                        "liveDropsNoActive",
-                        "Nenhum drop ativo para este criador.",
-                      )}
+                      {translate(t, "liveDropsNoActive", "Nenhum drop ativo para este criador.")}
                     </div>
                   )}
                 </div>
@@ -805,7 +615,7 @@ export function LiveDropsModal({
 
                 <div className="mt-4 space-y-3">
                   {historyDrops.length > 0 ? (
-                    historyDrops.slice(0, 3).map((drop) => (
+                    historyDrops.slice(0, 6).map((drop) => (
                       <article
                         key={drop.id}
                         className="rounded-2xl border border-white/10 bg-black/20 p-4"
@@ -816,17 +626,10 @@ export function LiveDropsModal({
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
                             <p className="mt-2 text-sm font-bold text-white/65">
-                              {formatNumber(drop.current_claims)} /{" "}
-                              {formatNumber(drop.max_claims)}{" "}
-                              {translate(
-                                t,
-                                "liveDropsClaimsLabel",
-                                "resgatados",
-                              )}
+                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
                             </p>
                             <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
-                              {translate(t, "liveDropsCreatedAt", "Criado")}:{" "}
-                              {formatDateTime(drop.created_at)}
+                              {translate(t, "liveDropsCreatedAt", "Criado")}: {formatDateTime(drop.created_at)}
                             </p>
                           </div>
 
@@ -838,11 +641,7 @@ export function LiveDropsModal({
                     ))
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
-                      {translate(
-                        t,
-                        "liveDropsNoHistory",
-                        "Nenhum drop encerrado ainda.",
-                      )}
+                      {translate(t, "liveDropsNoHistory", "Nenhum drop encerrado ainda.")}
                     </div>
                   )}
                 </div>
@@ -869,11 +668,7 @@ export function LiveDropsModal({
                 >
                   <Package className="h-5 w-5 shrink-0" />
                   <span className="font-black">
-                    {translate(
-                      t,
-                      "liveDropsRewardRandomPack",
-                      "Pack Aleatório",
-                    )}
+                    {translate(t, "liveDropsRewardRandomPack", "Pack Aleatório")}
                   </span>
                 </button>
 
@@ -905,9 +700,7 @@ export function LiveDropsModal({
                   <button
                     key={minutes}
                     type="button"
-                    onClick={() =>
-                      setDurationMinutes(minutes as DurationMinutes)
-                    }
+                    onClick={() => setDurationMinutes(minutes as DurationMinutes)}
                     className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${
                       durationMinutes === minutes
                         ? "border-amber-300/35 bg-amber-300/12 text-amber-50"
@@ -947,13 +740,7 @@ export function LiveDropsModal({
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
                     {translate(t, "liveDropsLiveStatus", "Status")}
                   </p>
-                  <p
-                    className={
-                      isLive
-                        ? "mt-2 font-black text-emerald-100"
-                        : "mt-2 font-black text-white/45"
-                    }
-                  >
+                  <p className={isLive ? "mt-2 font-black text-emerald-100" : "mt-2 font-black text-white/45"}>
                     {isLive
                       ? translate(t, "liveDropsOnline", "Ao vivo")
                       : translate(t, "liveDropsOffline", "Offline")}
@@ -1009,11 +796,7 @@ export function LiveDropsModal({
               disabled={!canActivate}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-200/30 bg-amber-300/15 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-amber-50 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Gift className="h-4 w-4" />
-              )}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
               {saving
                 ? translate(t, "liveDropsActivating", "Ativando...")
                 : translate(t, "liveDropsActivate", "Ativar drop")}
