@@ -17,9 +17,10 @@ function createSupabaseAdminClient() {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabaseAdmin = createSupabaseAdminClient();
+    const origin = new URL(request.url).origin;
 
     const { data: expiredDrops, error } = await supabaseAdmin
       .from("creator_drops")
@@ -29,50 +30,61 @@ export async function GET() {
 
     if (error) {
       console.error("Auto draw lookup error:", error);
-
-      return NextResponse.json(
-        { error: "drop_lookup_failed" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "drop_lookup_failed" }, { status: 500 });
     }
 
-    const processed: string[] = [];
+    const processed: Array<{
+      dropId: string;
+      ok: boolean;
+      status?: number;
+      response?: unknown;
+    }> = [];
 
     for (const drop of expiredDrops || []) {
       try {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL}/api/drops/draw`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              dropId: drop.id,
-            }),
+        const response = await fetch(`${origin}/api/drops/draw`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            dropId: drop.id,
+          }),
+        });
 
-        processed.push(drop.id);
+        const text = await response.text();
+
+        let payload: unknown = text;
+
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          // keep raw text
+        }
+
+        processed.push({
+          dropId: drop.id,
+          ok: response.ok,
+          status: response.status,
+          response: payload,
+        });
       } catch (drawError) {
-        console.error(
-          `Auto draw failed for drop ${drop.id}`,
-          drawError,
-        );
+        console.error(`Auto draw failed for drop ${drop.id}`, drawError);
+
+        processed.push({
+          dropId: drop.id,
+          ok: false,
+        });
       }
     }
 
     return NextResponse.json({
       ok: true,
-      processed,
       count: processed.length,
+      processed,
     });
   } catch (error) {
     console.error("Auto draw unexpected error:", error);
-
-    return NextResponse.json(
-      { error: "unexpected_error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "unexpected_error" }, { status: 500 });
   }
 }
