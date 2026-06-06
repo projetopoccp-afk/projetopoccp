@@ -1740,7 +1740,7 @@ export function CreatorProfilePage({
       const { data } = await supabase
         .from("creator_followers")
         .select("id")
-        .eq("creator_id", profile.id)
+        .eq("creator_id", creatorId)
         .eq("user_id", currentUserId)
         .maybeSingle();
 
@@ -1761,6 +1761,8 @@ export function CreatorProfilePage({
       setLiveStatus({});
       return;
     }
+
+    const creatorId = profile.id;
 
     const youtubeChannels = socialLinks
       .filter((social) => social.platform.toLowerCase() === "youtube")
@@ -1864,7 +1866,7 @@ export function CreatorProfilePage({
               const params = new URLSearchParams({
                 platform,
                 username: targetUsername,
-                creatorId: profile.id,
+                creatorId,
               });
 
               const response = await fetch(
@@ -1918,7 +1920,7 @@ export function CreatorProfilePage({
         .select(
           "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, last_checked_at, updated_at",
         )
-        .eq("creator_id", profile.id)
+        .eq("creator_id", creatorId)
         .in("platform", ["twitch", "kick"]);
 
       if (cancelled || error || !data) return;
@@ -1941,14 +1943,14 @@ export function CreatorProfilePage({
     const pollingInterval = window.setInterval(loadLiveStatuses, 30000);
 
     const liveStatusChannel = supabase
-      .channel(`creator-live-status:${profile.id}`)
+      .channel(`creator-live-status:${creatorId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "creator_live_status",
-          filter: `creator_id=eq.${profile.id}`,
+          filter: `creator_id=eq.${creatorId}`,
         },
         (payload) => {
           if (cancelled) return;
@@ -2543,7 +2545,7 @@ export function CreatorProfilePage({
     const { error: deleteSocialLinksError } = await supabase
       .from("creator_social_links")
       .delete()
-      .eq("creator_id", profile.id);
+      .eq("creator_id", creatorId);
 
     if (deleteSocialLinksError) {
       setIsSavingProfile(false);
@@ -2703,7 +2705,7 @@ export function CreatorProfilePage({
         const { error } = await supabase
           .from("creator_followers")
           .delete()
-          .eq("creator_id", profile.id)
+          .eq("creator_id", creatorId)
           .eq("user_id", user.id);
 
         if (error) {
@@ -2776,7 +2778,7 @@ export function CreatorProfilePage({
       const { data: existingCard } = await supabase
         .from("user_cards")
         .select("id")
-        .eq("creator_id", profile.id)
+        .eq("creator_id", creatorId)
         .eq("user_id", user.id)
         .maybeSingle();
 
