@@ -197,25 +197,75 @@ type CreatorLiveStatusRow = {
   started_at: string | null;
   thumbnail_url: string | null;
   live_url: string | null;
+  raw_payload?: Partial<LiveStatus> | null;
   last_checked_at: string | null;
   updated_at: string | null;
 };
 
+function mergeLiveStatusPreservingMetrics(
+  currentStatus: LiveStatus | undefined,
+  nextStatus: LiveStatus,
+): LiveStatus {
+  return {
+    ...currentStatus,
+    ...nextStatus,
+    followerCount:
+      nextStatus.followerCount && nextStatus.followerCount > 0
+        ? nextStatus.followerCount
+        : currentStatus?.followerCount,
+    subscriberCount:
+      nextStatus.subscriberCount && nextStatus.subscriberCount > 0
+        ? nextStatus.subscriberCount
+        : currentStatus?.subscriberCount,
+    memberCount:
+      nextStatus.memberCount && nextStatus.memberCount > 0
+        ? nextStatus.memberCount
+        : currentStatus?.memberCount,
+    onlineMemberCount:
+      nextStatus.onlineMemberCount && nextStatus.onlineMemberCount > 0
+        ? nextStatus.onlineMemberCount
+        : currentStatus?.onlineMemberCount,
+    externalCount:
+      nextStatus.externalCount && nextStatus.externalCount > 0
+        ? nextStatus.externalCount
+        : currentStatus?.externalCount,
+    viewCount:
+      nextStatus.viewCount && nextStatus.viewCount > 0
+        ? nextStatus.viewCount
+        : currentStatus?.viewCount,
+    videoCount:
+      nextStatus.videoCount && nextStatus.videoCount > 0
+        ? nextStatus.videoCount
+        : currentStatus?.videoCount,
+  };
+}
+
 function mapCreatorLiveStatusRowToLiveStatus(
   row: CreatorLiveStatusRow,
 ): LiveStatus {
+  const rawPayload = row.raw_payload || {};
+
   return {
+    ...rawPayload,
     platform: row.platform,
-    username: row.platform_username ?? undefined,
+    username: row.platform_username ?? rawPayload.username,
     isLive: Boolean(row.is_live),
-    title: row.title ?? undefined,
-    viewerCount: Number(row.viewer_count ?? 0),
-    gameName: row.game_name ?? undefined,
-    startedAt: row.started_at ?? undefined,
-    thumbnail: row.thumbnail_url ?? undefined,
+    title: row.title ?? rawPayload.title,
+    viewerCount: Number(row.viewer_count ?? rawPayload.viewerCount ?? 0),
+    gameName: row.game_name ?? rawPayload.gameName,
+    startedAt: row.started_at ?? rawPayload.startedAt,
+    thumbnail: row.thumbnail_url ?? rawPayload.thumbnail,
     url:
       row.live_url ??
+      rawPayload.url ??
       getPlatformFallbackUrl(row.platform, row.platform_username ?? ""),
+    followerCount: rawPayload.followerCount,
+    subscriberCount: rawPayload.subscriberCount,
+    viewCount: rawPayload.viewCount,
+    videoCount: rawPayload.videoCount,
+    externalCount: rawPayload.externalCount,
+    memberCount: rawPayload.memberCount,
+    onlineMemberCount: rawPayload.onlineMemberCount,
   };
 }
 
@@ -1841,7 +1891,11 @@ export function CreatorProfilePage({
         results.reduce<LiveStatusMap>(
           (accumulator, result) => {
             if (result.platform === "youtube") {
-              accumulator[`youtube:${result.index ?? 0}`] = result.status;
+              accumulator[`youtube:${result.index ?? 0}`] =
+                mergeLiveStatusPreservingMetrics(
+                  accumulator[`youtube:${result.index ?? 0}`],
+                  result.status,
+                );
 
               const currentYoutube = accumulator.youtube;
               const currentSubscriberCount =
@@ -1853,15 +1907,20 @@ export function CreatorProfilePage({
                 result.status.externalCount ??
                 0;
 
-              accumulator.youtube =
+              accumulator.youtube = mergeLiveStatusPreservingMetrics(
+                currentYoutube,
                 nextSubscriberCount >= currentSubscriberCount
                   ? result.status
-                  : currentYoutube || result.status;
+                  : currentYoutube || result.status,
+              );
 
               return accumulator;
             }
 
-            accumulator[result.platform] = result.status;
+            accumulator[result.platform] = mergeLiveStatusPreservingMetrics(
+              accumulator[result.platform],
+              result.status,
+            );
             return accumulator;
           },
           { ...currentLiveStatus },
@@ -1931,7 +1990,7 @@ export function CreatorProfilePage({
       const { data, error } = await supabase
         .from("creator_live_status")
         .select(
-          "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, last_checked_at, updated_at",
+          "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, raw_payload, last_checked_at, updated_at",
         )
         .eq("creator_id", creatorId)
         .in("platform", ["twitch", "kick"]);
@@ -1942,8 +2001,10 @@ export function CreatorProfilePage({
         const nextLiveStatus = { ...currentLiveStatus };
 
         (data as CreatorLiveStatusRow[]).forEach((row) => {
-          nextLiveStatus[row.platform] =
-            mapCreatorLiveStatusRowToLiveStatus(row);
+          nextLiveStatus[row.platform] = mergeLiveStatusPreservingMetrics(
+            nextLiveStatus[row.platform],
+            mapCreatorLiveStatusRowToLiveStatus(row),
+          );
         });
 
         return nextLiveStatus;
@@ -1989,7 +2050,10 @@ export function CreatorProfilePage({
 
           setLiveStatus((currentLiveStatus) => ({
             ...currentLiveStatus,
-            [row.platform]: mapCreatorLiveStatusRowToLiveStatus(row),
+            [row.platform]: mergeLiveStatusPreservingMetrics(
+              currentLiveStatus[row.platform],
+              mapCreatorLiveStatusRowToLiveStatus(row),
+            ),
           }));
         },
       )
