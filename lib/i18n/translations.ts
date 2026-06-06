@@ -997,6 +997,11 @@ export const translations = {
       en: "Created",
       es: "Creado",
     },
+    liveDropsSummaryTitle: {
+      pt: "Resumo do Drop",
+      en: "Drop Summary",
+      es: "Resumen del Drop",
+    },
 
     adminSearchRequestPlaceholder:
       "Buscar solicitações por email, nome, username, categoria ou código...",
