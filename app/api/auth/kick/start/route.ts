@@ -100,7 +100,10 @@ export async function POST(request: NextRequest) {
     authorizeUrl.searchParams.set("response_type", "code");
     authorizeUrl.searchParams.set("client_id", kickClientId);
     authorizeUrl.searchParams.set("redirect_uri", redirectUri);
-    authorizeUrl.searchParams.set("scope", "user:read");
+    authorizeUrl.searchParams.set(
+      "scope",
+      "user:read channel:read events:read"
+    );
     authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", codeChallenge);
     authorizeUrl.searchParams.set("code_challenge_method", "S256");
