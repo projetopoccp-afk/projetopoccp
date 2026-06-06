@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-type CandidateDrop = {
+type DropEntryRow = {
+  drop_id: string;
+};
+
+type DropRow = {
   id: string;
   current_claims: number | null;
   max_claims: number | null;
   ends_at: string | null;
-  created_at?: string | null;
 };
 
 function createSupabaseAdminClient() {
@@ -31,23 +34,59 @@ export async function GET(request: Request) {
     const origin = new URL(request.url).origin;
     const nowIso = new Date().toISOString();
 
-    const { data: drops, error } = await supabaseAdmin
-      .from("creator_drops")
-      .select("id, current_claims, max_claims, ends_at, created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data: entryRows, error: entriesLookupError } = await supabaseAdmin
+      .from("drop_entries")
+      .select("drop_id")
+      .order("entered_at", { ascending: false })
+      .limit(500);
 
-    if (error) {
-      console.error("Auto draw lookup error:", error);
+    if (entriesLookupError) {
+      console.error("Auto draw entries lookup error:", entriesLookupError);
 
       return NextResponse.json(
-        { error: "drop_lookup_failed", details: error.message },
+        { error: "entries_lookup_failed", details: entriesLookupError.message },
         { status: 500 },
       );
     }
 
-    const candidateDrops = ((drops || []) as CandidateDrop[]).filter((drop) => {
-      const hasEnded = Boolean(drop.ends_at) && String(drop.ends_at) <= nowIso;
+    const dropIds = Array.from(
+      new Set(
+        ((entryRows || []) as DropEntryRow[])
+          .map((entry) => entry.drop_id)
+          .filter(Boolean),
+      ),
+    );
+
+    if (dropIds.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        now: nowIso,
+        scannedEntries: 0,
+        candidates: 0,
+        count: 0,
+        processed: [],
+        skipped: [],
+      });
+    }
+
+    const { data: drops, error: dropsError } = await supabaseAdmin
+      .from("creator_drops")
+      .select("id, current_claims, max_claims, ends_at")
+      .in("id", dropIds);
+
+    if (dropsError) {
+      console.error("Auto draw drops lookup error:", dropsError);
+
+      return NextResponse.json(
+        { error: "drops_lookup_failed", details: dropsError.message },
+        { status: 500 },
+      );
+    }
+
+    const candidateDrops = ((drops || []) as DropRow[]).filter((drop) => {
+      const hasEnded =
+        Boolean(drop.ends_at) && new Date(String(drop.ends_at)).getTime() <= Date.now();
+
       const hasSlots =
         Number(drop.current_claims || 0) < Number(drop.max_claims || 0);
 
@@ -65,20 +104,17 @@ export async function GET(request: Request) {
     const skipped: Array<{
       dropId: string;
       reason: string;
-      endsAt?: string | null;
-      currentClaims?: number | null;
-      maxClaims?: number | null;
       entriesCount?: number | null;
     }> = [];
 
     for (const drop of candidateDrops) {
-      const { count: entriesCount, error: entriesError } = await supabaseAdmin
+      const { count: entriesCount, error: entriesCountError } = await supabaseAdmin
         .from("drop_entries")
         .select("id", { count: "exact", head: true })
         .eq("drop_id", drop.id);
 
-      if (entriesError) {
-        console.error("Auto draw entries count error:", entriesError);
+      if (entriesCountError) {
+        console.error("Auto draw entries count error:", entriesCountError);
 
         skipped.push({
           dropId: drop.id,
@@ -131,7 +167,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       now: nowIso,
-      scanned: drops?.length || 0,
+      scannedEntries: entryRows?.length || 0,
+      trackedDrops: dropIds.length,
       candidates: candidateDrops.length,
       count: processed.length,
       processed,
