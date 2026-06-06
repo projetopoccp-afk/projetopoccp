@@ -3,7 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ImagePlus, Save, Send, UserCheck, UserPlus } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Globe2,
+  ImagePlus,
+  Radio,
+  Save,
+  Send,
+  ShieldCheck,
+  UserCheck,
+  UserPlus,
+} from "lucide-react";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
@@ -36,7 +49,6 @@ const socialPlatforms = [
   "x",
 ];
 
-
 type SocialForm = Record<string, string>;
 
 type LiveStatus = {
@@ -66,7 +78,9 @@ type VisibleYoutubeChannel = {
   username: string;
 };
 
-function getNormalizedYoutubeChannels(channels: string[]): VisibleYoutubeChannel[] {
+function getNormalizedYoutubeChannels(
+  channels: string[],
+): VisibleYoutubeChannel[] {
   const seen = new Set<string>();
 
   return channels
@@ -93,7 +107,7 @@ function getNormalizedYoutubeChannels(channels: string[]): VisibleYoutubeChannel
 
 function getYoutubeChannelFallbackTitle(
   channel: VisibleYoutubeChannel,
-  fallbackLabel: string
+  fallbackLabel: string,
 ) {
   const username = channel.username.replace(/^@/, "").trim();
 
@@ -103,7 +117,6 @@ function getYoutubeChannelFallbackTitle(
 
   return fallbackLabel;
 }
-
 
 type AutoClip = {
   id: string;
@@ -115,7 +128,6 @@ type AutoClip = {
   createdAt?: string;
   viewCount?: number;
 };
-
 
 function isLikelyImageUrl(url: string) {
   const normalizedUrl = url.split("?")[0]?.toLowerCase() || "";
@@ -204,10 +216,7 @@ function extractPlatformUsername(platform: string, url: string) {
   }
 }
 
-function getPlatformLiveStatus(
-  liveStatus: LiveStatusMap,
-  platform: string
-) {
+function getPlatformLiveStatus(liveStatus: LiveStatusMap, platform: string) {
   return liveStatus[platform.toLowerCase()];
 }
 
@@ -253,10 +262,7 @@ function getLiveStatusExternalCount(status: LiveStatus | undefined) {
   );
 }
 
-function getPlatformMetricLabel(
-  t: (key: any) => string,
-  platform: string,
-) {
+function getPlatformMetricLabel(t: (key: any) => string, platform: string) {
   const normalizedPlatform = platform.toLowerCase();
 
   if (normalizedPlatform === "youtube") {
@@ -295,10 +301,14 @@ function getCreatorExternalReachFromLiveStatus(liveStatus: LiveStatusMap) {
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
   const discordStatus = getPlatformLiveStatus(liveStatus, "discord");
 
-  const twitchFollowers = twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
-  const kickFollowers = kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
-  const youtubeSubscribers = youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
-  const discordMembers = discordStatus?.memberCount ?? discordStatus?.externalCount ?? 0;
+  const twitchFollowers =
+    twitchStatus?.followerCount ?? twitchStatus?.externalCount ?? 0;
+  const kickFollowers =
+    kickStatus?.followerCount ?? kickStatus?.externalCount ?? 0;
+  const youtubeSubscribers =
+    youtubeStatus?.subscriberCount ?? youtubeStatus?.externalCount ?? 0;
+  const discordMembers =
+    discordStatus?.memberCount ?? discordStatus?.externalCount ?? 0;
 
   return twitchFollowers + kickFollowers + youtubeSubscribers + discordMembers;
 }
@@ -327,7 +337,7 @@ function calculateCreatorCardProgress({
 
   const level = Math.min(
     CREATOR_LEVEL_MAX,
-    Math.max(1, Math.floor(powerScore / CREATOR_LEVEL_SCORE_STEP) + 1)
+    Math.max(1, Math.floor(powerScore / CREATOR_LEVEL_SCORE_STEP) + 1),
   );
 
   return {
@@ -335,7 +345,6 @@ function calculateCreatorCardProgress({
     level,
   };
 }
-
 
 type NotificationType =
   | "card_unlocked"
@@ -387,7 +396,7 @@ async function getCurrentUserLevel(userId: string) {
 async function hasXpEvent(
   userId: string,
   eventType: string,
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown>,
 ) {
   const { data, error } = await supabase
     .from("user_xp_events")
@@ -444,7 +453,9 @@ export function CreatorPopup({
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(null);
+  const [preparedCreatorId, setPreparedCreatorId] = useState<string | null>(
+    null,
+  );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [claimMode, setClaimMode] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -486,11 +497,11 @@ export function CreatorPopup({
   }, [creator?.id]);
 
   const isOwner = Boolean(
-    creator?.ownerId && currentUserId && creator.ownerId === currentUserId
+    creator?.ownerId && currentUserId && creator.ownerId === currentUserId,
   );
 
   const canClaim = Boolean(
-    creator && currentUserId && !creator.ownerId && !isOwner
+    creator && currentUserId && !creator.ownerId && !isOwner,
   );
 
   const creatorId = creator?.id ?? "";
@@ -544,10 +555,12 @@ export function CreatorPopup({
       const now = Date.now();
 
       if (!lastViewAt || now - lastViewAt > VIEW_INTERVAL_MS) {
-        const { error: viewError } = await supabase.from("creator_views").insert({
-          creator_id: creatorId,
-          viewer_id: viewerId,
-        });
+        const { error: viewError } = await supabase
+          .from("creator_views")
+          .insert({
+            creator_id: creatorId,
+            viewer_id: viewerId,
+          });
 
         if (!viewError) {
           localStorage.setItem(viewKey, String(now));
@@ -617,7 +630,9 @@ export function CreatorPopup({
       nextSocials.youtube = nextYoutubeChannels[0] || "";
 
       setSocials(nextSocials);
-      setYoutubeChannels(nextYoutubeChannels.length > 0 ? nextYoutubeChannels : [""]);
+      setYoutubeChannels(
+        nextYoutubeChannels.length > 0 ? nextYoutubeChannels : [""],
+      );
 
       setClips([]);
       setPreparedCreatorId(creator.id);
@@ -675,7 +690,7 @@ export function CreatorPopup({
           targets.map(async ({ platform, username, index }) => {
             try {
               const response = await fetch(
-                `/api/live-status?platform=${platform}&username=${encodeURIComponent(username)}`
+                `/api/live-status?platform=${platform}&username=${encodeURIComponent(username)}`,
               );
 
               if (!response.ok) {
@@ -706,7 +721,7 @@ export function CreatorPopup({
                 },
               };
             }
-          })
+          }),
         );
 
         if (!cancelled) {
@@ -717,9 +732,13 @@ export function CreatorPopup({
 
                 const currentYoutube = accumulator.youtube;
                 const currentSubscriberCount =
-                  currentYoutube?.subscriberCount ?? currentYoutube?.externalCount ?? 0;
+                  currentYoutube?.subscriberCount ??
+                  currentYoutube?.externalCount ??
+                  0;
                 const nextSubscriberCount =
-                  result.status.subscriberCount ?? result.status.externalCount ?? 0;
+                  result.status.subscriberCount ??
+                  result.status.externalCount ??
+                  0;
 
                 accumulator.youtube = {
                   platform: "youtube",
@@ -740,7 +759,7 @@ export function CreatorPopup({
               accumulator[result.platform] = result.status;
 
               return accumulator;
-            }, {})
+            }, {}),
           );
         }
       } finally {
@@ -760,10 +779,16 @@ export function CreatorPopup({
   useEffect(() => {
     if (!creator) return;
 
-    const twitchUsername = extractPlatformUsername("twitch", socials.twitch || "");
+    const twitchUsername = extractPlatformUsername(
+      "twitch",
+      socials.twitch || "",
+    );
     const kickUsername = extractPlatformUsername("kick", socials.kick || "");
-    const hasYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels).length > 0;
-    const hasExternalTargets = Boolean(twitchUsername || kickUsername || hasYoutubeChannels);
+    const hasYoutubeChannels =
+      getNormalizedYoutubeChannels(youtubeChannels).length > 0;
+    const hasExternalTargets = Boolean(
+      twitchUsername || kickUsername || hasYoutubeChannels,
+    );
 
     if (hasExternalTargets && Object.keys(liveStatus).length === 0) {
       return;
@@ -836,10 +861,13 @@ export function CreatorPopup({
       return;
     }
 
-    const twitchUsername = extractPlatformUsername("twitch", socials.twitch || "");
+    const twitchUsername = extractPlatformUsername(
+      "twitch",
+      socials.twitch || "",
+    );
     const kickUsername = extractPlatformUsername("kick", socials.kick || "");
     const youtubeUrls = getNormalizedYoutubeChannels(youtubeChannels).map(
-      (channel) => channel.url
+      (channel) => channel.url,
     );
 
     if (!twitchUsername && !kickUsername && youtubeUrls.length === 0) {
@@ -924,7 +952,7 @@ export function CreatorPopup({
     const url = getCreatorShareUrl();
     const encodedUrl = encodeURIComponent(url);
     const encodedText = encodeURIComponent(
-      `Confira ${creator.nickname} no Cardpoc ✦`
+      `Confira ${creator.nickname} no Cardpoc ✦`,
     );
 
     const shareLinks: Record<string, string> = {
@@ -999,7 +1027,7 @@ export function CreatorPopup({
       console.error("Erro ao registrar compartilhamento:", error);
     }
   }
-  
+
   function handleShare() {
     setShareOpen(true);
   }
@@ -1012,7 +1040,13 @@ export function CreatorPopup({
     } = await supabase.auth.getUser();
 
     if (!user) {
-      alert(translate(t, "creatorPopupLoginToFollow", "Faça login para seguir este creator."));
+      alert(
+        translate(
+          t,
+          "creatorPopupLoginToFollow",
+          "Faça login para seguir este creator.",
+        ),
+      );
       return;
     }
 
@@ -1067,14 +1101,17 @@ export function CreatorPopup({
         userId: user.id,
         type: "follow_creator",
         title: `${translate(t, "creatorPopupFollowNotificationPrefix", "Você seguiu")} ${creator.nickname}`,
-        message: translate(t, "creatorPopupFollowXpMessage", "Você ganhou XP por seguir um creator."),
+        message: translate(
+          t,
+          "creatorPopupFollowXpMessage",
+          "Você ganhou XP por seguir um creator.",
+        ),
         metadata: {
           creator_id: creatorId,
           creator_username: creator.username,
           creator_nickname: creator.nickname,
         },
       });
-
     }
 
     console.log("MISSÃO FOLLOW: follow salvo, atualizando progresso");
@@ -1219,11 +1256,16 @@ export function CreatorPopup({
       return;
     }
 
-    await supabase.from("creator_social_links").delete().eq("creator_id", creatorId);
+    await supabase
+      .from("creator_social_links")
+      .delete()
+      .eq("creator_id", creatorId);
 
     const socialRows = [
       ...Object.entries(socials)
-        .filter(([platform, url]) => platform !== "youtube" && url.trim().length > 0)
+        .filter(
+          ([platform, url]) => platform !== "youtube" && url.trim().length > 0,
+        )
         .map(([platform, url]) => ({
           creator_id: creatorId,
           platform,
@@ -1266,17 +1308,35 @@ export function CreatorPopup({
     onCreatorUpdated?.(updatedCreator);
 
     setSaving(false);
-    alert(translate(t, "creatorPopupProfileUpdated", "Perfil atualizado com sucesso!"));
+    alert(
+      translate(
+        t,
+        "creatorPopupProfileUpdated",
+        "Perfil atualizado com sucesso!",
+      ),
+    );
   }
 
   async function handleClaimProfile() {
     if (!creator || !currentUserId) {
-      alert(translate(t, "creatorPopupLoginToClaim", "Faça login para reivindicar este perfil."));
+      alert(
+        translate(
+          t,
+          "creatorPopupLoginToClaim",
+          "Faça login para reivindicar este perfil.",
+        ),
+      );
       return;
     }
 
     if (!claimUrl) {
-      alert(translate(t, "creatorPopupClaimUrlRequired", "Informe o link do canal ou perfil usado para verificação."));
+      alert(
+        translate(
+          t,
+          "creatorPopupClaimUrlRequired",
+          "Informe o link do canal ou perfil usado para verificação.",
+        ),
+      );
       return;
     }
 
@@ -1285,8 +1345,8 @@ export function CreatorPopup({
         translate(
           t,
           "creatorImageConsentRequired",
-          "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas."
-        )
+          "Para enviar a solicitação, você precisa autorizar o uso da sua imagem para criação das cartas personalizadas.",
+        ),
       );
       return;
     }
@@ -1327,16 +1387,21 @@ export function CreatorPopup({
   const kickLiveStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
   const isLiveOnAnyPlatform = Boolean(
-    twitchLiveStatus?.isLive || kickLiveStatus?.isLive
+    twitchLiveStatus?.isLive || kickLiveStatus?.isLive,
   );
   const displayedStatus = isLiveOnAnyPlatform ? "live" : creator.status;
 
   function getTranslatedStatusLabel(status: keyof typeof statusLabel) {
-    if (status === "online") return translate(t, "creatorPopupStatusOnline", "Online");
-    if (status === "offline") return translate(t, "creatorPopupStatusOffline", "Offline");
-    if (status === "live") return translate(t, "creatorPopupStatusLive", "Live now");
-    if (status === "trending") return translate(t, "creatorPopupStatusTrending", "Trending");
-    if (status === "event") return translate(t, "creatorPopupStatusEvent", "In event");
+    if (status === "online")
+      return translate(t, "creatorPopupStatusOnline", "Online");
+    if (status === "offline")
+      return translate(t, "creatorPopupStatusOffline", "Offline");
+    if (status === "live")
+      return translate(t, "creatorPopupStatusLive", "Live now");
+    if (status === "trending")
+      return translate(t, "creatorPopupStatusTrending", "Trending");
+    if (status === "event")
+      return translate(t, "creatorPopupStatusEvent", "In event");
 
     return statusLabel[status];
   }
@@ -1388,7 +1453,8 @@ export function CreatorPopup({
             </div>
 
             <div className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1 text-xs text-cyan-100 backdrop-blur">
-              {translate(t, "creatorPopupLevelPrefix", "Lv.")} {creatorCardLevel}
+              {translate(t, "creatorPopupLevelPrefix", "Lv.")}{" "}
+              {creatorCardLevel}
             </div>
 
             <div className="absolute bottom-6 left-6 right-6">
@@ -1419,7 +1485,11 @@ export function CreatorPopup({
                   disabled={followLoading}
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-2 text-sm font-semibold text-black transition hover:scale-105 disabled:opacity-50"
                 >
-                  {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+                  {isFollowing ? (
+                    <UserCheck size={16} />
+                  ) : (
+                    <UserPlus size={16} />
+                  )}
                   {isFollowing
                     ? translate(t, "creatorPopupFollowing", "Seguindo")
                     : translate(t, "creatorPopupFollow", "Seguir")}
@@ -1438,7 +1508,11 @@ export function CreatorPopup({
                   prefetch
                   className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:scale-105 hover:bg-cyan-300/20"
                 >
-                  {translate(t, "creatorPopupFullPage", "Ir para a página completa")}
+                  {translate(
+                    t,
+                    "creatorPopupFullPage",
+                    "Ir para a página completa",
+                  )}
                 </Link>
 
                 {canClaim && (
@@ -1458,7 +1532,7 @@ export function CreatorPopup({
               <button
                 onClick={onClose}
                 className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/70 hover:bg-white/10"
-                >
+              >
                 {translate(t, "creatorPopupClose", "Fechar")}
               </button>
             </div>
@@ -1471,10 +1545,14 @@ export function CreatorPopup({
               }}
             >
               {isPreparingCreator ? (
-  <div className="flex h-full items-center justify-center text-white/50">
-    {translate(t, "creatorPopupLoadingProfile", "Carregando perfil...")}
-  </div>
-) : claimMode ? (
+                <div className="flex h-full items-center justify-center text-white/50">
+                  {translate(
+                    t,
+                    "creatorPopupLoadingProfile",
+                    "Carregando perfil...",
+                  )}
+                </div>
+              ) : claimMode ? (
                 <ClaimPanel
                   t={t}
                   claimPlatform={claimPlatform}
@@ -1492,21 +1570,22 @@ export function CreatorPopup({
               ) : (
                 <ViewPanel
                   t={t}
-  creator={creator}
-  bio={bio}
-  title={title}
-  description={description}
-  tagsText={tagsText}
-  socials={socials}
-  youtubeChannels={youtubeChannels}
-  clips={clips}
-  clipsLoading={clipsLoading}
-  viewCount={viewCount}
-  followerCount={followerCount}
-  shareCount={shareCount}
-  liveStatus={liveStatus}
-  liveStatusLoading={liveStatusLoading}
-/>
+                  creator={creator}
+                  bio={bio}
+                  title={title}
+                  description={description}
+                  tagsText={tagsText}
+                  socials={socials}
+                  youtubeChannels={youtubeChannels}
+                  clips={clips}
+                  clipsLoading={clipsLoading}
+                  viewCount={viewCount}
+                  followerCount={followerCount}
+                  shareCount={shareCount}
+                  liveStatus={liveStatus}
+                  liveStatusLoading={liveStatusLoading}
+                  onClose={onClose}
+                />
               )}
             </div>
           </div>
@@ -1524,7 +1603,11 @@ export function CreatorPopup({
           <button
             onClick={() => setShareOpen(false)}
             className="absolute inset-0"
-            aria-label={translate(t, "creatorPopupCloseShareAria", "Fechar compartilhamento")}
+            aria-label={translate(
+              t,
+              "creatorPopupCloseShareAria",
+              "Fechar compartilhamento",
+            )}
           />
 
           <motion.div
@@ -1547,9 +1630,17 @@ export function CreatorPopup({
               </h3>
 
               <p className="mt-2 text-sm text-white/50">
-                {translate(t, "creatorPopupShareDescriptionPrefix", "Compartilhe o perfil de")}{" "}
+                {translate(
+                  t,
+                  "creatorPopupShareDescriptionPrefix",
+                  "Compartilhe o perfil de",
+                )}{" "}
                 {creator.nickname}{" "}
-                {translate(t, "creatorPopupShareDescriptionSuffix", "usando o link com preview do Cardpoc.")}
+                {translate(
+                  t,
+                  "creatorPopupShareDescriptionSuffix",
+                  "usando o link com preview do Cardpoc.",
+                )}
               </p>
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/45">
@@ -1557,17 +1648,37 @@ export function CreatorPopup({
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <ShareButton label="WhatsApp" onClick={() => shareTo("whatsapp")} />
-                <ShareButton label="X / Twitter" onClick={() => shareTo("x")} />
-                <ShareButton label="Telegram" onClick={() => shareTo("telegram")} />
-                <ShareButton label="Facebook" onClick={() => shareTo("facebook")} />
-                <ShareButton label="LinkedIn" onClick={() => shareTo("linkedin")} />
-                <ShareButton label="Discord" onClick={() => shareTo("discord")} />
-                <ShareButton label="Instagram" onClick={() => shareTo("instagram")} />
                 <ShareButton
-                  label={copied
-                    ? translate(t, "creatorPopupLinkCopied", "Link copiado!")
-                    : translate(t, "creatorPopupCopyLink", "Copiar link")}
+                  label="WhatsApp"
+                  onClick={() => shareTo("whatsapp")}
+                />
+                <ShareButton label="X / Twitter" onClick={() => shareTo("x")} />
+                <ShareButton
+                  label="Telegram"
+                  onClick={() => shareTo("telegram")}
+                />
+                <ShareButton
+                  label="Facebook"
+                  onClick={() => shareTo("facebook")}
+                />
+                <ShareButton
+                  label="LinkedIn"
+                  onClick={() => shareTo("linkedin")}
+                />
+                <ShareButton
+                  label="Discord"
+                  onClick={() => shareTo("discord")}
+                />
+                <ShareButton
+                  label="Instagram"
+                  onClick={() => shareTo("instagram")}
+                />
+                <ShareButton
+                  label={
+                    copied
+                      ? translate(t, "creatorPopupLinkCopied", "Link copiado!")
+                      : translate(t, "creatorPopupCopyLink", "Copiar link")
+                  }
                   onClick={() => shareTo("copy")}
                   full
                 />
@@ -1576,7 +1687,7 @@ export function CreatorPopup({
               <button
                 onClick={() => setShareOpen(false)}
                 className="mt-5 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
-                >
+              >
                 {translate(t, "creatorPopupClose", "Fechar")}
               </button>
             </div>
@@ -1666,8 +1777,8 @@ function EditPanel({
   function updateYoutubeChannel(index: number, value: string) {
     setYoutubeChannels((current) =>
       current.map((channel, channelIndex) =>
-        channelIndex === index ? value : channel
-      )
+        channelIndex === index ? value : channel,
+      ),
     );
 
     if (index === 0) {
@@ -1684,7 +1795,9 @@ function EditPanel({
 
   function removeYoutubeChannel(index: number) {
     setYoutubeChannels((current) => {
-      const nextChannels = current.filter((_, channelIndex) => channelIndex !== index);
+      const nextChannels = current.filter(
+        (_, channelIndex) => channelIndex !== index,
+      );
       const safeChannels = nextChannels.length > 0 ? nextChannels : [""];
 
       setSocials((currentSocials) => ({
@@ -1702,19 +1815,45 @@ function EditPanel({
         {translate(t, "creatorPopupEditModeBadge", "Edit Mode")}
       </p>
 
-      <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupEditProfileTitle", "Editar perfil")}</h3>
+      <h3 className="mt-3 text-3xl font-bold">
+        {translate(t, "creatorPopupEditProfileTitle", "Editar perfil")}
+      </h3>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <EditInput label={translate(t, "creatorPopupFieldNickname", "Nickname")} value={nickname} onChange={setNickname} />
-        <EditInput label={translate(t, "creatorPopupFieldTitle", "Title")} value={title} onChange={setTitle} />
-        <EditInput label={translate(t, "creatorPopupFieldCategory", "Categoria")} value={category} onChange={setCategory} />
-        <EditInput label={translate(t, "creatorPopupFieldAvatarUrl", "Avatar URL")} value={avatarUrl} onChange={setAvatarUrl} />
+        <EditInput
+          label={translate(t, "creatorPopupFieldNickname", "Nickname")}
+          value={nickname}
+          onChange={setNickname}
+        />
+        <EditInput
+          label={translate(t, "creatorPopupFieldTitle", "Title")}
+          value={title}
+          onChange={setTitle}
+        />
+        <EditInput
+          label={translate(t, "creatorPopupFieldCategory", "Categoria")}
+          value={category}
+          onChange={setCategory}
+        />
+        <EditInput
+          label={translate(t, "creatorPopupFieldAvatarUrl", "Avatar URL")}
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+        />
 
         <UploadField
           label={translate(t, "creatorPopupFieldUploadAvatar", "Upload Avatar")}
           uploading={uploadingAvatar}
-          uploadingText={translate(t, "creatorPopupUploadingAvatar", "Enviando avatar...")}
-          chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
+          uploadingText={translate(
+            t,
+            "creatorPopupUploadingAvatar",
+            "Enviando avatar...",
+          )}
+          chooseFileText={translate(
+            t,
+            "creatorPopupChooseFile",
+            "Escolher arquivo",
+          )}
           onFile={(file) => uploadImage(file, "avatar")}
         />
 
@@ -1727,15 +1866,31 @@ function EditPanel({
         )}
 
         <div className="sm:col-span-2">
-          <EditInput label={translate(t, "creatorPopupFieldBannerUrl", "Banner URL")} value={bannerUrl} onChange={setBannerUrl} />
+          <EditInput
+            label={translate(t, "creatorPopupFieldBannerUrl", "Banner URL")}
+            value={bannerUrl}
+            onChange={setBannerUrl}
+          />
         </div>
 
         <div className="sm:col-span-2">
           <UploadField
-            label={translate(t, "creatorPopupFieldUploadBanner", "Upload Banner")}
+            label={translate(
+              t,
+              "creatorPopupFieldUploadBanner",
+              "Upload Banner",
+            )}
             uploading={uploadingBanner}
-            uploadingText={translate(t, "creatorPopupUploadingBanner", "Enviando banner...")}
-            chooseFileText={translate(t, "creatorPopupChooseFile", "Escolher arquivo")}
+            uploadingText={translate(
+              t,
+              "creatorPopupUploadingBanner",
+              "Enviando banner...",
+            )}
+            chooseFileText={translate(
+              t,
+              "creatorPopupChooseFile",
+              "Escolher arquivo",
+            )}
             onFile={(file) => uploadImage(file, "banner")}
           />
         </div>
@@ -1744,19 +1899,31 @@ function EditPanel({
           <div className="sm:col-span-2">
             <img
               src={bannerUrl}
-              alt={translate(t, "creatorPopupBannerPreviewAlt", "Banner preview")}
+              alt={translate(
+                t,
+                "creatorPopupBannerPreviewAlt",
+                "Banner preview",
+              )}
               className="h-32 w-full rounded-2xl border border-white/10 object-cover"
             />
           </div>
         )}
 
         <div className="sm:col-span-2">
-          <EditTextarea label={translate(t, "creatorPopupFieldShortBio", "Bio curta")} value={bio} onChange={setBio} />
+          <EditTextarea
+            label={translate(t, "creatorPopupFieldShortBio", "Bio curta")}
+            value={bio}
+            onChange={setBio}
+          />
         </div>
 
         <div className="sm:col-span-2">
           <EditTextarea
-            label={translate(t, "creatorPopupFieldFullDescription", "Descrição completa")}
+            label={translate(
+              t,
+              "creatorPopupFieldFullDescription",
+              "Descrição completa",
+            )}
             value={description}
             onChange={setDescription}
           />
@@ -1764,7 +1931,11 @@ function EditPanel({
 
         <div className="sm:col-span-2">
           <EditInput
-            label={translate(t, "creatorPopupFieldTags", "Tags separadas por vírgula")}
+            label={translate(
+              t,
+              "creatorPopupFieldTags",
+              "Tags separadas por vírgula",
+            )}
             value={tagsText}
             onChange={setTagsText}
             placeholder="Streamer, MMORPG, Black Desert"
@@ -1773,10 +1944,16 @@ function EditPanel({
       </div>
 
       <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-        <h4 className="font-bold text-white">{translate(t, "creatorPopupSocialLinksTitle", "Redes Sociais")}</h4>
+        <h4 className="font-bold text-white">
+          {translate(t, "creatorPopupSocialLinksTitle", "Redes Sociais")}
+        </h4>
 
         <p className="mt-2 text-sm text-white/45">
-          {translate(t, "creatorPopupSocialLinksDescription", "Adicione os links oficiais do creator.")}
+          {translate(
+            t,
+            "creatorPopupSocialLinksDescription",
+            "Adicione os links oficiais do creator.",
+          )}
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1812,7 +1989,11 @@ function EditPanel({
                       type="button"
                       onClick={() => removeYoutubeChannel(index)}
                       className="shrink-0 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100 transition hover:bg-red-300/20"
-                      aria-label={translate(t, "creatorPopupRemoveYoutubeChannel", "Remove YouTube channel")}
+                      aria-label={translate(
+                        t,
+                        "creatorPopupRemoveYoutubeChannel",
+                        "Remove YouTube channel",
+                      )}
                     >
                       ×
                     </button>
@@ -1847,7 +2028,11 @@ function EditPanel({
         </h4>
 
         <p className="mt-2 text-sm text-white/45">
-          {translate(t, "creatorPopupAutoClipsDescription", "Os clips agora são puxados automaticamente da Twitch, Kick e YouTube Shorts com base nos links das redes sociais cadastradas.")}
+          {translate(
+            t,
+            "creatorPopupAutoClipsDescription",
+            "Os clips agora são puxados automaticamente da Twitch, Kick e YouTube Shorts com base nos links das redes sociais cadastradas.",
+          )}
         </p>
       </div>
 
@@ -1899,10 +2084,16 @@ function ClaimPanel({
           {translate(t, "creatorPopupClaimSentBadge", "Claim Sent")}
         </p>
 
-        <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupClaimSentTitle", "Solicitação enviada")}</h3>
+        <h3 className="mt-3 text-3xl font-bold">
+          {translate(t, "creatorPopupClaimSentTitle", "Solicitação enviada")}
+        </h3>
 
         <p className="mt-4 text-white/60">
-          {translate(t, "creatorPopupClaimSentDescription", "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.")}
+          {translate(
+            t,
+            "creatorPopupClaimSentDescription",
+            "Agora coloque o código abaixo na bio, descrição ou sobre da plataforma informada. Um administrador irá revisar sua solicitação.",
+          )}
         </p>
 
         <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5 text-center text-2xl font-black tracking-[0.25em] text-cyan-100">
@@ -1918,10 +2109,16 @@ function ClaimPanel({
         {translate(t, "creatorPopupClaimProfileBadge", "Claim Profile")}
       </p>
 
-      <h3 className="mt-3 text-3xl font-bold">{translate(t, "creatorPopupClaimMine", "Este perfil é meu")}</h3>
+      <h3 className="mt-3 text-3xl font-bold">
+        {translate(t, "creatorPopupClaimMine", "Este perfil é meu")}
+      </h3>
 
       <p className="mt-4 text-white/60">
-        {translate(t, "creatorPopupClaimDescription", "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.")}
+        {translate(
+          t,
+          "creatorPopupClaimDescription",
+          "Para provar que este perfil pertence a você, informe uma plataforma oficial e coloque temporariamente o código abaixo na bio/descrição do canal.",
+        )}
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-[180px_1fr]">
@@ -1940,14 +2137,22 @@ function ClaimPanel({
         <input
           value={claimUrl}
           onChange={(event) => setClaimUrl(event.target.value)}
-          placeholder={translate(t, "creatorPopupClaimUrlPlaceholder", "Link do canal ou perfil oficial")}
+          placeholder={translate(
+            t,
+            "creatorPopupClaimUrlPlaceholder",
+            "Link do canal ou perfil oficial",
+          )}
           className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
         />
       </div>
 
       <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
         <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-          {translate(t, "creatorPopupVerificationCode", "Código de verificação")}
+          {translate(
+            t,
+            "creatorPopupVerificationCode",
+            "Código de verificação",
+          )}
         </p>
 
         <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
@@ -1965,14 +2170,18 @@ function ClaimPanel({
 
         <span>
           <strong className="block text-cyan-100">
-            {translate(t, "creatorImageConsentTitle", "Autorização de uso de imagem")}
+            {translate(
+              t,
+              "creatorImageConsentTitle",
+              "Autorização de uso de imagem",
+            )}
           </strong>
 
           <span className="mt-1 block text-white/55">
             {translate(
               t,
               "creatorImageConsentDescription",
-              "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma."
+              "Autorizo o Cardpoc a utilizar minha imagem, nome artístico, identidade pública e conteúdos enviados ou vinculados por mim para criar cartas digitais personalizadas dentro da plataforma.",
             )}
           </span>
         </span>
@@ -2017,6 +2226,7 @@ function ViewPanel({
   shareCount,
   liveStatus,
   liveStatusLoading,
+  onClose,
 }: {
   t: (key: any) => string;
   creator: Creator;
@@ -2033,15 +2243,20 @@ function ViewPanel({
   shareCount: number;
   liveStatus: LiveStatusMap;
   liveStatusLoading: boolean;
+  onClose: () => void;
 }) {
-  const visibleClips = clips.filter((clip) => Boolean(clip.url?.trim() || clip.thumbnailUrl?.trim() || clip.title?.trim()));
+  const visibleClips = clips.filter((clip) =>
+    Boolean(
+      clip.url?.trim() || clip.thumbnailUrl?.trim() || clip.title?.trim(),
+    ),
+  );
   const [clipPage, setClipPage] = useState(0);
   const clipsPerPage = 3;
   const totalClipPages = Math.ceil(visibleClips.length / clipsPerPage);
   const hasClipCarousel = visibleClips.length > clipsPerPage;
   const visibleCarouselClips = visibleClips.slice(
     clipPage * clipsPerPage,
-    clipPage * clipsPerPage + clipsPerPage
+    clipPage * clipsPerPage + clipsPerPage,
   );
 
   useEffect(() => {
@@ -2052,14 +2267,12 @@ function ViewPanel({
 
   function goToPreviousClips() {
     setClipPage((current) =>
-      current === 0 ? Math.max(totalClipPages - 1, 0) : current - 1
+      current === 0 ? Math.max(totalClipPages - 1, 0) : current - 1,
     );
   }
 
   function goToNextClips() {
-    setClipPage((current) =>
-      current >= totalClipPages - 1 ? 0 : current + 1
-    );
+    setClipPage((current) => (current >= totalClipPages - 1 ? 0 : current + 1));
   }
 
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
@@ -2068,7 +2281,8 @@ function ViewPanel({
 
   const externalTotal = getCreatorExternalReachFromLiveStatus(liveStatus);
   const profileTitle = title || creator.title;
-  const rawProfileDescription = bio || creator.bio || description || creator.description || "";
+  const rawProfileDescription =
+    bio || creator.bio || description || creator.description || "";
   const profileDescription =
     rawProfileDescription.trim() ===
     "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve."
@@ -2079,18 +2293,19 @@ function ViewPanel({
     .map((tag) => tag.trim())
     .filter(Boolean);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
+  const [socialLinksOpen, setSocialLinksOpen] = useState(false);
 
   const visibleYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels);
 
   const youtubeChannelItems = visibleYoutubeChannels.map((channel, index) => {
     const channelStatus = getPlatformLiveStatus(
       liveStatus,
-      `youtube:${channel.originalIndex}`
+      `youtube:${channel.originalIndex}`,
     );
 
     const fallbackTitle = getYoutubeChannelFallbackTitle(
       channel,
-      `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`
+      `${translate(t, "creatorPopupYoutubeChannelFallback", "Channel")} ${index + 1}`,
     );
 
     return {
@@ -2102,9 +2317,56 @@ function ViewPanel({
     };
   });
 
+  const socialLinkEntries = [
+    ...Object.entries(socials).filter(
+      ([platform, url]) => platform !== "youtube" && url.trim().length > 0,
+    ),
+    ...(visibleYoutubeChannels.length > 0
+      ? [["youtube", visibleYoutubeChannels[0].url] as [string, string]]
+      : []),
+  ];
+
+  const isVerified = Boolean(
+    (creator as any).isVerified ||
+    (creator as any).verified ||
+    (creator as any).is_verified ||
+    (creator as any).verificationStatus === "verified" ||
+    (creator as any).verification_status === "verified",
+  );
+
+  const isLiveOnAnyPlatform = Boolean(
+    twitchStatus?.isLive || kickStatus?.isLive,
+  );
+
   return (
     <>
       <div className="pr-16">
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
+            {translate(t, "creatorProfilePublicBadge", "Perfil público")}
+          </span>
+
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+              isLiveOnAnyPlatform
+                ? "border-rose-300/25 bg-rose-300/10 text-rose-100"
+                : "border-white/10 bg-white/[0.04] text-white/45"
+            }`}
+          >
+            <Radio size={12} />
+            {isLiveOnAnyPlatform
+              ? translate(t, "creatorProfileLiveNow", "Ao vivo agora")
+              : translate(t, "creatorProfileOffline", "Offline")}
+          </span>
+
+          {isVerified && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-100">
+              <ShieldCheck size={12} />
+              {translate(t, "creatorProfileVerified", "Verificado")}
+            </span>
+          )}
+        </div>
+
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
           {creator.category}
         </p>
@@ -2148,17 +2410,51 @@ function ViewPanel({
       )}
 
       <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <InfoCard label={translate(t, "creatorPopupViews", "Views")} value={viewCount.toLocaleString("pt-BR")} color="text-cyan-200" />
-        <InfoCard label={translate(t, "creatorPopupFollowers", "Seguidores do site")} value={followerCount.toLocaleString("pt-BR")} color="text-purple-200" />
-        <InfoCard label={translate(t, "creatorProfileGlobalFollowers", "Seguidores Globais")} value={externalTotal.toLocaleString("pt-BR")} color="text-emerald-200" />
-        <InfoCard label={translate(t, "creatorPopupShares", "Compartilhamentos")} value={shareCount.toLocaleString("pt-BR")} color="text-yellow-200" />
+        <InfoCard
+          label={translate(t, "creatorPopupViews", "Views")}
+          value={viewCount.toLocaleString("pt-BR")}
+          color="text-cyan-200"
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupFollowers", "Seguidores do site")}
+          value={followerCount.toLocaleString("pt-BR")}
+          color="text-purple-200"
+        />
+        <InfoCard
+          label={translate(
+            t,
+            "creatorProfileGlobalFollowers",
+            "Seguidores Globais",
+          )}
+          value={externalTotal.toLocaleString("pt-BR")}
+          color="text-emerald-200"
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupShares", "Compartilhamentos")}
+          value={shareCount.toLocaleString("pt-BR")}
+          color="text-yellow-200"
+        />
       </div>
+
+      <Link
+        href={`/creator/${encodeURIComponent(creator.username)}`}
+        onClick={onClose}
+        prefetch
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/20"
+      >
+        {translate(t, "creatorPopupFullPage", "Ir para a página completa")}
+        <ExternalLink size={15} />
+      </Link>
 
       {(clipsLoading || visibleClips.length > 0) && (
         <div className="mt-7">
           <div className="flex items-center justify-between gap-3">
             <h4 className="font-bold">
-              {translate(t, "creatorPopupFeaturedClipsViewTitle", "Clips em destaque")}
+              {translate(
+                t,
+                "creatorPopupFeaturedClipsViewTitle",
+                "Clips em destaque",
+              )}
             </h4>
 
             {hasClipCarousel && (
@@ -2167,7 +2463,11 @@ function ViewPanel({
                   type="button"
                   onClick={goToPreviousClips}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
-                  aria-label={translate(t, "creatorPopupPreviousClips", "Clips anteriores")}
+                  aria-label={translate(
+                    t,
+                    "creatorPopupPreviousClips",
+                    "Clips anteriores",
+                  )}
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -2176,7 +2476,11 @@ function ViewPanel({
                   type="button"
                   onClick={goToNextClips}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
-                  aria-label={translate(t, "creatorPopupNextClips", "Próximos clips")}
+                  aria-label={translate(
+                    t,
+                    "creatorPopupNextClips",
+                    "Próximos clips",
+                  )}
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -2186,179 +2490,242 @@ function ViewPanel({
 
           {clipsLoading ? (
             <div className="mt-3 rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/45">
-              {translate(t, "creatorPopupClipsLoading", "Carregando clips automáticos...")}
+              {translate(
+                t,
+                "creatorPopupClipsLoading",
+                "Carregando clips automáticos...",
+              )}
             </div>
           ) : (
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               {visibleCarouselClips.map((clip, index) => {
-              const previewThumbnail = clip.thumbnailUrl;
-              const clipHref = getSafeClipHref(clip, socials);
+                const previewThumbnail = clip.thumbnailUrl;
+                const clipHref = getSafeClipHref(clip, socials);
 
-              return (
-                <a
-                  key={`${clip.id || clip.url || clip.title}-${clipPage}-${index}`}
-                  href={clipHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
-                >
-                  <div className="aspect-video bg-black/40">
-                    {previewThumbnail ? (
-                      <img
-                        src={previewThumbnail}
-                        alt={clip.title || translate(t, "creatorPopupClipAlt", "Clip")}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
-                        {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
-                      </div>
-                    )}
-                  </div>
+                return (
+                  <a
+                    key={`${clip.id || clip.url || clip.title}-${clipPage}-${index}`}
+                    href={clipHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:bg-white/[0.07]"
+                  >
+                    <div className="aspect-video bg-black/40">
+                      {previewThumbnail ? (
+                        <img
+                          src={previewThumbnail}
+                          alt={
+                            clip.title ||
+                            translate(t, "creatorPopupClipAlt", "Clip")
+                          }
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.25em] text-white/35">
+                          {translate(
+                            t,
+                            `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any,
+                            clip.platform,
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                      {translate(t, `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any, clip.platform)}
-                    </p>
-
-                    <p className="mt-2 font-bold text-white">
-                      {clip.title || translate(t, "creatorPopupFeaturedClipFallback", "Clip automático")}
-                    </p>
-
-                    {clip.description && (
-                      <p className="mt-2 line-clamp-3 text-xs text-white/45">
-                        {clip.description}
+                    <div className="p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
+                        {translate(
+                          t,
+                          `creatorPopupPlatform${clip.platform.charAt(0).toUpperCase()}${clip.platform.slice(1)}` as any,
+                          clip.platform,
+                        )}
                       </p>
-                    )}
-                  </div>
-                </a>
-              );
+
+                      <p className="mt-2 font-bold text-white">
+                        {clip.title ||
+                          translate(
+                            t,
+                            "creatorPopupFeaturedClipFallback",
+                            "Clip automático",
+                          )}
+                      </p>
+
+                      {clip.description && (
+                        <p className="mt-2 line-clamp-3 text-xs text-white/45">
+                          {clip.description}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                );
               })}
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-7 pb-10">
-        <h4 className="font-bold">{translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}</h4>
+      {socialLinkEntries.length > 0 && (
+        <div className="mt-7 pb-10">
+          <button
+            type="button"
+            onClick={() => setSocialLinksOpen((current) => !current)}
+            className="flex w-full items-center justify-between rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.07] px-5 py-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+          >
+            <span className="inline-flex items-center gap-2 font-black text-cyan-100">
+              <Globe2 size={18} />
+              {translate(t, "creatorPopupSocialNetworks", "Redes Sociais")}
+            </span>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
-          {[
-            ...Object.entries(socials).filter(
-              ([platform, url]) => platform !== "youtube" && url.trim().length > 0
-            ),
-            ...(visibleYoutubeChannels.length > 0
-              ? [["youtube", visibleYoutubeChannels[0].url] as [string, string]]
-              : []),
-          ].map(([platform, url]) => {
-              const normalizedPlatform = platform.toLowerCase();
-              const platformLiveStatus = getPlatformLiveStatus(
-                liveStatus,
-                normalizedPlatform
-              );
-              const supportsLiveStatus =
-                normalizedPlatform === "twitch" ||
-                normalizedPlatform === "kick";
-              const supportsExternalCount =
-                normalizedPlatform === "twitch" ||
-                normalizedPlatform === "kick" ||
-                normalizedPlatform === "youtube" ||
-                normalizedPlatform === "discord";
-              const isPlatformLive = Boolean(platformLiveStatus?.isLive);
-              const platformUrl = platformLiveStatus?.url || url;
-              const platformExternalCount = getLiveStatusExternalCount(platformLiveStatus);
-              const platformExternalLabel = getPlatformMetricLabel(
-                t,
-                normalizedPlatform
-              );
-              const platformName = getPlatformDisplayName(normalizedPlatform);
+            <ChevronDown
+              size={18}
+              className={`text-cyan-100 transition ${socialLinksOpen ? "rotate-180" : ""}`}
+            />
+          </button>
 
-              if (normalizedPlatform === "youtube") {
-                return (
-                  <button
-                    key={platform}
-                    type="button"
-                    onClick={() => {
-                      if (visibleYoutubeChannels.length > 1) {
-                        setYoutubeChannelsOpen(true);
-                        return;
-                      }
+          {socialLinksOpen && (
+            <div className="mt-3 overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.04] p-3">
+              <div className="grid gap-2">
+                {socialLinkEntries.map(([platform, url]) => {
+                  const normalizedPlatform = platform.toLowerCase();
+                  const platformLiveStatus = getPlatformLiveStatus(
+                    liveStatus,
+                    normalizedPlatform,
+                  );
+                  const supportsLiveStatus =
+                    normalizedPlatform === "twitch" ||
+                    normalizedPlatform === "kick";
+                  const supportsExternalCount =
+                    normalizedPlatform === "twitch" ||
+                    normalizedPlatform === "kick" ||
+                    normalizedPlatform === "youtube" ||
+                    normalizedPlatform === "discord";
+                  const isPlatformLive = Boolean(platformLiveStatus?.isLive);
+                  const platformUrl = platformLiveStatus?.url || url;
+                  const platformExternalCount =
+                    getLiveStatusExternalCount(platformLiveStatus);
+                  const platformExternalLabel = getPlatformMetricLabel(
+                    t,
+                    normalizedPlatform,
+                  );
+                  const platformName =
+                    getPlatformDisplayName(normalizedPlatform);
 
-                      window.open(platformUrl, "_blank", "noopener,noreferrer");
-                    }}
-                    className="flex min-h-[78px] min-w-0 flex-col justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-3 text-left text-sm text-cyan-100 transition hover:scale-[1.02] hover:bg-cyan-300/20"
-                  >
-                    <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                      {visibleYoutubeChannels.length > 1
-                        ? `YOUTUBE (${visibleYoutubeChannels.length})`
-                        : "YOUTUBE"}
-                    </span>
+                  if (normalizedPlatform === "youtube") {
+                    return (
+                      <button
+                        key={platform}
+                        type="button"
+                        onClick={() => {
+                          if (visibleYoutubeChannels.length > 1) {
+                            setYoutubeChannelsOpen(true);
+                            return;
+                          }
 
-                    <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
-                      {liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupLoading", "Loading...")
-                        : visibleYoutubeChannels.length > 1
-                          ? `${visibleYoutubeChannels.length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
-                          : " "}
-                    </span>
+                          window.open(
+                            platformUrl,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                        }}
+                        className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left transition hover:border-cyan-300/35 hover:bg-cyan-300/10"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-black text-white">
+                            {visibleYoutubeChannels.length > 1
+                              ? `YouTube (${visibleYoutubeChannels.length})`
+                              : "YouTube"}
+                          </span>
 
-                    <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                      {platformLiveStatus
-                        ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
-                        : " "}
-                    </span>
-                  </button>
-                );
-              }
+                          <span className="mt-1 block truncate text-xs text-white/45">
+                            {liveStatusLoading && !platformLiveStatus
+                              ? translate(
+                                  t,
+                                  "creatorPopupLoading",
+                                  "Loading...",
+                                )
+                              : visibleYoutubeChannels.length > 1
+                                ? `${visibleYoutubeChannels.length} ${translate(t, "creatorPopupYoutubeChannels", "channels")}`
+                                : platformLiveStatus
+                                  ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                                  : ""}
+                          </span>
+                        </span>
 
-              return (
-                <a
-                  key={platform}
-                  href={platformUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`flex min-h-[78px] min-w-0 flex-col justify-center rounded-2xl border px-3 py-3 text-sm transition hover:scale-[1.02] ${
-                    isPlatformLive
-                      ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
-                      : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
-                  }`}
-                >
-                  <span className="block truncate font-bold uppercase tracking-[0.18em]">
-                    {platformName}
-                  </span>
+                        <ExternalLink
+                          size={16}
+                          className="shrink-0 text-white/50"
+                        />
+                      </button>
+                    );
+                  }
 
-                  <span className="mt-2 block min-h-[16px] truncate text-xs text-white/55">
-                    {supportsLiveStatus
-                      ? liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupCheckingLive", "Checking live...")
-                        : isPlatformLive
-                          ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} ${translate(t, "creatorPopupViewers", "viewers")}`
-                          : translate(t, "creatorPopupStatusOffline", "Offline")
-                      : supportsExternalCount && liveStatusLoading && !platformLiveStatus
-                        ? translate(t, "creatorPopupLoading", "Loading...")
-                        : " "}
-                  </span>
+                  return (
+                    <a
+                      key={platform}
+                      href={platformUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex min-w-0 items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition hover:scale-[1.01] ${
+                        isPlatformLive
+                          ? "border-emerald-300/25 bg-emerald-300/10 hover:bg-emerald-300/20"
+                          : "border-white/10 bg-black/20 hover:border-cyan-300/35 hover:bg-cyan-300/10"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-black text-white">
+                          {platformName}
+                        </span>
 
-                  <span className="mt-1 block min-h-[16px] truncate text-xs text-white/40">
-                    {supportsExternalCount && platformLiveStatus
-                      ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
-                      : supportsLiveStatus &&
-                        isPlatformLive &&
-                        platformLiveStatus?.gameName
-                        ? platformLiveStatus.gameName
-                        : " "}
-                  </span>
-                </a>
-              );
-            })}
+                        <span className="mt-1 block truncate text-xs text-white/45">
+                          {supportsLiveStatus
+                            ? liveStatusLoading && !platformLiveStatus
+                              ? translate(
+                                  t,
+                                  "creatorPopupCheckingLive",
+                                  "Checking live...",
+                                )
+                              : isPlatformLive
+                                ? `${(platformLiveStatus?.viewerCount || 0).toLocaleString("pt-BR")} ${translate(t, "creatorPopupViewers", "viewers")}`
+                                : translate(
+                                    t,
+                                    "creatorPopupStatusOffline",
+                                    "Offline",
+                                  )
+                            : supportsExternalCount &&
+                                liveStatusLoading &&
+                                !platformLiveStatus
+                              ? translate(
+                                  t,
+                                  "creatorPopupLoading",
+                                  "Loading...",
+                                )
+                              : supportsExternalCount && platformLiveStatus
+                                ? `${platformExternalCount.toLocaleString("pt-BR")} ${platformExternalLabel}`
+                                : ""}
+                        </span>
+                      </span>
+
+                      <ExternalLink
+                        size={16}
+                        className="shrink-0 text-white/50"
+                      />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
       {youtubeChannelsOpen && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
           <button
             className="absolute inset-0"
             onClick={() => setYoutubeChannelsOpen(false)}
-            aria-label={translate(t, "creatorPopupCloseYoutubeChannels", "Close YouTube channels")}
+            aria-label={translate(
+              t,
+              "creatorPopupCloseYoutubeChannels",
+              "Close YouTube channels",
+            )}
           />
 
           <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-zinc-950 p-6 text-white shadow-[0_0_70px_rgba(0,0,0,0.9)]">
@@ -2371,11 +2738,19 @@ function ViewPanel({
               </p>
 
               <h3 className="mt-3 text-2xl font-black">
-                {translate(t, "creatorPopupYoutubeChannelsTitle", "YouTube Channels")}
+                {translate(
+                  t,
+                  "creatorPopupYoutubeChannelsTitle",
+                  "YouTube Channels",
+                )}
               </h3>
 
               <p className="mt-2 text-sm text-white/45">
-                {translate(t, "creatorPopupYoutubeChannelsDescription", "Choose which channel you want to open.")}
+                {translate(
+                  t,
+                  "creatorPopupYoutubeChannelsDescription",
+                  "Choose which channel you want to open.",
+                )}
               </p>
 
               <div className="mt-5 grid gap-3">
@@ -2405,7 +2780,12 @@ function ViewPanel({
                       </p>
 
                       <p className="text-sm text-white/45">
-                        {channel.subscriberCount.toLocaleString("pt-BR")} {translate(t, "creatorPopupYoutubeSubscribers", "subscribers")}
+                        {channel.subscriberCount.toLocaleString("pt-BR")}{" "}
+                        {translate(
+                          t,
+                          "creatorPopupYoutubeSubscribers",
+                          "subscribers",
+                        )}
                       </p>
                     </div>
                   </a>
@@ -2460,7 +2840,9 @@ function UploadField({
         }}
       />
 
-      {uploading && <p className="mt-2 text-xs text-cyan-300">{uploadingText}</p>}
+      {uploading && (
+        <p className="mt-2 text-xs text-cyan-300">{uploadingText}</p>
+      )}
     </label>
   );
 }
@@ -2476,7 +2858,9 @@ function InfoCard({
 }) {
   return (
     <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="break-words text-[10px] uppercase leading-relaxed tracking-[0.14em] text-white/35">{label}</p>
+      <p className="break-words text-[10px] uppercase leading-relaxed tracking-[0.14em] text-white/35">
+        {label}
+      </p>
       <p className={`mt-2 truncate text-lg font-black ${color}`}>{value}</p>
     </div>
   );
