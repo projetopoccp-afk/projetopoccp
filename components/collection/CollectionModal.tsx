@@ -633,24 +633,22 @@ function CollectionCard({
   card: UserCard;
   onClick: () => void;
 }) {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const creator = buildCreatorFromCard(card);
 
   if (!creator) return null;
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center">
       <div className="relative">
         <CreatorCard creator={creator} onClick={() => onClick()} />
         <CollectionCardOverlay card={card} compact />
+        <CollectionCardObtainedDate
+          obtainedAt={card.obtained_at}
+          locale={getDateLocale(language)}
+          compact
+        />
       </div>
-
-      <CollectionCardMeta
-        source={card.source}
-        obtainedAt={card.obtained_at}
-        locale={getDateLocale(language)}
-        sourceLabel={translate(t, "collectionCardSource", "Origem")}
-      />
     </div>
   );
 }
@@ -686,25 +684,23 @@ function CollectionCardOverlay({
   );
 }
 
-function CollectionCardMeta({
-  source,
+function CollectionCardObtainedDate({
   obtainedAt,
   locale,
-  sourceLabel,
+  compact = false,
 }: {
-  source: string;
   obtainedAt: string;
   locale: string;
-  sourceLabel: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="flex w-[240px] items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2 text-[11px] text-white/45">
-      <span className="max-w-[128px] truncate font-medium text-white/58">
-        {sourceLabel}: {source}
-      </span>
-
-      <span>{new Date(obtainedAt).toLocaleDateString(locale)}</span>
-    </div>
+    <span
+      className={`pointer-events-none absolute z-30 text-[10px] font-bold tabular-nums text-white/55 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] ${
+        compact ? "bottom-[21px] right-5" : "bottom-[24px] right-6"
+      }`}
+    >
+      {new Date(obtainedAt).toLocaleDateString(locale)}
+    </span>
   );
 }
 
@@ -718,7 +714,7 @@ function CollectionCardShowcase({
   onOpenProfile: (card: UserCard) => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   if (!card) return null;
 
@@ -819,6 +815,10 @@ function CollectionCardShowcase({
                 <div className="relative scale-[1.12] sm:scale-[1.22]">
                   <CreatorCard creator={showcaseCreator} onClick={() => {}} />
                   <CollectionCardOverlay card={card} />
+                  <CollectionCardObtainedDate
+                    obtainedAt={card.obtained_at}
+                    locale={getDateLocale(language)}
+                  />
                 </div>
               </div>
             );
