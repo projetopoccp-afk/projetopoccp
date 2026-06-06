@@ -987,6 +987,11 @@ export const translations = {
     type: "Tipo",
     quantity: "Quantidade",
     recipient: "Destinatário",
+    liveDropsClaimsLabel: {
+      pt: "resgatados",
+      en: "claimed",
+      es: "rescatados",
+    },
 
     adminSearchRequestPlaceholder:
       "Buscar solicitações por email, nome, username, categoria ou código...",
