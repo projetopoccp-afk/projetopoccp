@@ -34,6 +34,8 @@ export const translations = {
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
+    liveDropsParticipants: "Participantes",
+    liveDropsNoParticipants: "Aguardando participantes...",
 
     rankingsEyebrow: "Hall da fama Cardpoc",
     rankingsPageTitle: "Rankings",
@@ -1183,6 +1185,8 @@ export const translations = {
 
     rankings: "Rankings",
     openRankings: "Open rankings",
+    liveDropsParticipants: "Participants",
+    liveDropsNoParticipants: "Waiting for participants...",
 
     rankingsEyebrow: "Cardpoc Hall of Fame",
     rankingsPageTitle: "Rankings",
@@ -2321,6 +2325,8 @@ export const translations = {
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
+    liveDropsParticipants: "Participantes",
+    liveDropsNoParticipants: "Esperando participantes...",
 
     rankingsEyebrow: "Salón de la fama Cardpoc",
     rankingsPageTitle: "Rankings",
