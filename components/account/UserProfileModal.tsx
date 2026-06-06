@@ -671,20 +671,70 @@ function LinkedAccountsModal({
   >(null);
   const kickAccount = accounts.find((account) => account.platform === "kick");
 
-  function handleConnectKick() {
-    window.location.href = "/api/auth/kick/start";
+  async function handleConnectKick() {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error || !session?.access_token) {
+      console.error("Erro ao iniciar conexão com a Kick:", error);
+      return;
+    }
+
+    const response = await fetch("/api/auth/kick/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accessToken: session.access_token,
+      }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { url?: string; error?: string }
+      | null;
+
+    if (!response.ok || !payload?.url) {
+      console.error("Erro ao iniciar OAuth Kick:", payload?.error);
+      return;
+    }
+
+    window.location.href = payload.url;
   }
 
   async function handleDisconnect(platform: string) {
     setDisconnectingPlatform(platform);
 
-    const { error } = await supabase
-      .from("user_social_accounts")
-      .delete()
-      .eq("platform", platform);
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-    if (error) {
-      console.error("Erro ao desconectar conta:", error);
+    if (sessionError || !session?.access_token) {
+      console.error("Erro ao validar sessão:", sessionError);
+      setDisconnectingPlatform(null);
+      return;
+    }
+
+    const response = await fetch("/api/auth/kick/disconnect", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accessToken: session.access_token,
+        platform,
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      console.error("Erro ao desconectar conta:", payload?.error);
       setDisconnectingPlatform(null);
       return;
     }
