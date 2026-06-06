@@ -26,7 +26,11 @@ const RARITY_SHOWCASE_CYCLE = [
   { rarity: "legendary" },
 ] as const;
 
-const RARITY_SHOWCASE_INTERVAL = 8500;
+const RARITY_SHOWCASE_INTERVAL = 9800;
+const RARITY_STACK_TRANSITION = {
+  duration: 0.72,
+  ease: [0.22, 1, 0.36, 1],
+} as const;
 
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -453,22 +457,19 @@ function AnimatedRarityCreatorCard({
   };
 
   return (
-    <div className="relative h-[360px] w-[240px] [perspective:1200px]">
-      <div className="pointer-events-none absolute inset-0 z-0 rounded-[24px] bg-black/25 blur-2xl" />
-
+    <div className="relative h-[360px] w-[240px] overflow-visible [perspective:1200px]">
       <AnimatePresence initial={false} mode="popLayout">
         <motion.div
           key={`${creator.id}-${showcase.rarity}`}
-          className="absolute inset-0"
+          className="absolute inset-0 will-change-transform"
           initial={{
-            x: 26,
+            x: 32,
             y: 18,
-            rotateZ: 5,
-            rotateY: -8,
-            scale: 0.92,
-            opacity: 0.72,
+            rotateZ: 4.5,
+            rotateY: -7,
+            scale: 0.985,
+            opacity: 0.92,
             zIndex: 1,
-            filter: "brightness(0.86)",
           }}
           animate={{
             x: 0,
@@ -478,24 +479,24 @@ function AnimatedRarityCreatorCard({
             scale: 1,
             opacity: 1,
             zIndex: 3,
-            filter: "brightness(1)",
+            transition: RARITY_STACK_TRANSITION,
           }}
           exit={{
             x: -24,
-            y: -16,
-            rotateZ: -5,
-            rotateY: 8,
-            scale: 0.96,
+            y: -12,
+            rotateZ: -3.5,
+            rotateY: 5,
+            scale: 0.992,
             opacity: 0,
             zIndex: 2,
-            filter: "brightness(0.9)",
-          }}
-          transition={{
-            duration: 0.78,
-            ease: [0.22, 1, 0.36, 1],
+            transition: {
+              duration: 0.58,
+              ease: [0.4, 0, 0.2, 1],
+            },
           }}
           style={{
             transformStyle: "preserve-3d",
+            backfaceVisibility: "hidden",
           }}
         >
           <CreatorCard creator={showcasedCreator} onClick={onClick} />
