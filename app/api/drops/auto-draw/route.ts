@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createSupabaseAdminClient,
+  processDropDraw,
+} from "../../../../lib/drops/processDropDraw";
 
 type DropEntryRow = {
   drop_id: string;
@@ -14,22 +17,6 @@ type DropRow = {
   created_at: string | null;
 };
 
-function createSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase admin environment variables.");
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
 function hasDropEnded(endsAt: string | null) {
   if (!endsAt) return false;
 
@@ -40,10 +27,9 @@ function hasDropEnded(endsAt: string | null) {
   return endsAtTime <= Date.now();
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabaseAdmin = createSupabaseAdminClient();
-    const origin = new URL(request.url).origin;
     const nowIso = new Date().toISOString();
 
     const { data: entryRows, error: entriesLookupError } = await supabaseAdmin
@@ -227,33 +213,15 @@ export async function GET(request: Request) {
         continue;
       }
 
-      const response = await fetch(`${origin}/api/drops/draw`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dropId: drop.id,
-        }),
-      });
-
-      const text = await response.text();
-
-      let payload: unknown = text;
-
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        // mantém texto bruto
-      }
+      const result = await processDropDraw(drop.id, supabaseAdmin);
 
       processed.push({
         dropId: drop.id,
-        ok: response.ok,
-        status: response.status,
+        ok: result.ok,
+        status: result.status,
         entriesCount: safeEntriesCount,
         claimsCount: safeClaimsCount,
-        response: payload,
+        response: result.ok ? result : { error: result.error },
       });
     }
 
