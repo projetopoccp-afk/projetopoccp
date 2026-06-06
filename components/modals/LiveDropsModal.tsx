@@ -74,6 +74,12 @@ type DropRecord = {
 const DROP_PERCENTAGE = 15;
 const DEFAULT_KEYWORD = "CARDPOC";
 
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("pt-BR").format(value);
 }
@@ -223,7 +229,6 @@ export function LiveDropsModal({
   >([]);
   const previousClaimsByDropIdRef = useRef<Record<string, number>>({});
   const autoDrawInFlightDropIdsRef = useRef<Set<string>>(new Set());
-  const pendingWinnersPopupDropIdRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -280,8 +285,8 @@ export function LiveDropsModal({
     return session.access_token;
   }, []);
 
-  const loadDrops = useCallback(async (): Promise<DropRecord[]> => {
-    if (!open || !creatorId) return [];
+  const loadDrops = useCallback(async () => {
+    if (!open || !creatorId) return;
 
     setLoadingDrops(true);
     setError(null);
@@ -294,7 +299,6 @@ export function LiveDropsModal({
         headers: {
           "Content-Type": "application/json",
         },
-        cache: "no-store",
         body: JSON.stringify({
           accessToken,
           creatorId,
@@ -307,11 +311,11 @@ export function LiveDropsModal({
       }
 
       const payload = (await response.json()) as { drops?: DropRecord[] };
-      const loadedDrops = payload.drops || [];
+      const nextDrops = payload.drops || [];
 
-      setDrops(loadedDrops);
+      setDrops(nextDrops);
 
-      return loadedDrops;
+      return nextDrops;
     } catch (dropsError) {
       console.error("Erro ao carregar drops:", dropsError);
       setError(
@@ -322,7 +326,7 @@ export function LiveDropsModal({
         ),
       );
 
-      return [];
+      return null;
     } finally {
       setLoadingDrops(false);
     }
@@ -360,29 +364,6 @@ export function LiveDropsModal({
     }
   }, [drops, selectedWinnersDrop]);
 
-  const refreshDropsAndOpenWinners = useCallback(
-    async (dropId: string, attemptsLeft = 6) => {
-      const loadedDrops = await loadDrops();
-      const finishedDrop = loadedDrops.find((drop) => drop.id === dropId);
-
-      if (finishedDrop && (finishedDrop.claims?.length || 0) > 0) {
-        setSelectedWinnersDrop(finishedDrop);
-        setAutoOpenedWinnersDropIds((currentIds) =>
-          currentIds.includes(dropId) ? currentIds : [...currentIds, dropId],
-        );
-        pendingWinnersPopupDropIdRef.current = null;
-        return;
-      }
-
-      if (attemptsLeft <= 0) return;
-
-      window.setTimeout(() => {
-        void refreshDropsAndOpenWinners(dropId, attemptsLeft - 1);
-      }, 1500);
-    },
-    [loadDrops],
-  );
-
   useEffect(() => {
     if (!open || drops.length === 0) return;
 
@@ -392,13 +373,12 @@ export function LiveDropsModal({
     for (const drop of drops) {
       const claimsCount = drop.claims?.length || 0;
       const previousClaimsCount = previousClaimsByDropId[drop.id];
-      const isPendingAutoPopup =
-        pendingWinnersPopupDropIdRef.current === drop.id;
+      const wasAutoDrawTriggered = autoDrawTriggeredDropIds.includes(drop.id);
 
       if (
         claimsCount > 0 &&
         !autoOpenedWinnersDropIds.includes(drop.id) &&
-        (isPendingAutoPopup ||
+        (wasAutoDrawTriggered ||
           (previousClaimsCount !== undefined &&
             claimsCount > previousClaimsCount))
       ) {
@@ -412,14 +392,13 @@ export function LiveDropsModal({
 
     const dropToOpenId = dropToOpen.id;
 
-    pendingWinnersPopupDropIdRef.current = null;
     setSelectedWinnersDrop(dropToOpen);
     setAutoOpenedWinnersDropIds((currentIds) =>
       currentIds.includes(dropToOpenId)
         ? currentIds
         : [...currentIds, dropToOpenId],
     );
-  }, [autoOpenedWinnersDropIds, drops, open]);
+  }, [autoDrawTriggeredDropIds, autoOpenedWinnersDropIds, drops, open]);
 
   useEffect(() => {
     if (!open || drops.length === 0) return;
@@ -428,10 +407,10 @@ export function LiveDropsModal({
       const hasParticipants = (drop.entries?.length || 0) > 0;
       const claimsCount = drop.claims?.length || 0;
       const maxClaimCount = Number(drop.max_claims || 0);
+      const ended = getRemainingSeconds(drop, nowTime) <= 0;
 
       return (
-        drop.is_active &&
-        getRemainingSeconds(drop, nowTime) <= 0 &&
+        ended &&
         hasParticipants &&
         maxClaimCount > 0 &&
         claimsCount < maxClaimCount
@@ -439,48 +418,71 @@ export function LiveDropsModal({
     });
 
     if (!expiredPendingDrop) return;
+    if (autoDrawTriggeredDropIds.includes(expiredPendingDrop.id)) return;
+    if (autoDrawInFlightDropIdsRef.current.has(expiredPendingDrop.id)) return;
 
-    if (
-      autoDrawTriggeredDropIds.includes(expiredPendingDrop.id) ||
-      autoDrawInFlightDropIdsRef.current.has(expiredPendingDrop.id)
-    ) {
-      return;
-    }
+    const dropIdToProcess = expiredPendingDrop.id;
 
-    const expiredPendingDropId = expiredPendingDrop.id;
-
-    autoDrawInFlightDropIdsRef.current.add(expiredPendingDropId);
-    pendingWinnersPopupDropIdRef.current = expiredPendingDropId;
-
+    autoDrawInFlightDropIdsRef.current.add(dropIdToProcess);
     setAutoDrawTriggeredDropIds((currentIds) =>
-      currentIds.includes(expiredPendingDropId)
+      currentIds.includes(dropIdToProcess)
         ? currentIds
-        : [...currentIds, expiredPendingDropId],
+        : [...currentIds, dropIdToProcess],
     );
 
-    void fetch("/api/drops/auto-draw", {
-      method: "GET",
-      cache: "no-store",
-    })
-      .then(async () => {
-        await refreshDropsAndOpenWinners(expiredPendingDropId);
-      })
-      .catch((autoDrawError) => {
+    let cancelled = false;
+
+    async function runImmediateAutoDraw() {
+      try {
+        const response = await fetch(
+          `/api/drops/auto-draw?source=live-drops-modal&drop_id=${dropIdToProcess}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
+
+        if (!response.ok) {
+          console.error(
+            "Erro ao acionar sorteio automático do drop:",
+            await response.text().catch(() => ""),
+          );
+        }
+
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          if (cancelled) return;
+
+          const nextDrops = await loadDrops();
+          const updatedDrop = nextDrops?.find((drop) => drop.id === dropIdToProcess);
+
+          if ((updatedDrop?.claims?.length || 0) > 0) {
+            setSelectedWinnersDrop(updatedDrop || null);
+            setAutoOpenedWinnersDropIds((currentIds) =>
+              currentIds.includes(dropIdToProcess)
+                ? currentIds
+                : [...currentIds, dropIdToProcess],
+            );
+            return;
+          }
+
+          await wait(900);
+        }
+      } catch (autoDrawError) {
         console.error(
           "Erro ao acionar sorteio automático do drop:",
           autoDrawError,
         );
-      })
-      .finally(() => {
-        autoDrawInFlightDropIdsRef.current.delete(expiredPendingDropId);
-      });
-  }, [
-    autoDrawTriggeredDropIds,
-    drops,
-    nowTime,
-    open,
-    refreshDropsAndOpenWinners,
-  ]);
+      } finally {
+        autoDrawInFlightDropIdsRef.current.delete(dropIdToProcess);
+      }
+    }
+
+    void runImmediateAutoDraw();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoDrawTriggeredDropIds, drops, loadDrops, nowTime, open]);
 
   const handleRealtimeEntryInsert = useCallback((entry: DropEntryRecord) => {
     setDrops((currentDrops) =>
