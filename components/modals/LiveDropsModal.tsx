@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -215,6 +215,13 @@ export function LiveDropsModal({
   const [selectedWinnersDrop, setSelectedWinnersDrop] =
     useState<DropRecord | null>(null);
   const [nowTime, setNowTime] = useState(() => Date.now());
+  const [autoDrawTriggeredDropIds, setAutoDrawTriggeredDropIds] = useState<
+    string[]
+  >([]);
+  const [autoOpenedWinnersDropIds, setAutoOpenedWinnersDropIds] = useState<
+    string[]
+  >([]);
+  const previousClaimsByDropIdRef = useRef<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -335,12 +342,84 @@ export function LiveDropsModal({
   useEffect(() => {
     if (!selectedWinnersDrop) return;
 
-    const updatedDrop = drops.find((drop) => drop.id === selectedWinnersDrop.id);
+    const updatedDrop = drops.find(
+      (drop) => drop.id === selectedWinnersDrop.id,
+    );
 
     if (updatedDrop) {
       setSelectedWinnersDrop(updatedDrop);
     }
   }, [drops, selectedWinnersDrop]);
+
+  useEffect(() => {
+    if (!open || drops.length === 0) return;
+
+    const previousClaimsByDropId = previousClaimsByDropIdRef.current;
+    let dropToOpen: DropRecord | null = null;
+
+    for (const drop of drops) {
+      const claimsCount = drop.claims?.length || 0;
+      const previousClaimsCount = previousClaimsByDropId[drop.id];
+
+      if (
+        previousClaimsCount !== undefined &&
+        claimsCount > previousClaimsCount &&
+        claimsCount > 0 &&
+        !autoOpenedWinnersDropIds.includes(drop.id)
+      ) {
+        dropToOpen = drop;
+      }
+
+      previousClaimsByDropId[drop.id] = claimsCount;
+    }
+
+    if (!dropToOpen) return;
+
+    const dropToOpenId = dropToOpen.id;
+
+    setSelectedWinnersDrop(dropToOpen);
+    setAutoOpenedWinnersDropIds((currentIds) =>
+      currentIds.includes(dropToOpenId)
+        ? currentIds
+        : [...currentIds, dropToOpenId],
+    );
+  }, [autoOpenedWinnersDropIds, drops, open]);
+
+  useEffect(() => {
+    if (!open || drops.length === 0) return;
+
+    const expiredPendingDrop = drops.find((drop) => {
+      const hasParticipants = (drop.entries?.length || 0) > 0;
+      const claimsCount = drop.claims?.length || 0;
+      const maxClaimCount = Number(drop.max_claims || 0);
+
+      return (
+        drop.is_active &&
+        getRemainingSeconds(drop, nowTime) <= 0 &&
+        hasParticipants &&
+        maxClaimCount > 0 &&
+        claimsCount < maxClaimCount
+      );
+    });
+
+    if (!expiredPendingDrop) return;
+
+    if (autoDrawTriggeredDropIds.includes(expiredPendingDrop.id)) return;
+
+    setAutoDrawTriggeredDropIds((currentIds) => [
+      ...currentIds,
+      expiredPendingDrop.id,
+    ]);
+
+    void fetch("/api/drops/auto-draw")
+      .then(() => loadDrops())
+      .catch((autoDrawError) => {
+        console.error(
+          "Erro ao acionar sorteio automático do drop:",
+          autoDrawError,
+        );
+      });
+  }, [autoDrawTriggeredDropIds, drops, loadDrops, nowTime, open]);
 
   const handleRealtimeEntryInsert = useCallback((entry: DropEntryRecord) => {
     setDrops((currentDrops) =>
@@ -392,7 +471,9 @@ export function LiveDropsModal({
         if (drop.id !== claim.drop_id) return drop;
 
         const currentClaims = drop.claims || [];
-        const alreadyExists = currentClaims.some((item) => item.id === claim.id);
+        const alreadyExists = currentClaims.some(
+          (item) => item.id === claim.id,
+        );
 
         if (alreadyExists) {
           return {
@@ -807,7 +888,8 @@ export function LiveDropsModal({
 
                   {featuredActiveDrop ? (
                     <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-100/60">
-                      {translate(t, "liveDropsTimeRemaining", "Tempo restante")}:{" "}
+                      {translate(t, "liveDropsTimeRemaining", "Tempo restante")}
+                      :{" "}
                       {formatRemainingTime(
                         getRemainingSeconds(featuredActiveDrop, nowTime),
                       )}
@@ -936,7 +1018,10 @@ export function LiveDropsModal({
                               "liveDropsTimeRemaining",
                               "Tempo restante",
                             )}
-                            : {formatRemainingTime(getRemainingSeconds(drop, nowTime))}
+                            :{" "}
+                            {formatRemainingTime(
+                              getRemainingSeconds(drop, nowTime),
+                            )}
                           </span>
 
                           <div className="flex flex-wrap items-center gap-2">
