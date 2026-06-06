@@ -108,6 +108,7 @@ export function LiveDropsModal({
   const [saving, setSaving] = useState(false);
   const [loadingDrops, setLoadingDrops] = useState(false);
   const [endingDropId, setEndingDropId] = useState<string | null>(null);
+  const [simulatingDropId, setSimulatingDropId] = useState<string | null>(null);
   const [drops, setDrops] = useState<DropRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -276,6 +277,66 @@ export function LiveDropsModal({
     }
   }
 
+  async function handleSimulateWinner(dropId: string) {
+    setSimulatingDropId(dropId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const accessToken = await getSessionAccessToken();
+
+      const response = await fetch("/api/drops/simulate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessToken,
+          creatorId,
+          dropId,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (payload?.error === "no_eligible_user") {
+          throw new Error("no_eligible_user");
+        }
+
+        throw new Error(payload?.error || "drop_simulate_failed");
+      }
+
+      const username = String(payload?.winnerUsername || payload?.winnerEmail || "").trim();
+      setSuccessMessage(
+        username
+          ? `${translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso:")} ${username}`
+          : translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso."),
+      );
+
+      await loadDrops();
+    } catch (simulateError) {
+      console.error("Erro ao simular vencedor:", simulateError);
+
+      const message =
+        simulateError instanceof Error && simulateError.message === "no_eligible_user"
+          ? translate(
+              t,
+              "liveDropsNoEligibleWinner",
+              "Nenhum usuário elegível encontrado. O usuário precisa ter a Kick vinculada e ainda não ter resgatado este drop.",
+            )
+          : translate(
+              t,
+              "liveDropsSimulateError",
+              "Não foi possível simular um vencedor agora.",
+            );
+
+      setError(message);
+    } finally {
+      setSimulatingDropId(null);
+    }
+  }
+
   if (!open) return null;
 
   return (
@@ -436,19 +497,37 @@ export function LiveDropsModal({
                             {translate(t, "liveDropsEndsAt", "Termina")}: {formatDateTime(drop.ends_at)}
                           </span>
 
-                          <button
-                            type="button"
-                            onClick={() => void handleEndDrop(drop.id)}
-                            disabled={endingDropId === drop.id}
-                            className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-500/15 disabled:opacity-50"
-                          >
-                            {endingDropId === drop.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <XCircle className="h-3.5 w-3.5" />
-                            )}
-                            {translate(t, "liveDropsEnd", "Encerrar")}
-                          </button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleSimulateWinner(drop.id)}
+                              disabled={simulatingDropId === drop.id || endingDropId === drop.id}
+                              className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-300/15 disabled:opacity-50"
+                            >
+                              {simulatingDropId === drop.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Gift className="h-3.5 w-3.5" />
+                              )}
+                              {simulatingDropId === drop.id
+                                ? translate(t, "liveDropsSimulatingWinner", "Sorteando...")
+                                : translate(t, "liveDropsSimulateWinner", "Simular vencedor")}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleEndDrop(drop.id)}
+                              disabled={endingDropId === drop.id || simulatingDropId === drop.id}
+                              className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-500/15 disabled:opacity-50"
+                            >
+                              {endingDropId === drop.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <XCircle className="h-3.5 w-3.5" />
+                              )}
+                              {translate(t, "liveDropsEnd", "Encerrar")}
+                            </button>
+                          </div>
                         </div>
                       </article>
                     ))
