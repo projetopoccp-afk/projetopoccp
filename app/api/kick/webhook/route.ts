@@ -44,6 +44,13 @@ function findDeepValue(payload: any, keys: string[]): string {
   return "";
 }
 
+export async function GET() {
+  return Response.json({
+    ok: true,
+    route: "kick-webhook-online",
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
