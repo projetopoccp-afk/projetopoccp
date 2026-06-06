@@ -431,7 +431,7 @@ export function LiveDropsModal({
             </div>
 
             <div className="mt-5 rounded-[24px] border border-emerald-300/20 bg-emerald-300/10 p-5">
-              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)_150px] md:items-stretch">
+              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)] md:items-stretch">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-100/65">
                     {translate(t, "liveDropsAvailable", "Drops disponíveis")}
@@ -446,8 +446,12 @@ export function LiveDropsModal({
                 </div>
 
                 <div className="min-h-[86px] min-w-0 border-white/10 md:border-l md:pl-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                    {translate(t, "liveDropsParticipants", "Participantes")}
+                  </p>
+
                   {visibleFeaturedEntries.length > 0 ? (
-                    <div className="flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
+                    <div className="mt-3 flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
                       {visibleFeaturedEntries.map((entry) => (
                         <span
                           key={entry.id}
@@ -465,19 +469,14 @@ export function LiveDropsModal({
                       ))}
                     </div>
                   ) : (
-                    <div className="flex h-full min-h-[70px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
-                      {DEFAULT_KEYWORD}
+                    <div className="mt-3 flex h-full min-h-[62px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
+                      {translate(
+                        t,
+                        "liveDropsWaitingParticipants",
+                        "Aguardando participantes no chat.",
+                      )}
                     </div>
                   )}
-                </div>
-
-                <div className="flex items-start justify-start md:justify-end">
-                  <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Kick</p>
-                    <p className="mt-1 max-w-[220px] truncate text-sm font-black text-white md:max-w-[120px]">
-                      {creatorName}
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
