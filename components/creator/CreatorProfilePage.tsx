@@ -1054,7 +1054,7 @@ function SupportChatModal({
       .from("support_conversations")
       .select("*")
       .eq("user_id", currentUserId)
-      .eq("creator_id", creatorId)
+      .eq("creator_id", profile.id)
       .order("last_message_at", { ascending: false });
 
     const rows = (data || []) as SupportConversationRow[];
@@ -1728,9 +1728,10 @@ export function CreatorProfilePage({
 
   useEffect(() => {
     let cancelled = false;
+    const currentCreatorId = profile?.id;
 
     async function loadFollowState() {
-      if (!profile?.id || !currentUserId) {
+      if (!currentCreatorId || !currentUserId) {
         if (!cancelled) {
           setIsFollowing(false);
         }
@@ -1740,7 +1741,7 @@ export function CreatorProfilePage({
       const { data } = await supabase
         .from("creator_followers")
         .select("id")
-        .eq("creator_id", creatorId)
+        .eq("creator_id", currentCreatorId)
         .eq("user_id", currentUserId)
         .maybeSingle();
 
@@ -1920,7 +1921,7 @@ export function CreatorProfilePage({
         .select(
           "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, last_checked_at, updated_at",
         )
-        .eq("creator_id", creatorId)
+        .eq("creator_id", profile.id)
         .in("platform", ["twitch", "kick"]);
 
       if (cancelled || error || !data) return;
@@ -2545,7 +2546,7 @@ export function CreatorProfilePage({
     const { error: deleteSocialLinksError } = await supabase
       .from("creator_social_links")
       .delete()
-      .eq("creator_id", creatorId);
+      .eq("creator_id", profile.id);
 
     if (deleteSocialLinksError) {
       setIsSavingProfile(false);
@@ -2705,7 +2706,7 @@ export function CreatorProfilePage({
         const { error } = await supabase
           .from("creator_followers")
           .delete()
-          .eq("creator_id", creatorId)
+          .eq("creator_id", profile.id)
           .eq("user_id", user.id);
 
         if (error) {
@@ -2778,7 +2779,7 @@ export function CreatorProfilePage({
       const { data: existingCard } = await supabase
         .from("user_cards")
         .select("id")
-        .eq("creator_id", creatorId)
+        .eq("creator_id", profile.id)
         .eq("user_id", user.id)
         .maybeSingle();
 
