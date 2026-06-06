@@ -427,16 +427,6 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   async function clearAllNotifications() {
     if (!user || notifications.length === 0) return;
 
-    const confirmed = window.confirm(
-      translate(
-        t,
-        "clearNotificationsConfirm",
-        "Tem certeza que deseja limpar todas as suas notificações?",
-      ),
-    );
-
-    if (!confirmed) return;
-
     const previousNotifications = notifications;
 
     setNotifications([]);
@@ -994,20 +984,25 @@ function NotificationsPopover({
             </button>
           )}
 
-          {notifications.length > 0 && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onClearAll();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1.5 text-xs font-bold text-red-100 transition hover:bg-red-300/20"
-            >
-              <Trash2 size={12} />
-              {translate(t, "clearNotifications", "Limpar")}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onClearAll();
+            }}
+            disabled={notifications.length === 0}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+              notifications.length > 0
+                ? "border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
+                : "cursor-default border-emerald-300/20 bg-emerald-300/10 text-emerald-100/80"
+            }`}
+          >
+            <Trash2 size={12} />
+            {notifications.length > 0
+              ? translate(t, "clearNotifications", "Limpar")
+              : translate(t, "notificationsCleared", "Limpo")}
+          </button>
 
           <button
             type="button"
