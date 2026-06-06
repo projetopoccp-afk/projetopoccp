@@ -910,6 +910,7 @@ export const translations = {
 
     creatorProfileSubscribers: "inscritos",
     creatorProfileFollowersShort: "seguidores",
+    creatorProfileCreatorPanelButton: "Painel do Criador",
     creatorProfileManageProfile: "Gerenciar perfil",
     creatorProfileLiveDropsButton: "Drops de Live",
     liveDropsEyebrow: "Drops de Live",
@@ -2058,6 +2059,7 @@ export const translations = {
 
     creatorProfileSubscribers: "subscribers",
     creatorProfileFollowersShort: "followers",
+    creatorProfileCreatorPanelButton: "Creator Panel",
     creatorProfileManageProfile: "Manage profile",
     creatorProfileLiveDropsButton: "Live Drops",
     liveDropsEyebrow: "Live Drops",
@@ -3211,6 +3213,7 @@ export const translations = {
 
     creatorProfileSubscribers: "suscriptores",
     creatorProfileFollowersShort: "seguidores",
+    creatorProfileCreatorPanelButton: "Panel del Creador",
     creatorProfileManageProfile: "Gestionar perfil",
     creatorProfileLiveDropsButton: "Drops de Live",
     liveDropsEyebrow: "Drops de Live",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -1467,6 +1468,8 @@ export function CreatorProfilePage({
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
   const [liveDropsOpen, setLiveDropsOpen] = useState(false);
+  const [creatorPanelOpen, setCreatorPanelOpen] = useState(false);
+  const creatorPanelDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -1502,21 +1505,32 @@ export function CreatorProfilePage({
   }, []);
 
   useEffect(() => {
-    if (!socialLinksOpen) return;
+    if (!socialLinksOpen && !creatorPanelOpen) return;
 
     function handleOutsideInteraction(event: MouseEvent | TouchEvent) {
       const target = event.target;
 
       if (!(target instanceof Node)) return;
 
-      if (!socialLinksDropdownRef.current?.contains(target)) {
+      if (
+        socialLinksOpen &&
+        !socialLinksDropdownRef.current?.contains(target)
+      ) {
         setSocialLinksOpen(false);
+      }
+
+      if (
+        creatorPanelOpen &&
+        !creatorPanelDropdownRef.current?.contains(target)
+      ) {
+        setCreatorPanelOpen(false);
       }
     }
 
     function handleEscapeKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setSocialLinksOpen(false);
+        setCreatorPanelOpen(false);
       }
     }
 
@@ -1529,7 +1543,7 @@ export function CreatorProfilePage({
       document.removeEventListener("touchstart", handleOutsideInteraction);
       document.removeEventListener("keydown", handleEscapeKey);
     };
-  }, [socialLinksOpen]);
+  }, [creatorPanelOpen, socialLinksOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2989,50 +3003,92 @@ export function CreatorProfilePage({
       <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-white/65 backdrop-blur transition hover:border-cyan-300/30 hover:text-cyan-100"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {translate(
-              t,
-              "creatorProfileExploreCreators",
-              "Explorar criadores",
-            )}
-          </Link>
-
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {canManageProfile && !isEditing ? (
-            <div className="flex flex-wrap items-center gap-3">
+            <div ref={creatorPanelDropdownRef} className="relative">
               <button
                 type="button"
-                onClick={() => setLiveDropsOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-amber-100 backdrop-blur transition hover:bg-amber-300/20"
-              >
-                <Gift className="h-4 w-4" />
-                {translate(t, "creatorProfileLiveDropsButton", "Drops de Live")}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSupportChatOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-cyan-100 backdrop-blur transition hover:bg-cyan-300/20"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {translate(t, "creatorProfileTalkToTeam", "Falar com a equipe")}
-              </button>
-
-              <Link
-                href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
+                onClick={() => setCreatorPanelOpen((current) => !current)}
                 className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
+                aria-expanded={creatorPanelOpen}
               >
                 <Sparkles className="h-4 w-4" />
                 {translate(
                   t,
-                  "creatorProfileManageProfile",
-                  "Gerenciar perfil",
+                  "creatorProfileCreatorPanelButton",
+                  "Painel do Criador",
                 )}
-              </Link>
+                <ChevronDown
+                  className={`h-4 w-4 transition ${creatorPanelOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {creatorPanelOpen ? (
+                <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#100913]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatorPanelOpen(false);
+                      setLiveDropsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/10"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
+                      <Gift className="h-4 w-4" />
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="uppercase tracking-[0.18em]">
+                        {translate(
+                          t,
+                          "creatorProfileLiveDropsButton",
+                          "Drops de Live",
+                        )}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatorPanelOpen(false);
+                      setSupportChatOpen(true);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
+                      <MessageCircle className="h-4 w-4" />
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="uppercase tracking-[0.18em]">
+                        {translate(
+                          t,
+                          "creatorProfileTalkToTeam",
+                          "Falar com a equipe",
+                        )}
+                      </span>
+                    </span>
+                  </button>
+
+                  <Link
+                    href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
+                    onClick={() => setCreatorPanelOpen(false)}
+                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="uppercase tracking-[0.18em]">
+                        {translate(
+                          t,
+                          "creatorProfileManageProfile",
+                          "Gerenciar perfil",
+                        )}
+                      </span>
+                    </span>
+                  </Link>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
