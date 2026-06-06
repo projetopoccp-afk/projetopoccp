@@ -606,7 +606,7 @@ export function LiveDropsModal({
 
                 <div className="mt-4 space-y-3">
                   {historyDrops.length > 0 ? (
-                    historyDrops.slice(0, 6).map((drop) => (
+                    historyDrops.slice(0, 3).map((drop) => (
                       <article
                         key={drop.id}
                         className="rounded-2xl border border-white/10 bg-black/20 p-4"
