@@ -242,16 +242,16 @@ export function LiveDropsModal({
               <div className="mt-4 grid gap-3">
                 <button
                   type="button"
-                  onClick={() => setRewardType("pack_common")}
+                  onClick={() => setRewardType("random_pack")}
                   className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${
-                    rewardType === "pack_common"
+                    rewardType === "random_pack"
                       ? "border-cyan-300/35 bg-cyan-300/12 text-cyan-50"
                       : "border-white/10 bg-black/20 text-white/60 hover:bg-white/[0.06]"
                   }`}
                 >
                   <Package className="h-5 w-5 shrink-0" />
                   <span className="font-black">
-                    {translate(t, "liveDropsRewardCommonPack", "Pack comum")}
+                    {translate(t, "liveDropsRewardCommonPack", "Pack random")}
                   </span>
                 </button>
 
