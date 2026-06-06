@@ -96,6 +96,13 @@ export const translations = {
     rankingsNextStepDescription:
       "Depois de aprovar o visual, conectamos XP, cartas, pacotes e seguidores usando os dados reais do Supabase.",
     backToHome: "Voltar para Home",
+    albumPageBackHome: "Voltar para Home",
+    albumPageBadge: "Álbum Cardpoc",
+    albumPageTitle: "Álbum de Criadores",
+    albumPageLoading: "Carregando álbum...",
+    albumPageComplete: "Completa",
+    albumPageIncomplete: "Incompleta",
+    albumPageProgressLabel: "Progresso",
 
     legalBackHome: "Voltar para o início",
     legalLastUpdated: "Última atualização: Junho de 2026",
@@ -404,6 +411,8 @@ export const translations = {
       "Criadores encontrados com base no termo pesquisado.",
     creatorGridFeaturedCards: "Cartas em Destaque",
     creatorGridNewCards: "Cartas Novas",
+    creatorGridActiveDropsTitle: "Drops ativos",
+    creatorGridDropLastTwoHours: "Drop criado nas últimas 2 horas",
     creatorGridEmptyTitle:
       "Não identificamos nenhuma identidade correspondente à sua busca.",
     creatorGridEmptyDescription:
@@ -679,6 +688,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "Um pacote misterioso com chance aleatória para qualquer raridade.",
     packsModalRandomRarity: "Aleatória",
+    homePageAlbumButton: "Álbum",
     homePageBadge: "Conheça e colecione criadores",
     homePageTitle: "Colecione Criadores",
     homePageDescription:
@@ -1262,6 +1272,13 @@ export const translations = {
     rankingsNextStepDescription:
       "After approving the visual, we connect XP, cards, packs and followers using real Supabase data.",
     backToHome: "Back to Home",
+    albumPageBackHome: "Back to Home",
+    albumPageBadge: "Cardpoc Album",
+    albumPageTitle: "Creator Album",
+    albumPageLoading: "Loading album...",
+    albumPageComplete: "Complete",
+    albumPageIncomplete: "Incomplete",
+    albumPageProgressLabel: "Progress",
 
     legalBackHome: "Back to home",
     legalLastUpdated: "Last updated: June 2026",
@@ -1563,6 +1580,8 @@ export const translations = {
       "Creators found based on the searched term.",
     creatorGridFeaturedCards: "Featured Cards",
     creatorGridNewCards: "New Cards",
+    creatorGridActiveDropsTitle: "Active drops",
+    creatorGridDropLastTwoHours: "Drop created in the last 2 hours",
     creatorGridEmptyTitle:
       "We could not identify any identity matching your search.",
     creatorGridEmptyDescription:
@@ -1835,6 +1854,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "A mystery pack with a random chance for any rarity.",
     packsModalRandomRarity: "Random",
+    homePageAlbumButton: "Album",
     homePageBadge: "Discover and collect creators",
     homePageTitle: "Collect Creators",
     homePageDescription:
@@ -2417,6 +2437,13 @@ export const translations = {
     rankingsNextStepDescription:
       "Después de aprobar el visual, conectamos XP, cartas, paquetes y seguidores usando los datos reales de Supabase.",
     backToHome: "Volver al inicio",
+    albumPageBackHome: "Volver al inicio",
+    albumPageBadge: "Álbum Cardpoc",
+    albumPageTitle: "Álbum de Creadores",
+    albumPageLoading: "Cargando álbum...",
+    albumPageComplete: "Completa",
+    albumPageIncomplete: "Incompleta",
+    albumPageProgressLabel: "Progreso",
 
     legalBackHome: "Volver al inicio",
     legalLastUpdated: "Última actualización: Junio de 2026",
@@ -2719,6 +2746,8 @@ export const translations = {
       "Creadores encontrados según el término buscado.",
     creatorGridFeaturedCards: "Cartas Destacadas",
     creatorGridNewCards: "Cartas Nuevas",
+    creatorGridActiveDropsTitle: "Drops activos",
+    creatorGridDropLastTwoHours: "Drop creado en las últimas 2 horas",
     creatorGridEmptyTitle:
       "No identificamos ninguna identidad que coincida con tu búsqueda.",
     creatorGridEmptyDescription:
@@ -2981,6 +3010,7 @@ export const translations = {
     packsModalRandomPackDescription:
       "Un pack misterioso con probabilidad aleatoria para cualquier rareza.",
     packsModalRandomRarity: "Aleatoria",
+    homePageAlbumButton: "Álbum",
     homePageBadge: "Conoce y colecciona creadores",
     homePageTitle: "Colecciona Creadores",
     homePageDescription:
