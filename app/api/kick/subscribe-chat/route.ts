@@ -41,12 +41,13 @@ export async function GET() {
     }
 
     const subscribePayload = {
-      events: [
+    method: "webhook",
+    events: [
         {
-          name: "chat.message.sent",
-          version: 1,
+        name: "chat.message.sent",
+        version: 1,
         },
-      ],
+    ],
     };
 
     console.log("Kick subscribe payload:", JSON.stringify(subscribePayload));
