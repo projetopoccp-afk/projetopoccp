@@ -22,15 +22,21 @@ export async function GET(request: Request) {
     const supabaseAdmin = createSupabaseAdminClient();
     const origin = new URL(request.url).origin;
 
-    const { data: expiredDrops, error } = await supabaseAdmin
+    const { data: candidateDrops, error } = await supabaseAdmin
       .from("creator_drops")
-      .select("id")
-      .eq("is_active", true)
-      .lte("ends_at", new Date().toISOString());
+      .select("id, current_claims, max_claims, ends_at")
+      .lte("ends_at", new Date().toISOString())
+      .lt("current_claims", "max_claims")
+      .order("ends_at", { ascending: true })
+      .limit(20);
 
     if (error) {
       console.error("Auto draw lookup error:", error);
-      return NextResponse.json({ error: "drop_lookup_failed" }, { status: 500 });
+
+      return NextResponse.json(
+        { error: "drop_lookup_failed" },
+        { status: 500 },
+      );
     }
 
     const processed: Array<{
@@ -40,8 +46,22 @@ export async function GET(request: Request) {
       response?: unknown;
     }> = [];
 
-    for (const drop of expiredDrops || []) {
+    for (const drop of candidateDrops || []) {
       try {
+        const { count: entriesCount, error: entriesError } = await supabaseAdmin
+          .from("drop_entries")
+          .select("id", { count: "exact", head: true })
+          .eq("drop_id", drop.id);
+
+        if (entriesError) {
+          console.error("Auto draw entries count error:", entriesError);
+          continue;
+        }
+
+        if (!entriesCount || entriesCount <= 0) {
+          continue;
+        }
+
         const response = await fetch(`${origin}/api/drops/draw`, {
           method: "POST",
           headers: {
@@ -59,7 +79,7 @@ export async function GET(request: Request) {
         try {
           payload = JSON.parse(text);
         } catch {
-          // keep raw text
+          // mantém texto bruto
         }
 
         processed.push({
@@ -85,6 +105,10 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Auto draw unexpected error:", error);
-    return NextResponse.json({ error: "unexpected_error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "unexpected_error" },
+      { status: 500 },
+    );
   }
 }
