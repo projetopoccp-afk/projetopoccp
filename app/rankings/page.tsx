@@ -402,14 +402,21 @@ export default function RankingsPage() {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData.user?.id ?? null;
 
-      const [creatorsResult, profilesResult, cardsResult, openingsResult, followsResult] =
-        await Promise.all([
-          supabase.from("creator_profiles").select("*"),
-          supabase.from("profiles").select("*"),
-          supabase.from("user_cards").select("id,user_id,creator_id,rarity,created_at"),
-          supabase.from("pack_openings").select("*"),
-          supabase.from("creator_followers").select("*"),
-        ]);
+      const [
+        creatorsResult,
+        profilesResult,
+        cardsResult,
+        openingsResult,
+        followsResult,
+        publicSnapshotResult,
+      ] = await Promise.all([
+        supabase.from("creator_profiles").select("*"),
+        supabase.from("profiles").select("*"),
+        supabase.from("user_cards").select("id,user_id,creator_id,rarity,created_at"),
+        supabase.from("pack_openings").select("*"),
+        supabase.from("creator_followers").select("*"),
+        (supabase as any).rpc("get_public_rankings_snapshot"),
+      ]);
 
       if (!mounted) {
         return;
@@ -417,13 +424,30 @@ export default function RankingsPage() {
 
       const hasHardError = Boolean(creatorsResult.error || profilesResult.error || cardsResult.error);
 
-      if (hasHardError) {
+      const snapshot = (publicSnapshotResult?.data ?? null) as
+        | {
+            creators?: CreatorProfileRow[];
+            profiles?: UserProfileRow[];
+            cards?: UserCardRow[];
+            openings?: PackOpeningRow[];
+            follows?: CreatorFollowerRow[];
+          }
+        | null;
+
+      const hasSnapshot =
+        !publicSnapshotResult?.error &&
+        snapshot &&
+        Array.isArray(snapshot.creators) &&
+        Array.isArray(snapshot.cards);
+
+      if (hasHardError && !hasSnapshot) {
         console.error("Rankings load error", {
           creators: creatorsResult.error,
           profiles: profilesResult.error,
           cards: cardsResult.error,
           openings: openingsResult.error,
           follows: followsResult.error,
+          publicSnapshot: publicSnapshotResult?.error,
         });
         setCurrentUserId(userId);
         setCreatorBlocks(buildCreatorBlocks([], []));
@@ -432,12 +456,12 @@ export default function RankingsPage() {
         return;
       }
 
-      const profiles = (profilesResult.data ?? []) as UserProfileRow[];
-      const cards = (cardsResult.data ?? []) as UserCardRow[];
-      const openings = ((openingsResult.data ?? []) as PackOpeningRow[]) ?? [];
-      const follows = ((followsResult.data ?? []) as CreatorFollowerRow[]) ?? [];
+      const profiles = (hasSnapshot ? snapshot?.profiles ?? [] : profilesResult.data ?? []) as UserProfileRow[];
+      const cards = (hasSnapshot ? snapshot?.cards ?? [] : cardsResult.data ?? []) as UserCardRow[];
+      const openings = (hasSnapshot ? snapshot?.openings ?? [] : openingsResult.data ?? []) as PackOpeningRow[];
+      const follows = (hasSnapshot ? snapshot?.follows ?? [] : followsResult.data ?? []) as CreatorFollowerRow[];
 
-      let creators = (creatorsResult.data ?? []) as CreatorProfileRow[];
+      let creators = (hasSnapshot ? snapshot?.creators ?? [] : creatorsResult.data ?? []) as CreatorProfileRow[];
       const loadedCreatorIds = new Set(
         creators.map((creator) => String(creator.id ?? "")).filter(Boolean),
       );
