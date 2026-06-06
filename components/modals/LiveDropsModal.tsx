@@ -77,7 +77,9 @@ function isDropCurrentlyActive(drop: DropRecord) {
   return drop.is_active && new Date(drop.ends_at).getTime() > Date.now();
 }
 
-function getRewardLabel(t: Parameters<typeof translate>[0], rewardType: string) {
+type TranslationFn = ReturnType<typeof useLanguage>["t"];
+
+function getRewardLabel(t: TranslationFn, rewardType: string) {
   if (rewardType === "xp") return translate(t, "liveDropsRewardXp", "XP");
   if (rewardType === "random_pack") {
     return translate(t, "liveDropsRewardRandomPack", "Pack Aleatório");
