@@ -2342,10 +2342,6 @@ function ViewPanel({
     <>
       <div className="pr-16">
         <div className="mb-5 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
-            {translate(t, "creatorProfilePublicBadge", "Perfil público")}
-          </span>
-
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
               isLiveOnAnyPlatform
@@ -2367,24 +2363,28 @@ function ViewPanel({
           )}
         </div>
 
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-          {creator.category}
-        </p>
-
-        <h3 className="mt-3 text-3xl font-black leading-tight text-white">
+        <h3 className="text-3xl font-black leading-tight text-white">
           {creator.nickname}
         </h3>
 
-        <p className="mt-1 text-sm text-white/45">@{creator.username}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 font-black uppercase tracking-[0.22em] text-cyan-100">
+            {creator.category}
+          </span>
 
-        {profileTitle && (
-          <p className="mt-4 text-sm font-semibold text-cyan-100">
-            {profileTitle}
-          </p>
-        )}
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 font-semibold text-white/55">
+            @{creator.username}
+          </span>
+
+          {profileTitle && (
+            <span className="rounded-full border border-purple-300/20 bg-purple-300/10 px-3 py-1 font-semibold text-purple-100">
+              {profileTitle}
+            </span>
+          )}
+        </div>
 
         {profileDescription && (
-          <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-white/65">
+          <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-white/65">
             {profileDescription}
           </p>
         )}
@@ -2409,35 +2409,8 @@ function ViewPanel({
         </div>
       )}
 
-      <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <InfoCard
-          label={translate(t, "creatorPopupViews", "Views")}
-          value={viewCount.toLocaleString("pt-BR")}
-          color="text-cyan-200"
-        />
-        <InfoCard
-          label={translate(t, "creatorPopupFollowers", "Seguidores do site")}
-          value={followerCount.toLocaleString("pt-BR")}
-          color="text-purple-200"
-        />
-        <InfoCard
-          label={translate(
-            t,
-            "creatorProfileGlobalFollowers",
-            "Seguidores Globais",
-          )}
-          value={externalTotal.toLocaleString("pt-BR")}
-          color="text-emerald-200"
-        />
-        <InfoCard
-          label={translate(t, "creatorPopupShares", "Compartilhamentos")}
-          value={shareCount.toLocaleString("pt-BR")}
-          color="text-yellow-200"
-        />
-      </div>
-
       {socialLinkEntries.length > 0 && (
-        <div className="mt-7 pb-10">
+        <div className="mt-6">
           <button
             type="button"
             onClick={() => setSocialLinksOpen((current) => !current)}
@@ -2456,7 +2429,7 @@ function ViewPanel({
 
           {socialLinksOpen && (
             <div className="mt-3 overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.04] p-3">
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {socialLinkEntries.map(([platform, url]) => {
                   const normalizedPlatform = platform.toLowerCase();
                   const platformLiveStatus = getPlatformLiveStatus(
@@ -2589,6 +2562,35 @@ function ViewPanel({
           )}
         </div>
       )}
+
+      <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <InfoCard
+          label={translate(t, "creatorPopupViews", "Views")}
+          value={viewCount.toLocaleString("pt-BR")}
+          color="text-cyan-200"
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupFollowers", "Seguidores do site")}
+          value={followerCount.toLocaleString("pt-BR")}
+          color="text-purple-200"
+        />
+        <InfoCard
+          label={translate(
+            t,
+            "creatorProfileGlobalFollowers",
+            "Seguidores Globais",
+          )}
+          value={externalTotal.toLocaleString("pt-BR")}
+          color="text-emerald-200"
+        />
+        <InfoCard
+          label={translate(t, "creatorPopupShares", "Compartilhamentos")}
+          value={shareCount.toLocaleString("pt-BR")}
+          color="text-yellow-200"
+        />
+      </div>
+
+
       {youtubeChannelsOpen && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4">
           <button
