@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+type CandidateDrop = {
+  id: string;
+  current_claims: number | null;
+  max_claims: number | null;
+  ends_at: string | null;
+  created_at?: string | null;
+};
+
 function createSupabaseAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,13 +29,13 @@ export async function GET(request: Request) {
   try {
     const supabaseAdmin = createSupabaseAdminClient();
     const origin = new URL(request.url).origin;
+    const nowIso = new Date().toISOString();
 
-    const { data: expiredDrops, error } = await supabaseAdmin
+    const { data: drops, error } = await supabaseAdmin
       .from("creator_drops")
-      .select("id, current_claims, max_claims, ends_at")
-      .lte("ends_at", new Date().toISOString())
-      .order("ends_at", { ascending: true })
-      .limit(30);
+      .select("id, current_claims, max_claims, ends_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error("Auto draw lookup error:", error);
@@ -38,15 +46,29 @@ export async function GET(request: Request) {
       );
     }
 
-    const candidateDrops = (expiredDrops || []).filter((drop) => {
-      return Number(drop.current_claims || 0) < Number(drop.max_claims || 0);
+    const candidateDrops = ((drops || []) as CandidateDrop[]).filter((drop) => {
+      const hasEnded = Boolean(drop.ends_at) && String(drop.ends_at) <= nowIso;
+      const hasSlots =
+        Number(drop.current_claims || 0) < Number(drop.max_claims || 0);
+
+      return hasEnded && hasSlots;
     });
 
     const processed: Array<{
       dropId: string;
       ok: boolean;
       status?: number;
+      entriesCount?: number;
       response?: unknown;
+    }> = [];
+
+    const skipped: Array<{
+      dropId: string;
+      reason: string;
+      endsAt?: string | null;
+      currentClaims?: number | null;
+      maxClaims?: number | null;
+      entriesCount?: number | null;
     }> = [];
 
     for (const drop of candidateDrops) {
@@ -57,10 +79,23 @@ export async function GET(request: Request) {
 
       if (entriesError) {
         console.error("Auto draw entries count error:", entriesError);
+
+        skipped.push({
+          dropId: drop.id,
+          reason: "entries_count_failed",
+          entriesCount: null,
+        });
+
         continue;
       }
 
       if (!entriesCount || entriesCount <= 0) {
+        skipped.push({
+          dropId: drop.id,
+          reason: "no_entries",
+          entriesCount: entriesCount || 0,
+        });
+
         continue;
       }
 
@@ -88,14 +123,19 @@ export async function GET(request: Request) {
         dropId: drop.id,
         ok: response.ok,
         status: response.status,
+        entriesCount,
         response: payload,
       });
     }
 
     return NextResponse.json({
       ok: true,
+      now: nowIso,
+      scanned: drops?.length || 0,
+      candidates: candidateDrops.length,
       count: processed.length,
       processed,
+      skipped,
     });
   } catch (error) {
     console.error("Auto draw unexpected error:", error);
