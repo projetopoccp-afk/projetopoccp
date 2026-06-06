@@ -126,7 +126,12 @@ function normalizeRarity(value: unknown): RarityKey | null {
     return null;
   }
 
-  const normalized = value.trim().toLowerCase();
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 
   if (["common", "comum"].includes(normalized)) {
     return "common";
@@ -136,11 +141,11 @@ function normalizeRarity(value: unknown): RarityKey | null {
     return "rare";
   }
 
-  if (["epic", "epico", "épico", "epica", "épica"].includes(normalized)) {
+  if (["epic", "epico", "epica"].includes(normalized)) {
     return "epic";
   }
 
-  if (["legendary", "lendario", "lendário", "lendaria", "lendária"].includes(normalized)) {
+  if (["legendary", "lendario", "lendaria", "legendario", "legendaria"].includes(normalized)) {
     return "legendary";
   }
 
@@ -171,6 +176,14 @@ function getCreatorName(creator: CreatorProfileRow) {
     creator.username ||
     "Cardpoc"
   );
+}
+
+function buildFallbackCreator(creatorId: string): CreatorProfileRow {
+  return {
+    id: creatorId,
+    nickname: "Criador Cardpoc",
+    username: undefined,
+  };
 }
 
 function getUserName(profile: UserProfileRow) {
@@ -393,7 +406,7 @@ export default function RankingsPage() {
         await Promise.all([
           supabase.from("creator_profiles").select("*"),
           supabase.from("profiles").select("*"),
-          supabase.from("user_cards").select("*"),
+          supabase.from("user_cards").select("id,user_id,creator_id,rarity,created_at"),
           supabase.from("pack_openings").select("*"),
           supabase.from("creator_followers").select("*"),
         ]);
@@ -419,11 +432,30 @@ export default function RankingsPage() {
         return;
       }
 
-      const creators = (creatorsResult.data ?? []) as CreatorProfileRow[];
       const profiles = (profilesResult.data ?? []) as UserProfileRow[];
       const cards = (cardsResult.data ?? []) as UserCardRow[];
       const openings = ((openingsResult.data ?? []) as PackOpeningRow[]) ?? [];
       const follows = ((followsResult.data ?? []) as CreatorFollowerRow[]) ?? [];
+
+      let creators = (creatorsResult.data ?? []) as CreatorProfileRow[];
+      const loadedCreatorIds = new Set(
+        creators.map((creator) => String(creator.id ?? "")).filter(Boolean),
+      );
+      const cardCreatorIds = Array.from(
+        new Set(cards.map((card) => getCreatorIdFromCard(card)).filter(Boolean)),
+      );
+      const missingCreatorIds = cardCreatorIds.filter((creatorId) => !loadedCreatorIds.has(creatorId));
+
+      if (missingCreatorIds.length > 0) {
+        const { data: missingCreators, error: missingCreatorsError } = await supabase
+          .from("creator_profiles")
+          .select("*")
+          .in("id", missingCreatorIds);
+
+        if (!missingCreatorsError && missingCreators?.length) {
+          creators = [...creators, ...((missingCreators ?? []) as CreatorProfileRow[])];
+        }
+      }
 
       setCurrentUserId(userId);
       setCreatorBlocks(buildCreatorBlocks(creators, cards));
@@ -647,11 +679,7 @@ function buildCreatorBlocks(
   ) => {
     return sortRankingItems(
       Array.from(source.entries()).flatMap(([creatorId, value]) => {
-        const creator = creatorById.get(creatorId);
-
-        if (!creator) {
-          return [];
-        }
+        const creator = creatorById.get(creatorId) ?? buildFallbackCreator(creatorId);
 
         return [buildCreatorRankingItem(creator, value, detailKey, detailFallback)];
       }),
