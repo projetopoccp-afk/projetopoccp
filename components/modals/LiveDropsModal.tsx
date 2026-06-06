@@ -479,15 +479,6 @@ export function LiveDropsModal({
                     </div>
                   )}
                 </div>
-
-                <div className="flex items-start justify-start md:justify-end">
-                  <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Kick</p>
-                    <p className="mt-1 max-w-[220px] truncate text-sm font-black text-white md:max-w-[120px]">
-                      {creatorName}
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 
