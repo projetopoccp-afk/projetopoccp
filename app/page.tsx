@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { GlowBackground } from "@/components/effects/GlowBackground";
@@ -323,6 +324,19 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <div className="relative z-10 mx-auto mt-8 flex max-w-7xl justify-end px-6">
+        <Link
+          href="/album"
+          className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)]"
+        >
+          <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
+          <span className="relative flex items-center gap-2">
+            <span className="text-sm">▣</span>
+            {translate(t, "homePageAlbumButton", "Álbum")}
+          </span>
+        </Link>
+      </div>
 
       <CreatorGrid search={search} />
 

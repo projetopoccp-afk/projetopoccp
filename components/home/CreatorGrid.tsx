@@ -19,6 +19,13 @@ type CreatorWithMeta = Creator & {
   trendingScore: number;
 };
 
+type ActiveDrop = {
+  id: string;
+  creatorId: string;
+  createdAt: string;
+  creator?: CreatorWithMeta;
+};
+
 const RARITY_SHOWCASE_CYCLE = [
   { rarity: "common" },
   { rarity: "rare" },
@@ -80,6 +87,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [creators, setCreators] = useState<CreatorWithMeta[]>([]);
+  const [activeDrops, setActiveDrops] = useState<ActiveDrop[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -204,6 +212,25 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       });
 
       setCreators(mappedCreators);
+
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const { data: dropsData } = await supabase
+        .from("live_drops")
+        .select("id,creator_id,created_at")
+        .gte("created_at", twoHoursAgo)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      const mappedDrops: ActiveDrop[] = (dropsData ?? [])
+        .map((drop: any) => ({
+          id: drop.id,
+          creatorId: drop.creator_id,
+          createdAt: drop.created_at,
+          creator: mappedCreators.find((creator) => creator.id === drop.creator_id),
+        }))
+        .filter((drop) => Boolean(drop.creator));
+
+      setActiveDrops(mappedDrops);
       setLoading(false);
     }
 
@@ -299,14 +326,6 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       .slice(0, 6);
   }, [creators]);
 
-  const newestCreators = useMemo(() => {
-    return [...creators]
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      .slice(0, 6);
-  }, [creators]);
 
   return (
     <>
@@ -332,18 +351,17 @@ export function CreatorGrid({ search }: CreatorGridProps) {
 
         {!loading && !hasSearch && (
           <div className="space-y-10">
-            <CreatorSection
-              title={translate(t, "creatorGridFeaturedCards", "Cartas em Destaque")}
-              description=""
-              creators={featuredCreators}
+            <ActiveDropsSection
+              drops={activeDrops}
               onOpenCreator={handleOpenCreator}
             />
 
             <CreatorSection
-              title={translate(t, "creatorGridNewCards", "Cartas Novas")}
+              title=""
               description=""
-              creators={newestCreators}
+              creators={featuredCreators}
               onOpenCreator={handleOpenCreator}
+              hideHeader
             />
           </div>
         )}
@@ -360,48 +378,122 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   );
 }
 
+function ActiveDropsSection({
+  drops,
+  onOpenCreator,
+}: {
+  drops: ActiveDrop[];
+  onOpenCreator: (creator: Creator) => void;
+}) {
+  const { t } = useLanguage();
+
+  if (drops.length === 0) return null;
+
+  return (
+    <section className="rounded-[32px] border border-amber-300/15 bg-amber-300/[0.035] p-5 shadow-[0_0_40px_rgba(251,191,36,0.08)] backdrop-blur-xl sm:p-6">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-3 rounded-full border border-amber-200/20 bg-amber-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-amber-100">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-200 shadow-[0_0_14px_rgba(251,191,36,0.95)]" />
+            {translate(t, "creatorGridActiveDropsTitle", "Drops ativos")}
+          </div>
+          <p className="mt-3 max-w-2xl text-sm text-white/50">
+            {translate(
+              t,
+              "creatorGridActiveDropsDescription",
+              "Criadores que fizeram drops nas últimas 2 horas aparecem aqui."
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {drops.map((drop) => {
+          const creator = drop.creator;
+          if (!creator) return null;
+
+          return (
+            <button
+              key={drop.id}
+              type="button"
+              onClick={() => onOpenCreator(creator)}
+              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black/35 p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-200/35 hover:bg-amber-300/[0.06]"
+            >
+              <span className="absolute inset-0 bg-gradient-to-br from-amber-300/10 via-transparent to-cyan-400/5 opacity-80" />
+              <span className="relative flex items-center gap-4">
+                <span className="h-14 w-14 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  {creator.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={creator.avatarUrl}
+                      alt={creator.nickname}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-xl">✦</span>
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-black uppercase tracking-[0.12em] text-white">
+                    {creator.nickname}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold text-amber-100/70">
+                    {translate(t, "creatorGridDropLastTwoHours", "Drop recente disponível")}
+                  </span>
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function CreatorSection({
   eyebrow,
   title,
   description,
   creators,
   onOpenCreator,
+  hideHeader = false,
 }: {
   eyebrow?: string;
   title: string;
   description: string;
   creators: CreatorWithMeta[];
   onOpenCreator: (creator: Creator) => void;
+  hideHeader?: boolean;
 }) {
   if (creators.length === 0) return null;
 
   return (
     <div>
-      <div className="mb-5 flex flex-col gap-2 text-center sm:text-left">
+      {!hideHeader && (
+        <div className="mb-5 flex flex-col gap-2 text-center sm:text-left">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-5 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
+                <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
+                <h2 className="text-base font-bold uppercase tracking-[0.28em] text-cyan-100">
+                  {title}
+                </h2>
+              </div>
 
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-5 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
-  <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
-
-  <h2 className="text-base font-bold uppercase tracking-[0.28em] text-cyan-100">
-    {title}
-  </h2>
-</div>
-
-            {description && (
-  <p className="mt-3 max-w-2xl text-sm text-white/45">
-    {description}
-  </p>
-)}
+              {description && (
+                <p className="mt-3 max-w-2xl text-sm text-white/45">
+                  {description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {creators.map((creator, index) => (
           <AnimatedRarityCreatorCard
-            key={`${title}-${creator.id}`}
+            key={`creator-${creator.id}`}
             creator={creator}
             index={index}
             onClick={onOpenCreator}
