@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     authorizeUrl.searchParams.set("redirect_uri", redirectUri);
     authorizeUrl.searchParams.set(
       "scope",
-      "user:read channel:read events:read"
+      "user:read channel:read events:subscribe"
     );
     authorizeUrl.searchParams.set("state", state);
     authorizeUrl.searchParams.set("code_challenge", codeChallenge);
