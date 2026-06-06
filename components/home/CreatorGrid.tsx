@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
@@ -452,14 +453,54 @@ function AnimatedRarityCreatorCard({
   };
 
   return (
-    <div className="relative h-[360px] w-[240px]">
-      <div className="relative h-full w-full transition-all duration-1000 ease-in-out">
-        <CreatorCard
+    <div className="relative h-[360px] w-[240px] [perspective:1200px]">
+      <div className="pointer-events-none absolute inset-0 z-0 rounded-[24px] bg-black/25 blur-2xl" />
+
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.div
           key={`${creator.id}-${showcase.rarity}`}
-          creator={showcasedCreator}
-          onClick={onClick}
-        />
-      </div>
+          className="absolute inset-0"
+          initial={{
+            x: 26,
+            y: 18,
+            rotateZ: 5,
+            rotateY: -8,
+            scale: 0.92,
+            opacity: 0.72,
+            zIndex: 1,
+            filter: "brightness(0.86)",
+          }}
+          animate={{
+            x: 0,
+            y: 0,
+            rotateZ: 0,
+            rotateY: 0,
+            scale: 1,
+            opacity: 1,
+            zIndex: 3,
+            filter: "brightness(1)",
+          }}
+          exit={{
+            x: -24,
+            y: -16,
+            rotateZ: -5,
+            rotateY: 8,
+            scale: 0.96,
+            opacity: 0,
+            zIndex: 2,
+            filter: "brightness(0.9)",
+          }}
+          transition={{
+            duration: 0.78,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          style={{
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <CreatorCard creator={showcasedCreator} onClick={onClick} />
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
