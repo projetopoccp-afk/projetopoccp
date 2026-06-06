@@ -1921,7 +1921,7 @@ export function CreatorProfilePage({
         .select(
           "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, last_checked_at, updated_at",
         )
-        .eq("creator_id", profile.id)
+        .eq("creator_id", creatorId)
         .in("platform", ["twitch", "kick"]);
 
       if (cancelled || error || !data) return;
