@@ -322,7 +322,6 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
 
           <div className="creator-effect-shine pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" />
           <div className="creator-card-readability absolute inset-0" />
-          <div className="creator-card-bottom-plate pointer-events-none absolute bottom-3 left-3 right-3 z-[14] h-[112px]" />
 
           <div
             className={`creator-card-rarity-badge absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
@@ -334,49 +333,44 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             {translate(t, "creatorCardLevelPrefix", "Lv.")} {creator.level}
           </div>
 
-          <div className="absolute bottom-10 left-0 right-0 z-20 px-4">
-            <p
-              className={`text-xs uppercase tracking-[0.3em] ${rarity.text}`}
-              style={{
-                textShadow: `0 0 10px var(--rarity-text-glow)`,
-              }}
-            >
-              {creator.category}
-            </p>
-
-            <h2 className="mt-2 pr-10 text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+          <div className="absolute bottom-5 left-0 right-0 z-20 px-4">
+            <h2 className="pr-4 text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
               {creator.nickname}
             </h2>
+
+            <span
+              className={`mt-1 block text-xs font-medium ${rarity.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]`}
+              style={{
+                textShadow: `0 0 8px var(--rarity-text-glow)`,
+              }}
+            >
+              @{creator.username}
+            </span>
           </div>
 
-          <span className="absolute bottom-4 right-4 z-20 text-xs text-white/55 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-            @{creator.username}
-          </span>
-
           <div className="creator-card-frame creator-card-frame-outer pointer-events-none absolute inset-0 rounded-[24px]" />
-          <div className="creator-card-frame creator-card-frame-metal pointer-events-none absolute inset-[3px] rounded-[21px]" />
-          <div className="creator-card-frame creator-card-frame-inner pointer-events-none absolute inset-[9px] rounded-[16px]" />
-          <div className="creator-card-corner-highlights pointer-events-none absolute inset-0 rounded-[24px]" />
+          <div className="creator-card-frame creator-card-frame-metal pointer-events-none absolute inset-[2px] rounded-[22px]" />
+          <div className="creator-card-frame creator-card-frame-inner pointer-events-none absolute inset-[5px] rounded-[19px]" />
 
           <style>{`
             .creator-card-shell {
               isolation: isolate;
               border-color: var(--rarity-border);
               box-shadow:
-                inset 0 0 18px rgba(255, 255, 255, 0.035),
-                inset 0 0 calc(18px + (22px * var(--rarity-intensity))) rgba(255, 255, 255, 0.025),
-                0 12px 30px rgba(0, 0, 0, 0.62),
-                0 0 calc(12px + (22px * var(--rarity-intensity))) var(--rarity-glow);
+                inset 0 0 12px rgba(255, 255, 255, 0.028),
+                inset 0 0 calc(10px + (12px * var(--rarity-intensity))) rgba(255, 255, 255, 0.018),
+                0 12px 28px rgba(0, 0, 0, 0.62),
+                0 0 calc(6px + (12px * var(--rarity-intensity))) var(--rarity-glow);
               transform: translateZ(0);
               backface-visibility: hidden;
             }
 
             .creator-card-shell:hover {
               box-shadow:
-                inset 0 0 20px rgba(255, 255, 255, 0.045),
-                inset 0 0 calc(20px + (28px * var(--rarity-intensity))) rgba(255, 255, 255, 0.03),
-                0 16px 38px rgba(0, 0, 0, 0.66),
-                0 0 calc(18px + (30px * var(--rarity-intensity))) var(--rarity-glow);
+                inset 0 0 14px rgba(255, 255, 255, 0.035),
+                inset 0 0 calc(12px + (14px * var(--rarity-intensity))) rgba(255, 255, 255, 0.022),
+                0 16px 36px rgba(0, 0, 0, 0.66),
+                0 0 calc(8px + (14px * var(--rarity-intensity))) var(--rarity-glow);
             }
 
             .creator-card-image {
@@ -394,8 +388,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             .creator-particle-layer,
             .creator-effect-shine,
             .creator-card-readability,
-            .creator-card-frame,
-            .creator-card-corner-highlights {
+            .creator-card-frame {
               border-radius: inherit;
             }
 
@@ -438,11 +431,11 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
 
             .creator-card-holographic {
               z-index: 7;
-              opacity: 0.18;
+              opacity: 0.1;
               mix-blend-mode: screen;
               background:
-                linear-gradient(118deg, transparent 0 22%, rgba(255,255,255,0.22) 32%, var(--rarity-tertiary) 42%, transparent 56%),
-                conic-gradient(from 210deg at 50% 18%, transparent 0 20%, rgba(255,255,255,0.1) 28%, var(--rarity-secondary) 36%, transparent 48%, transparent 68%, rgba(255,255,255,0.08) 76%, transparent 100%);
+                linear-gradient(118deg, transparent 0 24%, rgba(255,255,255,0.1) 34%, var(--rarity-tertiary) 42%, transparent 58%),
+                conic-gradient(from 210deg at 50% 18%, transparent 0 22%, rgba(255,255,255,0.055) 30%, var(--rarity-secondary) 38%, transparent 50%, transparent 70%, rgba(255,255,255,0.045) 78%, transparent 100%);
               transform: translate3d(-8%, -6%, 0) rotate(-3deg) scale(1.18);
               animation: creatorCardHolographicDrift 8s ease-in-out infinite;
             }
@@ -456,7 +449,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               z-index: 11;
               mix-blend-mode: screen;
               background:
-                linear-gradient(112deg, transparent 18%, rgba(255,255,255,0.11) 38%, rgba(255,255,255,0.28) 46%, var(--rarity-tertiary) 51%, transparent 66%);
+                linear-gradient(112deg, transparent 22%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.16) 47%, var(--rarity-tertiary) 52%, transparent 68%);
               transform: translateX(-120%);
               animation: creatorCardHoverShine 3s ease-in-out infinite;
             }
@@ -465,23 +458,8 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               z-index: 10;
               pointer-events: none;
               background:
-                linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.62) 24%, rgba(0,0,0,0.12) 56%, rgba(0,0,0,0.04) 100%),
-                linear-gradient(to right, rgba(0,0,0,0.14), transparent 28%, transparent 72%, rgba(0,0,0,0.1));
-            }
-
-            .creator-card-bottom-plate {
-              border-radius: 18px;
-              border: 1px solid rgba(255,255,255,0.1);
-              background:
-                linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.03) 32%, rgba(0,0,0,0.42) 100%),
-                radial-gradient(circle at 16% 0%, var(--rarity-glow), transparent 48%),
-                linear-gradient(to bottom, rgba(6,10,18,0.34), rgba(0,0,0,0.62));
-              box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.16),
-                inset 0 -1px 0 rgba(0,0,0,0.65),
-                0 0 22px rgba(0,0,0,0.34),
-                0 0 calc(8px + (14px * var(--rarity-intensity))) var(--rarity-glow);
-              backdrop-filter: blur(8px);
+                linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.34) 24%, rgba(0,0,0,0.08) 54%, rgba(0,0,0,0.03) 100%),
+                linear-gradient(to right, rgba(0,0,0,0.1), transparent 28%, transparent 72%, rgba(0,0,0,0.08));
             }
 
             .creator-card-rarity-badge,
@@ -490,7 +468,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
                 inset 0 1px 0 rgba(255,255,255,0.22),
                 inset 0 -1px 0 rgba(0,0,0,0.42),
                 0 8px 18px rgba(0,0,0,0.28),
-                0 0 16px var(--rarity-glow);
+                0 0 8px var(--rarity-glow);
             }
 
             .creator-card-rarity-badge {
@@ -510,55 +488,39 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             }
 
             .creator-card-frame-outer {
-              border: 1px solid rgba(255,255,255,0.2);
+              border: 1px solid rgba(255,255,255,0.16);
               box-shadow:
-                inset 0 0 0 1px rgba(255,255,255,0.08),
-                inset 0 0 0 3px rgba(0,0,0,0.34),
-                inset 0 0 calc(18px + (24px * var(--rarity-intensity))) var(--rarity-glow),
+                inset 0 0 0 1px rgba(255,255,255,0.055),
+                inset 0 0 0 2px rgba(0,0,0,0.26),
+                inset 0 0 calc(8px + (10px * var(--rarity-intensity))) var(--rarity-glow),
                 0 0 0 1px var(--rarity-border),
-                0 0 calc(16px + (32px * var(--rarity-intensity))) var(--rarity-glow);
+                0 0 calc(7px + (12px * var(--rarity-intensity))) var(--rarity-glow);
             }
 
             .creator-card-frame-metal {
               z-index: 31;
-              border: 1px solid rgba(255,255,255,0.16);
+              border: 1px solid rgba(255,255,255,0.1);
               background:
-                linear-gradient(135deg, rgba(255,255,255,0.24), transparent 14%, rgba(0,0,0,0.18) 32%, transparent 52%, rgba(255,255,255,0.18) 68%, transparent 84%),
-                linear-gradient(90deg, rgba(0,0,0,0.42), transparent 12%, transparent 88%, rgba(0,0,0,0.46));
+                linear-gradient(135deg, rgba(255,255,255,0.16), transparent 16%, rgba(0,0,0,0.16) 36%, transparent 58%, rgba(255,255,255,0.1) 76%, transparent 92%),
+                linear-gradient(90deg, rgba(0,0,0,0.24), transparent 16%, transparent 84%, rgba(0,0,0,0.28));
               box-shadow:
                 inset 0 0 0 1px var(--rarity-border),
-                inset 0 0 0 3px rgba(255,255,255,0.035),
-                inset 0 0 18px rgba(0,0,0,0.58);
+                inset 0 0 10px rgba(0,0,0,0.42);
               mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
               -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
               mask-composite: exclude;
               -webkit-mask-composite: xor;
-              padding: 6px;
+              padding: 3px;
             }
 
             .creator-card-frame-inner {
               z-index: 32;
-              border: 1px solid rgba(255,255,255,0.12);
+              border: 1px solid rgba(255,255,255,0.08);
               box-shadow:
-                inset 0 0 0 1px rgba(0,0,0,0.55),
-                inset 0 0 0 2px rgba(255,255,255,0.04),
-                0 0 0 1px rgba(0,0,0,0.34),
-                0 0 16px var(--rarity-glow);
-            }
-
-            .creator-card-corner-highlights {
-              z-index: 33;
-              background:
-                radial-gradient(circle at 9% 9%, rgba(255,255,255,0.28), var(--rarity-border) 0 1.5%, transparent 8%),
-                radial-gradient(circle at 91% 9%, rgba(255,255,255,0.22), var(--rarity-border) 0 1.5%, transparent 8%),
-                radial-gradient(circle at 9% 91%, rgba(255,255,255,0.2), var(--rarity-border) 0 1.5%, transparent 8%),
-                radial-gradient(circle at 91% 91%, rgba(255,255,255,0.24), var(--rarity-border) 0 1.5%, transparent 8%),
-                linear-gradient(135deg, rgba(255,255,255,0.26) 0 5%, transparent 18%),
-                linear-gradient(225deg, rgba(255,255,255,0.18) 0 5%, transparent 18%),
-                linear-gradient(45deg, rgba(255,255,255,0.12) 0 5%, transparent 18%),
-                linear-gradient(315deg, rgba(255,255,255,0.18) 0 5%, transparent 18%);
-              mix-blend-mode: screen;
-              opacity: calc(0.5 + (0.34 * var(--rarity-intensity)));
+                inset 0 0 0 1px rgba(0,0,0,0.44),
+                inset 0 0 0 2px rgba(255,255,255,0.025),
+                0 0 0 1px rgba(0,0,0,0.24),
+                0 0 7px var(--rarity-glow);
             }
 
             .creator-particle {
@@ -1012,11 +974,11 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               }
               45% {
                 transform: translate3d(8%, 5%, 0) rotate(4deg) scale(1.22);
-                opacity: calc(0.16 + (0.12 * var(--rarity-intensity)));
+                opacity: calc(0.08 + (0.05 * var(--rarity-intensity)));
               }
               72% {
                 transform: translate3d(2%, -4%, 0) rotate(1deg) scale(1.2);
-                opacity: 0.18;
+                opacity: 0.1;
               }
             }
 
