@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       .select("id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at")
       .eq("creator_id", creatorId)
       .order("created_at", { ascending: false })
-      .limit(2);
+      .limit(3);
 
     if (dropsError) {
       console.error("List drops error:", dropsError);
