@@ -1054,7 +1054,7 @@ function SupportChatModal({
       .from("support_conversations")
       .select("*")
       .eq("user_id", currentUserId)
-      .eq("creator_id", profile.id)
+      .eq("creator_id", creatorId)
       .order("last_message_at", { ascending: false });
 
     const rows = (data || []) as SupportConversationRow[];
