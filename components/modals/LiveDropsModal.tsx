@@ -243,9 +243,18 @@ export function LiveDropsModal({
   }, [creatorId, getSessionAccessToken, open, t]);
 
   useEffect(() => {
-    if (!open) return;
-    void loadDrops();
-  }, [loadDrops, open]);
+  if (!open) return;
+
+  loadDrops();
+
+  const interval = setInterval(() => {
+    loadDrops();
+  }, 3000);
+
+  return () => {
+    clearInterval(interval);
+  };
+}, [open, loadDrops]);
 
   const handleRealtimeEntryInsert = useCallback((entry: DropEntryRecord) => {
     setDrops((currentDrops) =>
