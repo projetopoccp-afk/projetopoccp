@@ -136,20 +136,20 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
   },
 
   epic: {
-    label: "Violeta arcano",
+    label: "Esmeralda arcana",
     className: "creator-card-epic",
-    borderColor: "rgba(167, 139, 250, 0.76)",
-    glowColor: "rgba(88, 28, 135, 0.44)",
-    particleColor: "rgba(233, 213, 255, 0.98)",
-    secondaryColor: "rgba(124, 58, 237, 0.76)",
-    tertiaryColor: "rgba(236, 72, 153, 0.56)",
-    textGlow: "rgba(196, 181, 253, 0.62)",
+    borderColor: "rgba(110, 231, 183, 0.78)",
+    glowColor: "rgba(16, 185, 129, 0.42)",
+    particleColor: "rgba(209, 250, 229, 0.98)",
+    secondaryColor: "rgba(5, 150, 105, 0.78)",
+    tertiaryColor: "rgba(52, 211, 153, 0.58)",
+    textGlow: "rgba(167, 243, 208, 0.66)",
     particleShape: "rune",
     particleCount: 16,
     particleAnimation: "creatorEpicArcaneSpiral",
-    backgroundEffect: "arcane-violet-runes",
-    auraEffect: "irregular-spiral-mist",
-    intensity: 0.72,
+    backgroundEffect: "emerald-arcane-runes",
+    auraEffect: "irregular-emerald-mist",
+    intensity: 0.74,
     particles: [
       { left: "12%", top: "74%", size: "10px", tx: "48px", ty: "-104px", rotate: "160deg", duration: 6.8, delay: 0, shape: "rune", opacity: 0.74 },
       { left: "20%", top: "26%", size: "4px", tx: "82px", ty: "-34px", rotate: "220deg", duration: 5.9, delay: -1.4, shape: "star", opacity: 0.68 },
@@ -292,6 +292,8 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <div className="creator-effect-texture absolute inset-0" />
           <div className="creator-effect-aura absolute inset-0" />
           <div className="creator-effect-special absolute inset-0" />
+          <div className="creator-card-art-depth pointer-events-none absolute inset-0" />
+          <div className="creator-card-holographic pointer-events-none absolute inset-0" />
 
           <div className="creator-particle-layer pointer-events-none absolute inset-0">
             {config.particles.map((particle, index) => (
@@ -320,14 +322,15 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
 
           <div className="creator-effect-shine pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" />
           <div className="creator-card-readability absolute inset-0" />
+          <div className="creator-card-bottom-plate pointer-events-none absolute bottom-3 left-3 right-3 z-[14] h-[112px]" />
 
           <div
-            className={`absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
+            className={`creator-card-rarity-badge absolute left-4 top-4 z-20 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] backdrop-blur-md ${rarity.badge}`}
           >
             {getTranslatedRarityLabel(t, internalRarity)}
           </div>
 
-          <div className="absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
+          <div className="creator-card-level-badge absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
             {translate(t, "creatorCardLevelPrefix", "Lv.")} {creator.level}
           </div>
 
@@ -350,7 +353,10 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             @{creator.username}
           </span>
 
-          <div className="creator-card-frame pointer-events-none absolute inset-0 rounded-[24px]" />
+          <div className="creator-card-frame creator-card-frame-outer pointer-events-none absolute inset-0 rounded-[24px]" />
+          <div className="creator-card-frame creator-card-frame-metal pointer-events-none absolute inset-[3px] rounded-[21px]" />
+          <div className="creator-card-frame creator-card-frame-inner pointer-events-none absolute inset-[9px] rounded-[16px]" />
+          <div className="creator-card-corner-highlights pointer-events-none absolute inset-0 rounded-[24px]" />
 
           <style>{`
             .creator-card-shell {
@@ -383,10 +389,13 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             .creator-effect-texture,
             .creator-effect-aura,
             .creator-effect-special,
+            .creator-card-art-depth,
+            .creator-card-holographic,
             .creator-particle-layer,
             .creator-effect-shine,
             .creator-card-readability,
-            .creator-card-frame {
+            .creator-card-frame,
+            .creator-card-corner-highlights {
               border-radius: inherit;
             }
 
@@ -418,16 +427,36 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               z-index: 4;
             }
 
+            .creator-card-art-depth {
+              z-index: 6;
+              background:
+                radial-gradient(circle at 50% 8%, rgba(255,255,255,0.16), transparent 22%),
+                linear-gradient(to right, rgba(0,0,0,0.32), transparent 22%, transparent 78%, rgba(0,0,0,0.28)),
+                linear-gradient(to bottom, transparent 0 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.48) 100%);
+              mix-blend-mode: soft-light;
+            }
+
+            .creator-card-holographic {
+              z-index: 7;
+              opacity: 0.18;
+              mix-blend-mode: screen;
+              background:
+                linear-gradient(118deg, transparent 0 22%, rgba(255,255,255,0.22) 32%, var(--rarity-tertiary) 42%, transparent 56%),
+                conic-gradient(from 210deg at 50% 18%, transparent 0 20%, rgba(255,255,255,0.1) 28%, var(--rarity-secondary) 36%, transparent 48%, transparent 68%, rgba(255,255,255,0.08) 76%, transparent 100%);
+              transform: translate3d(-8%, -6%, 0) rotate(-3deg) scale(1.18);
+              animation: creatorCardHolographicDrift 8s ease-in-out infinite;
+            }
+
             .creator-particle-layer {
-              z-index: 5;
+              z-index: 8;
               overflow: hidden;
             }
 
             .creator-effect-shine {
-              z-index: 9;
+              z-index: 11;
               mix-blend-mode: screen;
               background:
-                linear-gradient(112deg, transparent 18%, rgba(255,255,255,0.16) 42%, transparent 63%);
+                linear-gradient(112deg, transparent 18%, rgba(255,255,255,0.11) 38%, rgba(255,255,255,0.28) 46%, var(--rarity-tertiary) 51%, transparent 66%);
               transform: translateX(-120%);
               animation: creatorCardHoverShine 3s ease-in-out infinite;
             }
@@ -440,12 +469,96 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
                 linear-gradient(to right, rgba(0,0,0,0.14), transparent 28%, transparent 72%, rgba(0,0,0,0.1));
             }
 
+            .creator-card-bottom-plate {
+              border-radius: 18px;
+              border: 1px solid rgba(255,255,255,0.1);
+              background:
+                linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.03) 32%, rgba(0,0,0,0.42) 100%),
+                radial-gradient(circle at 16% 0%, var(--rarity-glow), transparent 48%),
+                linear-gradient(to bottom, rgba(6,10,18,0.34), rgba(0,0,0,0.62));
+              box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.16),
+                inset 0 -1px 0 rgba(0,0,0,0.65),
+                0 0 22px rgba(0,0,0,0.34),
+                0 0 calc(8px + (14px * var(--rarity-intensity))) var(--rarity-glow);
+              backdrop-filter: blur(8px);
+            }
+
+            .creator-card-rarity-badge,
+            .creator-card-level-badge {
+              box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.22),
+                inset 0 -1px 0 rgba(0,0,0,0.42),
+                0 8px 18px rgba(0,0,0,0.28),
+                0 0 16px var(--rarity-glow);
+            }
+
+            .creator-card-rarity-badge {
+              background:
+                linear-gradient(135deg, rgba(255,255,255,0.18), rgba(0,0,0,0.28)),
+                radial-gradient(circle at 18% 0%, var(--rarity-glow), transparent 56%);
+              border-color: var(--rarity-border);
+            }
+
+            .creator-card-level-badge {
+              background:
+                linear-gradient(135deg, rgba(255,255,255,0.14), rgba(0,0,0,0.38));
+            }
+
             .creator-card-frame {
               z-index: 30;
-              border: 1px solid var(--rarity-border);
+            }
+
+            .creator-card-frame-outer {
+              border: 1px solid rgba(255,255,255,0.2);
               box-shadow:
-                inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-                inset 0 0 calc(14px + (16px * var(--rarity-intensity))) var(--rarity-glow);
+                inset 0 0 0 1px rgba(255,255,255,0.08),
+                inset 0 0 0 3px rgba(0,0,0,0.34),
+                inset 0 0 calc(18px + (24px * var(--rarity-intensity))) var(--rarity-glow),
+                0 0 0 1px var(--rarity-border),
+                0 0 calc(16px + (32px * var(--rarity-intensity))) var(--rarity-glow);
+            }
+
+            .creator-card-frame-metal {
+              z-index: 31;
+              border: 1px solid rgba(255,255,255,0.16);
+              background:
+                linear-gradient(135deg, rgba(255,255,255,0.24), transparent 14%, rgba(0,0,0,0.18) 32%, transparent 52%, rgba(255,255,255,0.18) 68%, transparent 84%),
+                linear-gradient(90deg, rgba(0,0,0,0.42), transparent 12%, transparent 88%, rgba(0,0,0,0.46));
+              box-shadow:
+                inset 0 0 0 1px var(--rarity-border),
+                inset 0 0 0 3px rgba(255,255,255,0.035),
+                inset 0 0 18px rgba(0,0,0,0.58);
+              mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+              -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+              mask-composite: exclude;
+              -webkit-mask-composite: xor;
+              padding: 6px;
+            }
+
+            .creator-card-frame-inner {
+              z-index: 32;
+              border: 1px solid rgba(255,255,255,0.12);
+              box-shadow:
+                inset 0 0 0 1px rgba(0,0,0,0.55),
+                inset 0 0 0 2px rgba(255,255,255,0.04),
+                0 0 0 1px rgba(0,0,0,0.34),
+                0 0 16px var(--rarity-glow);
+            }
+
+            .creator-card-corner-highlights {
+              z-index: 33;
+              background:
+                radial-gradient(circle at 9% 9%, rgba(255,255,255,0.28), var(--rarity-border) 0 1.5%, transparent 8%),
+                radial-gradient(circle at 91% 9%, rgba(255,255,255,0.22), var(--rarity-border) 0 1.5%, transparent 8%),
+                radial-gradient(circle at 9% 91%, rgba(255,255,255,0.2), var(--rarity-border) 0 1.5%, transparent 8%),
+                radial-gradient(circle at 91% 91%, rgba(255,255,255,0.24), var(--rarity-border) 0 1.5%, transparent 8%),
+                linear-gradient(135deg, rgba(255,255,255,0.26) 0 5%, transparent 18%),
+                linear-gradient(225deg, rgba(255,255,255,0.18) 0 5%, transparent 18%),
+                linear-gradient(45deg, rgba(255,255,255,0.12) 0 5%, transparent 18%),
+                linear-gradient(315deg, rgba(255,255,255,0.18) 0 5%, transparent 18%);
+              mix-blend-mode: screen;
+              opacity: calc(0.5 + (0.34 * var(--rarity-intensity)));
             }
 
             .creator-particle {
@@ -603,31 +716,31 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               animation: creatorRareCrossPulse 1.9s steps(3, end) infinite;
             }
 
-            /* EPIC — violeta arcano, runas, névoa irregular e espiral quebrada */
+            /* EPIC — esmeralda arcana, runas, jade e névoa dimensional */
             .creator-card-epic .creator-effect-texture {
-              opacity: 0.5;
+              opacity: 0.52;
               background:
-                radial-gradient(circle at 20% 76%, rgba(88,28,135,0.3), transparent 26%),
-                radial-gradient(circle at 78% 24%, rgba(124,58,237,0.24), transparent 24%),
-                radial-gradient(circle at 54% 58%, rgba(236,72,153,0.14), transparent 28%);
+                radial-gradient(circle at 20% 76%, rgba(6,95,70,0.34), transparent 26%),
+                radial-gradient(circle at 78% 24%, rgba(16,185,129,0.24), transparent 24%),
+                radial-gradient(circle at 54% 58%, rgba(52,211,153,0.16), transparent 28%);
               filter: blur(8px);
               animation: creatorEpicMist 8.5s ease-in-out infinite;
             }
 
             .creator-card-epic .creator-effect-aura {
-              opacity: 0.54;
+              opacity: 0.56;
               background:
-                conic-gradient(from 40deg at 48% 54%, transparent 0 14%, rgba(167,139,250,0.28) 18%, transparent 25%, transparent 42%, rgba(236,72,153,0.18) 48%, transparent 57%, transparent 76%, rgba(124,58,237,0.22) 82%, transparent 90%),
-                radial-gradient(ellipse at 50% 56%, transparent 0 44%, rgba(196,181,253,0.16) 46%, transparent 51%);
+                conic-gradient(from 40deg at 48% 54%, transparent 0 14%, rgba(110,231,183,0.3) 18%, transparent 25%, transparent 42%, rgba(20,184,166,0.18) 48%, transparent 57%, transparent 76%, rgba(5,150,105,0.24) 82%, transparent 90%),
+                radial-gradient(ellipse at 50% 56%, transparent 0 44%, rgba(167,243,208,0.17) 46%, transparent 51%);
               transform: rotate(-18deg) scale(1.15);
               animation: creatorEpicIrregularSpiral 7.8s cubic-bezier(0.43, 0, 0.2, 1) infinite;
             }
 
             .creator-card-epic .creator-effect-special {
-              opacity: 0.42;
+              opacity: 0.44;
               background-image:
-                radial-gradient(circle, rgba(233,213,255,0.5) 0 1px, transparent 1.8px),
-                linear-gradient(135deg, transparent 0 44%, rgba(167,139,250,0.16) 45%, transparent 48%);
+                radial-gradient(circle, rgba(209,250,229,0.52) 0 1px, transparent 1.8px),
+                linear-gradient(135deg, transparent 0 44%, rgba(52,211,153,0.18) 45%, transparent 48%);
               background-size: 42px 42px, 100% 100%;
               animation: creatorEpicStarDrift 11s ease-in-out infinite;
             }
@@ -892,6 +1005,21 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               }
             }
 
+            @keyframes creatorCardHolographicDrift {
+              0%, 100% {
+                transform: translate3d(-10%, -7%, 0) rotate(-4deg) scale(1.18);
+                opacity: 0.12;
+              }
+              45% {
+                transform: translate3d(8%, 5%, 0) rotate(4deg) scale(1.22);
+                opacity: calc(0.16 + (0.12 * var(--rarity-intensity)));
+              }
+              72% {
+                transform: translate3d(2%, -4%, 0) rotate(1deg) scale(1.2);
+                opacity: 0.18;
+              }
+            }
+
             @keyframes creatorCardHoverShine {
               0%, 40% {
                 transform: translateX(-120%);
@@ -905,6 +1033,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               .creator-effect-texture,
               .creator-effect-aura,
               .creator-effect-special,
+              .creator-card-holographic,
               .creator-particle,
               .creator-effect-shine {
                 animation: none !important;
