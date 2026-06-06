@@ -279,7 +279,7 @@ async function getKickClips(username: string): Promise<CreatorClip[]> {
             new Date(b.createdAt || 0).getTime() -
             new Date(a.createdAt || 0).getTime()
         )
-        .slice(0, 3);
+        .slice(0, 4);
     }
   }
 
@@ -374,7 +374,7 @@ async function getYoutubeShorts(channelInput: string): Promise<CreatorClip[]> {
         new Date(b.snippet?.publishedAt || 0).getTime() -
         new Date(a.snippet?.publishedAt || 0).getTime()
     )
-    .slice(0, 3)
+    .slice(0, 4)
     .map((video) => ({
       id: `youtube-${video.id}`,
       platform: "youtube" as const,
