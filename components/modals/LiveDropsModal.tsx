@@ -44,6 +44,15 @@ type DropEntryRecord = {
   entered_at: string;
 };
 
+type DropClaimRecord = {
+  id: string;
+  drop_id: string;
+  user_id: string;
+  platform: string;
+  platform_username: string | null;
+  claimed_at: string;
+};
+
 type DropRecord = {
   id: string;
   creator_id: string;
@@ -59,6 +68,7 @@ type DropRecord = {
   is_active: boolean;
   created_at: string;
   entries?: DropEntryRecord[];
+  claims?: DropClaimRecord[];
 };
 
 const DROP_PERCENTAGE = 15;
@@ -81,8 +91,35 @@ function formatDateTime(value: string) {
   }
 }
 
-function isDropCurrentlyActive(drop: DropRecord) {
-  return drop.is_active && new Date(drop.ends_at).getTime() > Date.now();
+function isDropCurrentlyActive(drop: DropRecord, nowTime = Date.now()) {
+  return drop.is_active && new Date(drop.ends_at).getTime() > nowTime;
+}
+
+function getRemainingSeconds(drop: DropRecord, nowTime = Date.now()) {
+  const remainingMs = new Date(drop.ends_at).getTime() - nowTime;
+
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return 0;
+
+  return Math.ceil(remainingMs / 1000);
+}
+
+function formatRemainingTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0",
+    )}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0",
+  )}`;
 }
 
 type TranslationFn = ReturnType<typeof useLanguage>["t"];
@@ -116,11 +153,52 @@ function getVisibleEntries(entries?: DropEntryRecord[]) {
   return (entries || []).slice(-14);
 }
 
+function normalizeDropEntry(value: unknown): DropEntryRecord | null {
+  if (!value || typeof value !== "object") return null;
+
+  const entry = value as Partial<DropEntryRecord>;
+
+  if (!entry.id || !entry.drop_id || !entry.user_id) return null;
+
+  return {
+    id: String(entry.id),
+    drop_id: String(entry.drop_id),
+    user_id: String(entry.user_id),
+    platform: String(entry.platform || "kick"),
+    platform_username: entry.platform_username
+      ? String(entry.platform_username)
+      : null,
+    entered_at: entry.entered_at
+      ? String(entry.entered_at)
+      : new Date().toISOString(),
+  };
+}
+
+function normalizeDropClaim(value: unknown): DropClaimRecord | null {
+  if (!value || typeof value !== "object") return null;
+
+  const claim = value as Partial<DropClaimRecord>;
+
+  if (!claim.id || !claim.drop_id || !claim.user_id) return null;
+
+  return {
+    id: String(claim.id),
+    drop_id: String(claim.drop_id),
+    user_id: String(claim.user_id),
+    platform: String(claim.platform || "kick"),
+    platform_username: claim.platform_username
+      ? String(claim.platform_username)
+      : null,
+    claimed_at: claim.claimed_at
+      ? String(claim.claimed_at)
+      : new Date().toISOString(),
+  };
+}
+
 export function LiveDropsModal({
   open,
   onClose,
   creatorId,
-  creatorName,
   platform,
   isLive,
   viewerCount,
@@ -134,28 +212,52 @@ export function LiveDropsModal({
   const [endingDropId, setEndingDropId] = useState<string | null>(null);
   const [simulatingDropId, setSimulatingDropId] = useState<string | null>(null);
   const [drops, setDrops] = useState<DropRecord[]>([]);
+  const [selectedWinnersDrop, setSelectedWinnersDrop] =
+    useState<DropRecord | null>(null);
+  const [nowTime, setNowTime] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const normalizedViewerCount = Math.max(0, Math.floor(Number(viewerCount) || 0));
+  const normalizedViewerCount = Math.max(
+    0,
+    Math.floor(Number(viewerCount) || 0),
+  );
+
   const maxClaims = useMemo(() => {
     if (!isLive || normalizedViewerCount <= 0) return 0;
-    return Math.max(1, Math.floor(normalizedViewerCount * (DROP_PERCENTAGE / 100)));
+    return Math.max(
+      1,
+      Math.floor(normalizedViewerCount * (DROP_PERCENTAGE / 100)),
+    );
   }, [isLive, normalizedViewerCount]);
 
   const safeDurationMinutes = useMemo(() => {
     return Math.max(1, Math.floor(Number(durationMinutes) || 1));
   }, [durationMinutes]);
 
-  const activeDrops = useMemo(() => drops.filter(isDropCurrentlyActive), [drops]);
-  const historyDrops = useMemo(() => drops.filter((drop) => !isDropCurrentlyActive(drop)), [drops]);
+  const activeDrops = useMemo(
+    () => drops.filter((drop) => isDropCurrentlyActive(drop, nowTime)),
+    [drops, nowTime],
+  );
+
+  const historyDrops = useMemo(
+    () => drops.filter((drop) => !isDropCurrentlyActive(drop, nowTime)),
+    [drops, nowTime],
+  );
+
   const featuredActiveDrop = activeDrops[0];
+
   const visibleFeaturedEntries = useMemo(
     () => getVisibleEntries(featuredActiveDrop?.entries),
     [featuredActiveDrop?.entries],
   );
 
-  const canActivate = isLive && normalizedViewerCount > 0 && maxClaims > 0 && safeDurationMinutes >= 1 && !saving;
+  const canActivate =
+    isLive &&
+    normalizedViewerCount > 0 &&
+    maxClaims > 0 &&
+    safeDurationMinutes >= 1 &&
+    !saving;
 
   const getSessionAccessToken = useCallback(async () => {
     const {
@@ -213,16 +315,201 @@ export function LiveDropsModal({
   useEffect(() => {
     if (!open) return;
 
+    setNowTime(Date.now());
     void loadDrops();
 
-    const interval = window.setInterval(() => {
+    const timeInterval = window.setInterval(() => {
+      setNowTime(Date.now());
+    }, 1000);
+
+    const dropsInterval = window.setInterval(() => {
       void loadDrops();
     }, 3000);
 
     return () => {
-      window.clearInterval(interval);
+      window.clearInterval(timeInterval);
+      window.clearInterval(dropsInterval);
     };
   }, [loadDrops, open]);
+
+  useEffect(() => {
+    if (!selectedWinnersDrop) return;
+
+    const updatedDrop = drops.find((drop) => drop.id === selectedWinnersDrop.id);
+
+    if (updatedDrop) {
+      setSelectedWinnersDrop(updatedDrop);
+    }
+  }, [drops, selectedWinnersDrop]);
+
+  const handleRealtimeEntryInsert = useCallback((entry: DropEntryRecord) => {
+    setDrops((currentDrops) =>
+      currentDrops.map((drop) => {
+        if (drop.id !== entry.drop_id) return drop;
+
+        const currentEntries = drop.entries || [];
+        const alreadyExists = currentEntries.some(
+          (item) => item.id === entry.id,
+        );
+
+        if (alreadyExists) {
+          return {
+            ...drop,
+            entries: currentEntries.map((item) =>
+              item.id === entry.id ? entry : item,
+            ),
+          };
+        }
+
+        return {
+          ...drop,
+          entries: [...currentEntries, entry].sort(
+            (firstEntry, secondEntry) =>
+              new Date(firstEntry.entered_at).getTime() -
+              new Date(secondEntry.entered_at).getTime(),
+          ),
+        };
+      }),
+    );
+  }, []);
+
+  const handleRealtimeEntryDelete = useCallback((entry: DropEntryRecord) => {
+    setDrops((currentDrops) =>
+      currentDrops.map((drop) => {
+        if (drop.id !== entry.drop_id) return drop;
+
+        return {
+          ...drop,
+          entries: (drop.entries || []).filter((item) => item.id !== entry.id),
+        };
+      }),
+    );
+  }, []);
+
+  const handleRealtimeClaimInsert = useCallback((claim: DropClaimRecord) => {
+    setDrops((currentDrops) =>
+      currentDrops.map((drop) => {
+        if (drop.id !== claim.drop_id) return drop;
+
+        const currentClaims = drop.claims || [];
+        const alreadyExists = currentClaims.some((item) => item.id === claim.id);
+
+        if (alreadyExists) {
+          return {
+            ...drop,
+            claims: currentClaims.map((item) =>
+              item.id === claim.id ? claim : item,
+            ),
+          };
+        }
+
+        return {
+          ...drop,
+          current_claims: Math.max(
+            Number(drop.current_claims || 0),
+            currentClaims.length + 1,
+          ),
+          claims: [...currentClaims, claim].sort(
+            (firstClaim, secondClaim) =>
+              new Date(firstClaim.claimed_at).getTime() -
+              new Date(secondClaim.claimed_at).getTime(),
+          ),
+        };
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!open || !featuredActiveDrop?.id) return;
+
+    const channel = supabase
+      .channel(`live-drop-realtime-${featuredActiveDrop.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "drop_entries",
+          filter: `drop_id=eq.${featuredActiveDrop.id}`,
+        },
+        (payload) => {
+          const entry = normalizeDropEntry(payload.new);
+          if (!entry) return;
+          handleRealtimeEntryInsert(entry);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "drop_entries",
+          filter: `drop_id=eq.${featuredActiveDrop.id}`,
+        },
+        (payload) => {
+          const entry = normalizeDropEntry(payload.new);
+          if (!entry) return;
+          handleRealtimeEntryInsert(entry);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "drop_entries",
+          filter: `drop_id=eq.${featuredActiveDrop.id}`,
+        },
+        (payload) => {
+          const entry = normalizeDropEntry(payload.old);
+          if (!entry) return;
+          handleRealtimeEntryDelete(entry);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "drop_claims",
+          filter: `drop_id=eq.${featuredActiveDrop.id}`,
+        },
+        (payload) => {
+          const claim = normalizeDropClaim(payload.new);
+          if (!claim) return;
+          handleRealtimeClaimInsert(claim);
+          void loadDrops();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "creator_drops",
+          filter: `id=eq.${featuredActiveDrop.id}`,
+        },
+        () => {
+          void loadDrops();
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void loadDrops();
+        }
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [
+    featuredActiveDrop?.id,
+    handleRealtimeClaimInsert,
+    handleRealtimeEntryDelete,
+    handleRealtimeEntryInsert,
+    loadDrops,
+    open,
+  ]);
 
   async function handleActivateDrop() {
     if (!canActivate) return;
@@ -256,29 +543,13 @@ export function LiveDropsModal({
 
         if (payload?.error === "drop_cooldown_active") {
           const nextAvailableAt = payload?.nextAvailableAt
-            ? new Date(payload.nextAvailableAt)
-            : null;
-
-          const formattedNextAvailableAt =
-            nextAvailableAt && !Number.isNaN(nextAvailableAt.getTime())
-              ? nextAvailableAt.toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : null;
+            ? formatDateTime(String(payload.nextAvailableAt))
+            : "";
 
           throw new Error(
-            formattedNextAvailableAt
-              ? `${translate(
-                  t,
-                  "liveDropsCooldownActive",
-                  "Você já criou um drop recentemente. Próximo drop liberado às",
-                )} ${formattedNextAvailableAt}.`
-              : translate(
-                  t,
-                  "liveDropsCooldownActiveFallback",
-                  "Você já criou um drop recentemente. Tente novamente mais tarde.",
-                ),
+            nextAvailableAt
+              ? `drop_cooldown_active:${nextAvailableAt}`
+              : "drop_cooldown_active",
           );
         }
 
@@ -289,22 +560,41 @@ export function LiveDropsModal({
         translate(
           t,
           "liveDropsCreatedDescription",
-          "Drop ativado com sucesso. Agora a próxima etapa é conectar a leitura do chat da Kick.",
+          "Drop ativado com sucesso. Os participantes entram pelo chat da Kick.",
         ),
       );
       await loadDrops();
     } catch (dropError) {
       console.error("Erro ao criar drop:", dropError);
-      const message =
-        dropError instanceof Error && dropError.message
-          ? dropError.message
-          : translate(
-              t,
-              "liveDropsCreateError",
-              "Não foi possível ativar o drop agora.",
-            );
 
-      setError(message);
+      if (
+        dropError instanceof Error &&
+        dropError.message.startsWith("drop_cooldown_active")
+      ) {
+        const nextAvailableAt = dropError.message.split(":").slice(1).join(":");
+
+        setError(
+          nextAvailableAt
+            ? `${translate(
+                t,
+                "liveDropsCooldownError",
+                "Você já criou um drop recentemente. Próximo drop liberado às",
+              )} ${nextAvailableAt}.`
+            : translate(
+                t,
+                "liveDropsCooldownGenericError",
+                "Você já criou um drop recentemente. Aguarde para criar outro.",
+              ),
+        );
+      } else {
+        setError(
+          translate(
+            t,
+            "liveDropsCreateError",
+            "Não foi possível ativar o drop agora.",
+          ),
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -335,7 +625,9 @@ export function LiveDropsModal({
         throw new Error(payload?.error || "drop_end_failed");
       }
 
-      setSuccessMessage(translate(t, "liveDropsEnded", "Drop encerrado com sucesso."));
+      setSuccessMessage(
+        translate(t, "liveDropsEnded", "Drop encerrado com sucesso."),
+      );
       await loadDrops();
     } catch (endError) {
       console.error("Erro ao encerrar drop:", endError);
@@ -381,11 +673,22 @@ export function LiveDropsModal({
         throw new Error(payload?.error || "drop_simulate_failed");
       }
 
-      const username = String(payload?.winnerUsername || payload?.winnerEmail || "").trim();
+      const username = String(
+        payload?.winnerUsername || payload?.winnerEmail || "",
+      ).trim();
+
       setSuccessMessage(
         username
-          ? `${translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso:")} ${username}`
-          : translate(t, "liveDropsSimulatedWinner", "Vencedor simulado com sucesso."),
+          ? `${translate(
+              t,
+              "liveDropsSimulatedWinner",
+              "Vencedor simulado com sucesso:",
+            )} ${username}`
+          : translate(
+              t,
+              "liveDropsSimulatedWinner",
+              "Vencedor simulado com sucesso.",
+            ),
       );
 
       await loadDrops();
@@ -393,7 +696,8 @@ export function LiveDropsModal({
       console.error("Erro ao simular vencedor:", simulateError);
 
       const message =
-        simulateError instanceof Error && simulateError.message === "no_eligible_user"
+        simulateError instanceof Error &&
+        simulateError.message === "no_eligible_user"
           ? translate(
               t,
               "liveDropsNoEligibleWinner",
@@ -444,10 +748,20 @@ export function LiveDropsModal({
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-white/45">
-                  <Radio className={isLive ? "h-4 w-4 text-red-200" : "h-4 w-4 text-white/35"} />
+                  <Radio
+                    className={
+                      isLive ? "h-4 w-4 text-red-200" : "h-4 w-4 text-white/35"
+                    }
+                  />
                   {translate(t, "liveDropsLiveStatus", "Status")}
                 </div>
-                <p className={isLive ? "mt-3 text-lg font-black text-emerald-100" : "mt-3 text-lg font-black text-white/45"}>
+                <p
+                  className={
+                    isLive
+                      ? "mt-3 text-lg font-black text-emerald-100"
+                      : "mt-3 text-lg font-black text-white/45"
+                  }
+                >
                   {isLive
                     ? translate(t, "liveDropsOnline", "Ao vivo")
                     : translate(t, "liveDropsOffline", "Offline")}
@@ -469,12 +783,14 @@ export function LiveDropsModal({
                   <Percent className="h-4 w-4 text-amber-100" />
                   {translate(t, "liveDropsPercentage", "Porcentagem")}
                 </div>
-                <p className="mt-3 text-lg font-black text-amber-50">{DROP_PERCENTAGE}%</p>
+                <p className="mt-3 text-lg font-black text-amber-50">
+                  {DROP_PERCENTAGE}%
+                </p>
               </div>
             </div>
 
             <div className="mt-5 rounded-[24px] border border-emerald-300/20 bg-emerald-300/10 p-5">
-              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)_150px] md:items-stretch">
+              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)] md:items-stretch">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-100/65">
                     {translate(t, "liveDropsAvailable", "Drops disponíveis")}
@@ -484,34 +800,50 @@ export function LiveDropsModal({
                   </p>
 
                   {liveTitle ? (
-                    <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">{liveTitle}</p>
+                    <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">
+                      {liveTitle}
+                    </p>
+                  ) : null}
+
+                  {featuredActiveDrop ? (
+                    <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-100/60">
+                      {translate(t, "liveDropsTimeRemaining", "Tempo restante")}:{" "}
+                      {formatRemainingTime(
+                        getRemainingSeconds(featuredActiveDrop, nowTime),
+                      )}
+                    </p>
                   ) : null}
                 </div>
 
-                <div className="min-h-[86px] min-w-0 border-white/10 md:border-l md:pl-5">
-                  {visibleFeaturedEntries.length > 0 ? (
-                    <div className="flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
-                      {visibleFeaturedEntries.map((entry) => (
-                        <span
-                          key={entry.id}
-                          className="inline-flex max-w-[190px] items-center gap-1.5 truncate rounded-full border border-cyan-300/20 bg-black/25 px-2.5 py-1.5 text-[11px] font-black text-cyan-50/90 shadow-[0_0_18px_rgba(34,211,238,0.06)]"
-                          title={`${getPlatformLabel(entry.platform)} · ${entry.platform_username || "—"}`}
-                        >
-                          <span className="shrink-0 text-cyan-100/55">
-                            {getPlatformLabel(entry.platform)}
+                <div className="min-w-0 border-white/10 md:border-l md:pl-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                    {translate(t, "liveDropsParticipants", "Participantes")}
+                  </p>
+
+                  <div className="mt-3 h-[76px] overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3">
+                    {visibleFeaturedEntries.length > 0 ? (
+                      <div className="flex max-h-full flex-wrap content-start gap-2 overflow-hidden">
+                        {visibleFeaturedEntries.map((entry) => (
+                          <span
+                            key={entry.id}
+                            className="max-w-[160px] truncate rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-cyan-50"
+                          >
+                            {getPlatformLabel(entry.platform)} ·{" "}
+                            {entry.platform_username ||
+                              translate(t, "liveDropsUnknownUser", "Usuário")}
                           </span>
-                          <span className="shrink-0 text-white/25">·</span>
-                          <span className="truncate text-white/85">
-                            {entry.platform_username || "—"}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex h-full min-h-[70px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
-                      {DEFAULT_KEYWORD}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex h-full items-center text-sm font-bold text-white/45">
+                        {translate(
+                          t,
+                          "liveDropsWaitingParticipants",
+                          "Aguardando participantes no chat.",
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -550,7 +882,13 @@ export function LiveDropsModal({
                     disabled={loadingDrops}
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/50 transition hover:bg-white/[0.06] disabled:opacity-50"
                   >
-                    <RefreshCw className={loadingDrops ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+                    <RefreshCw
+                      className={
+                        loadingDrops
+                          ? "h-3.5 w-3.5 animate-spin"
+                          : "h-3.5 w-3.5"
+                      }
+                    />
                     {translate(t, "liveDropsRefresh", "Atualizar")}
                   </button>
                 </div>
@@ -576,7 +914,13 @@ export function LiveDropsModal({
                               {drop.keyword}
                             </p>
                             <p className="mt-2 text-sm font-bold text-emerald-50/80">
-                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
+                              {formatNumber(drop.current_claims)} /{" "}
+                              {formatNumber(drop.max_claims)}{" "}
+                              {translate(
+                                t,
+                                "liveDropsClaimsLabel",
+                                "resgatados",
+                              )}
                             </p>
                           </div>
 
@@ -587,14 +931,22 @@ export function LiveDropsModal({
 
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
                           <span>
-                            {translate(t, "liveDropsEndsAt", "Termina")}: {formatDateTime(drop.ends_at)}
+                            {translate(
+                              t,
+                              "liveDropsTimeRemaining",
+                              "Tempo restante",
+                            )}
+                            : {formatRemainingTime(getRemainingSeconds(drop, nowTime))}
                           </span>
 
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => void handleSimulateWinner(drop.id)}
-                              disabled={simulatingDropId === drop.id || endingDropId === drop.id}
+                              disabled={
+                                simulatingDropId === drop.id ||
+                                endingDropId === drop.id
+                              }
                               className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-300/15 disabled:opacity-50"
                             >
                               {simulatingDropId === drop.id ? (
@@ -603,14 +955,25 @@ export function LiveDropsModal({
                                 <Gift className="h-3.5 w-3.5" />
                               )}
                               {simulatingDropId === drop.id
-                                ? translate(t, "liveDropsSimulatingWinner", "Sorteando...")
-                                : translate(t, "liveDropsSimulateWinner", "Simular vencedor")}
+                                ? translate(
+                                    t,
+                                    "liveDropsSimulatingWinner",
+                                    "Sorteando...",
+                                  )
+                                : translate(
+                                    t,
+                                    "liveDropsSimulateWinner",
+                                    "Simular vencedor",
+                                  )}
                             </button>
 
                             <button
                               type="button"
                               onClick={() => void handleEndDrop(drop.id)}
-                              disabled={endingDropId === drop.id || simulatingDropId === drop.id}
+                              disabled={
+                                endingDropId === drop.id ||
+                                simulatingDropId === drop.id
+                              }
                               className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-500/15 disabled:opacity-50"
                             >
                               {endingDropId === drop.id ? (
@@ -626,7 +989,11 @@ export function LiveDropsModal({
                     ))
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
-                      {translate(t, "liveDropsNoActive", "Nenhum drop ativo para este criador.")}
+                      {translate(
+                        t,
+                        "liveDropsNoActive",
+                        "Nenhum drop ativo para este criador.",
+                      )}
                     </div>
                   )}
                 </div>
@@ -651,22 +1018,51 @@ export function LiveDropsModal({
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
                             <p className="mt-2 text-sm font-bold text-white/65">
-                              {formatNumber(drop.current_claims)} / {formatNumber(drop.max_claims)} {translate(t, "liveDropsClaimsLabel", "resgatados")}
+                              {formatNumber(drop.current_claims)} /{" "}
+                              {formatNumber(drop.max_claims)}{" "}
+                              {translate(
+                                t,
+                                "liveDropsClaimsLabel",
+                                "resgatados",
+                              )}
                             </p>
                             <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
-                              {translate(t, "liveDropsCreatedAt", "Criado")}: {formatDateTime(drop.created_at)}
+                              {translate(t, "liveDropsCreatedAt", "Criado")}:{" "}
+                              {formatDateTime(drop.created_at)}
                             </p>
                           </div>
 
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-white/45">
-                            {translate(t, "liveDropsClosedStatus", "Encerrado")}
-                          </span>
+                          <div className="flex shrink-0 flex-col items-end gap-2">
+                            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-100/70">
+                              {translate(
+                                t,
+                                "liveDropsCompletedStatus",
+                                "Concluído",
+                              )}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWinnersDrop(drop)}
+                              className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/15"
+                            >
+                              {translate(
+                                t,
+                                "liveDropsViewWinners",
+                                "Ver vencedores",
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </article>
                     ))
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
-                      {translate(t, "liveDropsNoHistory", "Nenhum drop encerrado ainda.")}
+                      {translate(
+                        t,
+                        "liveDropsNoHistory",
+                        "Nenhum drop encerrado ainda.",
+                      )}
                     </div>
                   )}
                 </div>
@@ -693,7 +1089,11 @@ export function LiveDropsModal({
                 >
                   <Package className="h-5 w-5 shrink-0" />
                   <span className="font-black">
-                    {translate(t, "liveDropsRewardRandomPack", "Pack Aleatório")}
+                    {translate(
+                      t,
+                      "liveDropsRewardRandomPack",
+                      "Pack Aleatório",
+                    )}
                   </span>
                 </button>
 
@@ -736,7 +1136,7 @@ export function LiveDropsModal({
 
                       setDurationMinutes(nextValue);
                     }}
-                    className="h-12 w-28 rounded-2xl border border-amber-300/20 bg-black/30 px-4 text-center text-lg font-black text-amber-50 outline-none transition placeholder:text-white/25 focus:border-amber-200/45 focus:bg-amber-300/10"
+                    className="h-12 w-28 appearance-none rounded-2xl border border-amber-300/20 bg-black/30 px-4 text-center text-lg font-black text-amber-50 outline-none transition placeholder:text-white/25 focus:border-amber-200/45 focus:bg-amber-300/10 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
 
                   <span className="text-sm font-black uppercase tracking-[0.18em] text-white/60">
@@ -781,7 +1181,13 @@ export function LiveDropsModal({
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">
                     {translate(t, "liveDropsLiveStatus", "Status")}
                   </p>
-                  <p className={isLive ? "mt-2 font-black text-emerald-100" : "mt-2 font-black text-white/45"}>
+                  <p
+                    className={
+                      isLive
+                        ? "mt-2 font-black text-emerald-100"
+                        : "mt-2 font-black text-white/45"
+                    }
+                  >
                     {isLive
                       ? translate(t, "liveDropsOnline", "Ao vivo")
                       : translate(t, "liveDropsOffline", "Offline")}
@@ -811,7 +1217,8 @@ export function LiveDropsModal({
                     {translate(t, "liveDropsDuration", "Duração")}
                   </p>
                   <p className="mt-2 font-black text-white/85">
-                    {getDurationLabel(t, safeDurationMinutes)} · {DEFAULT_KEYWORD}
+                    {getDurationLabel(t, safeDurationMinutes)} ·{" "}
+                    {DEFAULT_KEYWORD}
                   </p>
                 </div>
               </div>
@@ -837,7 +1244,11 @@ export function LiveDropsModal({
               disabled={!canActivate}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-200/30 bg-amber-300/15 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-amber-50 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Gift className="h-4 w-4" />
+              )}
               {saving
                 ? translate(t, "liveDropsActivating", "Ativando...")
                 : translate(t, "liveDropsActivate", "Ativar drop")}
@@ -845,6 +1256,76 @@ export function LiveDropsModal({
           </aside>
         </div>
       </div>
+
+      {selectedWinnersDrop ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-cyan-300/20 bg-[#07111c] p-5 shadow-[0_0_60px_rgba(34,211,238,0.16)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.14),transparent_38%)]" />
+
+            <div className="relative z-10">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-100/55">
+                    {translate(t, "liveDropsWinnersEyebrow", "Resultado")}
+                  </p>
+                  <h3 className="mt-2 text-xl font-black text-white">
+                    {translate(
+                      t,
+                      "liveDropsWinnersTitle",
+                      "Vencedores do Drop",
+                    )}
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedWinnersDrop(null)}
+                  className="rounded-full border border-white/10 bg-black/25 p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+                  aria-label={translate(
+                    t,
+                    "liveDropsCloseWinners",
+                    "Fechar vencedores",
+                  )}
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-5 max-h-[320px] space-y-2 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(selectedWinnersDrop.claims || []).length > 0 ? (
+                  (selectedWinnersDrop.claims || []).map((claim) => (
+                    <div
+                      key={claim.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-emerald-50">
+                          {getPlatformLabel(claim.platform)} ·{" "}
+                          {claim.platform_username ||
+                            translate(t, "liveDropsUnknownUser", "Usuário")}
+                        </p>
+                        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-100/45">
+                          {formatDateTime(claim.claimed_at)}
+                        </p>
+                      </div>
+
+                      <Gift className="h-4 w-4 shrink-0 text-emerald-100/70" />
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/50">
+                    {translate(
+                      t,
+                      "liveDropsNoWinners",
+                      "Nenhum vencedor neste drop.",
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </CardpocModalShell>
   );
 }

@@ -36,6 +36,15 @@ type DropEntryRecord = {
   entered_at: string;
 };
 
+type DropClaimRecord = {
+  id: string;
+  drop_id: string;
+  user_id: string;
+  platform: string;
+  platform_username: string | null;
+  claimed_at: string;
+};
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -72,6 +81,24 @@ function createSupabaseAdminClient() {
   );
 }
 
+function groupEntriesByDropId(entries: DropEntryRecord[]) {
+  return entries.reduce((map, entry) => {
+    const current = map.get(entry.drop_id) || [];
+    current.push(entry);
+    map.set(entry.drop_id, current);
+    return map;
+  }, new Map<string, DropEntryRecord[]>());
+}
+
+function groupClaimsByDropId(claims: DropClaimRecord[]) {
+  return claims.reduce((map, claim) => {
+    const current = map.get(claim.drop_id) || [];
+    current.push(claim);
+    map.set(claim.drop_id, current);
+    return map;
+  }, new Map<string, DropClaimRecord[]>());
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as ListDropsBody;
@@ -96,7 +123,10 @@ export async function POST(request: NextRequest) {
     } = await supabaseAuth.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json({ error: "invalid_supabase_session" }, { status: 401 });
+      return NextResponse.json(
+        { error: "invalid_supabase_session" },
+        { status: 401 },
+      );
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
@@ -129,17 +159,21 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("creator_id", creatorId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(3);
 
     if (dropsError) {
       console.error("Drops list lookup error:", dropsError);
-      return NextResponse.json({ error: "drops_lookup_failed" }, { status: 500 });
+      return NextResponse.json(
+        { error: "drops_lookup_failed" },
+        { status: 500 },
+      );
     }
 
     const typedDrops = (drops || []) as DropRecord[];
     const dropIds = typedDrops.map((drop) => drop.id).filter(Boolean);
 
     let entriesByDropId = new Map<string, DropEntryRecord[]>();
+    let claimsByDropId = new Map<string, DropClaimRecord[]>();
 
     if (dropIds.length > 0) {
       const { data: entries, error: entriesError } = await supabaseAdmin
@@ -150,31 +184,42 @@ export async function POST(request: NextRequest) {
 
       if (entriesError) {
         console.error("Drops entries lookup error:", entriesError);
+
         return NextResponse.json(
           { error: "drop_entries_lookup_failed" },
           { status: 500 },
         );
       }
 
-      entriesByDropId = ((entries || []) as DropEntryRecord[]).reduce(
-        (map, entry) => {
-          const current = map.get(entry.drop_id) || [];
-          current.push(entry);
-          map.set(entry.drop_id, current);
-          return map;
-        },
-        new Map<string, DropEntryRecord[]>(),
-      );
+      const { data: claims, error: claimsError } = await supabaseAdmin
+        .from("drop_claims")
+        .select("id,drop_id,user_id,platform,platform_username,claimed_at")
+        .in("drop_id", dropIds)
+        .order("claimed_at", { ascending: true });
+
+      if (claimsError) {
+        console.error("Drops claims lookup error:", claimsError);
+
+        return NextResponse.json(
+          { error: "drop_claims_lookup_failed" },
+          { status: 500 },
+        );
+      }
+
+      entriesByDropId = groupEntriesByDropId((entries || []) as DropEntryRecord[]);
+      claimsByDropId = groupClaimsByDropId((claims || []) as DropClaimRecord[]);
     }
 
-    const dropsWithEntries = typedDrops.map((drop) => ({
+    const dropsWithRelations = typedDrops.map((drop) => ({
       ...drop,
       entries: entriesByDropId.get(drop.id) || [],
+      claims: claimsByDropId.get(drop.id) || [],
     }));
 
-    return NextResponse.json({ drops: dropsWithEntries });
+    return NextResponse.json({ drops: dropsWithRelations });
   } catch (error) {
     console.error("Drops list route error:", error);
+
     return NextResponse.json({ error: "drops_list_failed" }, { status: 500 });
   }
 }
