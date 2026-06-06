@@ -689,6 +689,7 @@ function LinkedAccountsModal({
       },
       body: JSON.stringify({
         accessToken: session.access_token,
+        returnTo: `${window.location.pathname}${window.location.search}`,
       }),
     });
 
@@ -701,6 +702,7 @@ function LinkedAccountsModal({
       return;
     }
 
+    window.sessionStorage.setItem("cardpoc-kick-linking", "1");
     window.location.href = payload.url;
   }
 

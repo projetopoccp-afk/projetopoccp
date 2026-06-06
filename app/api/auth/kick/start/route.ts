@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 type StartKickOAuthBody = {
   accessToken?: string;
+  returnTo?: string;
 };
 
 function base64Url(buffer: Buffer) {
@@ -40,6 +41,18 @@ function getKickRedirectUri(request: NextRequest) {
   );
 }
 
+
+function getSafeReturnTo(value: unknown) {
+  if (typeof value !== "string") return "/";
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue || !trimmedValue.startsWith("/")) return "/";
+  if (trimmedValue.startsWith("//")) return "/";
+
+  return trimmedValue;
+}
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -67,6 +80,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as StartKickOAuthBody;
     const accessToken = body.accessToken;
+    const returnTo = getSafeReturnTo(body.returnTo);
 
     if (!accessToken) {
       return NextResponse.json(
@@ -124,6 +138,7 @@ export async function POST(request: NextRequest) {
       cookieOptions
     );
     response.cookies.set("cardpoc_kick_oauth_user_id", user.id, cookieOptions);
+    response.cookies.set("cardpoc_kick_oauth_return_to", returnTo, cookieOptions);
 
     return response;
   } catch (error) {

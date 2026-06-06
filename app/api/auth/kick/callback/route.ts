@@ -88,10 +88,28 @@ function cleanOAuthCookies(response: NextResponse) {
     path: "/",
     maxAge: 0,
   });
+  response.cookies.set("cardpoc_kick_oauth_return_to", "", {
+    path: "/",
+    maxAge: 0,
+  });
 }
 
-function redirectHome(request: NextRequest, status: "success" | "error", reason?: string) {
-  const url = new URL("/", getSiteUrl(request));
+function getSafeReturnTo(request: NextRequest) {
+  const storedReturnTo = request.cookies.get("cardpoc_kick_oauth_return_to")?.value;
+
+  if (!storedReturnTo) return "/";
+  if (!storedReturnTo.startsWith("/")) return "/";
+  if (storedReturnTo.startsWith("//")) return "/";
+
+  return storedReturnTo;
+}
+
+function redirectBack(
+  request: NextRequest,
+  status: "success" | "error",
+  reason?: string,
+) {
+  const url = new URL(getSafeReturnTo(request), getSiteUrl(request));
   url.searchParams.set("kick_link", status);
 
   if (reason) {
@@ -127,7 +145,7 @@ export async function GET(request: NextRequest) {
     const error = request.nextUrl.searchParams.get("error");
 
     if (error) {
-      return redirectHome(request, "error", error);
+      return redirectBack(request, "error", error);
     }
 
     const storedState = request.cookies.get("cardpoc_kick_oauth_state")?.value;
@@ -137,11 +155,11 @@ export async function GET(request: NextRequest) {
     const userId = request.cookies.get("cardpoc_kick_oauth_user_id")?.value;
 
     if (!code || !returnedState || !storedState || !codeVerifier || !userId) {
-      return redirectHome(request, "error", "missing_oauth_state");
+      return redirectBack(request, "error", "missing_oauth_state");
     }
 
     if (returnedState !== storedState) {
-      return redirectHome(request, "error", "invalid_oauth_state");
+      return redirectBack(request, "error", "invalid_oauth_state");
     }
 
     const tokenResponse = await fetch("https://id.kick.com/oauth/token", {
@@ -164,7 +182,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok || !tokenPayload.access_token) {
       console.error("Kick token error:", tokenPayload);
-      return redirectHome(request, "error", "kick_token_exchange_failed");
+      return redirectBack(request, "error", "kick_token_exchange_failed");
     }
 
     const userResponse = await fetch("https://api.kick.com/public/v1/users", {
@@ -178,7 +196,7 @@ export async function GET(request: NextRequest) {
 
     if (!userResponse.ok) {
       console.error("Kick user fetch error:", userPayload);
-      return redirectHome(request, "error", "kick_user_fetch_failed");
+      return redirectBack(request, "error", "kick_user_fetch_failed");
     }
 
     const kickUser = pickKickUser(userPayload);
@@ -187,7 +205,7 @@ export async function GET(request: NextRequest) {
 
     if (!kickUserId || !kickUsername) {
       console.error("Kick user payload without required identity:", userPayload);
-      return redirectHome(request, "error", "kick_user_identity_missing");
+      return redirectBack(request, "error", "kick_user_identity_missing");
     }
 
     const expiresAt = tokenPayload.expires_in
@@ -196,7 +214,7 @@ export async function GET(request: NextRequest) {
 
     const scopes = tokenPayload.scope
       ? tokenPayload.scope.split(" ").filter(Boolean)
-      : ["user:read"];
+      : ["user:read", "channel:read", "events:subscribe"];
 
     const supabase = createSupabaseServiceClient();
     const { error: upsertError } = await supabase
@@ -221,12 +239,12 @@ export async function GET(request: NextRequest) {
 
     if (upsertError) {
       console.error("Supabase social account upsert error:", upsertError);
-      return redirectHome(request, "error", "database_save_failed");
+      return redirectBack(request, "error", "database_save_failed");
     }
 
-    return redirectHome(request, "success");
+    return redirectBack(request, "success");
   } catch (error) {
     console.error("Kick OAuth callback error:", error);
-    return redirectHome(request, "error", "kick_oauth_callback_failed");
+    return redirectBack(request, "error", "kick_oauth_callback_failed");
   }
 }
