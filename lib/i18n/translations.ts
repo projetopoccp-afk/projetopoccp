@@ -944,6 +944,7 @@ export const translations = {
     liveDropsSimulateError: "Não foi possível simular um vencedor agora.",
     liveDropsNoEligibleWinner:
       "Nenhum usuário elegível encontrado. O usuário precisa ter a Kick vinculada e ainda não ter resgatado este drop.",
+    liveDropsSummaryTitle: "Resumo do Drop",
     creatorProfileEditProfile: "Editar perfil",
     creatorProfileEditingProfile: "Editando perfil",
     creatorProfileEditNickname: "Nome de exibição",
@@ -987,21 +988,8 @@ export const translations = {
     type: "Tipo",
     quantity: "Quantidade",
     recipient: "Destinatário",
-    liveDropsClaimsLabel: {
-      pt: "resgatados",
-      en: "claimed",
-      es: "rescatados",
-    },
-    liveDropsCreatedAt: {
-      pt: "Criado",
-      en: "Created",
-      es: "Creado",
-    },
-    liveDropsSummaryTitle: {
-      pt: "Resumo do Drop",
-      en: "Drop Summary",
-      es: "Resumen del Drop",
-    },
+    liveDropsClaimsLabel: "resgatados",
+    liveDropsCreatedAt: "Criado",
 
     adminSearchRequestPlaceholder:
       "Buscar solicitações por email, nome, username, categoria ou código...",
@@ -2088,6 +2076,9 @@ export const translations = {
     liveDropsSimulateError: "Could not simulate a winner right now.",
     liveDropsNoEligibleWinner:
       "No eligible user found. The user must have Kick linked and must not have claimed this drop yet.",
+    liveDropsCreatedAt: "Created",
+    liveDropsClaimsLabel: "claimed",
+    liveDropsSummaryTitle: "Drop Summary",
     creatorProfileEditProfile: "Edit profile",
     creatorProfileEditingProfile: "Editing profile",
     creatorProfileEditNickname: "Display name",
@@ -3222,6 +3213,9 @@ export const translations = {
     liveDropsSimulateError: "No fue posible simular un ganador ahora.",
     liveDropsNoEligibleWinner:
       "No se encontró ningún usuario elegible. El usuario debe tener Kick vinculado y aún no haber rescatado este drop.",
+    liveDropsCreatedAt: "Creado",
+    liveDropsClaimsLabel: "rescatados",
+    liveDropsSummaryTitle: "Resumen del Drop",
     creatorProfileEditProfile: "Editar perfil",
     creatorProfileEditingProfile: "Editando perfil",
     creatorProfileEditNickname: "Nombre visible",
