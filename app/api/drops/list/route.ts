@@ -9,6 +9,15 @@ type ListDropsBody = {
   creatorId?: string;
 };
 
+type DropEntryRecord = {
+  id: string;
+  drop_id: string;
+  user_id: string;
+  platform: string;
+  platform_username: string | null;
+  entered_at: string;
+};
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -52,7 +61,10 @@ export async function POST(request: NextRequest) {
     const creatorId = String(body.creatorId || "").trim();
 
     if (!accessToken) {
-      return NextResponse.json({ error: "missing_supabase_access_token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "missing_supabase_access_token" },
+        { status: 401 },
+      );
     }
 
     if (!creatorId) {
@@ -96,7 +108,9 @@ export async function POST(request: NextRequest) {
 
     const { data: drops, error: dropsError } = await supabaseAdmin
       .from("creator_drops")
-      .select("id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at")
+      .select(
+        "id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at",
+      )
       .eq("creator_id", creatorId)
       .order("created_at", { ascending: false })
       .limit(3);
@@ -106,7 +120,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "drops_list_failed" }, { status: 500 });
     }
 
-    return NextResponse.json({ drops: drops || [] });
+    const dropIds = (drops || []).map((drop) => drop.id).filter(Boolean);
+    let entriesByDropId: Record<string, DropEntryRecord[]> = {};
+
+    if (dropIds.length > 0) {
+      const { data: entries, error: entriesError } = await supabaseAdmin
+        .from("drop_entries")
+        .select("id,drop_id,user_id,platform,platform_username,entered_at")
+        .in("drop_id", dropIds)
+        .order("entered_at", { ascending: false })
+        .limit(120);
+
+      if (entriesError) {
+        console.error("List drop entries error:", entriesError);
+      } else {
+        entriesByDropId = (entries || []).reduce<Record<string, DropEntryRecord[]>>(
+          (acc, entry) => {
+            const dropEntry: DropEntryRecord = {
+              id: String(entry.id),
+              drop_id: String(entry.drop_id),
+              user_id: String(entry.user_id),
+              platform: String(entry.platform || "kick"),
+              platform_username: entry.platform_username
+                ? String(entry.platform_username)
+                : null,
+              entered_at: String(entry.entered_at),
+            };
+
+            if (!acc[dropEntry.drop_id]) {
+              acc[dropEntry.drop_id] = [];
+            }
+
+            acc[dropEntry.drop_id].push(dropEntry);
+
+            return acc;
+          },
+          {},
+        );
+
+        Object.keys(entriesByDropId).forEach((dropIdKey) => {
+          entriesByDropId[dropIdKey] = entriesByDropId[dropIdKey]
+            .slice(0, 24)
+            .reverse();
+        });
+      }
+    }
+
+    const dropsWithEntries = (drops || []).map((drop) => ({
+      ...drop,
+      entries: entriesByDropId[drop.id] || [],
+    }));
+
+    return NextResponse.json({ drops: dropsWithEntries });
   } catch (error) {
     console.error("List drops route error:", error);
     return NextResponse.json({ error: "drops_list_failed" }, { status: 500 });

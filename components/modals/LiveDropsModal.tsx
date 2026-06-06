@@ -37,6 +37,15 @@ type RewardType = "xp" | "random_pack";
 
 type DurationMinutes = 5 | 10 | 30;
 
+type DropEntryRecord = {
+  id: string;
+  drop_id: string;
+  user_id: string;
+  platform: string;
+  platform_username: string | null;
+  entered_at: string;
+};
+
 type DropRecord = {
   id: string;
   creator_id: string;
@@ -51,6 +60,7 @@ type DropRecord = {
   ends_at: string;
   is_active: boolean;
   created_at: string;
+  entries?: DropEntryRecord[];
 };
 
 const DROP_PERCENTAGE = 15;
@@ -92,6 +102,22 @@ function getDurationLabel(t: TranslationFn, minutes: DurationMinutes) {
   return `${minutes} ${translate(t, "liveDropsMinutes", "min")}`;
 }
 
+function getPlatformLabel(platform: string) {
+  const normalizedPlatform = platform.trim().toLowerCase();
+
+  if (normalizedPlatform === "kick") return "Kick";
+  if (normalizedPlatform === "twitch") return "Twitch";
+  if (normalizedPlatform === "youtube") return "YouTube";
+  if (normalizedPlatform === "tiktok") return "TikTok";
+  if (normalizedPlatform === "instagram") return "Instagram";
+
+  return platform || "Social";
+}
+
+function getVisibleEntries(entries?: DropEntryRecord[]) {
+  return (entries || []).slice(-14);
+}
+
 export function LiveDropsModal({
   open,
   onClose,
@@ -121,6 +147,11 @@ export function LiveDropsModal({
 
   const activeDrops = useMemo(() => drops.filter(isDropCurrentlyActive), [drops]);
   const historyDrops = useMemo(() => drops.filter((drop) => !isDropCurrentlyActive(drop)), [drops]);
+  const featuredActiveDrop = activeDrops[0];
+  const visibleFeaturedEntries = useMemo(
+    () => getVisibleEntries(featuredActiveDrop?.entries),
+    [featuredActiveDrop?.entries],
+  );
 
   const canActivate = isLive && normalizedViewerCount > 0 && maxClaims > 0 && !saving;
 
@@ -400,27 +431,55 @@ export function LiveDropsModal({
             </div>
 
             <div className="mt-5 rounded-[24px] border border-emerald-300/20 bg-emerald-300/10 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+              <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)_150px] md:items-stretch">
+                <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-100/65">
                     {translate(t, "liveDropsAvailable", "Drops disponíveis")}
                   </p>
                   <p className="mt-2 text-4xl font-black text-emerald-50">
                     {formatNumber(maxClaims)}
                   </p>
+
+                  {liveTitle ? (
+                    <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">{liveTitle}</p>
+                  ) : null}
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Kick</p>
-                  <p className="mt-1 max-w-[220px] truncate text-sm font-black text-white">
-                    {creatorName}
-                  </p>
+                <div className="min-h-[86px] min-w-0 border-white/10 md:border-l md:pl-5">
+                  {visibleFeaturedEntries.length > 0 ? (
+                    <div className="flex max-h-[86px] flex-wrap items-start gap-2 overflow-hidden pr-1">
+                      {visibleFeaturedEntries.map((entry) => (
+                        <span
+                          key={entry.id}
+                          className="inline-flex max-w-[190px] items-center gap-1.5 truncate rounded-full border border-cyan-300/20 bg-black/25 px-2.5 py-1.5 text-[11px] font-black text-cyan-50/90 shadow-[0_0_18px_rgba(34,211,238,0.06)]"
+                          title={`${getPlatformLabel(entry.platform)} · ${entry.platform_username || "—"}`}
+                        >
+                          <span className="shrink-0 text-cyan-100/55">
+                            {getPlatformLabel(entry.platform)}
+                          </span>
+                          <span className="shrink-0 text-white/25">·</span>
+                          <span className="truncate text-white/85">
+                            {entry.platform_username || "—"}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex h-full min-h-[70px] items-center rounded-2xl border border-white/10 bg-black/10 px-4 text-sm font-bold text-white/35">
+                      {DEFAULT_KEYWORD}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-start justify-start md:justify-end">
+                  <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Kick</p>
+                    <p className="mt-1 max-w-[220px] truncate text-sm font-black text-white md:max-w-[120px]">
+                      {creatorName}
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              {liveTitle ? (
-                <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/55">{liveTitle}</p>
-              ) : null}
             </div>
 
             {!isLive ? (
