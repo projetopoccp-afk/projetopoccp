@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 type SocialPlatform = "twitch" | "kick" | "youtube" | "discord";
 
@@ -48,7 +49,7 @@ async function getTwitchUserId(username: string, accessToken: string) {
         Authorization: `Bearer ${accessToken}`,
       },
       cache: "no-store",
-    }
+    },
   );
 
   const data = await response.json();
@@ -57,7 +58,7 @@ async function getTwitchUserId(username: string, accessToken: string) {
 
 async function getTwitchFollowerCount(
   broadcasterId: string,
-  accessToken: string
+  accessToken: string,
 ) {
   const response = await fetch(
     `https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}&first=1`,
@@ -67,7 +68,7 @@ async function getTwitchFollowerCount(
         Authorization: `Bearer ${accessToken}`,
       },
       cache: "no-store",
-    }
+    },
   );
 
   const data = await response.json();
@@ -75,7 +76,7 @@ async function getTwitchFollowerCount(
 }
 
 async function getTwitchLiveStatus(
-  username: string
+  username: string,
 ): Promise<LiveStatusResponse> {
   const accessToken = await getTwitchAccessToken();
   const broadcasterId = await getTwitchUserId(username, accessToken);
@@ -86,7 +87,7 @@ async function getTwitchLiveStatus(
 
   const twitchResponse = await fetch(
     `https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(
-      username
+      username,
     )}`,
     {
       headers: {
@@ -94,7 +95,7 @@ async function getTwitchLiveStatus(
         Authorization: `Bearer ${accessToken}`,
       },
       cache: "no-store",
-    }
+    },
   );
 
   const twitchData = await twitchResponse.json();
@@ -127,7 +128,7 @@ async function getTwitchLiveStatus(
 }
 
 async function getKickLiveStatus(
-  username: string
+  username: string,
 ): Promise<LiveStatusResponse> {
   const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
 
@@ -140,7 +141,7 @@ async function getKickLiveStatus(
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
       },
       cache: "no-store",
-    }
+    },
   );
 
   if (!kickResponse.ok) {
@@ -269,7 +270,7 @@ async function fetchYouTubeChannelByHandle(username: string, apiKey: string) {
       next: {
         revalidate: 3600,
       },
-    }
+    },
   );
 
   const data = await response.json();
@@ -295,7 +296,7 @@ async function fetchYouTubeChannelById(channelId: string, apiKey: string) {
       next: {
         revalidate: 3600,
       },
-    }
+    },
   );
 
   const data = await response.json();
@@ -308,8 +309,10 @@ async function fetchYouTubeChannelById(channelId: string, apiKey: string) {
   return data.items?.[0] ?? null;
 }
 
-
-async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) {
+async function fetchYouTubeChannelByCustomUrl(
+  username: string,
+  apiKey: string,
+) {
   const cleanUsername = normalizeYouTubeUsername(username);
 
   if (!cleanUsername || cleanUsername.startsWith("UC")) return null;
@@ -329,7 +332,7 @@ async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) 
         },
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; CardpocBot/1.0; +https://www.cardpoc.com)"
+            "Mozilla/5.0 (compatible; CardpocBot/1.0; +https://www.cardpoc.com)",
         },
         redirect: "follow",
       });
@@ -342,19 +345,30 @@ async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) 
       const channelIdMatch =
         html.match(/"channelId"\s*:\s*"(UC[^"]+)"/) ||
         html.match(/"externalId"\s*:\s*"(UC[^"]+)"/) ||
-        html.match(/<meta[^>]+itemprop=["']channelId["'][^>]+content=["'](UC[^"']+)["']/i) ||
-        html.match(/<meta[^>]+content=["'](UC[^"']+)["'][^>]+itemprop=["']channelId["']/i) ||
+        html.match(
+          /<meta[^>]+itemprop=["']channelId["'][^>]+content=["'](UC[^"']+)["']/i,
+        ) ||
+        html.match(
+          /<meta[^>]+content=["'](UC[^"']+)["'][^>]+itemprop=["']channelId["']/i,
+        ) ||
         finalUrl.match(/\/channel\/(UC[^/?#]+)/i);
 
       if (channelIdMatch?.[1]) {
-        const channelById = await fetchYouTubeChannelById(channelIdMatch[1], apiKey);
+        const channelById = await fetchYouTubeChannelById(
+          channelIdMatch[1],
+          apiKey,
+        );
 
         if (channelById) return channelById;
       }
 
       const canonicalMatch =
-        html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ||
-        html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i) ||
+        html.match(
+          /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i,
+        ) ||
+        html.match(
+          /<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i,
+        ) ||
         finalUrl.match(/(https?:\/\/(?:www\.)?youtube\.com\/@[^/?#]+)/i);
 
       const canonicalUrl = canonicalMatch?.[1];
@@ -363,15 +377,23 @@ async function fetchYouTubeChannelByCustomUrl(username: string, apiKey: string) 
         const handleMatch = canonicalUrl.match(/youtube\.com\/@([^/?#]+)/i);
 
         if (handleMatch?.[1]) {
-          const channelByHandle = await fetchYouTubeChannelByHandle(handleMatch[1], apiKey);
+          const channelByHandle = await fetchYouTubeChannelByHandle(
+            handleMatch[1],
+            apiKey,
+          );
 
           if (channelByHandle) return channelByHandle;
         }
 
-        const canonicalChannelMatch = canonicalUrl.match(/youtube\.com\/channel\/(UC[^/?#]+)/i);
+        const canonicalChannelMatch = canonicalUrl.match(
+          /youtube\.com\/channel\/(UC[^/?#]+)/i,
+        );
 
         if (canonicalChannelMatch?.[1]) {
-          const channelById = await fetchYouTubeChannelById(canonicalChannelMatch[1], apiKey);
+          const channelById = await fetchYouTubeChannelById(
+            canonicalChannelMatch[1],
+            apiKey,
+          );
 
           if (channelById) return channelById;
         }
@@ -403,7 +425,7 @@ async function searchYouTubeChannel(username: string, apiKey: string) {
       next: {
         revalidate: 3600,
       },
-    }
+    },
   );
 
   const data = await response.json();
@@ -421,7 +443,7 @@ async function searchYouTubeChannel(username: string, apiKey: string) {
 }
 
 async function getYouTubeChannelStatus(
-  username: string
+  username: string,
 ): Promise<LiveStatusResponse> {
   const apiKey = process.env.YOUTUBE_API_KEY;
 
@@ -520,7 +542,7 @@ function normalizeDiscordInviteCode(input: string) {
 }
 
 async function getDiscordServerStatus(
-  invite: string
+  invite: string,
 ): Promise<LiveStatusResponse> {
   const inviteCode = normalizeDiscordInviteCode(invite);
 
@@ -538,7 +560,7 @@ async function getDiscordServerStatus(
 
   const discordResponse = await fetch(
     `https://discord.com/api/v10/invites/${encodeURIComponent(
-      inviteCode
+      inviteCode,
     )}?with_counts=true&with_expiration=true`,
     {
       headers: {
@@ -548,7 +570,7 @@ async function getDiscordServerStatus(
       next: {
         revalidate: 3600,
       },
-    }
+    },
   );
 
   if (!discordResponse.ok) {
@@ -587,6 +609,55 @@ async function getDiscordServerStatus(
   };
 }
 
+async function upsertCreatorLiveStatus(
+  creatorId: string | null,
+  status: LiveStatusResponse,
+) {
+  if (!creatorId) return;
+
+  if (status.platform !== "twitch" && status.platform !== "kick") return;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    console.warn(
+      "Supabase service role env missing. Skipping creator_live_status upsert.",
+    );
+    return;
+  }
+
+  const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const { error } = await adminSupabase.from("creator_live_status").upsert(
+    {
+      creator_id: creatorId,
+      platform: status.platform,
+      platform_username: status.username,
+      is_live: Boolean(status.isLive),
+      title: status.title ?? null,
+      viewer_count: Number(status.viewerCount ?? 0),
+      game_name: status.gameName ?? null,
+      started_at: status.startedAt ?? null,
+      thumbnail_url: status.thumbnail ?? null,
+      live_url: status.url ?? null,
+      raw_payload: status,
+      last_checked_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "creator_id,platform",
+    },
+  );
+
+  if (error) {
+    console.error("Erro ao salvar creator_live_status:", error);
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -595,6 +666,7 @@ export async function GET(request: NextRequest) {
       "twitch";
 
     const username = request.nextUrl.searchParams.get("username");
+    const creatorId = request.nextUrl.searchParams.get("creatorId");
 
     if (!username) {
       return NextResponse.json(
@@ -603,12 +675,13 @@ export async function GET(request: NextRequest) {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
     if (platform === "kick") {
       const status = await getKickLiveStatus(username);
+      await upsertCreatorLiveStatus(creatorId, status);
       return NextResponse.json(status);
     }
 
@@ -623,6 +696,7 @@ export async function GET(request: NextRequest) {
     }
 
     const status = await getTwitchLiveStatus(username);
+    await upsertCreatorLiveStatus(creatorId, status);
     return NextResponse.json(status);
   } catch (error) {
     console.error(error);
@@ -632,13 +706,11 @@ export async function GET(request: NextRequest) {
         isLive: false,
         externalCount: 0,
         error:
-          error instanceof Error
-            ? error.message
-            : "Erro desconhecido na API",
+          error instanceof Error ? error.message : "Erro desconhecido na API",
       },
       {
         status: 500,
-      }
+      },
     );
   }
 }

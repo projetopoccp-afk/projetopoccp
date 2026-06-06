@@ -49,7 +49,9 @@ type TranslationKey = Parameters<typeof translate>[1];
 
 function translateExisting(t: unknown, key: string, fallback: string) {
   const value = (t as Record<string, string | undefined>)[key];
-  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : fallback;
 }
 
 type CreatorProfilePageProps = {
@@ -181,6 +183,40 @@ type LiveStatus = {
 };
 
 type LiveStatusMap = Partial<Record<string, LiveStatus>>;
+
+type CreatorLiveStatusRow = {
+  id: string;
+  creator_id: string;
+  platform: string;
+  platform_username: string | null;
+  is_live: boolean | null;
+  title: string | null;
+  viewer_count: number | null;
+  game_name: string | null;
+  started_at: string | null;
+  thumbnail_url: string | null;
+  live_url: string | null;
+  last_checked_at: string | null;
+  updated_at: string | null;
+};
+
+function mapCreatorLiveStatusRowToLiveStatus(
+  row: CreatorLiveStatusRow,
+): LiveStatus {
+  return {
+    platform: row.platform,
+    username: row.platform_username ?? undefined,
+    isLive: Boolean(row.is_live),
+    title: row.title ?? undefined,
+    viewerCount: Number(row.viewer_count ?? 0),
+    gameName: row.game_name ?? undefined,
+    startedAt: row.started_at ?? undefined,
+    thumbnail: row.thumbnail_url ?? undefined,
+    url:
+      row.live_url ??
+      getPlatformFallbackUrl(row.platform, row.platform_username ?? ""),
+  };
+}
 
 type CreatorStats = {
   views: number;
@@ -878,8 +914,12 @@ async function addXpAndNotifyLevelUp({
   return result;
 }
 
-
-type SupportConversationStatus = "open" | "waiting_admin" | "waiting_user" | "resolved" | "closed";
+type SupportConversationStatus =
+  | "open"
+  | "waiting_admin"
+  | "waiting_user"
+  | "resolved"
+  | "closed";
 type SupportConversationType =
   | "bug"
   | "profile_correction"
@@ -912,7 +952,10 @@ type SupportMessageRow = {
   read_at: string | null;
 };
 
-const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = ["resolved", "closed"];
+const FINAL_SUPPORT_STATUSES: SupportConversationStatus[] = [
+  "resolved",
+  "closed",
+];
 
 function isSupportConversationFinal(status: SupportConversationStatus) {
   return FINAL_SUPPORT_STATUSES.includes(status);
@@ -963,7 +1006,9 @@ function getSupportTypeLabel(
   type: SupportConversationType,
 ) {
   const item = SUPPORT_CONVERSATION_TYPES.find((option) => option.id === type);
-  return item ? translateExisting(t, item.labelKey, item.fallback) : translateExisting(t, "supportTypeOther", "Outro assunto");
+  return item
+    ? translateExisting(t, item.labelKey, item.fallback)
+    : translateExisting(t, "supportTypeOther", "Outro assunto");
 }
 
 type SupportChatModalProps = {
@@ -983,16 +1028,24 @@ function SupportChatModal({
 }: SupportChatModalProps) {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [conversations, setConversations] = useState<SupportConversationRow[]>([]);
+  const [conversations, setConversations] = useState<SupportConversationRow[]>(
+    [],
+  );
   const [messages, setMessages] = useState<SupportMessageRow[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
   const [creating, setCreating] = useState(false);
-  const [selectedType, setSelectedType] = useState<SupportConversationType>("profile_correction");
+  const [selectedType, setSelectedType] =
+    useState<SupportConversationType>("profile_correction");
   const [subject, setSubject] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [reply, setReply] = useState("");
   const [saving, setSaving] = useState(false);
-  const selectedConversation = conversations.find((conversation) => conversation.id === selectedConversationId) || null;
+  const selectedConversation =
+    conversations.find(
+      (conversation) => conversation.id === selectedConversationId,
+    ) || null;
 
   async function loadConversations() {
     if (!currentUserId || !creatorId) return;
@@ -1042,7 +1095,9 @@ function SupportChatModal({
     if (!currentUserId || !creatorId || !newMessage.trim()) return;
 
     setSaving(true);
-    const cleanSubject = subject.trim() || `${getSupportTypeLabel(t, selectedType)} - ${creatorName}`;
+    const cleanSubject =
+      subject.trim() ||
+      `${getSupportTypeLabel(t, selectedType)} - ${creatorName}`;
     const { data: conversation, error } = await supabase
       .from("support_conversations")
       .insert({
@@ -1139,13 +1194,21 @@ function SupportChatModal({
           <div className="no-scrollbar mt-5 flex max-h-[56vh] flex-col gap-3 overflow-y-auto pr-1">
             {loading ? (
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/50">
-                {translateExisting(t, "supportLoading", "Carregando conversas...")}
+                {translateExisting(
+                  t,
+                  "supportLoading",
+                  "Carregando conversas...",
+                )}
               </div>
             ) : null}
 
             {!loading && conversations.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-white/55">
-                {translateExisting(t, "supportEmpty", "Você ainda não abriu nenhuma conversa sobre este perfil.")}
+                {translateExisting(
+                  t,
+                  "supportEmpty",
+                  "Você ainda não abriu nenhuma conversa sobre este perfil.",
+                )}
               </div>
             ) : null}
 
@@ -1164,7 +1227,9 @@ function SupportChatModal({
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="line-clamp-2 text-sm font-black text-white">{conversation.subject}</p>
+                  <p className="line-clamp-2 text-sm font-black text-white">
+                    {conversation.subject}
+                  </p>
                   <span className="shrink-0 rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
                     {getSupportStatusLabel(t, conversation.status)}
                   </span>
@@ -1184,8 +1249,17 @@ function SupportChatModal({
             </p>
             <h4 className="mt-1 text-lg font-black">
               {creating
-                ? translateExisting(t, "supportStartConversation", "Abrir conversa")
-                : selectedConversation?.subject || translateExisting(t, "supportSelectConversation", "Selecione uma conversa")}
+                ? translateExisting(
+                    t,
+                    "supportStartConversation",
+                    "Abrir conversa",
+                  )
+                : selectedConversation?.subject ||
+                  translateExisting(
+                    t,
+                    "supportSelectConversation",
+                    "Selecione uma conversa",
+                  )}
             </h4>
           </div>
 
@@ -1212,14 +1286,22 @@ function SupportChatModal({
                 <input
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
-                  placeholder={translateExisting(t, "supportSubjectPlaceholder", "Assunto da conversa")}
+                  placeholder={translateExisting(
+                    t,
+                    "supportSubjectPlaceholder",
+                    "Assunto da conversa",
+                  )}
                   className="rounded-[1.2rem] border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                 />
 
                 <textarea
                   value={newMessage}
                   onChange={(event) => setNewMessage(event.target.value)}
-                  placeholder={translateExisting(t, "supportMessagePlaceholder", "Explique o que aconteceu ou o que precisa ser ajustado...")}
+                  placeholder={translateExisting(
+                    t,
+                    "supportMessagePlaceholder",
+                    "Explique o que aconteceu ou o que precisa ser ajustado...",
+                  )}
                   rows={7}
                   className="rounded-[1.2rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                 />
@@ -1230,8 +1312,16 @@ function SupportChatModal({
                   disabled={saving || !newMessage.trim()}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-5 py-3 text-sm font-black text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {translateExisting(t, "supportSendToTeam", "Enviar para a equipe")}
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {translateExisting(
+                    t,
+                    "supportSendToTeam",
+                    "Enviar para a equipe",
+                  )}
                 </button>
               </div>
             </div>
@@ -1240,23 +1330,40 @@ function SupportChatModal({
               <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto p-5">
                 {messages.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translateExisting(t, "supportNoMessages", "Nenhuma mensagem nesta conversa.")}
+                    {translateExisting(
+                      t,
+                      "supportNoMessages",
+                      "Nenhuma mensagem nesta conversa.",
+                    )}
                   </div>
                 ) : null}
 
                 {messages.map((message) => {
                   const isUser = message.sender_role === "user";
                   return (
-                    <div key={message.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[82%] rounded-[1.35rem] border px-4 py-3 ${
-                        isUser
-                          ? "border-cyan-300/25 bg-cyan-300/15 text-cyan-50"
-                          : "border-white/10 bg-white/[0.055] text-white/75"
-                      }`}>
+                    <div
+                      key={message.id}
+                      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[82%] rounded-[1.35rem] border px-4 py-3 ${
+                          isUser
+                            ? "border-cyan-300/25 bg-cyan-300/15 text-cyan-50"
+                            : "border-white/10 bg-white/[0.055] text-white/75"
+                        }`}
+                      >
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
-                          {isUser ? translateExisting(t, "supportYou", "Você") : translateExisting(t, "supportTeam", "Equipe Cardpoc")}
+                          {isUser
+                            ? translateExisting(t, "supportYou", "Você")
+                            : translateExisting(
+                                t,
+                                "supportTeam",
+                                "Equipe Cardpoc",
+                              )}
                         </p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{message.message}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                          {message.message}
+                        </p>
                       </div>
                     </div>
                   );
@@ -1264,26 +1371,41 @@ function SupportChatModal({
               </div>
 
               <div className="border-t border-white/10 p-4">
-                {selectedConversation && isSupportConversationFinal(selectedConversation.status) ? (
+                {selectedConversation &&
+                isSupportConversationFinal(selectedConversation.status) ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/55">
-                    {translateExisting(t, "supportClosedConversation", "Esta conversa foi finalizada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.")}
+                    {translateExisting(
+                      t,
+                      "supportClosedConversation",
+                      "Esta conversa foi finalizada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.",
+                    )}
                   </div>
                 ) : (
                   <div className="flex gap-3">
                     <textarea
                       value={reply}
                       onChange={(event) => setReply(event.target.value)}
-                      placeholder={translateExisting(t, "supportReplyPlaceholder", "Escreva uma resposta...")}
+                      placeholder={translateExisting(
+                        t,
+                        "supportReplyPlaceholder",
+                        "Escreva uma resposta...",
+                      )}
                       rows={2}
                       className="min-h-[48px] flex-1 resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40"
                     />
                     <button
                       type="button"
                       onClick={handleSendReply}
-                      disabled={saving || !reply.trim() || !selectedConversation}
+                      disabled={
+                        saving || !reply.trim() || !selectedConversation
+                      }
                       className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-300/25 bg-cyan-300/15 text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 )}
@@ -1311,7 +1433,9 @@ export function CreatorProfilePage({
   const [manualPartnershipDraft, setManualPartnershipDraft] =
     useState<ManualPartnershipDraft>(() => createEmptyManualPartnershipDraft());
   const [manualPartnershipSaving, setManualPartnershipSaving] = useState(false);
-  const [manualPartnershipError, setManualPartnershipError] = useState<string | null>(null);
+  const [manualPartnershipError, setManualPartnershipError] = useState<
+    string | null
+  >(null);
   const [stats, setStats] = useState<CreatorStats>({
     views: 0,
     followers: 0,
@@ -1565,11 +1689,13 @@ export function CreatorProfilePage({
       if (cancelled) return;
 
       setSocialLinks((socialData || []) as SocialLink[]);
-      setPartnerships(((partnershipData || []) as CreatorPartnershipRow[]).sort(
-        (partnershipA, partnershipB) =>
-          getPartnershipTimestamp(partnershipB) -
-          getPartnershipTimestamp(partnershipA),
-      ));
+      setPartnerships(
+        ((partnershipData || []) as CreatorPartnershipRow[]).sort(
+          (partnershipA, partnershipB) =>
+            getPartnershipTimestamp(partnershipB) -
+            getPartnershipTimestamp(partnershipA),
+        ),
+      );
       setStats({
         views: viewCount || 0,
         followers: followerCount || 0,
@@ -1689,6 +1815,45 @@ export function CreatorProfilePage({
 
     let cancelled = false;
 
+    function applyLiveStatusResults(
+      results: Array<{
+        platform: "twitch" | "kick" | "youtube" | "discord";
+        index?: number;
+        status: LiveStatus;
+      }>,
+    ) {
+      setLiveStatus((currentLiveStatus) =>
+        results.reduce<LiveStatusMap>(
+          (accumulator, result) => {
+            if (result.platform === "youtube") {
+              accumulator[`youtube:${result.index ?? 0}`] = result.status;
+
+              const currentYoutube = accumulator.youtube;
+              const currentSubscriberCount =
+                currentYoutube?.subscriberCount ??
+                currentYoutube?.externalCount ??
+                0;
+              const nextSubscriberCount =
+                result.status.subscriberCount ??
+                result.status.externalCount ??
+                0;
+
+              accumulator.youtube =
+                nextSubscriberCount >= currentSubscriberCount
+                  ? result.status
+                  : currentYoutube || result.status;
+
+              return accumulator;
+            }
+
+            accumulator[result.platform] = result.status;
+            return accumulator;
+          },
+          { ...currentLiveStatus },
+        ),
+      );
+    }
+
     async function loadLiveStatuses() {
       setLiveStatusLoading(true);
 
@@ -1696,10 +1861,14 @@ export function CreatorProfilePage({
         const results = await Promise.all(
           targets.map(async ({ platform, username: targetUsername, index }) => {
             try {
+              const params = new URLSearchParams({
+                platform,
+                username: targetUsername,
+                creatorId: profile.id,
+              });
+
               const response = await fetch(
-                `/api/live-status?platform=${platform}&username=${encodeURIComponent(
-                  targetUsername,
-                )}`,
+                `/api/live-status?${params.toString()}`,
               );
 
               if (!response.ok) {
@@ -1734,33 +1903,7 @@ export function CreatorProfilePage({
         );
 
         if (!cancelled) {
-          setLiveStatus(
-            results.reduce<LiveStatusMap>((accumulator, result) => {
-              if (result.platform === "youtube") {
-                accumulator[`youtube:${result.index ?? 0}`] = result.status;
-
-                const currentYoutube = accumulator.youtube;
-                const currentSubscriberCount =
-                  currentYoutube?.subscriberCount ??
-                  currentYoutube?.externalCount ??
-                  0;
-                const nextSubscriberCount =
-                  result.status.subscriberCount ??
-                  result.status.externalCount ??
-                  0;
-
-                accumulator.youtube =
-                  nextSubscriberCount >= currentSubscriberCount
-                    ? result.status
-                    : currentYoutube || result.status;
-
-                return accumulator;
-              }
-
-              accumulator[result.platform] = result.status;
-              return accumulator;
-            }, {}),
-          );
+          applyLiveStatusResults(results);
         }
       } finally {
         if (!cancelled) {
@@ -1769,10 +1912,78 @@ export function CreatorProfilePage({
       }
     }
 
+    async function loadCachedLiveStatuses() {
+      const { data, error } = await supabase
+        .from("creator_live_status")
+        .select(
+          "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, last_checked_at, updated_at",
+        )
+        .eq("creator_id", profile.id)
+        .in("platform", ["twitch", "kick"]);
+
+      if (cancelled || error || !data) return;
+
+      setLiveStatus((currentLiveStatus) => {
+        const nextLiveStatus = { ...currentLiveStatus };
+
+        (data as CreatorLiveStatusRow[]).forEach((row) => {
+          nextLiveStatus[row.platform] =
+            mapCreatorLiveStatusRowToLiveStatus(row);
+        });
+
+        return nextLiveStatus;
+      });
+    }
+
+    loadCachedLiveStatuses();
     loadLiveStatuses();
+
+    const pollingInterval = window.setInterval(loadLiveStatuses, 30000);
+
+    const liveStatusChannel = supabase
+      .channel(`creator-live-status:${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "creator_live_status",
+          filter: `creator_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          if (cancelled) return;
+
+          if (payload.eventType === "DELETE") {
+            const oldRow = payload.old as Partial<CreatorLiveStatusRow>;
+            const deletedPlatform = oldRow.platform;
+
+            if (!deletedPlatform) return;
+
+            setLiveStatus((currentLiveStatus) => {
+              const nextLiveStatus = { ...currentLiveStatus };
+              delete nextLiveStatus[deletedPlatform];
+              return nextLiveStatus;
+            });
+
+            return;
+          }
+
+          const row = payload.new as CreatorLiveStatusRow;
+
+          if (row.platform !== "twitch" && row.platform !== "kick") return;
+
+          setLiveStatus((currentLiveStatus) => ({
+            ...currentLiveStatus,
+            [row.platform]: mapCreatorLiveStatusRowToLiveStatus(row),
+          }));
+        },
+      )
+      .subscribe();
 
     return () => {
       cancelled = true;
+      window.clearInterval(pollingInterval);
+      void supabase.removeChannel(liveStatusChannel);
     };
   }, [profile, socialLinks]);
 
@@ -1967,7 +2178,7 @@ export function CreatorProfilePage({
     .filter((partnership) =>
       Boolean(
         partnership.is_active !== false &&
-          ["verified", "manual"].includes(String(partnership.status || "")),
+        ["verified", "manual"].includes(String(partnership.status || "")),
       ),
     )
     .sort(
@@ -1980,7 +2191,7 @@ export function CreatorProfilePage({
   const partnershipHistoryCount = partnerships.filter((partnership) =>
     Boolean(
       partnership.is_active !== false &&
-        ["verified", "manual"].includes(String(partnership.status || "")),
+      ["verified", "manual"].includes(String(partnership.status || "")),
     ),
   ).length;
 
@@ -2083,11 +2294,13 @@ export function CreatorProfilePage({
     ]);
 
     setSocialLinks((socialData || []) as SocialLink[]);
-    setPartnerships(((partnershipData || []) as CreatorPartnershipRow[]).sort(
-      (partnershipA, partnershipB) =>
-        getPartnershipTimestamp(partnershipB) -
-        getPartnershipTimestamp(partnershipA),
-    ));
+    setPartnerships(
+      ((partnershipData || []) as CreatorPartnershipRow[]).sort(
+        (partnershipA, partnershipB) =>
+          getPartnershipTimestamp(partnershipB) -
+          getPartnershipTimestamp(partnershipA),
+      ),
+    );
     setStats({
       views: viewCount || 0,
       followers: followerCount || 0,
@@ -2813,7 +3026,11 @@ export function CreatorProfilePage({
                 className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
               >
                 <Sparkles className="h-4 w-4" />
-                {translate(t, "creatorProfileManageProfile", "Gerenciar perfil")}
+                {translate(
+                  t,
+                  "creatorProfileManageProfile",
+                  "Gerenciar perfil",
+                )}
               </Link>
             </div>
           ) : null}
@@ -3931,7 +4148,6 @@ export function CreatorProfilePage({
               )}
             </article>
           </div>
-
         </section>
       </div>
 
@@ -4146,7 +4362,11 @@ export function CreatorProfilePage({
                 </p>
 
                 <h3 className="mt-3 text-3xl font-black">
-                  {translate(t, "creatorPopupClaimSentTitle", "Solicitação enviada")}
+                  {translate(
+                    t,
+                    "creatorPopupClaimSentTitle",
+                    "Solicitação enviada",
+                  )}
                 </h3>
 
                 <p className="mt-4 text-sm leading-6 text-white/60">
@@ -4172,7 +4392,11 @@ export function CreatorProfilePage({
             ) : (
               <div className="pr-10">
                 <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
-                  {translate(t, "creatorPopupClaimProfileBadge", "Claim Profile")}
+                  {translate(
+                    t,
+                    "creatorPopupClaimProfileBadge",
+                    "Claim Profile",
+                  )}
                 </p>
 
                 <h3 className="mt-3 text-3xl font-black">
@@ -4189,7 +4413,11 @@ export function CreatorProfilePage({
 
                 <div className="mt-6 rounded-3xl border border-yellow-300/15 bg-yellow-300/[0.04] p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-yellow-200/70">
-                    {translate(t, "creatorPopupClaimCode", "Código de verificação")}
+                    {translate(
+                      t,
+                      "creatorPopupClaimCode",
+                      "Código de verificação",
+                    )}
                   </p>
 
                   <p className="mt-2 text-xl font-black tracking-[0.25em] text-white">
@@ -4284,7 +4512,6 @@ export function CreatorProfilePage({
           </div>
         </div>
       ) : null}
-
 
       {profile && canManageProfile ? (
         <SupportChatModal
