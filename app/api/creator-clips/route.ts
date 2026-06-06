@@ -166,7 +166,7 @@ async function getTwitchClips(username: string): Promise<CreatorClip[]> {
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
-    .slice(0, 3)
+    .slice(0, 4)
     .map((clip) => ({
       id: `twitch-${clip.id}`,
       platform: "twitch" as const,
