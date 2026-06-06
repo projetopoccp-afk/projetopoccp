@@ -3,6 +3,25 @@ export const translations = {
     notifications: "Notificações",
     collection: "Minha Coleção",
     profile: "Meu Perfil",
+    linkedAccountsTitle: "Contas Linkadas",
+    linkedAccountsProfileDescription:
+      "Conecte plataformas para drops, missões e recompensas.",
+    linkedAccountsManage: "Gerenciar",
+    linkedAccountsClose: "Fechar contas linkadas",
+    linkedAccountsModalTitle: "Conecte suas plataformas",
+    linkedAccountsModalDescription:
+      "Conecte suas plataformas para participar de drops, missões e recompensas.",
+    linkedAccountsConnected: "Conectada",
+    linkedAccountsUser: "Usuário",
+    linkedAccountsConnectedAt: "Conectada em",
+    linkedAccountsKickDescription:
+      "Conecte sua conta Kick para participar de drops via chat, eventos e recompensas automáticas.",
+    linkedAccountsConnect: "Conectar conta",
+    linkedAccountsDisconnect: "Desconectar",
+    linkedAccountsDisconnecting: "Desconectando...",
+    linkedAccountsComingSoonTitle: "Em breve",
+    linkedAccountsComingSoonDescription:
+      "Novas plataformas serão adicionadas para missões e eventos.",
     logout: "Sair",
     login: "Entrar",
     account: "Conta",
@@ -477,7 +496,8 @@ export const translations = {
     creatorPopupFollowNotificationPrefix: "Você seguiu",
     creatorPopupFollowXpMessage: "Você ganhou XP por seguir um criador.",
     creatorPopupCardUnlockedNotificationTitle: "Carta desbloqueada:",
-    creatorPopupCardUnlockedByFollow: "Você desbloqueou esta carta ao seguir o criador.",
+    creatorPopupCardUnlockedByFollow:
+      "Você desbloqueou esta carta ao seguir o criador.",
     creatorPopupFollowers: "Seguidores",
     creatorPopupFollowing: "Seguindo",
     creatorPopupLevelPrefix: "Nv.",
@@ -626,7 +646,8 @@ export const translations = {
     packsModalOpenErrorTitle: "Não foi possível abrir o pacote",
     packsModalOpenErrorDescription: "Tente novamente em alguns instantes.",
     packsModalAnimationLabel: "Revelação em andamento",
-    packsModalAnimationDescription: "Rasgando o pacote e revelando sua carta...",
+    packsModalAnimationDescription:
+      "Rasgando o pacote e revelando sua carta...",
     packsModalOpenAnother: "Abrir outro pacote",
     packsModalRevealing: "Revelando...",
     packsModalTearingPack: "Rasgando pacote...",
@@ -668,7 +689,8 @@ export const translations = {
       "Veja lives, clips, estatísticas, redes sociais e evolução dos criadores em um só perfil.",
     homePageNewHereButton: "É novo aqui?",
     homePageFaqSearchLabel: "Pesquisar no guia",
-    homePageFaqSearchPlaceholder: "Pesquisar por XP, cartas, pacotes, perfil...",
+    homePageFaqSearchPlaceholder:
+      "Pesquisar por XP, cartas, pacotes, perfil...",
     homePageFaqNoResults: "Nenhum tópico encontrado para essa busca.",
     homePageFaqWhatIsTitle: "O que é o Cardpoc?",
     homePageFaqWhatIsContent:
@@ -916,8 +938,9 @@ export const translations = {
     type: "Tipo",
     quantity: "Quantidade",
     recipient: "Destinatário",
-  
-    adminSearchRequestPlaceholder: "Buscar solicitações por email, nome, username, categoria ou código...",
+
+    adminSearchRequestPlaceholder:
+      "Buscar solicitações por email, nome, username, categoria ou código...",
     adminBanned: "Banido",
     adminBanUser: "Banir",
     adminUnbanUser: "Desbanir",
@@ -925,7 +948,8 @@ export const translations = {
     adminUserUnbannedSuccess: "Usuário desbanido com sucesso.",
     adminCardsPacksShort: "Cartas/Pacotes",
     adminStatistics: "Estatísticas",
-    adminStatisticsDescription: "Resumo operacional do Cardpoc com visitas, logins, cartas conquistadas e atividades principais.",
+    adminStatisticsDescription:
+      "Resumo operacional do Cardpoc com visitas, logins, cartas conquistadas e atividades principais.",
     adminStatsVisits: "Visitas",
     adminStatsVisitsHint: "Visualizações registradas em perfis.",
     adminStatsLogins: "Logins/Usuários",
@@ -954,7 +978,8 @@ export const translations = {
     adminActivityGiveawayPacks: "{actor} enviou pacotes em giveaway.",
     adminActivityBannedUser: "{actor} baniu {target}.",
     adminActivityUnbannedUser: "{actor} desbaniu {target}.",
-    adminActivityGeneric: "{actor} realizou uma ação administrativa em {target}.",
+    adminActivityGeneric:
+      "{actor} realizou uma ação administrativa em {target}.",
     adminPartnerships: "Parcerias Detectadas",
     adminPartnershipsBadge: "Detector YouTube",
     adminPartnershipsTitle: "Parcerias Detectadas",
@@ -994,8 +1019,7 @@ export const translations = {
     adminPartnershipDetectionSuccess: "Detecção do YouTube concluída.",
     adminPartnershipDetectionError:
       "Não foi possível detectar parcerias do YouTube agora.",
-    adminActivityApprovedPartnership:
-      "{actor} aprovou a parceria de {target}.",
+    adminActivityApprovedPartnership: "{actor} aprovou a parceria de {target}.",
     adminActivityRejectedPartnership:
       "{actor} rejeitou a parceria de {target}.",
     adminSmartApprovalBadge: "Aprovação Inteligente",
@@ -1016,8 +1040,7 @@ export const translations = {
     adminBrandSearch: "Pesquisar marca",
     adminBrandSearching: "Pesquisando marca...",
     adminBrandConfidence: "Confiança da busca",
-    adminBrandEnrichmentError:
-      "Não foi possível pesquisar os dados da marca.",
+    adminBrandEnrichmentError: "Não foi possível pesquisar os dados da marca.",
     adminPartnershipPublicDescription: "Descrição pública da parceria",
     adminApproveAndPublish: "Aprovar e publicar",
     adminPartnershipBrandRequired: "Informe o nome da marca antes de aprovar.",
@@ -1029,7 +1052,6 @@ export const translations = {
     adminPartnershipTypeEvent: "Evento",
     adminPartnershipTypePartnership: "Parceria",
 
-
     creatorProfileTalkToTeam: "Falar com a equipe",
     supportCardpocTeam: "Equipe Cardpoc",
     supportConversations: "Conversas",
@@ -1039,10 +1061,12 @@ export const translations = {
     supportStartConversation: "Abrir conversa",
     supportSelectConversation: "Selecione uma conversa",
     supportSubjectPlaceholder: "Assunto da conversa",
-    supportMessagePlaceholder: "Explique o que aconteceu ou o que precisa ser ajustado...",
+    supportMessagePlaceholder:
+      "Explique o que aconteceu ou o que precisa ser ajustado...",
     supportSendToTeam: "Enviar para a equipe",
     supportNoMessages: "Nenhuma mensagem nesta conversa.",
-    supportClosedConversation: "Esta conversa foi encerrada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.",
+    supportClosedConversation:
+      "Esta conversa foi encerrada pela equipe Cardpoc. Abra uma nova conversa se precisar continuar o assunto.",
     supportReplyPlaceholder: "Escreva uma resposta...",
     supportYou: "Você",
     supportTeam: "Equipe Cardpoc",
@@ -1059,21 +1083,42 @@ export const translations = {
     supportStatusResolved: "Resolvido",
     supportStatusClosed: "Encerrado",
     adminConversations: "Conversas",
-    adminConversationsDescription: "Acompanhe chamados abertos por criadores e usuários em formato de chat.",
+    adminConversationsDescription:
+      "Acompanhe chamados abertos por criadores e usuários em formato de chat.",
     adminConversationsTotal: "conversas",
     adminConversationFilterAll: "Todas",
     adminSearchConversations: "Buscar conversas...",
     adminNoConversations: "Nenhuma conversa encontrada.",
-    adminConversationClosedHint: "Conversa encerrada. Ela continua disponível em Encerradas e Todas.",
+    adminConversationClosedHint:
+      "Conversa encerrada. Ela continua disponível em Encerradas e Todas.",
     adminConversationReplyPlaceholder: "Responder como equipe Cardpoc...",
     adminSelectConversation: "Selecione uma conversa para visualizar o chat.",
     email: "Email",
-},
+  },
 
   en: {
     notifications: "Notifications",
     collection: "My Collection",
     profile: "My Profile",
+    linkedAccountsTitle: "Linked Accounts",
+    linkedAccountsProfileDescription:
+      "Connect platforms for drops, missions, and rewards.",
+    linkedAccountsManage: "Manage",
+    linkedAccountsClose: "Close linked accounts",
+    linkedAccountsModalTitle: "Connect your platforms",
+    linkedAccountsModalDescription:
+      "Connect your platforms to join drops, missions, and rewards.",
+    linkedAccountsConnected: "Connected",
+    linkedAccountsUser: "User",
+    linkedAccountsConnectedAt: "Connected on",
+    linkedAccountsKickDescription:
+      "Connect your Kick account to join chat drops, events, and automatic rewards.",
+    linkedAccountsConnect: "Connect account",
+    linkedAccountsDisconnect: "Disconnect",
+    linkedAccountsDisconnecting: "Disconnecting...",
+    linkedAccountsComingSoonTitle: "Coming soon",
+    linkedAccountsComingSoonDescription:
+      "New platforms will be added for missions and events.",
     logout: "Logout",
     login: "Login",
     account: "Account",
@@ -1541,7 +1586,8 @@ export const translations = {
     creatorPopupFollowNotificationPrefix: "You followed",
     creatorPopupFollowXpMessage: "You earned XP for following a creator.",
     creatorPopupCardUnlockedNotificationTitle: "Card unlocked:",
-    creatorPopupCardUnlockedByFollow: "You unlocked this card by following the creator.",
+    creatorPopupCardUnlockedByFollow:
+      "You unlocked this card by following the creator.",
     creatorPopupFollowers: "Followers",
     creatorPopupFollowing: "Following",
     creatorPopupLevelPrefix: "Lv.",
@@ -1642,8 +1688,7 @@ export const translations = {
     creatorRequestModalSubmitting: "Submitting...",
     creatorRequestModalSubmit: "Submit request",
     loadingScreenTitle: "Loading your collection",
-    loadingScreenDescription:
-      "Synchronizing cards, packs and achievements...",
+    loadingScreenDescription: "Synchronizing cards, packs and achievements...",
     missionsModalCloseAria: "Close missions",
     missionsModalNotificationTitle: "Reward claimed",
     missionsModalNotificationMessage:
@@ -1892,8 +1937,7 @@ export const translations = {
     creatorProfilePartnershipSince: "Since",
     creatorProfilePartnershipWebsite: "Website",
     creatorProfilePartnershipEvidence: "View video",
-    creatorProfileNoPartnerships:
-      "No verified partnerships published yet.",
+    creatorProfileNoPartnerships: "No verified partnerships published yet.",
     creatorProfileManualPartnershipTitle: "Add manual partnership",
     creatorProfileManualPartnershipDescription:
       "Partnerships added by the creator appear publicly without entering the automatic review queue.",
@@ -1944,10 +1988,8 @@ export const translations = {
     creatorProfileEditBio: "Short bio",
     creatorProfileEditDescription: "Full description",
     creatorProfileEditTags: "Tags",
-    creatorProfileEditRequiredFields:
-      "Username and display name are required.",
-    creatorProfileEditSaveError:
-      "Could not save profile changes.",
+    creatorProfileEditRequiredFields: "Username and display name are required.",
+    creatorProfileEditSaveError: "Could not save profile changes.",
     creatorProfileUnsavedChanges: "Unsaved changes",
     creatorProfileUnsavedChangesDescription:
       "Save to publish your profile changes or cancel to return to view mode.",
@@ -1974,7 +2016,7 @@ export const translations = {
     type: "Type",
     quantity: "Quantity",
     recipient: "Recipient",
-  
+
     packsModalInventoryHint: "Choose a pack to start the reveal.",
     packsModalCollectionNote:
       "Packs can be earned through missions, events and Cardpoc rewards.",
@@ -1983,7 +2025,8 @@ export const translations = {
       "An ultra rare pack with a chance for mythic cards.",
     packsModalMythicPackName: "Mythic Pack",
 
-    adminSearchRequestPlaceholder: "Search requests by email, name, username, category or code...",
+    adminSearchRequestPlaceholder:
+      "Search requests by email, name, username, category or code...",
     adminBanned: "Banned",
     adminBanUser: "Ban",
     adminUnbanUser: "Unban",
@@ -1991,7 +2034,8 @@ export const translations = {
     adminUserUnbannedSuccess: "User unbanned successfully.",
     adminCardsPacksShort: "Cards/Packs",
     adminStatistics: "Statistics",
-    adminStatisticsDescription: "Cardpoc operational overview with visits, logins, conquered cards and main activity.",
+    adminStatisticsDescription:
+      "Cardpoc operational overview with visits, logins, conquered cards and main activity.",
     adminStatsVisits: "Visits",
     adminStatsVisitsHint: "Profile views recorded.",
     adminStatsLogins: "Logins/Users",
@@ -2030,8 +2074,7 @@ export const translations = {
     adminPartnershipDetecting: "Detecting...",
     adminSearchPartnershipPlaceholder:
       "Search by brand, creator, platform or evidence...",
-    adminNoDetectedPartnerships:
-      "No detected partnerships awaiting approval.",
+    adminNoDetectedPartnerships: "No detected partnerships awaiting approval.",
     adminPartnershipSource: "Source",
     adminConfidence: "confidence",
     adminPartnershipBrand: "Brand",
@@ -2082,8 +2125,7 @@ export const translations = {
     adminBrandSearch: "Search brand",
     adminBrandSearching: "Searching brand...",
     adminBrandConfidence: "Search confidence",
-    adminBrandEnrichmentError:
-      "Could not search brand data.",
+    adminBrandEnrichmentError: "Could not search brand data.",
     adminPartnershipPublicDescription: "Public partnership description",
     adminApproveAndPublish: "Approve and publish",
     adminPartnershipBrandRequired: "Enter the brand name before approving.",
@@ -2095,20 +2137,22 @@ export const translations = {
     adminPartnershipTypeEvent: "Event",
     adminPartnershipTypePartnership: "Partnership",
 
-
     creatorProfileTalkToTeam: "Talk to the team",
     supportCardpocTeam: "Cardpoc Team",
     supportConversations: "Conversations",
     supportNewConversation: "New conversation",
     supportLoading: "Loading conversations...",
-    supportEmpty: "You have not opened any conversations about this profile yet.",
+    supportEmpty:
+      "You have not opened any conversations about this profile yet.",
     supportStartConversation: "Start conversation",
     supportSelectConversation: "Select a conversation",
     supportSubjectPlaceholder: "Conversation subject",
-    supportMessagePlaceholder: "Explain what happened or what needs to be adjusted...",
+    supportMessagePlaceholder:
+      "Explain what happened or what needs to be adjusted...",
     supportSendToTeam: "Send to the team",
     supportNoMessages: "No messages in this conversation.",
-    supportClosedConversation: "This conversation was closed by the Cardpoc team. Open a new conversation if you need to continue the topic.",
+    supportClosedConversation:
+      "This conversation was closed by the Cardpoc team. Open a new conversation if you need to continue the topic.",
     supportReplyPlaceholder: "Write a reply...",
     supportYou: "You",
     supportTeam: "Cardpoc Team",
@@ -2125,21 +2169,42 @@ export const translations = {
     supportStatusResolved: "Resolved",
     supportStatusClosed: "Closed",
     adminConversations: "Conversations",
-    adminConversationsDescription: "Track creator and user requests in a chat-style support view.",
+    adminConversationsDescription:
+      "Track creator and user requests in a chat-style support view.",
     adminConversationsTotal: "conversations",
     adminConversationFilterAll: "All",
     adminSearchConversations: "Search conversations...",
     adminNoConversations: "No conversations found.",
-    adminConversationClosedHint: "Conversation closed. It remains available under Closed and All.",
+    adminConversationClosedHint:
+      "Conversation closed. It remains available under Closed and All.",
     adminConversationReplyPlaceholder: "Reply as Cardpoc team...",
     adminSelectConversation: "Select a conversation to view the chat.",
     email: "Email",
-},
+  },
 
   es: {
     notifications: "Notificaciones",
     collection: "Mi Colección",
     profile: "Mi Perfil",
+    linkedAccountsTitle: "Cuentas vinculadas",
+    linkedAccountsProfileDescription:
+      "Conecta plataformas para drops, misiones y recompensas.",
+    linkedAccountsManage: "Gestionar",
+    linkedAccountsClose: "Cerrar cuentas vinculadas",
+    linkedAccountsModalTitle: "Conecta tus plataformas",
+    linkedAccountsModalDescription:
+      "Conecta tus plataformas para participar en drops, misiones y recompensas.",
+    linkedAccountsConnected: "Conectada",
+    linkedAccountsUser: "Usuario",
+    linkedAccountsConnectedAt: "Conectada el",
+    linkedAccountsKickDescription:
+      "Conecta tu cuenta Kick para participar en drops por chat, eventos y recompensas automáticas.",
+    linkedAccountsConnect: "Conectar cuenta",
+    linkedAccountsDisconnect: "Desconectar",
+    linkedAccountsDisconnecting: "Desconectando...",
+    linkedAccountsComingSoonTitle: "Próximamente",
+    linkedAccountsComingSoonDescription:
+      "Se agregarán nuevas plataformas para misiones y eventos.",
     logout: "Salir",
     login: "Entrar",
     account: "Cuenta",
@@ -2615,7 +2680,8 @@ export const translations = {
     creatorPopupFollowNotificationPrefix: "Seguiste a",
     creatorPopupFollowXpMessage: "Ganaste XP por seguir a un creador.",
     creatorPopupCardUnlockedNotificationTitle: "Carta desbloqueada:",
-    creatorPopupCardUnlockedByFollow: "Desbloqueaste esta carta al seguir al creador.",
+    creatorPopupCardUnlockedByFollow:
+      "Desbloqueaste esta carta al seguir al creador.",
     creatorPopupFollowers: "Seguidores",
     creatorPopupFollowing: "Siguiendo",
     creatorPopupLevelPrefix: "Nv.",
@@ -2813,7 +2879,8 @@ export const translations = {
     homePageFaqLoginTitle: "¿Necesito iniciar sesión?",
     homePageFaqLoginContent:
       "Puedes explorar perfiles públicos sin iniciar sesión, pero necesitas entrar para seguir creadores, guardar cartas en tu colección, ganar XP, abrir packs, recibir notificaciones y progresar.",
-    homePageFaqPlainImagesTitle: "¿Por qué algunas cartas usan una imagen común?",
+    homePageFaqPlainImagesTitle:
+      "¿Por qué algunas cartas usan una imagen común?",
     homePageFaqPlainImagesContent:
       "Algunas cartas pueden usar una imagen común porque el creador aún no aprobó o autorizó el uso de una arte editada para Cardpoc. En esos casos, la imagen puede actualizarse después con aprobación o solicitud del propio creador.",
     homePageFaqGlobalFollowersTitle: "¿Qué son los seguidores globales?",
@@ -2962,7 +3029,8 @@ export const translations = {
     creatorProfileManualPartnershipLogoUrl: "Logo de la marca (URL de imagen)",
     creatorProfileManualPartnershipBrandWebsite: "Sitio oficial de la marca",
     creatorProfileManualPartnershipCampaign: "Campaña o acción",
-    creatorProfileManualPartnershipPublicLink: "Enlace público de la colaboración",
+    creatorProfileManualPartnershipPublicLink:
+      "Enlace público de la colaboración",
     creatorProfileManualPartnershipBrandDescription: "Descripción de la marca",
     creatorProfileManualPartnershipStartDate: "Fecha de inicio",
     creatorProfileManualPartnershipEndDate: "Fecha de fin",
@@ -3035,7 +3103,7 @@ export const translations = {
     type: "Tipo",
     quantity: "Cantidad",
     recipient: "Destinatario",
-  
+
     creatorRequestModalGenerateVariation: "Generar variación",
     creatorRequestModalGenerateImage: "Generar imagen",
     creatorRequestModalImageToolBadge: "Imagen",
@@ -3054,7 +3122,8 @@ export const translations = {
       "Úsalo como referencia para generar una versión estilizada.",
     creatorRequestModalCopyBeforeOpening: "Copiar prompt antes de abrir",
 
-    adminSearchRequestPlaceholder: "Buscar solicitudes por email, nombre, username, categoría o código...",
+    adminSearchRequestPlaceholder:
+      "Buscar solicitudes por email, nombre, username, categoría o código...",
     adminBanned: "Baneado",
     adminBanUser: "Banear",
     adminUnbanUser: "Desbanear",
@@ -3062,7 +3131,8 @@ export const translations = {
     adminUserUnbannedSuccess: "Usuario desbaneado correctamente.",
     adminCardsPacksShort: "Cartas/Packs",
     adminStatistics: "Estadísticas",
-    adminStatisticsDescription: "Resumen operacional de Cardpoc con visitas, logins, cartas conquistadas y actividades principales.",
+    adminStatisticsDescription:
+      "Resumen operacional de Cardpoc con visitas, logins, cartas conquistadas y actividades principales.",
     adminStatsVisits: "Visitas",
     adminStatsVisitsHint: "Visualizaciones registradas en perfiles.",
     adminStatsLogins: "Logins/Usuarios",
@@ -3084,14 +3154,16 @@ export const translations = {
     adminActivityApprovedRequest: "{actor} aprobó la solicitud de {target}.",
     adminActivityRejectedRequest: "{actor} rechazó la solicitud de {target}.",
     adminActivityApprovedClaim: "{actor} aprobó la reivindicación de {target}.",
-    adminActivityRejectedClaim: "{actor} rechazó la reivindicación de {target}.",
+    adminActivityRejectedClaim:
+      "{actor} rechazó la reivindicación de {target}.",
     adminActivitySentCard: "{actor} envió una carta a {target}.",
     adminActivityGiveawayCards: "{actor} envió cartas en giveaway.",
     adminActivitySentPack: "{actor} envió un pack a {target}.",
     adminActivityGiveawayPacks: "{actor} envió packs en giveaway.",
     adminActivityBannedUser: "{actor} baneó a {target}.",
     adminActivityUnbannedUser: "{actor} desbaneó a {target}.",
-    adminActivityGeneric: "{actor} realizó una acción administrativa en {target}.",
+    adminActivityGeneric:
+      "{actor} realizó una acción administrativa en {target}.",
     adminPartnerships: "Alianzas Detectadas",
     adminPartnershipsBadge: "Detector YouTube",
     adminPartnershipsTitle: "Alianzas Detectadas",
@@ -3131,10 +3203,8 @@ export const translations = {
     adminPartnershipDetectionSuccess: "Detección de YouTube finalizada.",
     adminPartnershipDetectionError:
       "No fue posible detectar alianzas de YouTube ahora.",
-    adminActivityApprovedPartnership:
-      "{actor} aprobó la alianza de {target}.",
-    adminActivityRejectedPartnership:
-      "{actor} rechazó la alianza de {target}.",
+    adminActivityApprovedPartnership: "{actor} aprobó la alianza de {target}.",
+    adminActivityRejectedPartnership: "{actor} rechazó la alianza de {target}.",
     adminSmartApprovalBadge: "Aprobación Inteligente",
     adminApprovePartnershipTitle: "Aprobar alianza",
     adminApprovePartnershipDescription:
@@ -3153,11 +3223,11 @@ export const translations = {
     adminBrandSearch: "Buscar marca",
     adminBrandSearching: "Buscando marca...",
     adminBrandConfidence: "Confianza de la búsqueda",
-    adminBrandEnrichmentError:
-      "No fue posible buscar los datos de la marca.",
+    adminBrandEnrichmentError: "No fue posible buscar los datos de la marca.",
     adminPartnershipPublicDescription: "Descripción pública de la alianza",
     adminApproveAndPublish: "Aprobar y publicar",
-    adminPartnershipBrandRequired: "Informa el nombre de la marca antes de aprobar.",
+    adminPartnershipBrandRequired:
+      "Informa el nombre de la marca antes de aprobar.",
     adminPartnershipDefaultPublicDescription:
       "Alianza detectada automáticamente y verificada por el equipo Cardpoc.",
     adminPartnershipTypeSponsorship: "Patrocinio",
@@ -3165,7 +3235,6 @@ export const translations = {
     adminPartnershipTypeCampaign: "Campaña",
     adminPartnershipTypeEvent: "Evento",
     adminPartnershipTypePartnership: "Alianza",
-
 
     creatorProfileTalkToTeam: "Hablar con el equipo",
     supportCardpocTeam: "Equipo Cardpoc",
@@ -3176,10 +3245,12 @@ export const translations = {
     supportStartConversation: "Abrir conversación",
     supportSelectConversation: "Selecciona una conversación",
     supportSubjectPlaceholder: "Asunto de la conversación",
-    supportMessagePlaceholder: "Explica qué ocurrió o qué necesita ajustarse...",
+    supportMessagePlaceholder:
+      "Explica qué ocurrió o qué necesita ajustarse...",
     supportSendToTeam: "Enviar al equipo",
     supportNoMessages: "No hay mensajes en esta conversación.",
-    supportClosedConversation: "Esta conversación fue cerrada por el equipo Cardpoc. Abre una nueva conversación si necesitas continuar el tema.",
+    supportClosedConversation:
+      "Esta conversación fue cerrada por el equipo Cardpoc. Abre una nueva conversación si necesitas continuar el tema.",
     supportReplyPlaceholder: "Escribe una respuesta...",
     supportYou: "Tú",
     supportTeam: "Equipo Cardpoc",
@@ -3196,16 +3267,18 @@ export const translations = {
     supportStatusResolved: "Resuelto",
     supportStatusClosed: "Cerrado",
     adminConversations: "Conversaciones",
-    adminConversationsDescription: "Acompaña llamados abiertos por creadores y usuarios en formato de chat.",
+    adminConversationsDescription:
+      "Acompaña llamados abiertos por creadores y usuarios en formato de chat.",
     adminConversationsTotal: "conversaciones",
     adminConversationFilterAll: "Todas",
     adminSearchConversations: "Buscar conversaciones...",
     adminNoConversations: "No se encontraron conversaciones.",
-    adminConversationClosedHint: "Conversación cerrada. Sigue disponible en Cerradas y Todas.",
+    adminConversationClosedHint:
+      "Conversación cerrada. Sigue disponible en Cerradas y Todas.",
     adminConversationReplyPlaceholder: "Responder como equipo Cardpoc...",
     adminSelectConversation: "Selecciona una conversación para ver el chat.",
     email: "Email",
-},
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations.pt;
