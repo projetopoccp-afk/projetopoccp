@@ -768,8 +768,7 @@ function parseEditSocialLinks(socialLinksText: string): SocialLink[] {
         platform: platform || "link",
         url,
       };
-    })
-    .filter((social) => Boolean(social.url));
+    });
 }
 
 function getEditSocialLinkRows(socialLinksText: string): SocialLink[] {
@@ -786,9 +785,8 @@ function serializeEditSocialLinks(socialLinks: SocialLink[]) {
       const platform = social.platform.trim() || "link";
       const url = social.url.trim();
 
-      return url ? `${platform}: ${url}` : "";
+      return `${platform}: ${url}`;
     })
-    .filter(Boolean)
     .join("\n");
 }
 
