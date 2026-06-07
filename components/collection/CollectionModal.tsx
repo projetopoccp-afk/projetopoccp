@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Archive,
   Crown,
@@ -153,6 +153,19 @@ function getPendingCreatorId(pending: PendingNotificationCard | null) {
   return pending?.creatorId || pending?.creator_id || null;
 }
 
+function getPendingNotificationKey(pending: PendingNotificationCard | null) {
+  const cardId = getPendingCardId(pending);
+  const creatorId = getPendingCreatorId(pending);
+
+  if (!cardId && !creatorId) return null;
+
+  return `${cardId || "no-card"}:${creatorId || "no-creator"}`;
+}
+
+function getCardOpenKey(card: UserCard) {
+  return `card:${card.id}`;
+}
+
 function getCardXp(rarity: string) {
   return rarityXp[rarity] || rarityXp.common;
 }
@@ -197,6 +210,7 @@ export function CollectionModal({
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [pendingNotificationCard, setPendingNotificationCard] =
     useState<PendingNotificationCard | null>(null);
+  const consumedNotificationKeysRef = useRef<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -273,26 +287,38 @@ export function CollectionModal({
   useEffect(() => {
     if (!open) return;
 
-    if (initialCardId || initialCreatorId) {
-      setPendingNotificationCard({
-        cardId: initialCardId,
-        creatorId: initialCreatorId,
-      });
+    const pendingFromProps = {
+      cardId: initialCardId,
+      creatorId: initialCreatorId,
+    };
+    const pendingKey = getPendingNotificationKey(pendingFromProps);
+
+    if (!pendingKey || consumedNotificationKeysRef.current.has(pendingKey)) {
+      return;
     }
+
+    setPendingNotificationCard(pendingFromProps);
   }, [open, initialCardId, initialCreatorId]);
 
   useEffect(() => {
     function handleOpenCardFromNotification(event: Event) {
       const customEvent = event as CustomEvent<PendingNotificationCard>;
 
-      setPendingNotificationCard({
+      const pendingFromEvent = {
         cardId:
           customEvent.detail?.cardId || customEvent.detail?.card_id || null,
         creatorId:
           customEvent.detail?.creatorId ||
           customEvent.detail?.creator_id ||
           null,
-      });
+      };
+      const pendingKey = getPendingNotificationKey(pendingFromEvent);
+
+      if (!pendingKey || consumedNotificationKeysRef.current.has(pendingKey)) {
+        return;
+      }
+
+      setPendingNotificationCard(pendingFromEvent);
     }
 
     window.addEventListener(
@@ -313,12 +339,18 @@ export function CollectionModal({
       return;
     }
 
+    const pendingKey = getPendingNotificationKey(pendingNotificationCard);
     const cardToOpen = findNotificationCard(cards, pendingNotificationCard);
 
     if (!cardToOpen) return;
 
-    handleSelectCard(cardToOpen);
+    if (pendingKey) {
+      consumedNotificationKeysRef.current.add(pendingKey);
+    }
+    consumedNotificationKeysRef.current.add(getCardOpenKey(cardToOpen));
+
     setPendingNotificationCard(null);
+    handleSelectCard(cardToOpen);
     onInitialCardOpened?.();
   }, [cards, loading, onInitialCardOpened, open, pendingNotificationCard]);
 
