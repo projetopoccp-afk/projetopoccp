@@ -1071,11 +1071,6 @@ export function CreatorPopup({
 
       const updatedLevel = await updateCreatorProfileLevel(supabase, creatorId);
       setCreatorCardLevel(updatedLevel.profileLevel);
-      onCreatorUpdated?.({
-        ...creator,
-        profile_level: updatedLevel.profileLevel,
-        profile_xp: updatedLevel.profileXp,
-      } as Creator);
 
       setFollowLoading(false);
       return;
@@ -1198,11 +1193,6 @@ export function CreatorPopup({
 
     const updatedLevel = await updateCreatorProfileLevel(supabase, creatorId);
     setCreatorCardLevel(updatedLevel.profileLevel);
-    onCreatorUpdated?.({
-      ...creator,
-      profile_level: updatedLevel.profileLevel,
-      profile_xp: updatedLevel.profileXp,
-    } as Creator);
 
     setFollowLoading(false);
   }
