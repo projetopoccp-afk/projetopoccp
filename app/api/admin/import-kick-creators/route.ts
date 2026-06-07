@@ -278,8 +278,23 @@ export async function POST(request: NextRequest) {
       .select("id, username, nickname");
 
     if (insertError) {
-      throw insertError;
-    }
+  console.error("Kick detector insertError:", {
+    message: insertError.message,
+    details: insertError.details,
+    hint: insertError.hint,
+    code: insertError.code,
+  });
+
+  return NextResponse.json(
+    {
+      error: insertError.message,
+      details: insertError.details,
+      hint: insertError.hint,
+      code: insertError.code,
+    },
+    { status: 500 },
+  );
+}
 
     return NextResponse.json({
       ok: true,
