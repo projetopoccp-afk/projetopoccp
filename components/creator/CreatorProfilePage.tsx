@@ -39,6 +39,7 @@ import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
+import { updateCreatorProfileLevel } from "@/lib/update-creator-profile-level";
 import type {
   Creator,
   CreatorRank,
@@ -3207,11 +3208,18 @@ export function CreatorProfilePage({
         return;
       }
 
-      setIsFollowing(true);
+      setIsFollowing(false);
       setStats((current) => ({
         ...current,
-        followers: current.followers + 1,
+        followers: Math.max(0, current.followers - 1),
       }));
+
+      await updateCreatorProfileLevel(
+        supabase,
+        profile.id,
+      );
+
+      return;
 
       const metadata = {
         creator_id: profile.id,
