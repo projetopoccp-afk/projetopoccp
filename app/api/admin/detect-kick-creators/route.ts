@@ -52,7 +52,7 @@ function normalizeSlug(value: unknown) {
   return cleanText(value)
     .replace(/^@/, "")
     .toLowerCase()
-    .replace(/[^a-z0-9_\\-.]/g, "");
+    .replace(/[^a-z0-9_.-]/g, "");
 }
 
 function getNumber(value: unknown) {
