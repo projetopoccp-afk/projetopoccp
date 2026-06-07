@@ -29,6 +29,11 @@ export const translations = {
     account: "Conta",
     openPanel: "Abrir painel",
     collectorRole: "Colecionador",
+    accountHeroProgressLabel: "Progresso",
+    accountSectionProgress: "Minha progressão",
+    accountSectionCollection: "Minha coleção",
+    accountSectionGameplay: "Objetivos",
+    accountSectionSettings: "Conta e criador",
     creatorProfileEditMediaTitle: "Mídia e links",
     creatorProfileEditSocialLinks: "Links sociais",
     creatorProfileEditAddSocialLink: "Adicionar link",
@@ -39,7 +44,8 @@ export const translations = {
     liveDropsParticipants: "Participantes",
     liveDropsNoParticipants: "Aguardando participantes...",
     liveDropsWaitingParticipants: "Aguardando participantes no chat.",
-    liveDropsCustomDurationHint: "Digite quantos minutos o drop ficará aberto. O criador só pode criar 1 drop a cada 2 horas.",
+    liveDropsCustomDurationHint:
+      "Digite quantos minutos o drop ficará aberto. O criador só pode criar 1 drop a cada 2 horas.",
     liveDropsTimeRemaining: "Tempo restante",
     liveDropsCompletedStatus: "Concluído",
     liveDropsViewWinners: "Ver vencedores",
@@ -48,8 +54,10 @@ export const translations = {
     liveDropsCloseWinners: "Fechar vencedores",
     liveDropsNoWinners: "Nenhum vencedor neste drop.",
     liveDropsUnknownUser: "Usuário",
-    liveDropsCooldownError: "Você já criou um drop recentemente. Próximo drop liberado às",
-    liveDropsCooldownGenericError: "Você já criou um drop recentemente. Aguarde para criar outro.",
+    liveDropsCooldownError:
+      "Você já criou um drop recentemente. Próximo drop liberado às",
+    liveDropsCooldownGenericError:
+      "Você já criou um drop recentemente. Aguarde para criar outro.",
 
     rankingsEyebrow: "Hall da fama Cardpoc",
     rankingsPageTitle: "Rankings",
@@ -418,7 +426,8 @@ export const translations = {
     creatorGridFeaturedCards: "Cartas em Destaque",
     creatorGridNewCards: "Cartas Novas",
     creatorGridActiveDropsTitle: "Drops ativos",
-    creatorGridActiveDropsDescription: "Criadores que fizeram drops nas últimas 2 horas aparecem aqui.",
+    creatorGridActiveDropsDescription:
+      "Criadores que fizeram drops nas últimas 2 horas aparecem aqui.",
     creatorGridDropLastTwoHours: "Drop criado nas últimas 2 horas",
     creatorGridEmptyTitle:
       "Não identificamos nenhuma identidade correspondente à sua busca.",
@@ -1250,6 +1259,11 @@ export const translations = {
     account: "Account",
     openPanel: "Open panel",
     collectorRole: "Collector",
+    accountHeroProgressLabel: "Progress",
+    accountSectionProgress: "My progression",
+    accountSectionCollection: "My collection",
+    accountSectionGameplay: "Goals",
+    accountSectionSettings: "Account and creator",
     creatorProfileEditMediaTitle: "Media and links",
     creatorProfileEditSocialLinks: "Social links",
     creatorProfileEditAddSocialLink: "Add link",
@@ -1260,7 +1274,8 @@ export const translations = {
     liveDropsParticipants: "Participants",
     liveDropsNoParticipants: "Waiting for participants...",
     liveDropsWaitingParticipants: "Waiting for chat participants.",
-    liveDropsCustomDurationHint: "Enter how many minutes the drop will stay open. The creator can create 1 drop every 2 hours.",
+    liveDropsCustomDurationHint:
+      "Enter how many minutes the drop will stay open. The creator can create 1 drop every 2 hours.",
     liveDropsTimeRemaining: "Time remaining",
     liveDropsCompletedStatus: "Completed",
     liveDropsViewWinners: "View winners",
@@ -1270,7 +1285,8 @@ export const translations = {
     liveDropsNoWinners: "No winners for this drop.",
     liveDropsUnknownUser: "User",
     liveDropsCooldownError: "You created a drop recently. Next drop unlocks at",
-    liveDropsCooldownGenericError: "You created a drop recently. Please wait before creating another one.",
+    liveDropsCooldownGenericError:
+      "You created a drop recently. Please wait before creating another one.",
 
     rankingsEyebrow: "Cardpoc Hall of Fame",
     rankingsPageTitle: "Rankings",
@@ -1328,8 +1344,7 @@ export const translations = {
     albumPageComplete: "Complete",
     albumPageIncomplete: "Incomplete",
     albumPageProgressLabel: "Progress",
-    albumPageLoginHint:
-      "Sign in to see which album cards are already lit up.",
+    albumPageLoginHint: "Sign in to see which album cards are already lit up.",
 
     legalBackHome: "Back to home",
     legalLastUpdated: "Last updated: June 2026",
@@ -1632,7 +1647,8 @@ export const translations = {
     creatorGridFeaturedCards: "Featured Cards",
     creatorGridNewCards: "New Cards",
     creatorGridActiveDropsTitle: "Active drops",
-    creatorGridActiveDropsDescription: "Creators who made drops in the last 2 hours appear here.",
+    creatorGridActiveDropsDescription:
+      "Creators who made drops in the last 2 hours appear here.",
     creatorGridDropLastTwoHours: "Drop created in the last 2 hours",
     creatorGridEmptyTitle:
       "We could not identify any identity matching your search.",
@@ -2154,8 +2170,7 @@ export const translations = {
       "In this first version the drop is created; automatic Kick chat reading comes in the next step.",
     liveDropsOfflineWarning:
       "The creator must be live on Kick to activate drops.",
-    liveDropsNoViewersWarning:
-      "Could not confirm live viewers right now.",
+    liveDropsNoViewersWarning: "Could not confirm live viewers right now.",
     liveDropsActivate: "Activate drop",
     liveDropsActivating: "Activating...",
     liveDropsCreatedDescription:
@@ -2460,6 +2475,11 @@ export const translations = {
     account: "Cuenta",
     openPanel: "Abrir panel",
     collectorRole: "Coleccionista",
+    accountHeroProgressLabel: "Progreso",
+    accountSectionProgress: "Mi progresión",
+    accountSectionCollection: "Mi colección",
+    accountSectionGameplay: "Objetivos",
+    accountSectionSettings: "Cuenta y creador",
     creatorProfileEditMediaTitle: "Medios y enlaces",
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
@@ -2470,7 +2490,8 @@ export const translations = {
     liveDropsParticipants: "Participantes",
     liveDropsNoParticipants: "Esperando participantes...",
     liveDropsWaitingParticipants: "Esperando participantes en el chat.",
-    liveDropsCustomDurationHint: "Ingresa cuántos minutos estará abierto el drop. El creador solo puede crear 1 drop cada 2 horas.",
+    liveDropsCustomDurationHint:
+      "Ingresa cuántos minutos estará abierto el drop. El creador solo puede crear 1 drop cada 2 horas.",
     liveDropsTimeRemaining: "Tiempo restante",
     liveDropsCompletedStatus: "Completado",
     liveDropsViewWinners: "Ver ganadores",
@@ -2479,8 +2500,10 @@ export const translations = {
     liveDropsCloseWinners: "Cerrar ganadores",
     liveDropsNoWinners: "No hubo ganadores en este drop.",
     liveDropsUnknownUser: "Usuario",
-    liveDropsCooldownError: "Ya creaste un drop recientemente. El próximo drop se libera a las",
-    liveDropsCooldownGenericError: "Ya creaste un drop recientemente. Espera antes de crear otro.",
+    liveDropsCooldownError:
+      "Ya creaste un drop recientemente. El próximo drop se libera a las",
+    liveDropsCooldownGenericError:
+      "Ya creaste un drop recientemente. Espera antes de crear otro.",
 
     rankingsEyebrow: "Salón de la fama Cardpoc",
     rankingsPageTitle: "Rankings",
@@ -2843,7 +2866,8 @@ export const translations = {
     creatorGridFeaturedCards: "Cartas Destacadas",
     creatorGridNewCards: "Cartas Nuevas",
     creatorGridActiveDropsTitle: "Drops activos",
-    creatorGridActiveDropsDescription: "Los creadores que hicieron drops en las últimas 2 horas aparecen aquí.",
+    creatorGridActiveDropsDescription:
+      "Los creadores que hicieron drops en las últimas 2 horas aparecen aquí.",
     creatorGridDropLastTwoHours: "Drop creado en las últimas 2 horas",
     creatorGridEmptyTitle:
       "No identificamos ninguna identidad que coincida con tu búsqueda.",
