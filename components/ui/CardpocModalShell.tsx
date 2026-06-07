@@ -61,7 +61,7 @@ export function CardpocModalShell({
           className={`relative z-10 flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden ${contentClassName}`}
         >
           {hasControls && (
-            <div className="pointer-events-none sticky top-2 z-50 -mb-10 flex shrink-0 justify-end gap-2 pr-2 sm:top-3 sm:-mb-11 sm:gap-3 lg:top-4 lg:-mb-12">
+            <div className="pointer-events-none absolute right-4 top-4 z-50 flex gap-2 sm:right-5 sm:top-5 sm:gap-3 lg:right-6 lg:top-6">
               {showMinimizeButton && onMinimize && (
                 <button
                   type="button"
