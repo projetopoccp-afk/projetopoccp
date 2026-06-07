@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import {
   Archive,
-  BadgeCheck,
   LogOut,
+  Link2,
   Package,
   ShieldCheck,
+  Sparkles,
   Target,
   UserRound,
 } from "lucide-react";
@@ -91,13 +92,13 @@ export function AccountModal({
         window.dispatchEvent(
           new CustomEvent("creator-nexus:focus-collection-card", {
             detail,
-          })
+          }),
         );
 
         window.dispatchEvent(
           new CustomEvent("creator-nexus:open-collection-card", {
             detail,
-          })
+          }),
         );
       }, 80);
     }
@@ -110,23 +111,23 @@ export function AccountModal({
 
     window.addEventListener(
       "creator-nexus:open-collection-card",
-      handleOpenCollectionCard
+      handleOpenCollectionCard,
     );
 
     window.addEventListener(
       "creator-nexus:open-user-profile",
-      handleOpenUserProfile
+      handleOpenUserProfile,
     );
 
     return () => {
       window.removeEventListener(
         "creator-nexus:open-collection-card",
-        handleOpenCollectionCard
+        handleOpenCollectionCard,
       );
 
       window.removeEventListener(
         "creator-nexus:open-user-profile",
-        handleOpenUserProfile
+        handleOpenUserProfile,
       );
     };
   }, [onClose]);
@@ -214,7 +215,9 @@ export function AccountModal({
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                    @{profile?.username || translate(t, "noUsername", "sem_username")}
+                    @
+                    {profile?.username ||
+                      translate(t, "noUsername", "sem_username")}
                   </span>
 
                   <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
@@ -257,10 +260,11 @@ export function AccountModal({
                 description={translate(
                   t,
                   "profileCardDescription",
-                  "Veja seu nível, XP, progresso, badges e atividade dentro do Cardpoc."
+                  "Veja seu nível, XP, progresso, conquistas e atividade dentro do Cardpoc.",
                 )}
                 buttonLabel={translate(t, "open", "Abrir")}
                 variant="cyan"
+                featured
                 onClick={() => setProfileOpen(true)}
               />
 
@@ -270,37 +274,11 @@ export function AccountModal({
                 description={translate(
                   t,
                   "collectionCardDescription",
-                  "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção."
+                  "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção.",
                 )}
                 buttonLabel={translate(t, "open", "Abrir")}
                 variant="purple"
                 onClick={() => setCollectionOpen(true)}
-              />
-
-              <AccountActionCard
-                icon={<BadgeCheck size={21} />}
-                title={translate(t, "myBadges", "Minhas Badges")}
-                description={translate(
-                  t,
-                  "badgesCardDescription",
-                  "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
-                )}
-                buttonLabel={translate(t, "soon", "Em breve")}
-                variant="yellow"
-                disabled
-              />
-
-              <AccountActionCard
-                icon={<Target size={21} />}
-                title={translate(t, "missions", "Missões")}
-                description={translate(
-                  t,
-                  "missionsCardDescription",
-                  "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Cardpoc."
-                )}
-                buttonLabel={translate(t, "open", "Abrir")}
-                variant="emerald"
-                onClick={() => setMissionsOpen(true)}
               />
 
               <AccountActionCard
@@ -309,11 +287,44 @@ export function AccountModal({
                 description={translate(
                   t,
                   "packsCardDescription",
-                  "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
+                  "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas.",
                 )}
                 buttonLabel={translate(t, "open", "Abrir")}
                 variant="pink"
                 onClick={() => setPacksOpen(true)}
+              />
+
+              <AccountActionCard
+                icon={<Target size={21} />}
+                title={translate(t, "missions", "Missões")}
+                description={translate(
+                  t,
+                  "missionsCardDescription",
+                  "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Cardpoc.",
+                )}
+                buttonLabel={translate(t, "open", "Abrir")}
+                variant="emerald"
+                onClick={() => setMissionsOpen(true)}
+              />
+
+              <AccountActionCard
+                icon={<Link2 size={21} />}
+                title={translate(t, "linkedAccountsTitle", "Contas Linkadas")}
+                description={translate(
+                  t,
+                  "linkedAccountsProfileDescription",
+                  "Conecte Kick e Twitch para participar de drops, missões e recompensas automáticas.",
+                )}
+                buttonLabel={translate(t, "linkedAccountsManage", "Gerenciar")}
+                variant="cyan"
+                onClick={() => {
+                  setProfileOpen(true);
+                  window.setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent("creator-nexus:open-linked-accounts"),
+                    );
+                  }, 80);
+                }}
               />
 
               <div className="flex min-h-[156px] flex-col rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 lg:min-h-[176px] [@media(max-height:760px)]:min-h-[138px] [@media(max-height:760px)]:p-3">
@@ -323,7 +334,11 @@ export function AccountModal({
                   </div>
 
                   <h3 className="font-bold leading-tight">
-                    {translate(t, "requestCreatorProfile", "Solicitar perfil de criador")}
+                    {translate(
+                      t,
+                      "requestCreatorProfile",
+                      "Solicitar perfil de criador",
+                    )}
                   </h3>
                 </div>
 
@@ -331,7 +346,7 @@ export function AccountModal({
                   {translate(
                     t,
                     "requestCreatorProfileDescription",
-                    "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação."
+                    "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação.",
                   )}
                 </p>
 
@@ -341,6 +356,41 @@ export function AccountModal({
                   className="mt-3 w-fit rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105 [@media(max-height:760px)]:px-4 [@media(max-height:760px)]:py-1.5 [@media(max-height:760px)]:text-xs"
                 >
                   {translate(t, "startRequest", "Começar solicitação")}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.035] p-4 [@media(max-height:760px)]:p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-yellow-100">
+                    <Sparkles size={19} />
+                  </div>
+
+                  <div>
+                    <p className="font-bold text-white">
+                      {translate(
+                        t,
+                        "accountHubTipTitle",
+                        "Hub do colecionador",
+                      )}
+                    </p>
+                    <p className="text-sm text-white/45">
+                      {translate(
+                        t,
+                        "accountHubTipDescription",
+                        "Suas badges agora aparecem dentro do Meu Perfil junto com sua progressão.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(true)}
+                  className="w-fit rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20"
+                >
+                  {translate(t, "viewProgress", "Ver progresso")}
                 </button>
               </div>
             </div>
@@ -394,6 +444,7 @@ function AccountActionCard({
   buttonLabel,
   variant,
   disabled = false,
+  featured = false,
   onClick,
 }: {
   icon: React.ReactNode;
@@ -402,6 +453,7 @@ function AccountActionCard({
   buttonLabel: string;
   variant: "cyan" | "purple" | "yellow" | "emerald" | "pink";
   disabled?: boolean;
+  featured?: boolean;
   onClick?: () => void;
 }) {
   const styles = {
@@ -434,7 +486,7 @@ function AccountActionCard({
 
   return (
     <div
-      className={`flex min-h-[156px] flex-col rounded-3xl border p-4 lg:min-h-[176px] [@media(max-height:760px)]:min-h-[138px] [@media(max-height:760px)]:p-3 ${styles.card}`}
+      className={`flex min-h-[156px] flex-col rounded-3xl border p-4 lg:min-h-[176px] [@media(max-height:760px)]:min-h-[138px] [@media(max-height:760px)]:p-3 ${featured ? "shadow-[0_0_35px_rgba(34,211,238,0.10)]" : ""} ${styles.card}`}
     >
       <div className="flex items-center gap-3">
         <div

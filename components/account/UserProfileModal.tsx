@@ -86,6 +86,16 @@ function normalizeRarity(rarity: string) {
   return rarity.toLowerCase().trim();
 }
 
+function getRarityRank(rarity: string) {
+  const normalized = normalizeRarity(rarity);
+
+  if (normalized === "legendary") return 4;
+  if (normalized === "epic") return 3;
+  if (normalized === "rare") return 2;
+
+  return 1;
+}
+
 function formatCountLabel(
   t: TranslateFunction,
   count: number,
@@ -216,6 +226,26 @@ export function UserProfileModal({
   }, []);
 
   useEffect(() => {
+    function handleOpenLinkedAccounts() {
+      setNotificationOpen(true);
+      setLinkedAccountsOpen(true);
+      void loadLinkedAccounts();
+    }
+
+    window.addEventListener(
+      "creator-nexus:open-linked-accounts",
+      handleOpenLinkedAccounts,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-linked-accounts",
+        handleOpenLinkedAccounts,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isVisible) return;
 
     async function loadProfileStats() {
@@ -299,6 +329,109 @@ export function UserProfileModal({
     return getLevelProgress(profileXp.xp, profileXp.level);
   }, [profileXp.level, profileXp.xp]);
 
+  const rarestCard = useMemo(() => {
+    return [...cards].sort((a, b) => {
+      const rarityDifference =
+        getRarityRank(b.rarity) - getRarityRank(a.rarity);
+
+      if (rarityDifference !== 0) return rarityDifference;
+
+      return (
+        new Date(b.obtained_at).getTime() - new Date(a.obtained_at).getTime()
+      );
+    })[0];
+  }, [cards]);
+
+  const collectorTitle = useMemo(() => {
+    if (profileXp.level >= 25) {
+      return translate(t, "collectorTitleLegend", "Lenda Cardpoc");
+    }
+
+    if (profileXp.level >= 15) {
+      return translate(t, "collectorTitleElite", "Colecionador Elite");
+    }
+
+    if (profileXp.level >= 10) {
+      return translate(t, "collectorTitleEpic", "Caçador Épico");
+    }
+
+    if (profileXp.level >= 5) {
+      return translate(t, "collectorTitleCollector", "Colecionador");
+    }
+
+    return translate(t, "collectorTitleRookie", "Recruta Cardpoc");
+  }, [profileXp.level, t]);
+
+  const achievements = useMemo(
+    () => [
+      {
+        key: "firstCard",
+        title: translate(t, "firstCard", "Primeira Carta"),
+        description: translate(
+          t,
+          "firstCardDescription",
+          "Conquiste sua primeira carta no Cardpoc.",
+        ),
+        unlocked: stats.total > 0,
+      },
+      {
+        key: "rareCollector",
+        title: translate(t, "rareCollector", "Colecionador Raro"),
+        description: translate(
+          t,
+          "rareCollectorDescription",
+          "Tenha pelo menos uma carta rara ou superior.",
+        ),
+        unlocked: stats.rare + stats.epic + stats.legendary > 0,
+      },
+      {
+        key: "epicHunter",
+        title: translate(t, "epicHunter", "Caçador Épico"),
+        description: translate(
+          t,
+          "epicHunterDescription",
+          "Conquiste uma carta épica ou superior.",
+        ),
+        unlocked: stats.epic + stats.legendary > 0,
+      },
+      {
+        key: "legendaryHunter",
+        title: translate(t, "legendaryHunter", "Caçador de Lendárias"),
+        description: translate(
+          t,
+          "legendaryHunterDescription",
+          "Adicione uma carta lendária à sua coleção.",
+        ),
+        unlocked: stats.legendary > 0,
+      },
+      {
+        key: "levelTen",
+        title: translate(t, "levelTen", "Nível 10"),
+        description: translate(
+          t,
+          "levelTenDescription",
+          "Alcance o nível 10 como colecionador.",
+        ),
+        unlocked: profileXp.level >= 10,
+      },
+      {
+        key: "cardHoarder",
+        title: translate(t, "cardHoarder", "50 Cartas"),
+        description: translate(
+          t,
+          "cardHoarderDescription",
+          "Colecione 50 cartas no Cardpoc.",
+        ),
+        unlocked: stats.total >= 50,
+      },
+    ],
+    [profileXp.level, stats.epic, stats.legendary, stats.rare, stats.total, t],
+  );
+
+  const unlockedAchievements = achievements.filter(
+    (achievement) => achievement.unlocked,
+  ).length;
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -307,118 +440,115 @@ export function UserProfileModal({
           showCloseButton
           closeLabel={translate(t, "closeProfile", "Fechar perfil")}
           zIndexClassName="z-[110]"
-          className="max-w-4xl"
-          contentClassName="max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:p-8"
+          className="max-w-6xl"
+          contentClassName="overflow-y-auto p-4 pb-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:p-5 md:p-6 lg:p-7 [@media(max-height:760px)]:p-4"
         >
-          <div className="relative">
+          <div className="relative pr-10">
             <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
               <UserRound size={14} />
-              {translate(t, "profile", "Meu Perfil")}
+              {translate(t, "collectorProfile", "Perfil de Colecionador")}
             </div>
 
-            <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.display_name || "Avatar"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <UserRound className="text-white/40" size={42} />
-                )}
-              </div>
+            <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_0.9fr] [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:gap-4">
+              <div className="relative overflow-hidden rounded-[28px] border border-cyan-300/15 bg-white/[0.045] p-5 shadow-[0_0_50px_rgba(34,211,238,0.08)] [@media(max-height:760px)]:p-4">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.18),transparent_50%)]" />
 
-              <div className="min-w-0 flex-1">
-                <h2 className="text-3xl font-black leading-tight">
-                  {profile?.display_name || translate(t, "creator", "Creator")}
-                </h2>
-
-                <p className="mt-1 break-all text-white/45">{email}</p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                    @
-                    {profile?.username ||
-                      translate(t, "noUsername", "sem_username")}
-                  </span>
-
-                  <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                    {translate(t, "level", "Nível")}{" "}
-                    {loading ? "..." : profileXp.level}
-                  </span>
-
-                  {highlightLevelUp && (
-                    <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-sm text-emerald-100">
-                      {translate(t, "recentLevelUp", "Level up recente")}
-                    </span>
-                  )}
-
-                  <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
-                    {loading ? "..." : profileXp.xp} XP
-                  </span>
-
-                  <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                    {formatCountLabel(
-                      t,
-                      stats.total,
-                      "cardsCountSingular",
-                      "{count} carta",
-                      "cardsCountPlural",
-                      "{count} cartas",
+                <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-black/25 lg:h-24 lg:w-24 [@media(max-height:760px)]:h-18 [@media(max-height:760px)]:w-18">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.display_name || "Avatar"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <UserRound className="text-white/40" size={42} />
                     )}
-                  </span>
-
-                  {profile?.is_admin && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
-                      <ShieldCheck size={14} />
-                      {translate(t, "admin", "Admin")}
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-5 max-w-xl">
-                  <div className="mb-2 flex items-center justify-between text-xs text-white/45">
-                    <span>
-                      {translate(
-                        t,
-                        "progressToLevel",
-                        "Progresso para o nível",
-                      )}{" "}
-                      {profileXp.level + 1}
-                    </span>
-                    <span>{levelProgress.percentage}%</span>
                   </div>
 
-                  <div className="h-2 overflow-hidden rounded-full border border-white/10 bg-white/5">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${levelProgress.percentage}%` }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
-                      className="h-full rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.8)]"
-                    />
-                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-2xl font-black leading-tight text-white lg:text-3xl">
+                      {profile?.display_name ||
+                        translate(t, "creator", "Creator")}
+                    </h2>
 
-                  <p className="mt-2 text-xs text-white/40">
-                    {translate(t, "remainingXpPrefix", "Faltam")}{" "}
-                    {levelProgress.remainingXp} XP{" "}
-                    {translate(t, "remainingXpSuffix", "para o próximo nível.")}
-                  </p>
+                    <p className="mt-1 break-all text-sm text-white/45 sm:text-base">
+                      {email}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm text-white/60">
+                        @
+                        {profile?.username ||
+                          translate(t, "noUsername", "sem_username")}
+                      </span>
+
+                      <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-100">
+                        LVL {loading ? "..." : profileXp.level} •{" "}
+                        {collectorTitle}
+                      </span>
+
+                      {highlightLevelUp && (
+                        <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-sm font-bold text-emerald-100">
+                          {translate(t, "recentLevelUp", "Level up recente")}
+                        </span>
+                      )}
+
+                      {profile?.is_admin && (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                          <ShieldCheck size={14} />
+                          {translate(t, "admin", "Admin")}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-5 max-w-2xl">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/45">
+                        <span>
+                          {loading ? "..." : profileXp.xp} /{" "}
+                          {levelProgress.nextLevelXp} XP
+                        </span>
+                        <span>
+                          {levelProgress.percentage}% •{" "}
+                          {translate(t, "level", "Nível")} {profileXp.level + 1}
+                        </span>
+                      </div>
+
+                      <div className="h-3 overflow-hidden rounded-full border border-white/10 bg-black/25">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${levelProgress.percentage}%` }}
+                          transition={{ duration: 0.7, ease: "easeOut" }}
+                          className="h-full rounded-full bg-cyan-300 shadow-[0_0_22px_rgba(34,211,238,0.85)]"
+                        />
+                      </div>
+
+                      <p className="mt-2 text-xs text-white/45">
+                        {translate(t, "remainingXpPrefix", "Faltam")}{" "}
+                        {levelProgress.remainingXp} XP{" "}
+                        {translate(
+                          t,
+                          "remainingXpSuffix",
+                          "para o próximo nível.",
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="w-full sm:w-auto sm:min-w-[320px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLinkedAccountsOpen(true);
-                    void loadLinkedAccounts();
-                  }}
-                  className="group relative w-full overflow-hidden rounded-3xl border border-cyan-300/20 bg-white/[0.06] p-5 text-left shadow-[0_0_40px_rgba(34,211,238,0.08)] transition hover:border-cyan-200/45 hover:bg-cyan-300/[0.08]"
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_48%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_50%)] opacity-80 transition group-hover:opacity-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  setLinkedAccountsOpen(true);
+                  void loadLinkedAccounts();
+                }}
+                className="group relative overflow-hidden rounded-[28px] border border-cyan-300/20 bg-white/[0.055] p-5 text-left shadow-[0_0_45px_rgba(34,211,238,0.08)] transition hover:border-cyan-200/45 hover:bg-cyan-300/[0.08] [@media(max-height:760px)]:p-4"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_48%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_50%)] opacity-80 transition group-hover:opacity-100" />
 
-                  <div className="relative flex items-start gap-4">
+                <div className="relative flex h-full flex-col justify-between gap-5">
+                  <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,0.25)]">
                       <Link2 size={22} />
                     </div>
@@ -434,19 +564,19 @@ export function UserProfileModal({
                           "Conecte plataformas para drops, missões e recompensas.",
                         )}
                       </p>
-
-                      <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs font-bold text-white/70 transition group-hover:border-cyan-300/30 group-hover:text-cyan-100">
-                        {translate(t, "linkedAccountsManage", "Gerenciar")}
-                        <ExternalLink size={13} />
-                      </span>
                     </div>
                   </div>
-                </button>
-              </div>
+
+                  <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs font-bold text-white/70 transition group-hover:border-cyan-300/30 group-hover:text-cyan-100">
+                    {translate(t, "linkedAccountsManage", "Gerenciar")}
+                    <ExternalLink size={13} />
+                  </span>
+                </div>
+              </button>
             </div>
 
             {highlightLevelUp && (
-              <div className="mt-6 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.05] p-5">
+              <div className="mt-5 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10 text-emerald-100">
                     <Trophy size={22} />
@@ -460,7 +590,7 @@ export function UserProfileModal({
                       {translate(
                         t,
                         "levelUpDescription",
-                        "Seu perfil foi aberto a partir de uma notificação de evolução. Continue seguindo criadores, compartilhando e colecionando cartas para ganhar mais XP.",
+                        "Continue seguindo criadores, compartilhando e colecionando cartas para ganhar mais XP.",
                       )}
                     </p>
                   </div>
@@ -468,12 +598,12 @@ export function UserProfileModal({
               </div>
             )}
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 [@media(max-height:760px)]:mt-4">
               <ProfileStatCard
-                icon={<Trophy size={18} />}
-                label={translate(t, "level", "Nível")}
-                value={loading ? "..." : String(profileXp.level)}
-                tone="cyan"
+                icon={<Archive size={18} />}
+                label={translate(t, "cardsTitle", "Cartas")}
+                value={loading ? "..." : String(stats.total)}
+                tone="purple"
               />
 
               <ProfileStatCard
@@ -484,33 +614,10 @@ export function UserProfileModal({
               />
 
               <ProfileStatCard
-                icon={<Archive size={18} />}
-                label={translate(t, "cardsTitle", "Cartas")}
-                value={loading ? "..." : String(stats.total)}
-                tone="purple"
-              />
-
-              <ProfileStatCard
-                icon={<Sparkles size={18} />}
-                label={translate(t, "commonPlural", "Comuns")}
-                value={loading ? "..." : String(stats.common)}
+                icon={<Trophy size={18} />}
+                label={translate(t, "badges", "Badges")}
+                value={loading ? "..." : String(unlockedAchievements)}
                 tone="cyan"
-              />
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <ProfileStatCard
-                icon={<Gem size={18} />}
-                label={translate(t, "rarePlural", "Raras")}
-                value={loading ? "..." : String(stats.rare)}
-                tone="purple"
-              />
-
-              <ProfileStatCard
-                icon={<Zap size={18} />}
-                label={translate(t, "epicPlural", "Épicas")}
-                value={loading ? "..." : String(stats.epic)}
-                tone="yellow"
               />
 
               <ProfileStatCard
@@ -519,17 +626,95 @@ export function UserProfileModal({
                 value={loading ? "..." : String(stats.legendary)}
                 tone="pink"
               />
-
-              <ProfileStatCard
-                icon={<BadgeCheck size={18} />}
-                label={translate(t, "badges", "Badges")}
-                value={loading ? "..." : String(stats.badges)}
-                tone="cyan"
-              />
             </div>
 
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 [@media(max-height:760px)]:p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-yellow-100">
+                    <Gem size={22} />
+                  </div>
+
+                  <div>
+                    <p className="font-bold">
+                      {translate(
+                        t,
+                        "profileHighlightTitle",
+                        "Destaque da coleção",
+                      )}
+                    </p>
+                    <p className="text-sm text-white/45">
+                      {translate(
+                        t,
+                        "profileHighlightDescription",
+                        "Sua carta de maior raridade conquistada até agora.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                  {rarestCard ? (
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="text-cyan-200" size={20} />
+                      <div>
+                        <p className="text-sm font-bold text-white">
+                          {getTranslatedRarityLabel(rarestCard.rarity, t)}
+                        </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {translate(t, "obtainedFrom", "Origem")}:{" "}
+                          {rarestCard.source} •{" "}
+                          {new Date(rarestCard.obtained_at).toLocaleDateString(
+                            getDateLocale(language),
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white/45">
+                      {translate(
+                        t,
+                        "profileHighlightEmpty",
+                        "Sua carta destaque aparecerá aqui quando você começar a colecionar.",
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ProfileStatCard
+                  icon={<Sparkles size={18} />}
+                  label={translate(t, "commonPlural", "Comuns")}
+                  value={loading ? "..." : String(stats.common)}
+                  tone="cyan"
+                />
+
+                <ProfileStatCard
+                  icon={<Gem size={18} />}
+                  label={translate(t, "rarePlural", "Raras")}
+                  value={loading ? "..." : String(stats.rare)}
+                  tone="purple"
+                />
+
+                <ProfileStatCard
+                  icon={<Zap size={18} />}
+                  label={translate(t, "epicPlural", "Épicas")}
+                  value={loading ? "..." : String(stats.epic)}
+                  tone="yellow"
+                />
+
+                <ProfileStatCard
+                  icon={<Crown size={18} />}
+                  label={translate(t, "legendaryPlural", "Lendárias")}
+                  value={loading ? "..." : String(stats.legendary)}
+                  tone="pink"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 [@media(max-height:760px)]:p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-yellow-100">
                     <BadgeCheck size={22} />
@@ -537,12 +722,12 @@ export function UserProfileModal({
 
                   <div>
                     <p className="font-bold">
-                      {translate(t, "badges", "Badges")}
+                      {translate(t, "achievements", "Conquistas")}
                     </p>
                     <p className="text-sm text-white/45">
                       {formatCountLabel(
                         t,
-                        stats.badges,
+                        unlockedAchievements,
                         "unlockedAchievementSingular",
                         "{count} conquista desbloqueada",
                         "unlockedAchievementPlural",
@@ -552,36 +737,46 @@ export function UserProfileModal({
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                  {stats.badges > 0 ? (
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="text-cyan-200" size={18} />
-                      <div>
-                        <p className="text-sm font-bold text-white">
-                          {translate(t, "firstCard", "Primeira Carta")}
-                        </p>
-                        <p className="text-xs text-white/45">
-                          {translate(
-                            t,
-                            "firstCardDescription",
-                            "Você conquistou sua primeira carta no Nexus.",
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {achievements.map((achievement) => (
+                    <div
+                      key={achievement.key}
+                      className={`rounded-2xl border p-3 ${
+                        achievement.unlocked
+                          ? "border-cyan-300/15 bg-cyan-300/[0.055]"
+                          : "border-white/10 bg-black/20 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border ${
+                            achievement.unlocked
+                              ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
+                              : "border-white/10 bg-white/[0.04] text-white/35"
+                          }`}
+                        >
+                          {achievement.unlocked ? (
+                            <Trophy size={17} />
+                          ) : (
+                            <ShieldCheck size={17} />
                           )}
-                        </p>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white">
+                            {achievement.title}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-white/45">
+                            {achievement.description}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-white/45">
-                      {translate(
-                        t,
-                        "badgesEmptyDescription",
-                        "Suas badges aparecerão aqui quando você completar objetivos.",
-                      )}
-                    </p>
-                  )}
+                  ))}
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 [@media(max-height:760px)]:p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
                     <CalendarDays size={22} />
@@ -602,7 +797,7 @@ export function UserProfileModal({
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  {cards.slice(0, 3).map((card) => (
+                  {cards.slice(0, 4).map((card) => (
                     <div
                       key={card.id}
                       className="rounded-2xl border border-white/10 bg-black/20 p-4"
