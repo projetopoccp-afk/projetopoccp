@@ -1026,7 +1026,7 @@ export const translations = {
     liveDropsFutureNote:
       "Nesta primeira versão o drop é criado; a leitura automática do chat entra na próxima etapa.",
     liveDropsOfflineWarning:
-      "O criador precisa estar ao vivo na Kick para ativar drops.",
+      "O criador precisa estar ao vivo na Kick/Twitch para ativar drops.",
     liveDropsNoViewersWarning:
       "Não foi possível confirmar espectadores na live agora.",
     liveDropsActivate: "Ativar drop",
@@ -2333,14 +2333,14 @@ export const translations = {
     liveDropsMinutes: "min",
     liveDropsKeyword: "Keyword",
     liveDropsFutureNote:
-      "In this first version the drop is created; automatic Kick chat reading comes in the next step.",
+      "In this first version the drop is created; automatic Kick/Twitch chat reading comes in the next step.",
     liveDropsOfflineWarning:
-      "The creator must be live on Kick to activate drops.",
+      "The creator must be live on Kick/Twitch to activate drops.",
     liveDropsNoViewersWarning: "Could not confirm live viewers right now.",
     liveDropsActivate: "Activate drop",
     liveDropsActivating: "Activating...",
     liveDropsCreatedDescription:
-      "Drop activated successfully. The next step is connecting Kick chat reading.",
+      "Drop activated successfully. The next step is connecting Kick/Twitch chat reading.",
     liveDropsCreateError: "Could not activate the drop right now.",
     liveDropsClose: "Close live drops",
     liveDropsActiveStatus: "Active",
@@ -2362,7 +2362,7 @@ export const translations = {
     liveDropsSimulatedWinner: "Winner simulated successfully:",
     liveDropsSimulateError: "Could not simulate a winner right now.",
     liveDropsNoEligibleWinner:
-      "No eligible user found. The user must have Kick linked and must not have claimed this drop yet.",
+      "No eligible user found. The user must have Kick/Twitch linked and must not have claimed this drop yet.",
     liveDropsCreatedAt: "Created",
     liveDropsClaimsLabel: "claimed",
     liveDropsSummaryTitle: "Drop Summary",
@@ -3648,15 +3648,15 @@ export const translations = {
     liveDropsMinutes: "min",
     liveDropsKeyword: "Palabra clave",
     liveDropsFutureNote:
-      "En esta primera versión se crea el drop; la lectura automática del chat de Kick entra en la próxima etapa.",
+      "En esta primera versión se crea el drop; la lectura automática del chat de Kick/Twitch entra en la próxima etapa.",
     liveDropsOfflineWarning:
-      "El creador debe estar en vivo en Kick para activar drops.",
+      "El creador debe estar en vivo en Kick/Twitch para activar drops.",
     liveDropsNoViewersWarning:
       "No fue posible confirmar espectadores del live ahora.",
     liveDropsActivate: "Activar drop",
     liveDropsActivating: "Activando...",
     liveDropsCreatedDescription:
-      "Drop activado con éxito. El próximo paso es conectar la lectura del chat de Kick.",
+      "Drop activado con éxito. El próximo paso es conectar la lectura del chat de Kick/Twitch.",
     liveDropsCreateError: "No fue posible activar el drop ahora.",
     liveDropsClose: "Cerrar drops de live",
     liveDropsActiveStatus: "Activo",

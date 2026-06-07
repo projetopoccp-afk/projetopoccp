@@ -3620,7 +3620,7 @@ export function CreatorProfilePage({
         </div>
 
         <section className="mt-8 grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-stretch xl:grid-cols-[390px_minmax(0,1fr)]">
-          <div className="flex h-full min-h-full flex-col items-center px-0 py-0 lg:sticky lg:top-24 lg:self-stretch">
+          <div className="flex h-full min-h-full flex-col items-center justify-between px-0 py-0 lg:self-stretch">
             {creatorForCard ? (
               <div className="relative z-10 w-fit origin-top scale-[1.1] sm:scale-[1.16] lg:scale-[1.18] xl:scale-[1.22]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_66%)] blur-2xl" />
