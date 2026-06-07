@@ -506,17 +506,21 @@ export default function AlbumPage() {
             {translate(t, "albumPageLoading", "Carregando álbum...")}
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-8 gap-y-12">
-            {albumCreators.map((creator, index) => (
-              <AlbumTile
-                key={creator.id}
-                creator={creator}
-                index={index}
-                isOpening={openingCreatorIds.has(creator.id)}
-                onReveal={() => revealMythic(creator)}
-                onOpenCreator={(nextCreator) => setSelectedCreator(nextCreator)}
-              />
-            ))}
+          <div className="relative overflow-hidden rounded-[42px] border border-white/[0.045] bg-black/[0.08] px-3 py-6 sm:px-5 lg:px-6">
+            <SakuraVineField completedCount={completedCount} totalCount={totalCount} />
+
+            <div className="relative z-10 grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-10 gap-y-14">
+              {albumCreators.map((creator, index) => (
+                <AlbumTile
+                  key={creator.id}
+                  creator={creator}
+                  index={index}
+                  isOpening={openingCreatorIds.has(creator.id)}
+                  onReveal={() => revealMythic(creator)}
+                  onOpenCreator={(nextCreator) => setSelectedCreator(nextCreator)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -545,6 +549,89 @@ export default function AlbumPage() {
         }}
       />
     </main>
+  );
+}
+
+
+function SakuraVineField({
+  completedCount,
+  totalCount,
+}: {
+  completedCount: number;
+  totalCount: number;
+}) {
+  const completionRatio = totalCount > 0 ? completedCount / totalCount : 0;
+  const branches = Array.from({ length: 18 }, (_, index) => index);
+  const blossoms = Array.from({ length: 44 }, (_, index) => index);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[42px]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(34,211,238,0.055),transparent_28%),radial-gradient(circle_at_76%_45%,rgba(244,114,182,0.075),transparent_34%),radial-gradient(circle_at_45%_100%,rgba(168,85,247,0.08),transparent_42%)]" />
+      <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:96px_96px]" />
+
+      {branches.map((branch) => {
+        const row = Math.floor(branch / 6);
+        const col = branch % 6;
+        const top = 12 + row * 32 + (col % 2) * 5;
+        const left = -8 + col * 20;
+        const rotate = col % 2 === 0 ? 9 + row * 2 : -11 - row;
+        const width = 34 + ((branch + row) % 4) * 8;
+        const isLit = branch / branches.length <= completionRatio;
+
+        return (
+          <span
+            key={`sakura-branch-${branch}`}
+            className={`absolute h-[2px] origin-left rounded-full transition duration-700 ${
+              isLit
+                ? "bg-gradient-to-r from-pink-100/0 via-pink-200/46 to-pink-100/0 shadow-[0_0_18px_rgba(244,114,182,0.28)]"
+                : "bg-gradient-to-r from-white/0 via-white/[0.075] to-white/0"
+            }`}
+            style={{
+              top: `${top}%`,
+              left: `${left}%`,
+              width: `${width}%`,
+              transform: `rotate(${rotate}deg)`,
+            }}
+          >
+            <span
+              className={`absolute left-[22%] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full blur-[1px] ${
+                isLit ? "bg-pink-200/32" : "bg-white/[0.04]"
+              }`}
+            />
+            <span
+              className={`absolute left-[68%] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full blur-[1px] ${
+                isLit ? "bg-pink-100/28" : "bg-white/[0.035]"
+              }`}
+            />
+          </span>
+        );
+      })}
+
+      {blossoms.map((blossom) => {
+        const left = (blossom * 23) % 100;
+        const top = 7 + ((blossom * 17) % 90);
+        const isLit = blossom / blossoms.length <= completionRatio;
+        const size = 5 + (blossom % 4) * 2;
+
+        return (
+          <span
+            key={`sakura-blossom-${blossom}`}
+            className={`absolute rounded-[999px_0_999px_0] transition duration-700 ${
+              isLit
+                ? "bg-pink-100/50 shadow-[0_0_14px_rgba(251,207,232,0.34)]"
+                : "bg-white/[0.055]"
+            }`}
+            style={{
+              left: `${left}%`,
+              top: `${top}%`,
+              width: `${size}px`,
+              height: `${Math.max(4, size - 2)}px`,
+              transform: `rotate(${(blossom * 37) % 180}deg)`,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 

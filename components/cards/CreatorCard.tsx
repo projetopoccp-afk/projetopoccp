@@ -1206,6 +1206,16 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             ))}
           </div>
 
+          {internalRarity === "mythic" && (
+            <>
+              <div className="creator-mythic-halo pointer-events-none absolute inset-0" />
+              <div className="creator-mythic-sakura-seal pointer-events-none absolute bottom-[58px] right-4 z-[18]">
+                <span className="creator-mythic-flower">✦</span>
+              </div>
+              <div className="creator-mythic-pearl-frame pointer-events-none absolute inset-[7px] z-[18] rounded-[19px]" />
+            </>
+          )}
+
           <div className="creator-effect-shine pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" />
           <div className="creator-card-readability absolute inset-0" />
 
@@ -1428,15 +1438,66 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
             }
 
             .creator-card-mythic {
-              --frame-edge: rgba(255,244,249,1);
-              --frame-core: rgba(251,207,232,0.96);
-              --frame-soft: rgba(244,114,182,0.5);
+              --frame-edge: rgba(255,249,252,1);
+              --frame-core: rgba(255,215,232,0.98);
+              --frame-soft: rgba(255,166,204,0.62);
               box-shadow:
-                inset 0 0 14px rgba(255,255,255,0.12),
-                inset 0 0 28px rgba(251,207,232,0.2),
-                0 0 0 1px rgba(255,255,255,0.24),
-                0 20px 44px rgba(0,0,0,0.64),
-                0 0 42px rgba(244,114,182,0.28);
+                inset 0 0 14px rgba(255,255,255,0.18),
+                inset 0 0 34px rgba(251,207,232,0.28),
+                0 0 0 1px rgba(255,255,255,0.34),
+                0 22px 48px rgba(0,0,0,0.66),
+                0 0 32px rgba(255,255,255,0.18),
+                0 0 56px rgba(244,114,182,0.36);
+              animation: creatorMythicFrameBreath 4.8s ease-in-out infinite;
+            }
+
+            .creator-mythic-halo {
+              z-index: 8;
+              opacity: 0.9;
+              mix-blend-mode: screen;
+              background:
+                radial-gradient(circle at 50% 28%, rgba(255,255,255,0.26), transparent 25%),
+                radial-gradient(circle at 50% 62%, rgba(255,182,213,0.22), transparent 42%),
+                conic-gradient(from 230deg at 50% 48%, transparent 0 14%, rgba(255,255,255,0.14) 21%, rgba(251,207,232,0.18) 28%, transparent 38%, rgba(255,255,255,0.12) 52%, transparent 68%, rgba(244,114,182,0.16) 80%, transparent 100%);
+              animation: creatorMythicHaloTurn 9.5s linear infinite;
+            }
+
+            .creator-mythic-pearl-frame {
+              border: 1px solid rgba(255,244,249,0.62);
+              box-shadow:
+                inset 0 0 14px rgba(255,255,255,0.18),
+                inset 0 0 28px rgba(251,207,232,0.16),
+                0 0 22px rgba(251,207,232,0.2);
+              background:
+                linear-gradient(135deg, rgba(255,255,255,0.22), transparent 18%, transparent 72%, rgba(251,207,232,0.16)),
+                linear-gradient(45deg, transparent 0 46%, rgba(255,255,255,0.14) 50%, transparent 55%);
+              opacity: 0.78;
+            }
+
+            .creator-mythic-sakura-seal {
+              display: flex;
+              height: 42px;
+              width: 42px;
+              align-items: center;
+              justify-content: center;
+              border-radius: 999px;
+              border: 1px solid rgba(255,244,249,0.58);
+              background:
+                radial-gradient(circle, rgba(255,255,255,0.28), rgba(251,207,232,0.16) 46%, rgba(28,8,18,0.34));
+              box-shadow:
+                inset 0 0 14px rgba(255,255,255,0.16),
+                0 0 18px rgba(251,207,232,0.38),
+                0 0 34px rgba(244,114,182,0.2);
+            }
+
+            .creator-mythic-flower {
+              color: rgba(255,244,249,0.96);
+              font-size: 20px;
+              line-height: 1;
+              text-shadow:
+                0 0 10px rgba(255,255,255,0.78),
+                0 0 18px rgba(251,207,232,0.7);
+              animation: creatorMythicSealPulse 3.8s ease-in-out infinite;
             }
 
             .creator-particle {
@@ -1833,6 +1894,41 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               background:
                 linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.38) 24%, rgba(120,53,15,0.12) 54%, rgba(251,191,36,0.04) 100%),
                 linear-gradient(to right, rgba(120,53,15,0.14), transparent 28%, transparent 72%, rgba(245,158,11,0.12));
+            }
+
+            @keyframes creatorMythicFrameBreath {
+              0%, 100% {
+                filter: drop-shadow(0 0 0 rgba(255,255,255,0));
+              }
+              50% {
+                filter: drop-shadow(0 0 12px rgba(251,207,232,0.34));
+              }
+            }
+
+            @keyframes creatorMythicHaloTurn {
+              0% {
+                transform: rotate(0deg) scale(1);
+                opacity: 0.72;
+              }
+              50% {
+                transform: rotate(180deg) scale(1.04);
+                opacity: 0.95;
+              }
+              100% {
+                transform: rotate(360deg) scale(1);
+                opacity: 0.72;
+              }
+            }
+
+            @keyframes creatorMythicSealPulse {
+              0%, 100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.88;
+              }
+              50% {
+                transform: scale(1.14) rotate(8deg);
+                opacity: 1;
+              }
             }
 
             @keyframes creatorCommonMetalSweep {
