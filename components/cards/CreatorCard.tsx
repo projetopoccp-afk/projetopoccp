@@ -13,7 +13,7 @@ type CreatorCardProps = {
   onClick: (creator: Creator) => void;
 };
 
-type CardRarity = "common" | "rare" | "epic" | "legendary";
+type CardRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
 
 type ParticleShape =
   | "dust"
@@ -209,10 +209,42 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
       { left: "96%", top: "86%", size: "10px", tx: "-128px", ty: "-112px", rotate: "44deg", duration: 6.9, delay: -11.6, shape: "flare", opacity: 0.48 },
     ],
   },
+  mythic: {
+    label: "Mítica Sakura",
+    className: "creator-card-mythic",
+    borderColor: "rgba(255, 228, 236, 0.96)",
+    glowColor: "rgba(244, 114, 182, 0.28)",
+    particleColor: "rgba(255, 228, 236, 0.95)",
+    secondaryColor: "rgba(251, 207, 232, 0.68)",
+    tertiaryColor: "rgba(255, 255, 255, 0.48)",
+    textGlow: "rgba(251, 207, 232, 0.72)",
+    particleShape: "shard",
+    particleCount: 18,
+    particleAnimation: "creatorMythicPetalFall",
+    backgroundEffect: "sakura-mythic",
+    auraEffect: "rose-white-bloom",
+    intensity: 0.95,
+    particles: [
+      { left: "8%", top: "-8%", size: "8px", tx: "28px", ty: "378px", rotate: "280deg", duration: 6.8, delay: 0, shape: "shard", opacity: 0.86 },
+      { left: "18%", top: "-16%", size: "10px", tx: "-18px", ty: "392px", rotate: "-240deg", duration: 7.4, delay: -1.2, shape: "shard", opacity: 0.78 },
+      { left: "28%", top: "-10%", size: "6px", tx: "34px", ty: "386px", rotate: "320deg", duration: 6.4, delay: -2.4, shape: "dust", opacity: 0.82 },
+      { left: "38%", top: "-18%", size: "9px", tx: "-30px", ty: "410px", rotate: "-300deg", duration: 7.9, delay: -3.1, shape: "shard", opacity: 0.8 },
+      { left: "48%", top: "-12%", size: "7px", tx: "24px", ty: "398px", rotate: "260deg", duration: 6.9, delay: -4.2, shape: "dust", opacity: 0.74 },
+      { left: "58%", top: "-20%", size: "11px", tx: "-22px", ty: "420px", rotate: "-340deg", duration: 8.2, delay: -1.8, shape: "shard", opacity: 0.84 },
+      { left: "68%", top: "-8%", size: "7px", tx: "30px", ty: "382px", rotate: "290deg", duration: 7.1, delay: -3.8, shape: "shard", opacity: 0.78 },
+      { left: "78%", top: "-14%", size: "9px", tx: "-28px", ty: "400px", rotate: "-260deg", duration: 7.7, delay: -5.2, shape: "dust", opacity: 0.76 },
+      { left: "88%", top: "-18%", size: "6px", tx: "18px", ty: "390px", rotate: "310deg", duration: 6.6, delay: -2.8, shape: "shard", opacity: 0.72 },
+      { left: "96%", top: "-10%", size: "10px", tx: "-36px", ty: "416px", rotate: "-330deg", duration: 8.4, delay: -6.1, shape: "shard", opacity: 0.8 },
+    ],
+  },
 };
 
-function normalizeRarity(rarity: Creator["rarity"]): CardRarity {
+function normalizeRarity(rarity: Creator["rarity"] | string): CardRarity {
   const value = String(rarity || "").toLowerCase();
+
+  if (value === "mítica" || value === "mitica" || value === "mythic") {
+    return "mythic";
+  }
 
   if (value === "lendário" || value === "lendario" || value === "legendary") {
     return "legendary";
@@ -249,6 +281,10 @@ function getTranslatedRarityLabel(
   t: (key: keyof typeof import("@/lib/i18n/translations").translations.pt) => string,
   rarity: CardRarity
 ) {
+  if (rarity === "mythic") {
+    return "Mítica";
+  }
+
   if (rarity === "legendary") {
     return translate(t, "creatorCardRarityLegendary", "Legendary");
   }
@@ -266,8 +302,10 @@ function getTranslatedRarityLabel(
 
 export function CreatorCard({ creator, onClick }: CreatorCardProps) {
   const { t } = useLanguage();
-  const rarity = rarityStyles[creator.rarity];
   const internalRarity = normalizeRarity(creator.rarity);
+  const rarity =
+    rarityStyles[internalRarity as keyof typeof rarityStyles] ??
+    rarityStyles.legendary;
   const config = RARITY_VISUALS[internalRarity];
 
   return (
@@ -691,6 +729,74 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
                 0 0 24px var(--rarity-secondary);
               animation-name: creatorLegendarySolarRise;
               animation-timing-function: ease-in-out;
+              animation-iteration-count: infinite;
+            }
+
+
+            /* MYTHIC — branco rosado com pétalas de cerejeira */
+            .creator-card-mythic .creator-card-image {
+              filter: contrast(1.12) saturate(0.92) brightness(1.08);
+            }
+
+            .creator-card-mythic .creator-effect-base {
+              background:
+                linear-gradient(to bottom, rgba(255,255,255,0.14), transparent 28%, rgba(244,114,182,0.18) 68%, rgba(0,0,0,0.78)),
+                radial-gradient(circle at 50% 26%, rgba(255,255,255,0.2), transparent 34%),
+                radial-gradient(circle at 50% 70%, rgba(251,207,232,0.2), transparent 42%);
+            }
+
+            .creator-card-mythic .creator-effect-texture {
+              opacity: 0.62;
+              background-image:
+                radial-gradient(circle at 22% 20%, rgba(255,255,255,0.3), transparent 18%),
+                radial-gradient(circle at 74% 24%, rgba(251,207,232,0.34), transparent 18%),
+                radial-gradient(circle at 48% 64%, rgba(244,114,182,0.18), transparent 26%),
+                linear-gradient(132deg, transparent 0 22%, rgba(255,255,255,0.14) 23%, transparent 28% 100%);
+              animation: creatorMythicSoftBloom 4.8s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-effect-aura {
+              opacity: 0.74;
+              background:
+                radial-gradient(circle at 18% 18%, rgba(255,255,255,0.28), transparent 24%),
+                radial-gradient(circle at 78% 36%, rgba(251,207,232,0.24), transparent 30%),
+                radial-gradient(circle at 46% 88%, rgba(244,114,182,0.2), transparent 34%);
+              animation: creatorMythicAuraBreath 3.8s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-effect-special {
+              opacity: 0.54;
+              background:
+                linear-gradient(90deg, transparent, rgba(255,255,255,0.32), rgba(251,207,232,0.2), transparent),
+                radial-gradient(circle at 50% 18%, rgba(255,255,255,0.28), transparent 22%);
+              transform: translateX(-110%);
+              animation: creatorMythicPearlShine 4.9s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-card-holographic {
+              opacity: 0.2;
+              background:
+                linear-gradient(115deg, transparent 0 28%, rgba(255,255,255,0.28) 34%, transparent 42% 100%),
+                radial-gradient(circle at 50% 50%, rgba(251,207,232,0.18), transparent 58%);
+              mix-blend-mode: screen;
+              animation: creatorCardHoloDrift 6.6s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-card-readability {
+              background:
+                linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.36) 26%, rgba(244,114,182,0.08) 56%, rgba(255,255,255,0.08) 100%),
+                linear-gradient(to right, rgba(251,207,232,0.12), transparent 30%, transparent 70%, rgba(244,114,182,0.12));
+            }
+
+            .creator-card-mythic .creator-particle-shard,
+            .creator-card-mythic .creator-particle-dust {
+              border-radius: 999px 0 999px 0;
+              background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(251,207,232,0.88), rgba(244,114,182,0.5));
+              box-shadow:
+                0 0 10px rgba(255,255,255,0.72),
+                0 0 18px rgba(244,114,182,0.54);
+              animation-name: creatorMythicPetalFall;
+              animation-timing-function: linear;
               animation-iteration-count: infinite;
             }
 
@@ -1174,6 +1280,57 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               }
               75%, 100% {
                 transform: translateX(120%);
+              }
+            }
+
+
+            @keyframes creatorMythicPetalFall {
+              0% {
+                transform: translate3d(0, -28px, 0) rotate(0deg) scale(0.78);
+                opacity: 0;
+              }
+              10% {
+                opacity: var(--particle-opacity);
+              }
+              100% {
+                transform: translate3d(var(--particle-x), var(--particle-y), 0) rotate(var(--particle-rotate)) scale(1.08);
+                opacity: 0;
+              }
+            }
+
+            @keyframes creatorMythicSoftBloom {
+              0%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+              }
+              50% {
+                transform: scale(1.05);
+                opacity: 0.78;
+              }
+            }
+
+            @keyframes creatorMythicAuraBreath {
+              0%, 100% {
+                filter: blur(0px);
+                opacity: 0.52;
+              }
+              50% {
+                filter: blur(1px);
+                opacity: 0.82;
+              }
+            }
+
+            @keyframes creatorMythicPearlShine {
+              0%, 38% {
+                transform: translateX(-120%);
+                opacity: 0;
+              }
+              58% {
+                opacity: 0.72;
+              }
+              86%, 100% {
+                transform: translateX(120%);
+                opacity: 0;
               }
             }
 
