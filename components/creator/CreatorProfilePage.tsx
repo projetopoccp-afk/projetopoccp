@@ -2970,20 +2970,39 @@ export function CreatorProfilePage({
       : []),
   ].filter((social) => social.url.trim().length > 0);
 
+  const twitchProfileUrl = getSocialUrl(socialLinks, "twitch");
+  const kickProfileUrl = getSocialUrl(socialLinks, "kick");
+
   const livePlatformItems = [
     {
-      key: "twitch",
+      key: "twitch" as const,
       label: "Twitch",
       status: twitchStatus,
-      fallbackUrl: getSocialUrl(socialLinks, "twitch"),
+      fallbackUrl: twitchProfileUrl,
     },
     {
-      key: "kick",
+      key: "kick" as const,
       label: "Kick",
       status: kickStatus,
-      fallbackUrl: getSocialUrl(socialLinks, "kick"),
+      fallbackUrl: kickProfileUrl,
     },
   ].filter((item) => item.status?.isLive);
+
+  const liveDropsPlatform =
+    livePlatformItems[0] ||
+    (twitchProfileUrl.trim().length > 0
+      ? {
+          key: "twitch" as const,
+          label: "Twitch",
+          status: twitchStatus,
+          fallbackUrl: twitchProfileUrl,
+        }
+      : {
+          key: "kick" as const,
+          label: "Kick",
+          status: kickStatus,
+          fallbackUrl: kickProfileUrl,
+        });
 
   const heroLiveStatus = livePlatformItems[0]?.status || null;
 
@@ -4380,10 +4399,10 @@ export function CreatorProfilePage({
           onClose={() => setLiveDropsOpen(false)}
           creatorId={profile.id}
           creatorName={profile.nickname || profile.username}
-          platform="kick"
-          isLive={Boolean(kickStatus?.isLive)}
-          viewerCount={kickStatus?.viewerCount || 0}
-          liveTitle={kickStatus?.title || null}
+          platform={liveDropsPlatform.key}
+          isLive={Boolean(liveDropsPlatform.status?.isLive)}
+          viewerCount={liveDropsPlatform.status?.viewerCount || 0}
+          liveTitle={liveDropsPlatform.status?.title || null}
         />
       ) : null}
 
