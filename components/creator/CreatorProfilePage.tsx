@@ -3727,9 +3727,9 @@ export function CreatorProfilePage({
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-2 py-3">
+                  <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-1.5 py-3">
                     <p className="text-xl font-black text-white">{formatNumber(collectionStats.uniqueCollectors)}</p>
-                    <p className="mt-1 text-[8px] font-black uppercase tracking-[0.14em] text-cyan-100/55">
+                    <p className="mt-1 whitespace-nowrap text-[7px] font-black uppercase tracking-[0.08em] text-cyan-100/55">
                       {translate(t, "creatorProfileCollectors", "Colecionadores")}
                     </p>
                   </div>
