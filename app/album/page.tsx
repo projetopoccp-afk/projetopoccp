@@ -244,6 +244,8 @@ export default function AlbumPage() {
             faction: item.faction || "Cardpoc",
             category: item.category || "creator",
             status: item.status || "approved",
+            mainPlatform:
+              item.main_platform || item.mainPlatform || item.platform || "cardpoc",
             avatarUrl:
               item.avatar_url || item.banner_url || "/placeholder-card.png",
             bannerUrl:
