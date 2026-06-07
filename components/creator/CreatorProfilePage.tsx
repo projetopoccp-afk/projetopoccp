@@ -1624,6 +1624,9 @@ export function CreatorProfilePage({
   const [battleStats, setBattleStats] = useState<CreatorBattleStats | null>(null);
   const [battleLoading, setBattleLoading] = useState(false);
   const [battleModalOpen, setBattleModalOpen] = useState(false);
+  const [battleStarted, setBattleStarted] = useState(false);
+  const [revealedBattleRows, setRevealedBattleRows] = useState(0);
+  const [battleSearchQuery, setBattleSearchQuery] = useState("");
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -2484,6 +2487,34 @@ export function CreatorProfilePage({
     (candidate) => candidate.id === selectedBattleCreatorId,
   );
 
+  const filteredBattleCandidates = battleCandidates.filter((candidate) => {
+    const query = battleSearchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    return `${candidate.nickname || ""} ${candidate.username || ""}`
+      .toLowerCase()
+      .includes(query);
+  });
+
+  const openBattleModal = () => {
+    setBattleStarted(false);
+    setRevealedBattleRows(0);
+    setBattleModalOpen(true);
+  };
+
+  const closeBattleModal = () => {
+    setBattleModalOpen(false);
+    setBattleStarted(false);
+    setRevealedBattleRows(0);
+  };
+
+  const startBattleAnimation = () => {
+    if (!selectedBattleCreator || !battleStats || battleLoading) return;
+
+    setRevealedBattleRows(0);
+    setBattleStarted(true);
+  };
+
   const battleRows = battleStats
     ? [
         {
@@ -2524,6 +2555,53 @@ export function CreatorProfilePage({
         },
       ]
     : [];
+
+  useEffect(() => {
+    if (!battleModalOpen || !battleStarted || battleRows.length === 0) return;
+
+    setRevealedBattleRows(0);
+
+    const interval = window.setInterval(() => {
+      setRevealedBattleRows((current) => {
+        if (current >= battleRows.length) {
+          window.clearInterval(interval);
+          return current;
+        }
+
+        return current + 1;
+      });
+    }, 620);
+
+    return () => window.clearInterval(interval);
+  }, [battleModalOpen, battleStarted, battleRows.length]);
+
+  const visibleBattleRows = battleStarted
+    ? battleRows.slice(0, revealedBattleRows)
+    : [];
+  const battleAnimationComplete =
+    battleStarted && battleRows.length > 0 && revealedBattleRows >= battleRows.length;
+  const visibleBattleScore = visibleBattleRows.reduce(
+    (score, row) => {
+      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
+      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
+      return { ...score, draws: score.draws + 1 };
+    },
+    { current: 0, opponent: 0, draws: 0 },
+  );
+  const battleScore = battleRows.reduce(
+    (score, row) => {
+      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
+      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
+      return { ...score, draws: score.draws + 1 };
+    },
+    { current: 0, opponent: 0, draws: 0 },
+  );
+  const battleFinalWinner =
+    battleScore.current > battleScore.opponent
+      ? "current"
+      : battleScore.opponent > battleScore.current
+        ? "opponent"
+        : "draw";
 
   const groupedClips = clips.reduce<Record<string, AutoClip[]>>(
     (accumulator, clip) => {
@@ -3399,15 +3477,6 @@ export function CreatorProfilePage({
       }
     : null;
 
-  const battleScore = battleRows.reduce(
-    (score, row) => {
-      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
-      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
-      return { ...score, draws: score.draws + 1 };
-    },
-    { current: 0, opponent: 0, draws: 0 },
-  );
-
   const isProfileClaimable = !profile?.user_id;
 
   if (loading) {
@@ -3550,10 +3619,10 @@ export function CreatorProfilePage({
           ) : null}
         </div>
 
-        <section className="mt-8 grid gap-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:items-start xl:grid-cols-[430px_minmax(0,1fr)]">
-          <div className="flex min-h-full flex-col items-center gap-7 px-0 py-0 lg:sticky lg:top-24">
+        <section className="mt-8 grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start xl:grid-cols-[390px_minmax(0,1fr)]">
+          <div className="flex min-h-full flex-col items-center gap-8 px-0 py-0 lg:sticky lg:top-24">
             {creatorForCard ? (
-              <div className="relative mb-14 w-fit origin-top scale-[1.08] sm:scale-[1.14] lg:scale-[1.16] xl:scale-[1.2]">
+              <div className="relative z-10 w-fit origin-top scale-[1.1] sm:scale-[1.16] lg:scale-[1.18] xl:scale-[1.22]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_66%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
@@ -3566,7 +3635,7 @@ export function CreatorProfilePage({
             {isEditing && editDraft ? (
               <div
                 ref={popupEffectDropdownRef}
-                className="relative z-40 mt-8 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:px-0"
+                className="relative z-40 mt-2 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:mt-4 lg:px-0"
               >
                 <button
                   type="button"
@@ -3649,7 +3718,7 @@ export function CreatorProfilePage({
             ) : null}
 
             {!isEditing ? (
-              <div className="mt-2 w-full max-w-[360px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[390px]">
+              <div className="relative z-20 mt-6 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-8">
                 <div className="flex items-center gap-2 text-cyan-100/70">
                   <Users className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.24em]">
@@ -4032,7 +4101,7 @@ export function CreatorProfilePage({
               <div className="rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/[0.06] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-cyan-100/55">
                   <Eye className="h-4 w-4" />
-                  <p className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] break-words">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
                     {translate(t, "creatorProfileViews", "Visualizações")}
                   </p>
                 </div>
@@ -4042,7 +4111,7 @@ export function CreatorProfilePage({
               <div className="rounded-[1.4rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.06] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-fuchsia-100/55">
                   <Users className="h-4 w-4" />
-                  <p className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] break-words">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
                     {translate(t, "creatorProfileCardpocReach", "Alcance Cardpoc")}
                   </p>
                 </div>
@@ -4052,7 +4121,7 @@ export function CreatorProfilePage({
               <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-white/40">
                   <Globe2 className="h-4 w-4" />
-                  <p className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] break-words">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
                     {translate(t, "creatorProfileGlobalReach", "Alcance global")}
                   </p>
                 </div>
@@ -4064,7 +4133,7 @@ export function CreatorProfilePage({
               <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-white/40">
                   <Share2 className="h-4 w-4" />
-                  <p className="min-w-0 text-[9px] font-black uppercase leading-tight tracking-[0.1em] break-words [overflow-wrap:anywhere]">
+                  <p className="text-[9px] font-black uppercase leading-tight tracking-[0.16em] [overflow-wrap:anywhere]">
                     {translate(t, "creatorProfileSharedImpact", "Compartilhamentos")}
                   </p>
                 </div>
@@ -4073,8 +4142,8 @@ export function CreatorProfilePage({
             </div>
 
             <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-fuchsia-300/15 bg-[radial-gradient(circle_at_82%_50%,rgba(217,70,239,0.16),transparent_34%),linear-gradient(135deg,rgba(34,211,238,0.08),rgba(217,70,239,0.08),rgba(0,0,0,0.18))] p-5 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl">
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)] xl:items-center">
-                <div>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 text-fuchsia-100/80">
                     <Sparkles className="h-4 w-4" />
                     <p className="text-[10px] font-black uppercase tracking-[0.24em]">
@@ -4082,52 +4151,36 @@ export function CreatorProfilePage({
                     </p>
                   </div>
                   <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/55">
-                    {translate(t, "creatorProfileBattleModeDescription", "Compare métricas reais com outro criador.")}
+                    {translate(t, "creatorProfileBattleModeDescription", "Desafie outro criador e veja a comparação em uma arena animada.")}
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                  <select
-                    value={selectedBattleCreatorId}
-                    onChange={(event) => {
-                      setSelectedBattleCreatorId(event.target.value);
-                      setBattleModalOpen(false);
-                    }}
-                    className="w-full rounded-[1.15rem] border border-fuchsia-300/20 bg-black/45 px-4 py-3 text-sm font-black text-fuchsia-50 outline-none transition focus:border-fuchsia-300/45"
-                  >
-                    <option value="">
-                      {translate(t, "creatorProfileBattleSelectCreator", "Selecione um criador")}
-                    </option>
-                    {battleCandidates.map((candidate) => (
-                      <option key={candidate.id} value={candidate.id}>
-                        {candidate.nickname || candidate.username}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={() => setBattleModalOpen(true)}
-                    disabled={!selectedBattleCreator || !battleStats || battleLoading}
-                    className="inline-flex items-center justify-center gap-2 rounded-[1.15rem] border border-fuchsia-300/30 bg-fuchsia-400/15 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-50 shadow-lg shadow-fuchsia-500/10 transition hover:bg-fuchsia-400/25 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    {battleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {translate(t, "creatorProfileBattleStart", "Iniciar batalha")}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={openBattleModal}
+                  disabled={battleCandidates.length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-[1.15rem] border border-fuchsia-300/30 bg-fuchsia-400/15 px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-50 shadow-lg shadow-fuchsia-500/10 transition hover:bg-fuchsia-400/25 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {translate(t, "creatorProfileBattleOpenArena", "Iniciar batalha")}
+                </button>
               </div>
             </div>
 
           </div>
         </section>
 
-        {battleModalOpen && selectedBattleCreator && battleStats ? (
-          <div className="fixed inset-x-0 bottom-0 top-[76px] z-[90] flex items-start justify-center overflow-y-auto bg-black/75 px-4 py-6 backdrop-blur-md [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="dialog" aria-modal="true">
-            <div className="relative my-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border border-fuchsia-300/25 bg-[#08040d]/95 p-4 shadow-2xl shadow-fuchsia-500/20 sm:p-6">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_50%,rgba(34,211,238,0.22),transparent_34%),radial-gradient(circle_at_82%_50%,rgba(248,113,113,0.2),transparent_34%),linear-gradient(90deg,rgba(34,211,238,0.08),transparent,rgba(217,70,239,0.08))]" />
+        {battleModalOpen ? (
+          <div className="fixed inset-x-0 bottom-0 top-[76px] z-[90] flex items-center justify-center bg-black/78 px-4 py-4 backdrop-blur-md" role="dialog" aria-modal="true">
+            <div className="relative max-h-[calc(100vh-108px)] w-full max-w-7xl overflow-y-auto rounded-[2rem] border border-fuchsia-300/25 bg-[#07040b]/95 p-4 shadow-2xl shadow-fuchsia-500/20 [scrollbar-width:none] [-ms-overflow-style:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(34,211,238,0.22),transparent_33%),radial-gradient(circle_at_82%_42%,rgba(248,113,113,0.18),transparent_33%),linear-gradient(90deg,rgba(34,211,238,0.08),transparent,rgba(217,70,239,0.08))]" />
+              {battleStarted ? (
+                <div className="pointer-events-none absolute inset-0 opacity-50 animate-[battleFriction_1100ms_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,rgba(34,211,238,0.12),transparent,rgba(244,63,94,0.12),transparent)]" />
+              ) : null}
+
               <button
                 type="button"
-                onClick={() => setBattleModalOpen(false)}
+                onClick={closeBattleModal}
                 className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-2xl font-light text-white/70 transition hover:border-fuchsia-300/30 hover:text-white"
                 aria-label="Fechar batalha"
               >
@@ -4140,96 +4193,247 @@ export function CreatorProfilePage({
                     {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white md:text-4xl">
-                    {nickname} <span className="text-fuchsia-200">VS</span> {selectedBattleCreator.nickname || selectedBattleCreator.username}
+                    {battleStarted && selectedBattleCreator
+                      ? `${nickname} VS ${selectedBattleCreator.nickname || selectedBattleCreator.username}`
+                      : translate(t, "creatorProfileBattleChooseOpponent", "Escolha o oponente")}
                   </h2>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-[210px_minmax(0,1fr)_210px] lg:items-center">
-                  <div className="flex justify-center animate-[battleSlideInLeft_520ms_ease-out_both]">
-                    {creatorForCard ? (
-                      <div className="origin-center scale-[0.72] sm:scale-[0.78] lg:scale-[0.8]">
-                        <CreatorCard creator={creatorForCard} onClick={() => undefined} />
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="rounded-[1.5rem] border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
-                    <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
-                      <div>
-                        <p className="truncate text-sm font-black text-cyan-100 md:text-base">{nickname}</p>
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
-                          {translate(t, "creatorProfileBattleCurrent", "Atual")}
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-3 py-1 text-xs font-black text-fuchsia-100">VS</span>
-                      <div>
-                        <p className="truncate text-sm font-black text-fuchsia-100 md:text-base">
-                          {selectedBattleCreator.nickname || selectedBattleCreator.username}
-                        </p>
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
-                          {translate(t, "creatorProfileBattleOpponent", "Oponente")}
-                        </p>
-                      </div>
+                {!battleStarted ? (
+                  <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)_260px] lg:items-stretch">
+                    <div className="flex items-center justify-center rounded-[1.7rem] border border-cyan-300/15 bg-cyan-300/[0.04] p-3 shadow-2xl shadow-cyan-500/10">
+                      {creatorForCard ? (
+                        <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86]">
+                          <CreatorCard creator={creatorForCard} onClick={() => undefined} />
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div className="space-y-2">
-                      {battleRows.map((row) => {
-                        const currentWins = row.current > row.opponent;
-                        const opponentWins = row.opponent > row.current;
+                    <div className="rounded-[1.7rem] border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent" />
+                        <span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-4 py-1 text-sm font-black text-fuchsia-100 shadow-lg shadow-fuchsia-500/10">
+                          VS
+                        </span>
+                        <span className="h-px flex-1 bg-gradient-to-r from-transparent via-fuchsia-300/25 to-transparent" />
+                      </div>
 
-                        return (
-                          <div key={row.key} className="grid grid-cols-[80px_minmax(0,1fr)_80px] items-center gap-3 rounded-[1rem] border border-white/10 bg-white/[0.035] px-3 py-2.5">
-                            <p className={`text-lg font-black ${currentWins ? "text-cyan-200" : "text-white/65"}`}>
-                              {formatNumber(row.current)}
-                            </p>
-                            <div className="text-center">
-                              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">{row.label}</p>
-                              <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/30">
-                                {currentWins
-                                  ? translate(t, "creatorProfileBattleCurrentWins", "Você vence")
+                      <label className="mt-5 block">
+                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+                          {translate(t, "creatorProfileBattleSearchOpponent", "Pesquisar oponente")}
+                        </span>
+                        <input
+                          value={battleSearchQuery}
+                          onChange={(event) => setBattleSearchQuery(event.target.value)}
+                          placeholder={translate(t, "creatorProfileBattleSearchPlaceholder", "Buscar criador pelo nome...")}
+                          className="mt-2 w-full rounded-[1.15rem] border border-fuchsia-300/20 bg-black/45 px-4 py-3 text-sm font-bold text-fuchsia-50 outline-none transition placeholder:text-white/25 focus:border-fuchsia-300/45"
+                        />
+                      </label>
+
+                      <div className="mt-4 max-h-[280px] space-y-2 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {filteredBattleCandidates.length > 0 ? (
+                          filteredBattleCandidates.map((candidate) => {
+                            const selected = candidate.id === selectedBattleCreatorId;
+                            const candidateCard = Array.isArray(candidate.creator_cards)
+                              ? candidate.creator_cards[0] || null
+                              : candidate.creator_cards || null;
+
+                            return (
+                              <button
+                                key={candidate.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBattleCreatorId(candidate.id);
+                                  setBattleStarted(false);
+                                  setRevealedBattleRows(0);
+                                }}
+                                className={`flex w-full items-center gap-3 rounded-[1rem] border px-3 py-2.5 text-left transition ${
+                                  selected
+                                    ? "border-fuchsia-300/45 bg-fuchsia-300/15 shadow-lg shadow-fuchsia-500/10"
+                                    : "border-white/10 bg-white/[0.035] hover:border-fuchsia-300/30 hover:bg-fuchsia-300/[0.08]"
+                                }`}
+                              >
+                                <span className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                                  {candidate.avatar_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={candidate.avatar_url} alt="" className="h-full w-full object-cover" />
+                                  ) : null}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-sm font-black text-white">
+                                    {candidate.nickname || candidate.username}
+                                  </span>
+                                  <span className="block truncate text-xs font-semibold text-white/40">
+                                    @{candidate.username}
+                                  </span>
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
+                                  {getRarityLabel(normalizeCreatorRarity(candidateCard?.rarity || "common"))}
+                                </span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="rounded-[1rem] border border-white/10 bg-white/[0.03] px-3 py-4 text-sm font-semibold text-white/45">
+                            {translate(t, "creatorProfileBattleNoOpponents", "Nenhum criador encontrado.")}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={startBattleAnimation}
+                        disabled={!selectedBattleCreator || !battleStats || battleLoading}
+                        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[1.15rem] border border-fuchsia-300/30 bg-fuchsia-400/15 px-5 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-50 shadow-lg shadow-fuchsia-500/10 transition hover:bg-fuchsia-400/25 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {battleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        {translate(t, "creatorProfileBattleStart", "Iniciar batalha")}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-center rounded-[1.7rem] border border-rose-300/15 bg-rose-300/[0.04] p-3 shadow-2xl shadow-rose-500/10">
+                      {selectedBattleCreatorForCard ? (
+                        <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86] animate-[battleSlideInRight_420ms_ease-out_both]">
+                          <CreatorCard creator={selectedBattleCreatorForCard} onClick={() => undefined} />
+                        </div>
+                      ) : (
+                        <div className="flex h-[360px] w-full flex-col items-center justify-center rounded-[1.4rem] border border-dashed border-white/10 bg-white/[0.025] text-center">
+                          <Sparkles className="h-8 w-8 text-fuchsia-100/35" />
+                          <p className="mt-3 max-w-[180px] text-xs font-black uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "creatorProfileBattleSelectOpponentCard", "Selecione um criador para revelar a carta")}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)_230px] lg:items-center">
+                    <div className="flex justify-center animate-[battleSlideInLeft_520ms_ease-out_both]">
+                      {creatorForCard ? (
+                        <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86] animate-[battleCardClashLeft_900ms_ease-in-out_1]">
+                          <CreatorCard creator={creatorForCard} onClick={() => undefined} />
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+                      <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
+                        <div>
+                          <p className="truncate text-sm font-black text-cyan-100 md:text-base">{nickname}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "creatorProfileBattleCurrent", "Atual")}
+                          </p>
+                        </div>
+                        <span className="animate-[battleVsPulse_900ms_ease-in-out_infinite] rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-4 py-2 text-sm font-black text-fuchsia-100 shadow-lg shadow-fuchsia-500/20">VS</span>
+                        <div>
+                          <p className="truncate text-sm font-black text-fuchsia-100 md:text-base">
+                            {selectedBattleCreator?.nickname || selectedBattleCreator?.username}
+                          </p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                            {translate(t, "creatorProfileBattleOpponent", "Oponente")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {visibleBattleRows.map((row, index) => {
+                          const currentWins = row.current > row.opponent;
+                          const opponentWins = row.opponent > row.current;
+                          const draw = !currentWins && !opponentWins;
+
+                          return (
+                            <div key={row.key} className="grid animate-[battleRowReveal_460ms_ease-out_both] grid-cols-[84px_minmax(0,1fr)_84px] items-center gap-3 rounded-[1rem] border border-white/10 bg-white/[0.035] px-3 py-2.5" style={{ animationDelay: `${index * 70}ms` }}>
+                              <p className={`rounded-xl px-3 py-2 text-center text-lg font-black ${
+                                draw
+                                  ? "bg-yellow-300/10 text-yellow-100"
+                                  : currentWins
+                                    ? "bg-emerald-400/18 text-emerald-100 shadow-lg shadow-emerald-500/10"
+                                    : "bg-red-500/16 text-red-100"
+                              }`}>
+                                {formatNumber(row.current)}
+                              </p>
+                              <div className="text-center">
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">{row.label}</p>
+                                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">
+                                  {currentWins
+                                    ? translate(t, "creatorProfileBattleCurrentWins", "Você vence")
+                                    : opponentWins
+                                      ? translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")
+                                      : translate(t, "creatorProfileBattleDraw", "Empate")}
+                                </p>
+                              </div>
+                              <p className={`rounded-xl px-3 py-2 text-center text-lg font-black ${
+                                draw
+                                  ? "bg-yellow-300/10 text-yellow-100"
                                   : opponentWins
-                                    ? translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")
-                                    : translate(t, "creatorProfileBattleDraw", "Empate")}
+                                    ? "bg-emerald-400/18 text-emerald-100 shadow-lg shadow-emerald-500/10"
+                                    : "bg-red-500/16 text-red-100"
+                              }`}>
+                                {formatNumber(row.opponent)}
                               </p>
                             </div>
-                            <p className={`text-right text-lg font-black ${opponentWins ? "text-fuchsia-200" : "text-white/65"}`}>
-                              {formatNumber(row.opponent)}
-                            </p>
+                          );
+                        })}
+
+                        {revealedBattleRows < battleRows.length ? (
+                          <div className="rounded-[1rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.05] px-3 py-4 text-center text-xs font-black uppercase tracking-[0.2em] text-fuchsia-100/60 animate-pulse">
+                            {translate(t, "creatorProfileBattleCalculating", "Calculando próximo impacto...")}
                           </div>
-                        );
-                      })}
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2">
+                          <p className="text-xl font-black text-cyan-100">{visibleBattleScore.current}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/50">
+                            {translate(t, "creatorProfileBattleCurrentWins", "Você vence")}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                          <p className="text-xl font-black text-white">{visibleBattleScore.draws}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">
+                            {translate(t, "creatorProfileBattleDraw", "Empate")}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-3 py-2">
+                          <p className="text-xl font-black text-fuchsia-100">{visibleBattleScore.opponent}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.16em] text-fuchsia-100/50">
+                            {translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")}
+                          </p>
+                        </div>
+                      </div>
+
+                      {battleAnimationComplete ? (
+                        <div className={`mt-4 rounded-[1.2rem] border px-4 py-4 text-center ${
+                          battleFinalWinner === "current"
+                            ? "border-emerald-300/25 bg-emerald-400/10"
+                            : battleFinalWinner === "opponent"
+                              ? "border-rose-300/25 bg-rose-400/10"
+                              : "border-yellow-300/25 bg-yellow-300/10"
+                        }`}>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+                            {translate(t, "creatorProfileBattleFinalResult", "Resultado final")}
+                          </p>
+                          <p className="mt-1 text-2xl font-black text-white">
+                            {battleFinalWinner === "current"
+                              ? translate(t, "creatorProfileBattleYouWon", "Você venceu")
+                              : battleFinalWinner === "opponent"
+                                ? `${selectedBattleCreator?.nickname || selectedBattleCreator?.username} ${translate(t, "creatorProfileBattleWon", "venceu")}`
+                                : translate(t, "creatorProfileBattleFinalDraw", "Empate geral")}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                      <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2">
-                        <p className="text-xl font-black text-cyan-100">{battleScore.current}</p>
-                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/50">
-                          {translate(t, "creatorProfileBattleCurrentWins", "Você vence")}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                        <p className="text-xl font-black text-white">{battleScore.draws}</p>
-                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">
-                          {translate(t, "creatorProfileBattleDraw", "Empate")}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-3 py-2">
-                        <p className="text-xl font-black text-fuchsia-100">{battleScore.opponent}</p>
-                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-fuchsia-100/50">
-                          {translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")}
-                        </p>
-                      </div>
+                    <div className="flex justify-center animate-[battleSlideInRight_520ms_ease-out_both]">
+                      {selectedBattleCreatorForCard ? (
+                        <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86] animate-[battleCardClashRight_900ms_ease-in-out_1]">
+                          <CreatorCard creator={selectedBattleCreatorForCard} onClick={() => undefined} />
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-
-                  <div className="flex justify-center animate-[battleSlideInRight_520ms_ease-out_both]">
-                    {selectedBattleCreatorForCard ? (
-                      <div className="origin-center scale-[0.72] sm:scale-[0.78] lg:scale-[0.8]">
-                        <CreatorCard creator={selectedBattleCreatorForCard} onClick={() => undefined} />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+                )}
               </div>
 
               <style jsx>{`
@@ -4240,6 +4444,30 @@ export function CreatorProfilePage({
                 @keyframes battleSlideInRight {
                   from { opacity: 0; transform: translateX(48px) rotate(4deg) scale(0.92); }
                   to { opacity: 1; transform: translateX(0) rotate(0deg) scale(1); }
+                }
+                @keyframes battleCardClashLeft {
+                  0% { transform: translateX(0) rotate(0deg) scale(1); }
+                  42% { transform: translateX(34px) rotate(2deg) scale(1.03); filter: brightness(1.25); }
+                  58% { transform: translateX(18px) rotate(-1deg) scale(0.99); filter: brightness(1.05); }
+                  100% { transform: translateX(0) rotate(0deg) scale(1); }
+                }
+                @keyframes battleCardClashRight {
+                  0% { transform: translateX(0) rotate(0deg) scale(1); }
+                  42% { transform: translateX(-34px) rotate(-2deg) scale(1.03); filter: brightness(1.25); }
+                  58% { transform: translateX(-18px) rotate(1deg) scale(0.99); filter: brightness(1.05); }
+                  100% { transform: translateX(0) rotate(0deg) scale(1); }
+                }
+                @keyframes battleVsPulse {
+                  0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(217,70,239,0); }
+                  50% { transform: scale(1.12); box-shadow: 0 0 32px rgba(217,70,239,0.38); }
+                }
+                @keyframes battleRowReveal {
+                  from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(4px); }
+                  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+                }
+                @keyframes battleFriction {
+                  0%, 100% { transform: translateX(-6%); opacity: 0.25; }
+                  50% { transform: translateX(6%); opacity: 0.55; }
                 }
               `}</style>
             </div>
