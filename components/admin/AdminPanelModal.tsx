@@ -1565,6 +1565,38 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     ).toLowerCase();
   }
 
+  function getDetectedKickAvatar(creator: DetectedKickCreator) {
+    const rawCreator = creator as DetectedKickCreator & {
+      profile_picture?: string | null;
+      profile_pic?: string | null;
+      avatar?: string | null;
+      channel?: {
+        profile_picture?: string | null;
+        profile_pic?: string | null;
+        avatar_url?: string | null;
+      } | null;
+      user?: {
+        profile_picture?: string | null;
+        profile_pic?: string | null;
+        avatar_url?: string | null;
+      } | null;
+    };
+
+    return (
+      rawCreator.avatar_url ||
+      rawCreator.profile_picture ||
+      rawCreator.profile_pic ||
+      rawCreator.avatar ||
+      rawCreator.channel?.profile_picture ||
+      rawCreator.channel?.profile_pic ||
+      rawCreator.channel?.avatar_url ||
+      rawCreator.user?.profile_picture ||
+      rawCreator.user?.profile_pic ||
+      rawCreator.user?.avatar_url ||
+      null
+    );
+  }
+
   function toggleDetectedKickCreator(creator: DetectedKickCreator) {
     const key = getDetectedKickKey(creator);
     if (!key || creator.already_exists) return;
@@ -3554,6 +3586,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                   const selected = !!selectedDetectedKickCreators[key];
                   const creatorUrl =
                     creator.url || `https://kick.com/${creator.slug}`;
+                  const creatorAvatarUrl = getDetectedKickAvatar(creator);
 
                   return (
                     <div
@@ -3621,11 +3654,19 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                           </button>
 
                           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                            {creator.avatar_url ? (
+                            {creatorAvatarUrl ? (
                               <img
-                                src={creator.avatar_url}
+                                src={creatorAvatarUrl}
                                 alt={creator.display_name || creator.slug}
                                 className="h-full w-full object-cover"
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                  event.currentTarget.parentElement?.classList.add(
+                                    "kick-avatar-fallback",
+                                  );
+                                }}
                               />
                             ) : (
                               <UserCog className="text-white/35" />
