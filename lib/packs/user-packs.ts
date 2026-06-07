@@ -379,6 +379,7 @@ export async function openUserPack(userPackId: string) {
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("creator-nexus:packs-updated"));
+      window.dispatchEvent(new Event("creator-nexus:collection-updated"));
     }
 
     return {

@@ -92,15 +92,17 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
 
     const result = await openUserPack(pack.id);
 
-    setTimeout(async () => {
+    setTimeout(() => {
       setOpeningResult(result);
       setOpeningStep("revealed");
 
       if (result) {
         setPacks((current) => current.filter((item) => item.id !== pack.id));
-      }
 
-      await loadPacks();
+        window.setTimeout(() => {
+          loadPacks();
+        }, 900);
+      }
     }, 2600);
   }
 
@@ -671,12 +673,25 @@ function RevealedCard({ openingResult }: { openingResult: PackOpeningResult }) {
 
   return (
     <motion.div
-      initial={{ rotateY: 88, scale: 0.78 }}
-      animate={{ rotateY: 0, scale: 1, y: [0, -6, 0] }}
-      transition={{ y: { duration: 2, repeat: Infinity, ease: "easeInOut" }, rotateY: { duration: 0.7, ease: "easeOut" }, scale: { duration: 0.45 } }}
-      className="scale-[0.82] transform-gpu sm:scale-90"
+      initial={{ rotateY: 78, scale: 0.82, opacity: 0 }}
+      animate={{ rotateY: 0, scale: 1, opacity: 1 }}
+      transition={{
+        rotateY: { duration: 0.62, ease: "easeOut" },
+        scale: { duration: 0.48, ease: "easeOut" },
+        opacity: { duration: 0.22 },
+      }}
+      className="relative scale-[0.82] transform-gpu sm:scale-90"
     >
-      <CreatorCard creator={creatorForReveal as any} onClick={() => undefined} />
+      <div className="pointer-events-none">
+        <CreatorCard creator={creatorForReveal as any} onClick={() => undefined} />
+      </div>
+
+      {openingResult.duplicate && (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-40 -translate-x-1/2 rounded-full border border-amber-200/45 bg-amber-400/18 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.24)] backdrop-blur-md">
+          {translate(t, "packsModalDuplicateCard", "Duplicate card")} · +
+          {openingResult.duplicateXp || 0} XP
+        </div>
+      )}
     </motion.div>
   );
 }
