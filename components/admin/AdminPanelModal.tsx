@@ -1581,19 +1581,29 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         data: { session },
       } = await supabase.auth.getSession();
 
-      const response = await fetch("/api/admin/detect-kick-creators", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? ""}`,
-        },
-        body: JSON.stringify({
-          category: kickDetectorCategory.trim(),
-          language: kickDetectorLanguage.trim() || null,
-          minViewers: Number(kickDetectorMinViewers || 0),
-          limit: Number(kickDetectorLimit || 50),
-        }),
-      });
+      const {
+  data: { session },
+  error: sessionError,
+} = await supabase.auth.getSession();
+
+if (sessionError || !session?.access_token) {
+  alert("Sessão inválida. Faça login novamente.");
+  return;
+}
+
+const response = await fetch("/api/admin/detect-kick-creators", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+  },
+  body: JSON.stringify({
+    category: kickDetectorCategory.trim(),
+    language: kickDetectorLanguage.trim() || null,
+    minViewers: Number(kickDetectorMinViewers || 0),
+    limit: Number(kickDetectorLimit || 50),
+  }),
+});
 
       const result = await response.json().catch(() => null);
 
