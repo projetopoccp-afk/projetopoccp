@@ -85,11 +85,6 @@ export function AccountModal({
       setMissionsOpen(false);
       setCollectionOpen(true);
 
-      /*
-        Quando a notificação é clicada pelo Header, o AccountModal também pode
-        abrir por causa do clique no bloco do usuário. Então fechamos a tela
-        "Minha Conta" e deixamos somente a coleção/carta aberta.
-      */
       window.setTimeout(() => {
         onClose();
 
@@ -99,10 +94,6 @@ export function AccountModal({
           })
         );
 
-        /*
-          Mantém compatibilidade com versões do CollectionModal que ainda escutam
-          o evento antigo diretamente.
-        */
         window.dispatchEvent(
           new CustomEvent("creator-nexus:open-collection-card", {
             detail,
@@ -192,174 +183,176 @@ export function AccountModal({
             showCloseButton
             closeLabel={translate(t, "close", "Fechar")}
             zIndexClassName="z-[80]"
-            className="max-w-4xl"
-            contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 pb-5 md:p-8 md:pb-6"
+            className="max-w-[96rem]"
+            contentClassName="hide-scrollbar overflow-y-auto p-4 pb-4 sm:p-5 sm:pb-5 lg:p-6 xl:p-8 [@media(max-height:760px)]:p-4 [@media(max-height:760px)]:pb-4"
           >
-                <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
-                  {translate(t, "myAccount", "Minha Conta")}
-                </div>
+            <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
+              {translate(t, "myAccount", "Minha Conta")}
+            </div>
 
-                <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center">
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
-                    {profile?.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt={profile.display_name || "Avatar"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <UserRound className="text-white/40" size={42} />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <h2 className="text-3xl font-black leading-tight">
-                      {profile?.display_name || "Creator"}
-                    </h2>
-
-                    <p className="mt-1 break-all text-white/45">{email}</p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                        @{profile?.username || translate(t, "noUsername", "sem_username")}
-                      </span>
-
-                      <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                        {translate(t, "level", "Nível")} {accountStats.level}
-                      </span>
-
-                      <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
-                        {accountStats.xp} XP
-                      </span>
-
-                      <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
-                        {accountStats.cards} {translate(t, "cards", "cards")}
-                      </span>
-
-                      {profile?.is_admin && (
-                        <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
-                          <ShieldCheck size={14} />
-                          Admin
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {profile?.is_admin && (
-                  <button
-                    type="button"
-                    onClick={() => setAdminOpen(true)}
-                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20"
-                  >
-                    <ShieldCheck size={18} />
-                    {translate(t, "adminPanel", "Painel Admin")}
-                  </button>
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center lg:mt-7 lg:gap-6 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] lg:h-24 lg:w-24 [@media(max-height:760px)]:h-18 [@media(max-height:760px)]:w-18">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.display_name || "Avatar"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <UserRound className="text-white/40" size={38} />
                 )}
+              </div>
 
-                <div className="mt-7 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <AccountActionCard
-                    icon={<UserRound size={22} />}
-                    title={translate(t, "profile", "Meu Perfil")}
-                    description={translate(
-                      t,
-                      "profileCardDescription",
-                      "Veja seu nível, XP, progresso, badges e atividade dentro do Cardpoc."
-                    )}
-                    buttonLabel={translate(t, "open", "Abrir")}
-                    variant="cyan"
-                    onClick={() => setProfileOpen(true)}
-                  />
+              <div className="min-w-0">
+                <h2 className="text-2xl font-black leading-tight lg:text-3xl [@media(max-height:760px)]:text-2xl">
+                  {profile?.display_name || "Creator"}
+                </h2>
 
-                  <AccountActionCard
-                    icon={<Archive size={22} />}
-                    title={translate(t, "collection", "Minha Coleção")}
-                    description={translate(
-                      t,
-                      "collectionCardDescription",
-                      "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção."
-                    )}
-                    buttonLabel={translate(t, "open", "Abrir")}
-                    variant="purple"
-                    onClick={() => setCollectionOpen(true)}
-                  />
+                <p className="mt-1 break-all text-sm text-white/45 sm:text-base">
+                  {email}
+                </p>
 
-                  <AccountActionCard
-                    icon={<BadgeCheck size={22} />}
-                    title={translate(t, "myBadges", "Minhas Badges")}
-                    description={translate(
-                      t,
-                      "badgesCardDescription",
-                      "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
-                    )}
-                    buttonLabel={translate(t, "soon", "Em breve")}
-                    variant="yellow"
-                    disabled
-                  />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
+                    @{profile?.username || translate(t, "noUsername", "sem_username")}
+                  </span>
 
-                  <AccountActionCard
-                    icon={<Target size={22} />}
-                    title={translate(t, "missions", "Missões")}
-                    description={translate(
-                      t,
-                      "missionsCardDescription",
-                      "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Nexus."
-                    )}
-                    buttonLabel={translate(t, "open", "Abrir")}
-                    variant="emerald"
-                    onClick={() => setMissionsOpen(true)}
-                  />
+                  <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
+                    {translate(t, "level", "Nível")} {accountStats.level}
+                  </span>
 
-                  <AccountActionCard
-                    icon={<Package size={22} />}
-                    title={translate(t, "packs", "Pacotes")}
-                    description={translate(
-                      t,
-                      "packsCardDescription",
-                      "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
-                    )}
-                    buttonLabel={translate(t, "open", "Abrir")}
-                    variant="pink"
-                    onClick={() => setPacksOpen(true)}
-                  />
+                  <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                    {accountStats.xp} XP
+                  </span>
 
-                  <div className="flex h-full flex-col rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
-                        <ShieldCheck size={22} />
-                      </div>
+                  <span className="rounded-full border border-purple-300/15 bg-purple-300/10 px-3 py-1 text-sm text-purple-100">
+                    {accountStats.cards} {translate(t, "cards", "cards")}
+                  </span>
 
-                      <h3 className="font-bold">
-                        {translate(t, "requestCreatorProfile", "Solicitar perfil de criador")}
-                      </h3>
-                    </div>
-
-                    <p className="mt-2 flex-1 text-sm text-white/55">
-                      {translate(
-                        t,
-                        "requestCreatorProfileDescription",
-                        "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação."
-                      )}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => setRequestOpen(true)}
-                      className="mt-4 w-fit rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105"
-                    >
-                      {translate(t, "startRequest", "Começar solicitação")}
-                    </button>
-                  </div>
+                  {profile?.is_admin && (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
+                      <ShieldCheck size={14} />
+                      Admin
+                    </span>
+                  )}
                 </div>
+              </div>
+            </div>
+
+            {profile?.is_admin && (
+              <button
+                type="button"
+                onClick={() => setAdminOpen(true)}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 lg:mt-6 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:py-2.5"
+              >
+                <ShieldCheck size={18} />
+                {translate(t, "adminPanel", "Painel Admin")}
+              </button>
+            )}
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-3 lg:mt-6 [@media(max-height:760px)]:mt-4">
+              <AccountActionCard
+                icon={<UserRound size={21} />}
+                title={translate(t, "profile", "Meu Perfil")}
+                description={translate(
+                  t,
+                  "profileCardDescription",
+                  "Veja seu nível, XP, progresso, badges e atividade dentro do Cardpoc."
+                )}
+                buttonLabel={translate(t, "open", "Abrir")}
+                variant="cyan"
+                onClick={() => setProfileOpen(true)}
+              />
+
+              <AccountActionCard
+                icon={<Archive size={21} />}
+                title={translate(t, "collection", "Minha Coleção")}
+                description={translate(
+                  t,
+                  "collectionCardDescription",
+                  "Acesse suas cartas conquistadas, raridades, criadores favoritos e progresso da coleção."
+                )}
+                buttonLabel={translate(t, "open", "Abrir")}
+                variant="purple"
+                onClick={() => setCollectionOpen(true)}
+              />
+
+              <AccountActionCard
+                icon={<BadgeCheck size={21} />}
+                title={translate(t, "myBadges", "Minhas Badges")}
+                description={translate(
+                  t,
+                  "badgesCardDescription",
+                  "Conquistas especiais por seguir criadores, compartilhar perfis e completar objetivos."
+                )}
+                buttonLabel={translate(t, "soon", "Em breve")}
+                variant="yellow"
+                disabled
+              />
+
+              <AccountActionCard
+                icon={<Target size={21} />}
+                title={translate(t, "missions", "Missões")}
+                description={translate(
+                  t,
+                  "missionsCardDescription",
+                  "Complete desafios para ganhar pacotes, cartas especiais e recompensas do Cardpoc."
+                )}
+                buttonLabel={translate(t, "open", "Abrir")}
+                variant="emerald"
+                onClick={() => setMissionsOpen(true)}
+              />
+
+              <AccountActionCard
+                icon={<Package size={21} />}
+                title={translate(t, "packs", "Pacotes")}
+                description={translate(
+                  t,
+                  "packsCardDescription",
+                  "Abra pacotes diários, pacotes de missão e eventos para desbloquear novas cartas."
+                )}
+                buttonLabel={translate(t, "open", "Abrir")}
+                variant="pink"
+                onClick={() => setPacksOpen(true)}
+              />
+
+              <div className="flex min-h-[156px] flex-col rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 lg:min-h-[176px] [@media(max-height:760px)]:min-h-[138px] [@media(max-height:760px)]:p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 lg:h-11 lg:w-11 [@media(max-height:760px)]:h-9 [@media(max-height:760px)]:w-9">
+                    <ShieldCheck size={21} />
+                  </div>
+
+                  <h3 className="font-bold leading-tight">
+                    {translate(t, "requestCreatorProfile", "Solicitar perfil de criador")}
+                  </h3>
+                </div>
+
+                <p className="mt-2 flex-1 overflow-hidden text-sm leading-relaxed text-white/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [@media(max-height:760px)]:text-xs [@media(max-height:760px)]:leading-relaxed">
+                  {translate(
+                    t,
+                    "requestCreatorProfileDescription",
+                    "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação."
+                  )}
+                </p>
 
                 <button
                   type="button"
-                  onClick={onLogout}
-                  className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
+                  onClick={() => setRequestOpen(true)}
+                  className="mt-3 w-fit rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105 [@media(max-height:760px)]:px-4 [@media(max-height:760px)]:py-1.5 [@media(max-height:760px)]:text-xs"
                 >
-                  <LogOut size={18} />
-                  {translate(t, "logoutAccount", "Sair da conta")}
+                  {translate(t, "startRequest", "Começar solicitação")}
                 </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              className="mt-5 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:py-2.5"
+            >
+              <LogOut size={18} />
+              {translate(t, "logoutAccount", "Sair da conta")}
+            </button>
           </CardpocModalShell>
         )}
       </AnimatePresence>
@@ -389,10 +382,7 @@ export function AccountModal({
         onClose={() => setMissionsOpen(false)}
       />
 
-      <PacksModal
-        open={packsOpen}
-        onClose={() => setPacksOpen(false)}
-      />
+      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
     </>
   );
 }
@@ -443,24 +433,28 @@ function AccountActionCard({
   }[variant];
 
   return (
-    <div className={`flex h-full flex-col rounded-3xl border p-4 ${styles.card}`}>
+    <div
+      className={`flex min-h-[156px] flex-col rounded-3xl border p-4 lg:min-h-[176px] [@media(max-height:760px)]:min-h-[138px] [@media(max-height:760px)]:p-3 ${styles.card}`}
+    >
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${styles.icon}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border lg:h-11 lg:w-11 [@media(max-height:760px)]:h-9 [@media(max-height:760px)]:w-9 ${styles.icon}`}
         >
           {icon}
         </div>
 
-        <h3 className="font-bold">{title}</h3>
+        <h3 className="font-bold leading-tight">{title}</h3>
       </div>
 
-      <p className="mt-2 flex-1 text-sm text-white/55">{description}</p>
+      <p className="mt-2 flex-1 overflow-hidden text-sm leading-relaxed text-white/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [@media(max-height:760px)]:text-xs [@media(max-height:760px)]:leading-relaxed">
+        {description}
+      </p>
 
       <button
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`mt-4 w-fit rounded-full border px-5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${styles.button}`}
+        className={`mt-3 w-fit rounded-full border px-5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 [@media(max-height:760px)]:px-4 [@media(max-height:760px)]:py-1.5 [@media(max-height:760px)]:text-xs ${styles.button}`}
       >
         {buttonLabel}
       </button>
