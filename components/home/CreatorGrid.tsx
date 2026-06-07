@@ -323,7 +323,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   const featuredCreators = useMemo(() => {
     return [...creators]
       .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, 6);
+      .slice(0, 8);
   }, [creators]);
 
 
