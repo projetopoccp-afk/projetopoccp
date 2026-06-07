@@ -48,6 +48,11 @@ type MissionsModalProps = {
   onClose: () => void;
 };
 
+type OpenMissionsEventDetail = {
+  notificationId?: string | null;
+  missionId?: string | null;
+};
+
 function normalizeMissionText(value: string | null | undefined) {
   return (value || "")
     .normalize("NFD")
@@ -245,11 +250,42 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
     null,
   );
   const [missions, setMissions] = useState<MissionWithProgress[]>([]);
+  const [eventOpen, setEventOpen] = useState(false);
+  const [highlightMissionId, setHighlightMissionId] = useState<string | null>(
+    null,
+  );
+
+  const visible = open || eventOpen;
 
   useEffect(() => {
-    if (!open) return;
+    const handleOpenMissions = (event: Event) => {
+      const customEvent = event as CustomEvent<OpenMissionsEventDetail>;
+      const missionId = customEvent.detail?.missionId || null;
+
+      setEventOpen(true);
+      setHighlightMissionId(missionId);
+    };
+
+    window.addEventListener("creator-nexus:open-missions", handleOpenMissions);
+
+    return () => {
+      window.removeEventListener(
+        "creator-nexus:open-missions",
+        handleOpenMissions,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     loadMissions();
-  }, [open]);
+  }, [visible]);
+
+  function handleClose() {
+    setEventOpen(false);
+    setHighlightMissionId(null);
+    onClose();
+  }
 
   async function loadMissions() {
     setLoading(true);
@@ -407,9 +443,9 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
 
   return (
     <AnimatePresence>
-      {open && (
+      {visible && (
         <CardpocModalShell
-          onClose={onClose}
+          onClose={handleClose}
           showCloseButton
           closeLabel={translate(t, "missionsModalCloseAria", "Fechar missões")}
           zIndexClassName="z-[120]"
@@ -417,171 +453,175 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
           contentClassName="hide-scrollbar max-h-[calc(100vh-1.5rem)] overflow-y-auto p-6 md:p-8"
         >
           <div className="relative z-10">
-              <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-cyan-100 shadow-lg shadow-cyan-500/10">
-                <Target size={14} />
-                {translate(t, "missionsModalBadge", "Missões")}
+            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-cyan-100 shadow-lg shadow-cyan-500/10">
+              <Target size={14} />
+              {translate(t, "missionsModalBadge", "Missões")}
+            </div>
+
+            <div className="mt-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-4xl font-black tracking-tight md:text-6xl">
+                  {translate(t, "missionsModalTitle", "Desafios do Nexus")}
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm text-white/50">
+                  {translate(
+                    t,
+                    "missionsModalDescription",
+                    "Complete objetivos, ganhe XP e desbloqueie recompensas para evoluir sua conta.",
+                  )}
+                </p>
               </div>
 
-              <div className="mt-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <h2 className="text-4xl font-black tracking-tight md:text-6xl">
-                    {translate(t, "missionsModalTitle", "Desafios do Nexus")}
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm text-white/50">
-                    {translate(
-                      t,
-                      "missionsModalDescription",
-                      "Complete objetivos, ganhe XP e desbloqueie recompensas para evoluir sua conta.",
-                    )}
-                  </p>
-                </div>
-
-                <div className="rounded-3xl border border-white/10 bg-white/[0.05] px-6 py-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
-                  <p className="text-xs uppercase tracking-[0.25em] text-white/40">
-                    {translate(t, "missionsModalProgressLabel", "Progresso")}
-                  </p>
-                  <p className="mt-1 text-2xl font-black">
-                    {completedCount}/{missions.length}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4">
-                {loading && (
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translate(
-                      t,
-                      "missionsModalLoading",
-                      "Carregando missões...",
-                    )}
-                  </div>
-                )}
-
-                {!loading && missions.length === 0 && (
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
-                    {translate(
-                      t,
-                      "missionsModalEmpty",
-                      "Nenhuma missão ativa por enquanto.",
-                    )}
-                  </div>
-                )}
-
-                {!loading &&
-                  sortedMissions.map((mission) => {
-                    const progress = mission.userMission?.progress || 0;
-                    const percentage = Math.min(
-                      100,
-                      Math.round((progress / mission.target_amount) * 100),
-                    );
-                    const completed = progress >= mission.target_amount;
-                    const claimed = Boolean(mission.userMission?.claimed_at);
-                    const claiming = claimingMissionId === mission.id;
-                    const category = getMissionCategory(mission);
-                    const CategoryIcon = category.Icon;
-
-                    return (
-                      <div
-                        key={mission.id}
-                        className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-cyan-200/20 hover:bg-white/[0.065]"
-                      >
-                        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-cyan-400/10 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-                        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                          <div className="flex items-start gap-4">
-                            <div
-                              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
-                                completed
-                                  ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
-                                  : category.className
-                              }`}
-                            >
-                              {completed ? (
-                                <CheckCircle2 size={24} />
-                              ) : (
-                                <CategoryIcon size={24} />
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-lg font-black">
-                                  {getMissionTitle(t, mission)}
-                                </h3>
-                                <span
-                                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${category.className}`}
-                                >
-                                  {category.label}
-                                </span>
-                              </div>
-                              <p className="mt-1 text-sm text-white/50">
-                                {getMissionDescription(t, mission)}
-                              </p>
-
-                              <div className="mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/10">
-                                <div
-                                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-300 shadow-[0_0_18px_rgba(45,212,191,0.35)]"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-
-                              <p className="mt-2 text-xs text-white/40">
-                                {translate(
-                                  t,
-                                  "missionsModalProgressCount",
-                                  "{progress}/{target} concluído",
-                                )
-                                  .replace("{current}", String(progress))
-                                  .replace("{progress}", String(progress))
-                                  .replace(
-                                    "{target}",
-                                    String(mission.target_amount),
-                                  )}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm font-bold text-yellow-100">
-                              <Gift size={14} />+{mission.reward_xp} XP
-                            </span>
-
-                            <button
-                              type="button"
-                              disabled={!completed || claimed || claiming}
-                              onClick={() => claimMissionReward(mission)}
-                              className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 disabled:hover:scale-100"
-                            >
-                              {claiming
-                                ? translate(
-                                    t,
-                                    "missionsModalClaiming",
-                                    "Resgatando...",
-                                  )
-                                : claimed
-                                  ? translate(
-                                      t,
-                                      "missionsModalClaimed",
-                                      "Resgatado",
-                                    )
-                                  : completed
-                                    ? translate(
-                                        t,
-                                        "missionsModalClaim",
-                                        "Resgatar",
-                                      )
-                                    : translate(
-                                        t,
-                                        "missionsModalInProgress",
-                                        "Em progresso",
-                                      )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="rounded-3xl border border-white/10 bg-white/[0.05] px-6 py-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                <p className="text-xs uppercase tracking-[0.25em] text-white/40">
+                  {translate(t, "missionsModalProgressLabel", "Progresso")}
+                </p>
+                <p className="mt-1 text-2xl font-black">
+                  {completedCount}/{missions.length}
+                </p>
               </div>
             </div>
+
+            <div className="mt-8 grid gap-4">
+              {loading && (
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
+                  {translate(
+                    t,
+                    "missionsModalLoading",
+                    "Carregando missões...",
+                  )}
+                </div>
+              )}
+
+              {!loading && missions.length === 0 && (
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-white/50">
+                  {translate(
+                    t,
+                    "missionsModalEmpty",
+                    "Nenhuma missão ativa por enquanto.",
+                  )}
+                </div>
+              )}
+
+              {!loading &&
+                sortedMissions.map((mission) => {
+                  const progress = mission.userMission?.progress || 0;
+                  const percentage = Math.min(
+                    100,
+                    Math.round((progress / mission.target_amount) * 100),
+                  );
+                  const completed = progress >= mission.target_amount;
+                  const claimed = Boolean(mission.userMission?.claimed_at);
+                  const claiming = claimingMissionId === mission.id;
+                  const category = getMissionCategory(mission);
+                  const CategoryIcon = category.Icon;
+
+                  return (
+                    <div
+                      key={mission.id}
+                      className={`group relative overflow-hidden rounded-3xl border p-5 shadow-xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-cyan-200/20 hover:bg-white/[0.065] ${
+                        highlightMissionId === mission.id
+                          ? "border-cyan-200/40 bg-cyan-300/[0.08] ring-2 ring-cyan-300/20"
+                          : "border-white/10 bg-white/[0.045]"
+                      }`}
+                    >
+                      <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-cyan-400/10 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+                      <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-4">
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                              completed
+                                ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                                : category.className
+                            }`}
+                          >
+                            {completed ? (
+                              <CheckCircle2 size={24} />
+                            ) : (
+                              <CategoryIcon size={24} />
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-black">
+                                {getMissionTitle(t, mission)}
+                              </h3>
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${category.className}`}
+                              >
+                                {category.label}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm text-white/50">
+                              {getMissionDescription(t, mission)}
+                            </p>
+
+                            <div className="mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/10">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-300 shadow-[0_0_18px_rgba(45,212,191,0.35)]"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+
+                            <p className="mt-2 text-xs text-white/40">
+                              {translate(
+                                t,
+                                "missionsModalProgressCount",
+                                "{progress}/{target} concluído",
+                              )
+                                .replace("{current}", String(progress))
+                                .replace("{progress}", String(progress))
+                                .replace(
+                                  "{target}",
+                                  String(mission.target_amount),
+                                )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
+                          <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm font-bold text-yellow-100">
+                            <Gift size={14} />+{mission.reward_xp} XP
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={!completed || claimed || claiming}
+                            onClick={() => claimMissionReward(mission)}
+                            className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 disabled:hover:scale-100"
+                          >
+                            {claiming
+                              ? translate(
+                                  t,
+                                  "missionsModalClaiming",
+                                  "Resgatando...",
+                                )
+                              : claimed
+                                ? translate(
+                                    t,
+                                    "missionsModalClaimed",
+                                    "Resgatado",
+                                  )
+                                : completed
+                                  ? translate(
+                                      t,
+                                      "missionsModalClaim",
+                                      "Resgatar",
+                                    )
+                                  : translate(
+                                      t,
+                                      "missionsModalInProgress",
+                                      "Em progresso",
+                                    )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
         </CardpocModalShell>
       )}
     </AnimatePresence>
