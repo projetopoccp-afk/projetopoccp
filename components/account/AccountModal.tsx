@@ -499,12 +499,12 @@ export function AccountModal({
               </section>
             </div>
 
-            <div className="mt-5 flex pb-2 [@media(max-height:760px)]:mt-4">
-              <button
-                type="button"
-                onClick={onLogout}
-                className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20 [@media(max-height:760px)]:py-2.5"
-              >
+            <div className="mt-6 pb-8 lg:mt-8 lg:pb-10">
+  <button
+    type="button"
+    onClick={onLogout}
+    className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
+  >
                 <LogOut size={18} />
                 {translate(t, "logoutAccount", "Sair da conta")}
               </button>
