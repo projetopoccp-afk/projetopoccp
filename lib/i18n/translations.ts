@@ -987,6 +987,44 @@ export const translations = {
     creatorProfileEditStatus: "Status",
     creatorProfileEditAvatarUrl: "URL do avatar",
     creatorProfileEditBannerUrl: "URL do banner",
+    creatorProfilePopupThemeTitle: "Alterar tema do card de visualização",
+    creatorProfilePopupThemeDescription:
+      "Escolha a animação que aparece apenas dentro da imagem do popup do criador.",
+    creatorPopupImageEffectNone: "Sem animação",
+    creatorPopupImageEffectNoneDescription: "Imagem limpa, sem efeito extra.",
+    creatorPopupImageEffectCyber: "Cyber cyan",
+    creatorPopupImageEffectCyberDescription:
+      "Circuitos cyan, linhas digitais e pulsos tecnológicos.",
+    creatorPopupImageEffectEmerald: "Esmeralda arcano",
+    creatorPopupImageEffectEmeraldDescription:
+      "Runas esmeralda, névoa arcana e energia mística.",
+    creatorPopupImageEffectGold: "Dourado celestial",
+    creatorPopupImageEffectGoldDescription:
+      "Poeira dourada, brilho nobre e aura celestial.",
+    creatorPopupImageEffectSilver: "Prata clean",
+    creatorPopupImageEffectSilverDescription:
+      "Reflexos prateados discretos e acabamento limpo.",
+    creatorPopupImageEffectStorm: "Tempestade elétrica",
+    creatorPopupImageEffectStormDescription:
+      "Raios sutis por toda a imagem e faíscas em movimento.",
+    creatorPopupImageEffectRunes: "Runas vivas",
+    creatorPopupImageEffectRunesDescription:
+      "Símbolos arcanos flutuando lentamente pela imagem.",
+    creatorPopupImageEffectSolar: "Rios de sol",
+    creatorPopupImageEffectSolarDescription:
+      "Fluxos solares dourados atravessando a imagem.",
+    creatorPopupImageEffectPrism: "Prisma holográfico",
+    creatorPopupImageEffectPrismDescription:
+      "Divisões brilhantes, reflexos prismáticos e brilho premium.",
+    creatorPopupImageEffectVoid: "Vazio astral",
+    creatorPopupImageEffectVoidDescription:
+      "Partículas roxas, profundidade cósmica e energia sombria.",
+    creatorPopupImageEffectAurora: "Aurora viva",
+    creatorPopupImageEffectAuroraDescription:
+      "Ondas de aurora suaves preenchendo toda a imagem.",
+    creatorPopupImageEffectMatrix: "Chuva de dados",
+    creatorPopupImageEffectMatrixDescription:
+      "Dados digitais descendo sobre a imagem com brilho sutil.",
     creatorProfileEditBio: "Bio curta",
     creatorProfileEditDescription: "Descrição completa",
     creatorProfileEditTags: "Tags",
@@ -2153,6 +2191,44 @@ export const translations = {
     creatorProfileEditStatus: "Status",
     creatorProfileEditAvatarUrl: "Avatar URL",
     creatorProfileEditBannerUrl: "Banner URL",
+    creatorProfilePopupThemeTitle: "Change preview card theme",
+    creatorProfilePopupThemeDescription:
+      "Choose the animation that appears only inside the creator popup image.",
+    creatorPopupImageEffectNone: "No animation",
+    creatorPopupImageEffectNoneDescription: "Clean image, no extra effect.",
+    creatorPopupImageEffectCyber: "Cyber cyan",
+    creatorPopupImageEffectCyberDescription:
+      "Cyan circuits, digital lines and tech pulses.",
+    creatorPopupImageEffectEmerald: "Emerald arcane",
+    creatorPopupImageEffectEmeraldDescription:
+      "Emerald runes, arcane mist and mystic energy.",
+    creatorPopupImageEffectGold: "Celestial gold",
+    creatorPopupImageEffectGoldDescription:
+      "Golden dust, noble shine and celestial aura.",
+    creatorPopupImageEffectSilver: "Clean silver",
+    creatorPopupImageEffectSilverDescription:
+      "Subtle silver reflections and clean polish.",
+    creatorPopupImageEffectStorm: "Electric storm",
+    creatorPopupImageEffectStormDescription:
+      "Subtle lightning across the image and moving sparks.",
+    creatorPopupImageEffectRunes: "Living runes",
+    creatorPopupImageEffectRunesDescription:
+      "Arcane symbols slowly floating across the image.",
+    creatorPopupImageEffectSolar: "Solar rivers",
+    creatorPopupImageEffectSolarDescription:
+      "Golden solar streams crossing the image.",
+    creatorPopupImageEffectPrism: "Holographic prism",
+    creatorPopupImageEffectPrismDescription:
+      "Bright divisions, prism reflections and premium shine.",
+    creatorPopupImageEffectVoid: "Astral void",
+    creatorPopupImageEffectVoidDescription:
+      "Purple particles, cosmic depth and dark energy.",
+    creatorPopupImageEffectAurora: "Living aurora",
+    creatorPopupImageEffectAuroraDescription:
+      "Soft aurora waves filling the image.",
+    creatorPopupImageEffectMatrix: "Data rain",
+    creatorPopupImageEffectMatrixDescription:
+      "Digital data falling over the image with subtle glow.",
     creatorProfileEditBio: "Short bio",
     creatorProfileEditDescription: "Full description",
     creatorProfileEditTags: "Tags",
@@ -3322,6 +3398,44 @@ export const translations = {
     creatorProfileEditStatus: "Estado",
     creatorProfileEditAvatarUrl: "URL del avatar",
     creatorProfileEditBannerUrl: "URL del banner",
+    creatorProfilePopupThemeTitle: "Cambiar tema de la tarjeta de vista previa",
+    creatorProfilePopupThemeDescription:
+      "Elige la animación que aparece solo dentro de la imagen del popup del creador.",
+    creatorPopupImageEffectNone: "Sin animación",
+    creatorPopupImageEffectNoneDescription: "Imagen limpia, sin efecto extra.",
+    creatorPopupImageEffectCyber: "Cyber cyan",
+    creatorPopupImageEffectCyberDescription:
+      "Circuitos cyan, líneas digitales y pulsos tecnológicos.",
+    creatorPopupImageEffectEmerald: "Esmeralda arcano",
+    creatorPopupImageEffectEmeraldDescription:
+      "Runas esmeralda, niebla arcana y energía mística.",
+    creatorPopupImageEffectGold: "Dorado celestial",
+    creatorPopupImageEffectGoldDescription:
+      "Polvo dorado, brillo noble y aura celestial.",
+    creatorPopupImageEffectSilver: "Plata clean",
+    creatorPopupImageEffectSilverDescription:
+      "Reflejos plateados sutiles y acabado limpio.",
+    creatorPopupImageEffectStorm: "Tormenta eléctrica",
+    creatorPopupImageEffectStormDescription:
+      "Rayos sutiles por toda la imagen y chispas en movimiento.",
+    creatorPopupImageEffectRunes: "Runas vivas",
+    creatorPopupImageEffectRunesDescription:
+      "Símbolos arcanos flotando lentamente por la imagen.",
+    creatorPopupImageEffectSolar: "Ríos de sol",
+    creatorPopupImageEffectSolarDescription:
+      "Flujos solares dorados atravesando la imagen.",
+    creatorPopupImageEffectPrism: "Prisma holográfico",
+    creatorPopupImageEffectPrismDescription:
+      "Divisiones brillantes, reflejos prismáticos y brillo premium.",
+    creatorPopupImageEffectVoid: "Vacío astral",
+    creatorPopupImageEffectVoidDescription:
+      "Partículas moradas, profundidad cósmica y energía oscura.",
+    creatorPopupImageEffectAurora: "Aurora viva",
+    creatorPopupImageEffectAuroraDescription:
+      "Ondas de aurora suaves llenando la imagen.",
+    creatorPopupImageEffectMatrix: "Lluvia de datos",
+    creatorPopupImageEffectMatrixDescription:
+      "Datos digitales cayendo sobre la imagen con brillo sutil.",
     creatorProfileEditBio: "Bio corta",
     creatorProfileEditDescription: "Descripción completa",
     creatorProfileEditTags: "Tags",

@@ -60,6 +60,7 @@ export type Creator = {
   status: CreatorStatus;
   avatarUrl: string;
   bannerUrl: string;
+  popupAnimationStyle?: string | null;
   bio: string;
   description: string;
   ownerId?: string | null;

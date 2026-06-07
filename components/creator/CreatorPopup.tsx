@@ -24,6 +24,7 @@ import { updateMissionProgress } from "@/lib/missions/user-missions";
 import { Creator } from "@/types/creator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
+import { CreatorPopupImageEffects } from "@/components/creator/CreatorPopupImageEffects";
 
 type CreatorPopupProps = {
   creator: Creator | null;
@@ -1444,6 +1445,10 @@ export function CreatorPopup({
                 ease: "easeInOut",
               }}
               className="absolute inset-0 h-full w-full object-cover object-center opacity-80"
+            />
+
+            <CreatorPopupImageEffects
+              style={creator.popupAnimationStyle ?? "none"}
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />

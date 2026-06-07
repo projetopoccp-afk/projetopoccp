@@ -30,6 +30,7 @@ import {
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CreatorCard } from "@/components/cards/CreatorCard";
+import { CREATOR_POPUP_IMAGE_EFFECT_STYLES } from "@/components/creator/CreatorPopupImageEffects";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
@@ -79,6 +80,7 @@ type CreatorProfileRow = {
   status: string | null;
   avatar_url: string | null;
   banner_url: string | null;
+  popup_animation_style: string | null;
   bio: string | null;
   description: string | null;
   tags: unknown;
@@ -100,6 +102,7 @@ type CreatorProfileEditDraft = {
   category: string;
   avatarUrl: string;
   bannerUrl: string;
+  popupAnimationStyle: string;
   bio: string;
   description: string;
   tagsText: string;
@@ -781,6 +784,7 @@ function createProfileEditDraft(
     category: profile.category || "",
     avatarUrl: profile.avatar_url || "",
     bannerUrl: profile.banner_url || "",
+    popupAnimationStyle: profile.popup_animation_style || "none",
     bio: profile.bio || "",
     description: profile.description || "",
     tagsText: normalizeCreatorTags(profile.tags).join(", "),
@@ -1650,6 +1654,7 @@ export function CreatorProfilePage({
           status,
           avatar_url,
           banner_url,
+          popup_animation_style,
           bio,
           description,
           tags,
@@ -2290,6 +2295,7 @@ export function CreatorProfilePage({
         status,
         avatar_url,
         banner_url,
+        popup_animation_style,
         bio,
         description,
         tags,
@@ -2607,6 +2613,7 @@ export function CreatorProfilePage({
         category: editDraft.category.trim() || null,
         avatar_url: editDraft.avatarUrl.trim() || null,
         banner_url: editDraft.bannerUrl.trim() || null,
+        popup_animation_style: editDraft.popupAnimationStyle || "none",
         bio: editDraft.bio.trim() || null,
         description: editDraft.description.trim() || null,
         tags: nextTags,
@@ -2657,6 +2664,7 @@ export function CreatorProfilePage({
             category: editDraft.category.trim() || null,
             avatar_url: editDraft.avatarUrl.trim() || null,
             banner_url: editDraft.bannerUrl.trim() || null,
+            popup_animation_style: editDraft.popupAnimationStyle || "none",
             bio: editDraft.bio.trim() || null,
             description: editDraft.description.trim() || null,
             tags: nextTags,
@@ -2984,6 +2992,7 @@ export function CreatorProfilePage({
         status: normalizeCreatorStatus(profile.status),
         avatarUrl: profile.avatar_url || "",
         bannerUrl: profile.banner_url || "",
+        popupAnimationStyle: profile.popup_animation_style || "none",
         bio,
         description,
         tags,
@@ -4006,6 +4015,66 @@ export function CreatorProfilePage({
                       className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
                     />
                   </label>
+                </div>
+
+                <div className="mt-4 rounded-[1.5rem] border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                      {translate(
+                        t,
+                        "creatorProfilePopupThemeTitle",
+                        "Alterar tema do card de visualização",
+                      )}
+                    </span>
+                    <p className="text-xs font-semibold text-white/45">
+                      {translate(
+                        t,
+                        "creatorProfilePopupThemeDescription",
+                        "Escolha a animação que aparece apenas dentro da imagem do popup do criador.",
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {CREATOR_POPUP_IMAGE_EFFECT_STYLES.map((effectStyle) => {
+                      const isSelected =
+                        (editDraft.popupAnimationStyle || "none") ===
+                        effectStyle.value;
+
+                      return (
+                        <button
+                          key={effectStyle.value}
+                          type="button"
+                          onClick={() =>
+                            handleEditDraftChange(
+                              "popupAnimationStyle",
+                              effectStyle.value,
+                            )
+                          }
+                          className={`rounded-[1.1rem] border px-3 py-3 text-left transition ${
+                            isSelected
+                              ? "border-cyan-300/50 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
+                              : "border-white/10 bg-black/25 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06]"
+                          }`}
+                        >
+                          <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
+                            {translate(
+                              t,
+                              effectStyle.labelKey,
+                              effectStyle.fallback,
+                            )}
+                          </span>
+                          <span className="mt-1 block text-[11px] font-semibold leading-relaxed text-white/42">
+                            {translate(
+                              t,
+                              effectStyle.descriptionKey,
+                              effectStyle.descriptionFallback,
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="mt-4">
