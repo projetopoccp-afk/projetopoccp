@@ -23,22 +23,38 @@ export async function ensureProfile(user: User) {
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, "_");
 
+  const { data: existingProfile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error(
+      "Erro ao verificar profile:",
+      profileError.message
+    );
+    return;
+  }
+
+  if (existingProfile) {
+    return;
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        email: user.email,
-        display_name: displayName,
-        username,
-        avatar_url: avatarUrl,
-      },
-      {
-        onConflict: "id",
-      }
-    );
+    .insert({
+      id: user.id,
+      email: user.email,
+      display_name: displayName,
+      username,
+      avatar_url: avatarUrl,
+    });
 
   if (error) {
-    console.error("Erro ao criar/atualizar profile:", error.message);
+    console.error(
+      "Erro ao criar profile:",
+      error.message
+    );
   }
 }
