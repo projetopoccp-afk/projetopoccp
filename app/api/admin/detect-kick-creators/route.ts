@@ -55,6 +55,14 @@ function normalizeSlug(value: unknown) {
     .replace(/[^a-z0-9_.-]/g, "");
 }
 
+function normalizeUsernameForCompare(value: unknown) {
+  return String(value || "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, "");
+}
+
 function getNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
@@ -393,22 +401,35 @@ export async function POST(request: NextRequest) {
 
     const detected = Array.from(detectedMap.values());
 
-    const usernames = detected.map((creator) => creator.slug.toLowerCase());
+    if (detected.length > 0) {
+      const { data: existingCreators, error: existingCreatorsError } =
+        await admin.supabaseAdmin
+          .from("creator_profiles")
+          .select("username, nickname");
 
-    if (usernames.length > 0) {
-      const { data: existingCreators } = await admin.supabaseAdmin
-        .from("creator_profiles")
-        .select("username")
-        .in("username", usernames);
+      if (existingCreatorsError) {
+        throw existingCreatorsError;
+      }
 
-      const existingSet = new Set(
-        (existingCreators || []).map((creator) =>
-          String(creator.username || "").toLowerCase(),
-        ),
-      );
+      const existingSet = new Set<string>();
+
+      for (const creator of existingCreators || []) {
+        const username = normalizeUsernameForCompare(creator.username);
+        const nickname = normalizeUsernameForCompare(creator.nickname);
+
+        if (username) existingSet.add(username);
+        if (nickname) existingSet.add(nickname);
+      }
 
       for (const creator of detected) {
-        creator.already_exists = existingSet.has(creator.slug.toLowerCase());
+        const slug = normalizeUsernameForCompare(creator.slug);
+        const username = normalizeUsernameForCompare(creator.username);
+        const displayName = normalizeUsernameForCompare(creator.display_name);
+
+        creator.already_exists =
+          (slug && existingSet.has(slug)) ||
+          (username && existingSet.has(username)) ||
+          (displayName && existingSet.has(displayName));
       }
     }
 
