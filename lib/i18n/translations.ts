@@ -1251,6 +1251,36 @@ export const translations = {
     adminConversationReplyPlaceholder: "Responder como equipe Cardpoc...",
     adminSelectConversation: "Selecione uma conversa para visualizar o chat.",
     email: "Email",
+
+    creatorProfileCompletionAvatar: "Avatar",
+    creatorProfileCompletionBanner: "Banner",
+    creatorProfileCompletionShortBio: "Bio curta",
+    creatorProfileCompletionAbout: "Sobre mim",
+    creatorProfileCompletionTags: "Tags",
+    creatorProfileCompletionSocials: "Redes",
+    creatorProfileCompletionClips: "Clipes",
+    creatorProfileCompleteSuffix: "completo",
+    creatorProfilePanelLiveStatus: "Live ativa",
+    creatorProfilePanelOfflineStatus: "Pronto para configurar",
+    creatorProfileCreatorPanelHubTitle: "Central do Criador",
+    creatorProfileCreatorPanelHubDescription:
+      "Gerencie drops, suporte e publicação do perfil sem sair da experiência pública.",
+    creatorProfilePanelActive: "Ativo",
+    creatorProfilePanelSetup: "Config",
+    creatorProfilePanelSupportDescription:
+      "Suporte para dúvidas, aprovação e melhorias do perfil.",
+    creatorProfileOfficialCard: "Carta oficial Cardpoc",
+    creatorProfileShowcase: "Destaque",
+    creatorProfileProfileStrength: "Força do perfil",
+    creatorProfileSince: "Criador desde",
+    creatorProfileInlineEditTitle: "Editando perfil público",
+    creatorProfileInlineEditDescription:
+      "Altere as informações no mesmo contexto em que elas aparecem para o público.",
+    creatorProfileCompletionTitle: "Perfil completo",
+    creatorProfileCompletionDescription:
+      "Quanto mais completo, mais confiança para novos colecionadores e marcas.",
+    creatorProfileOfflineDescription:
+      "Quando este criador entrar ao vivo, o status aparecerá aqui com acesso rápido.",
   },
 
   en: {
@@ -2491,6 +2521,36 @@ export const translations = {
     adminConversationReplyPlaceholder: "Reply as Cardpoc team...",
     adminSelectConversation: "Select a conversation to view the chat.",
     email: "Email",
+
+    creatorProfileCompletionAvatar: "Avatar",
+    creatorProfileCompletionBanner: "Banner",
+    creatorProfileCompletionShortBio: "Short bio",
+    creatorProfileCompletionAbout: "About me",
+    creatorProfileCompletionTags: "Tags",
+    creatorProfileCompletionSocials: "Socials",
+    creatorProfileCompletionClips: "Clips",
+    creatorProfileCompleteSuffix: "complete",
+    creatorProfilePanelLiveStatus: "Live active",
+    creatorProfilePanelOfflineStatus: "Ready to configure",
+    creatorProfileCreatorPanelHubTitle: "Creator Hub",
+    creatorProfileCreatorPanelHubDescription:
+      "Manage drops, support, and profile publishing without leaving the public experience.",
+    creatorProfilePanelActive: "Active",
+    creatorProfilePanelSetup: "Setup",
+    creatorProfilePanelSupportDescription:
+      "Support for questions, approval, and profile improvements.",
+    creatorProfileOfficialCard: "Official Cardpoc card",
+    creatorProfileShowcase: "Showcase",
+    creatorProfileProfileStrength: "Profile strength",
+    creatorProfileSince: "Creator since",
+    creatorProfileInlineEditTitle: "Editing public profile",
+    creatorProfileInlineEditDescription:
+      "Edit the information in the same context where the public sees it.",
+    creatorProfileCompletionTitle: "Profile completion",
+    creatorProfileCompletionDescription:
+      "The more complete it is, the more trust for new collectors and brands.",
+    creatorProfileOfflineDescription:
+      "When this creator goes live, the status will appear here with quick access.",
   },
 
   es: {
@@ -3746,6 +3806,36 @@ export const translations = {
     adminConversationReplyPlaceholder: "Responder como equipo Cardpoc...",
     adminSelectConversation: "Selecciona una conversación para ver el chat.",
     email: "Email",
+
+    creatorProfileCompletionAvatar: "Avatar",
+    creatorProfileCompletionBanner: "Banner",
+    creatorProfileCompletionShortBio: "Bio corta",
+    creatorProfileCompletionAbout: "Sobre mí",
+    creatorProfileCompletionTags: "Tags",
+    creatorProfileCompletionSocials: "Redes",
+    creatorProfileCompletionClips: "Clips",
+    creatorProfileCompleteSuffix: "completo",
+    creatorProfilePanelLiveStatus: "Live activa",
+    creatorProfilePanelOfflineStatus: "Listo para configurar",
+    creatorProfileCreatorPanelHubTitle: "Central del creador",
+    creatorProfileCreatorPanelHubDescription:
+      "Gestiona drops, soporte y publicación del perfil sin salir de la experiencia pública.",
+    creatorProfilePanelActive: "Activo",
+    creatorProfilePanelSetup: "Config",
+    creatorProfilePanelSupportDescription:
+      "Soporte para dudas, aprobación y mejoras del perfil.",
+    creatorProfileOfficialCard: "Carta oficial Cardpoc",
+    creatorProfileShowcase: "Destacado",
+    creatorProfileProfileStrength: "Fuerza del perfil",
+    creatorProfileSince: "Creador desde",
+    creatorProfileInlineEditTitle: "Editando perfil público",
+    creatorProfileInlineEditDescription:
+      "Edita la información en el mismo contexto en que el público la ve.",
+    creatorProfileCompletionTitle: "Perfil completo",
+    creatorProfileCompletionDescription:
+      "Cuanto más completo, más confianza para nuevos coleccionistas y marcas.",
+    creatorProfileOfflineDescription:
+      "Cuando este creador entre en vivo, el estado aparecerá aquí con acceso rápido.",
   },
 } as const;
 

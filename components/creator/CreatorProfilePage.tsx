@@ -1559,7 +1559,8 @@ export function CreatorProfilePage({
   }, []);
 
   useEffect(() => {
-    if (!socialLinksOpen && !creatorPanelOpen && !popupEffectDropdownOpen) return;
+    if (!socialLinksOpen && !creatorPanelOpen && !popupEffectDropdownOpen)
+      return;
 
     function handleOutsideInteraction(event: MouseEvent | TouchEvent) {
       const target = event.target;
@@ -3005,6 +3006,73 @@ export function CreatorProfilePage({
         });
 
   const heroLiveStatus = livePlatformItems[0]?.status || null;
+  const creatorSinceLabel = formatProfileDate(profile?.created_at);
+  const creatorCardLevel = card?.level || 1;
+  const creatorCardRarityLabel = String(rarity || "common").toUpperCase();
+  const draftForCompletion = editDraft;
+  const completionChecks = [
+    {
+      key: "avatar",
+      done: Boolean(
+        (draftForCompletion?.avatarUrl ?? profile?.avatar_url)?.trim?.(),
+      ),
+      label: translate(t, "creatorProfileCompletionAvatar", "Avatar"),
+    },
+    {
+      key: "banner",
+      done: Boolean(
+        (draftForCompletion?.bannerUrl ?? profile?.banner_url)?.trim?.(),
+      ),
+      label: translate(t, "creatorProfileCompletionBanner", "Banner"),
+    },
+    {
+      key: "bio",
+      done: Boolean((draftForCompletion?.bio ?? profile?.bio ?? "").trim()),
+      label: translate(t, "creatorProfileCompletionShortBio", "Bio curta"),
+    },
+    {
+      key: "about",
+      done: Boolean(
+        (draftForCompletion?.description ?? profile?.description)?.trim?.(),
+      ),
+      label: translate(t, "creatorProfileCompletionAbout", "Sobre mim"),
+    },
+    {
+      key: "tags",
+      done: draftForCompletion
+        ? parseEditTags(draftForCompletion.tagsText).length > 0
+        : visibleTags.length > 0,
+      label: translate(t, "creatorProfileCompletionTags", "Tags"),
+    },
+    {
+      key: "socials",
+      done: draftForCompletion
+        ? parseEditSocialLinks(draftForCompletion.socialLinksText).length > 0
+        : socialLinks.length > 0,
+      label: translate(t, "creatorProfileCompletionSocials", "Redes"),
+    },
+    {
+      key: "clips",
+      done: clips.length > 0,
+      label: translate(t, "creatorProfileCompletionClips", "Clipes"),
+    },
+  ];
+  const completedProfileChecks = completionChecks.filter((item) => item.done);
+  const profileCompletionPercent = Math.round(
+    (completedProfileChecks.length / completionChecks.length) * 100,
+  );
+  const profileCompletionLabel = `${profileCompletionPercent}% ${translate(
+    t,
+    "creatorProfileCompleteSuffix",
+    "completo",
+  )}`;
+  const creatorPanelStatusLabel = isLive
+    ? translate(t, "creatorProfilePanelLiveStatus", "Live ativa")
+    : translate(
+        t,
+        "creatorProfilePanelOfflineStatus",
+        "Pronto para configurar",
+      );
 
   const creatorForPopup: Creator | null = profile
     ? {
@@ -3124,19 +3192,36 @@ export function CreatorProfilePage({
               </button>
 
               {creatorPanelOpen ? (
-                <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#100913]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                <div className="absolute right-0 z-50 mt-3 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#100913]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                  <div className="mb-2 rounded-[1.2rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-4 py-3">
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-fuchsia-100">
+                      {translate(
+                        t,
+                        "creatorProfileCreatorPanelHubTitle",
+                        "Central do Criador",
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-white/45">
+                      {translate(
+                        t,
+                        "creatorProfileCreatorPanelHubDescription",
+                        "Gerencie drops, suporte e publicação do perfil sem sair da experiência pública.",
+                      )}
+                    </p>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
                       setCreatorPanelOpen(false);
                       setLiveDropsOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/10"
+                    className="flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10 shadow-lg shadow-amber-500/10">
                       <Gift className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 flex-1 flex-col">
                       <span className="uppercase tracking-[0.18em]">
                         {translate(
                           t,
@@ -3144,6 +3229,14 @@ export function CreatorProfilePage({
                           "Drops de Live",
                         )}
                       </span>
+                      <span className="mt-1 text-xs font-semibold normal-case tracking-normal text-amber-100/55">
+                        {creatorPanelStatusLabel}
+                      </span>
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/45">
+                      {isLive
+                        ? translate(t, "creatorProfilePanelActive", "Ativo")
+                        : translate(t, "creatorProfilePanelSetup", "Config")}
                     </span>
                   </button>
 
@@ -3153,17 +3246,24 @@ export function CreatorProfilePage({
                       setCreatorPanelOpen(false);
                       setSupportChatOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
+                    className="flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10 shadow-lg shadow-cyan-500/10">
                       <MessageCircle className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 flex-1 flex-col">
                       <span className="uppercase tracking-[0.18em]">
                         {translate(
                           t,
                           "creatorProfileTalkToTeam",
                           "Falar com a equipe",
+                        )}
+                      </span>
+                      <span className="mt-1 text-xs font-semibold normal-case tracking-normal text-cyan-100/55">
+                        {translate(
+                          t,
+                          "creatorProfilePanelSupportDescription",
+                          "Suporte para dúvidas, aprovação e melhorias do perfil.",
                         )}
                       </span>
                     </span>
@@ -3172,12 +3272,12 @@ export function CreatorProfilePage({
                   <Link
                     href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
                     onClick={() => setCreatorPanelOpen(false)}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
+                    className="flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left text-sm font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 shadow-lg shadow-fuchsia-500/10">
                       <Sparkles className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 flex-1 flex-col">
                       <span className="uppercase tracking-[0.18em]">
                         {translate(
                           t,
@@ -3185,6 +3285,12 @@ export function CreatorProfilePage({
                           "Gerenciar perfil",
                         )}
                       </span>
+                      <span className="mt-1 text-xs font-semibold normal-case tracking-normal text-fuchsia-100/55">
+                        {profileCompletionLabel}
+                      </span>
+                    </span>
+                    <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-fuchsia-100/70">
+                      {profileCompletionPercent}%
                     </span>
                   </Link>
                 </div>
@@ -3193,10 +3299,10 @@ export function CreatorProfilePage({
           ) : null}
         </div>
 
-        <section className="mt-8 grid gap-10 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-center">
+        <section className="mt-8 grid gap-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
           <div className="flex flex-col items-center gap-4 lg:items-start">
             {creatorForCard ? (
-              <div className="relative w-fit scale-[1.14] py-6 sm:scale-[1.2] lg:scale-[1.16]">
+              <div className="relative w-fit scale-[1.18] py-7 sm:scale-[1.24] lg:scale-[1.24]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
@@ -3205,6 +3311,45 @@ export function CreatorProfilePage({
                 />
               </div>
             ) : null}
+
+            <div className="w-full max-w-[340px] rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/25 backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/55">
+                    {translate(
+                      t,
+                      "creatorProfileOfficialCard",
+                      "Carta oficial Cardpoc",
+                    )}
+                  </p>
+                  <p className="mt-1 text-sm font-black text-white">
+                    {creatorCardRarityLabel} • LVL {creatorCardLevel}
+                  </p>
+                </div>
+                <span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-100">
+                  {translate(t, "creatorProfileShowcase", "Destaque")}
+                </span>
+              </div>
+
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.55)]"
+                  style={{ width: `${profileCompletionPercent}%` }}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs font-bold text-white/45">
+                <span>
+                  {translate(
+                    t,
+                    "creatorProfileProfileStrength",
+                    "Força do perfil",
+                  )}
+                </span>
+                <span className="text-cyan-100/75">
+                  {profileCompletionLabel}
+                </span>
+              </div>
+            </div>
 
             {isEditing && editDraft ? (
               <div
@@ -3319,65 +3464,93 @@ export function CreatorProfilePage({
             </div>
 
             {isEditing && editDraft ? (
-              <div className="mt-6 grid gap-4">
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(
-                      t,
-                      "creatorProfileEditNickname",
-                      "Nome de exibição",
-                    )}
+              <div className="mt-6 rounded-[2rem] border border-cyan-300/15 bg-cyan-300/[0.04] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl md:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/65">
+                      {translate(
+                        t,
+                        "creatorProfileInlineEditTitle",
+                        "Editando perfil público",
+                      )}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white/45">
+                      {translate(
+                        t,
+                        "creatorProfileInlineEditDescription",
+                        "Altere as informações no mesmo contexto em que elas aparecem para o público.",
+                      )}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-100">
+                    {profileCompletionLabel}
                   </span>
-                  <input
-                    value={editDraft.nickname}
-                    onChange={(event) =>
-                      handleEditDraftChange("nickname", event.target.value)
-                    }
-                    className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-3xl font-black tracking-[-0.04em] text-white outline-none transition focus:border-cyan-300/55 md:text-5xl"
-                  />
-                </label>
+                </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4">
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditTitle", "Título")}
+                      {translate(
+                        t,
+                        "creatorProfileEditNickname",
+                        "Nome de exibição",
+                      )}
                     </span>
                     <input
-                      value={editDraft.title}
+                      value={editDraft.nickname}
                       onChange={(event) =>
-                        handleEditDraftChange("title", event.target.value)
+                        handleEditDraftChange("nickname", event.target.value)
                       }
-                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                      className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-3xl font-black tracking-[-0.04em] text-white outline-none transition focus:border-cyan-300/55 md:text-5xl"
                     />
                   </label>
 
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                        {translate(t, "creatorProfileEditTitle", "Título")}
+                      </span>
+                      <input
+                        value={editDraft.title}
+                        onChange={(event) =>
+                          handleEditDraftChange("title", event.target.value)
+                        }
+                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
+                        {translate(
+                          t,
+                          "creatorProfileEditCategory",
+                          "Categoria",
+                        )}
+                      </span>
+                      <input
+                        value={editDraft.category}
+                        onChange={(event) =>
+                          handleEditDraftChange("category", event.target.value)
+                        }
+                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
+                      />
+                    </label>
+                  </div>
+
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(t, "creatorProfileEditCategory", "Categoria")}
+                      {translate(t, "creatorProfileEditBio", "Bio curta")}
                     </span>
-                    <input
-                      value={editDraft.category}
+                    <textarea
+                      value={editDraft.bio}
                       onChange={(event) =>
-                        handleEditDraftChange("category", event.target.value)
+                        handleEditDraftChange("bio", event.target.value)
                       }
-                      className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base leading-7 text-white/80 outline-none transition focus:border-cyan-300/45"
                     />
                   </label>
                 </div>
-
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditBio", "Bio curta")}
-                  </span>
-                  <textarea
-                    value={editDraft.bio}
-                    onChange={(event) =>
-                      handleEditDraftChange("bio", event.target.value)
-                    }
-                    rows={3}
-                    className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base leading-7 text-white/80 outline-none transition focus:border-cyan-300/45"
-                  />
-                </label>
               </div>
             ) : (
               <>
@@ -3397,6 +3570,24 @@ export function CreatorProfilePage({
                 <p className="mt-6 max-w-3xl text-base leading-8 text-white/68 md:text-lg">
                   {bio}
                 </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {creatorSinceLabel ? (
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/55">
+                      {translate(t, "creatorProfileSince", "Criador desde")}{" "}
+                      {creatorSinceLabel}
+                    </span>
+                  ) : null}
+                  <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1.5 text-xs font-bold text-yellow-100/80">
+                    {creatorCardRarityLabel} • LVL {creatorCardLevel}
+                  </span>
+                  <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100/80">
+                    {category}
+                  </span>
+                  <span className="rounded-full border border-fuchsia-300/15 bg-fuchsia-300/10 px-3 py-1.5 text-xs font-bold text-fuchsia-100/80">
+                    {profileCompletionLabel}
+                  </span>
+                </div>
               </>
             )}
 
@@ -3654,49 +3845,117 @@ export function CreatorProfilePage({
                 </p>
               </div>
             </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+              <div className="rounded-[1.6rem] border border-cyan-300/15 bg-cyan-300/[0.035] p-5 backdrop-blur-xl">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/65">
+                      {translate(
+                        t,
+                        "creatorProfileCompletionTitle",
+                        "Perfil completo",
+                      )}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white/45">
+                      {translate(
+                        t,
+                        "creatorProfileCompletionDescription",
+                        "Quanto mais completo, mais confiança para novos colecionadores e marcas.",
+                      )}
+                    </p>
+                  </div>
+                  <span className="text-2xl font-black text-cyan-100">
+                    {profileCompletionPercent}%
+                  </span>
+                </div>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.55)]"
+                    style={{ width: `${profileCompletionPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-2">
+                {completionChecks.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`rounded-[1rem] border px-3 py-2 text-xs font-bold ${
+                      item.done
+                        ? "border-emerald-300/15 bg-emerald-300/10 text-emerald-100/80"
+                        : "border-white/10 bg-white/[0.035] text-white/35"
+                    }`}
+                  >
+                    {item.done ? "✓" : "○"} {item.label}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
-        {heroLiveStatus ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (livePlatformItems.length > 1) {
-                setLivePlatformsOpen(true);
-                return;
-              }
+        <button
+          type="button"
+          onClick={() => {
+            if (!heroLiveStatus) return;
 
-              window.open(
-                heroLiveStatus.url || "#",
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-            className="mt-8 flex w-full items-center gap-3 rounded-[1.6rem] border border-red-300/20 bg-red-500/10 px-5 py-4 text-left text-sm font-bold text-red-50 backdrop-blur-xl transition hover:bg-red-500/15"
-          >
+            if (livePlatformItems.length > 1) {
+              setLivePlatformsOpen(true);
+              return;
+            }
+
+            window.open(
+              heroLiveStatus.url || "#",
+              "_blank",
+              "noopener,noreferrer",
+            );
+          }}
+          className={`mt-8 flex w-full items-center gap-3 rounded-[1.6rem] border px-5 py-4 text-left text-sm font-bold backdrop-blur-xl transition ${
+            heroLiveStatus
+              ? "border-red-300/20 bg-red-500/10 text-red-50 hover:bg-red-500/15"
+              : "border-white/10 bg-white/[0.035] text-white/55"
+          }`}
+        >
+          {heroLiveStatus ? (
             <Radio className="h-5 w-5 animate-pulse" />
-            <span className="line-clamp-1">
-              {livePlatformItems.length > 1
-                ? translate(
+          ) : (
+            <WifiOff className="h-5 w-5" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-black uppercase tracking-[0.22em]">
+              {heroLiveStatus
+                ? translate(t, "creatorProfileLiveNow", "Ao vivo agora")
+                : translate(t, "creatorProfileOffline", "Offline")}
+            </span>
+            <span className="mt-1 block line-clamp-1 text-sm font-semibold opacity-75">
+              {heroLiveStatus
+                ? livePlatformItems.length > 1
+                  ? translate(
+                      t,
+                      "creatorProfileChooseLivePlatform",
+                      "Este criador está ao vivo em mais de uma plataforma. Escolha onde assistir.",
+                    )
+                  : heroLiveStatus.title ||
+                    translate(
+                      t,
+                      "creatorProfileLiveFallbackTitle",
+                      "Live em andamento",
+                    )
+                : translate(
                     t,
-                    "creatorProfileChooseLivePlatform",
-                    "Este criador está ao vivo em mais de uma plataforma. Escolha onde assistir.",
-                  )
-                : heroLiveStatus.title ||
-                  translate(
-                    t,
-                    "creatorProfileLiveFallbackTitle",
-                    "Live em andamento",
+                    "creatorProfileOfflineDescription",
+                    "Quando este criador entrar ao vivo, o status aparecerá aqui com acesso rápido.",
                   )}
             </span>
-            {heroLiveStatus.viewerCount ? (
-              <span className="ml-auto whitespace-nowrap text-red-100/70">
-                {formatNumber(heroLiveStatus.viewerCount)}{" "}
-                {translate(t, "creatorProfileViewers", "assistindo")}
-              </span>
-            ) : null}
-          </button>
-        ) : null}
+          </span>
+          {heroLiveStatus?.viewerCount ? (
+            <span className="ml-auto whitespace-nowrap text-red-100/70">
+              {formatNumber(heroLiveStatus.viewerCount)}{" "}
+              {translate(t, "creatorProfileViewers", "assistindo")}
+            </span>
+          ) : null}
+        </button>
 
         <section className="mt-8">
           <div className="space-y-6">
@@ -3704,7 +3963,7 @@ export function CreatorProfilePage({
               <div className="flex items-center gap-3">
                 <Sparkles className="h-5 w-5 text-cyan-200" />
                 <h2 className="text-2xl font-black tracking-tight">
-                  {translate(t, "creatorProfileAboutTitle", "Sobre o criador")}
+                  {translate(t, "creatorProfileAboutTitle", "Sobre mim")}
                 </h2>
               </div>
 
@@ -4767,20 +5026,20 @@ export function CreatorProfilePage({
 
       {isEditing && canManageProfile ? (
         <div className="fixed inset-x-0 bottom-4 z-[80] px-4 sm:bottom-6">
-          <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-[1.7rem] border border-cyan-300/20 bg-[#020617]/90 p-4 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
+          <div className="mx-auto flex max-w-4xl flex-col gap-4 rounded-[1.8rem] border border-cyan-300/25 bg-[#020617]/92 p-4 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-black text-white">
                 {translate(
                   t,
                   "creatorProfileUnsavedChanges",
-                  "Alterações não salvas",
+                  "Alterações pendentes",
                 )}
               </p>
               <p className="mt-1 text-xs leading-5 text-white/50">
                 {translate(
                   t,
                   "creatorProfileUnsavedChangesDescription",
-                  "Salve para publicar as mudanças no perfil ou cancele para voltar ao modo de visualização.",
+                  "Revise a prévia e publique quando estiver pronto. Nada muda para o público até salvar.",
                 )}
               </p>
               {profileSaveError ? (
@@ -4809,7 +5068,7 @@ export function CreatorProfilePage({
                 {isSavingProfile ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {translate(t, "creatorProfileSaveEdit", "Salvar")}
+                {translate(t, "creatorProfileSaveEdit", "Publicar alterações")}
               </button>
             </div>
           </div>
