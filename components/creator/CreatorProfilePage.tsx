@@ -3622,7 +3622,7 @@ export function CreatorProfilePage({
         <section className="mt-8 grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start xl:grid-cols-[390px_minmax(0,1fr)]">
           <div className="flex min-h-full flex-col items-center gap-8 px-0 py-0 lg:sticky lg:top-24">
             {creatorForCard ? (
-              <div className="relative z-10 w-fit origin-top scale-[1.1] sm:scale-[1.16] lg:scale-[1.18] xl:scale-[1.22]">
+              <div className="relative z-10 w-fit origin-top scale-[1.04] sm:scale-[1.1] lg:scale-[1.14] xl:scale-[1.18]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_66%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
@@ -3635,7 +3635,7 @@ export function CreatorProfilePage({
             {isEditing && editDraft ? (
               <div
                 ref={popupEffectDropdownRef}
-                className="relative z-40 mt-2 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:mt-4 lg:px-0"
+                className="relative z-40 mt-10 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:mt-14 lg:px-0"
               >
                 <button
                   type="button"
@@ -3718,7 +3718,7 @@ export function CreatorProfilePage({
             ) : null}
 
             {!isEditing ? (
-              <div className="relative z-20 mt-6 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-8">
+              <div className="relative z-20 mt-12 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-16">
                 <div className="flex items-center gap-2 text-cyan-100/70">
                   <Users className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.24em]">
