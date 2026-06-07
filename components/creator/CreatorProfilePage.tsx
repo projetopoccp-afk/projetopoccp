@@ -1506,8 +1506,10 @@ export function CreatorProfilePage({
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [livePlatformsOpen, setLivePlatformsOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const [popupEffectDropdownOpen, setPopupEffectDropdownOpen] = useState(false);
   const [activeClipPlatform, setActiveClipPlatform] = useState<string>("");
   const socialLinksDropdownRef = useRef<HTMLDivElement | null>(null);
+  const popupEffectDropdownRef = useRef<HTMLDivElement | null>(null);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -1557,7 +1559,7 @@ export function CreatorProfilePage({
   }, []);
 
   useEffect(() => {
-    if (!socialLinksOpen && !creatorPanelOpen) return;
+    if (!socialLinksOpen && !creatorPanelOpen && !popupEffectDropdownOpen) return;
 
     function handleOutsideInteraction(event: MouseEvent | TouchEvent) {
       const target = event.target;
@@ -1577,12 +1579,20 @@ export function CreatorProfilePage({
       ) {
         setCreatorPanelOpen(false);
       }
+
+      if (
+        popupEffectDropdownOpen &&
+        !popupEffectDropdownRef.current?.contains(target)
+      ) {
+        setPopupEffectDropdownOpen(false);
+      }
     }
 
     function handleEscapeKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setSocialLinksOpen(false);
         setCreatorPanelOpen(false);
+        setPopupEffectDropdownOpen(false);
       }
     }
 
@@ -1595,7 +1605,7 @@ export function CreatorProfilePage({
       document.removeEventListener("touchstart", handleOutsideInteraction);
       document.removeEventListener("keydown", handleEscapeKey);
     };
-  }, [creatorPanelOpen, socialLinksOpen]);
+  }, [creatorPanelOpen, popupEffectDropdownOpen, socialLinksOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3165,7 +3175,7 @@ export function CreatorProfilePage({
         </div>
 
         <section className="mt-8 grid gap-10 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-center">
-          <div className="flex justify-center lg:justify-start">
+          <div className="flex flex-col items-center gap-4 lg:items-start">
             {creatorForCard ? (
               <div className="relative w-fit scale-[1.14] py-6 sm:scale-[1.2] lg:scale-[1.16]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
@@ -3174,6 +3184,91 @@ export function CreatorProfilePage({
                   creator={creatorForCard}
                   onClick={() => undefined}
                 />
+              </div>
+            ) : null}
+
+            {isEditing && editDraft ? (
+              <div
+                ref={popupEffectDropdownRef}
+                className="relative z-40 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:px-0"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPopupEffectDropdownOpen((current) => !current)
+                  }
+                  className="flex w-full items-center justify-between gap-3 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em] text-cyan-100 shadow-lg shadow-cyan-500/10 backdrop-blur transition hover:border-cyan-300/45 hover:bg-cyan-300/15"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    {translate(
+                      t,
+                      "creatorProfilePopupThemeTitle",
+                      "Efeitos de apresentação",
+                    )}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 transition ${
+                      popupEffectDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {popupEffectDropdownOpen ? (
+                  <div className="absolute left-2 right-2 top-full z-50 mt-3 max-h-[360px] overflow-y-auto rounded-[1.5rem] border border-cyan-300/20 bg-[#05070d]/95 p-2 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:left-0 sm:right-0">
+                    <div className="px-2 pb-2 pt-1">
+                      <p className="text-[11px] font-bold leading-relaxed text-white/45">
+                        {translate(
+                          t,
+                          "creatorProfilePopupThemeDescription",
+                          "Escolha a animação que aparece apenas dentro da imagem do popup do criador.",
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-1.5">
+                      {CREATOR_POPUP_IMAGE_EFFECT_STYLES.map((effectStyle) => {
+                        const isSelected =
+                          (editDraft.popupAnimationStyle || "none") ===
+                          effectStyle.value;
+
+                        return (
+                          <button
+                            key={effectStyle.value}
+                            type="button"
+                            onClick={() => {
+                              handleEditDraftChange(
+                                "popupAnimationStyle",
+                                effectStyle.value,
+                              );
+                              setPopupEffectDropdownOpen(false);
+                            }}
+                            className={`rounded-[1rem] border px-3 py-2.5 text-left transition ${
+                              isSelected
+                                ? "border-cyan-300/55 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
+                                : "border-white/10 bg-white/[0.03] hover:border-cyan-300/30 hover:bg-cyan-300/[0.07]"
+                            }`}
+                          >
+                            <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
+                              {translateExisting(
+                                t,
+                                effectStyle.labelKey,
+                                effectStyle.fallback,
+                              )}
+                            </span>
+                            <span className="mt-1 block text-[11px] font-semibold leading-relaxed text-white/45">
+                              {translateExisting(
+                                t,
+                                effectStyle.descriptionKey,
+                                effectStyle.descriptionFallback,
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -4013,66 +4108,6 @@ export function CreatorProfilePage({
                       className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 outline-none transition focus:border-cyan-300/45"
                     />
                   </label>
-                </div>
-
-                <div className="mt-4 rounded-[1.5rem] border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                      {translate(
-                        t,
-                        "creatorProfilePopupThemeTitle",
-                        "Alterar tema do card de visualização",
-                      )}
-                    </span>
-                    <p className="text-xs font-semibold text-white/45">
-                      {translate(
-                        t,
-                        "creatorProfilePopupThemeDescription",
-                        "Escolha a animação que aparece apenas dentro da imagem do popup do criador.",
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    {CREATOR_POPUP_IMAGE_EFFECT_STYLES.map((effectStyle) => {
-                      const isSelected =
-                        (editDraft.popupAnimationStyle || "none") ===
-                        effectStyle.value;
-
-                      return (
-                        <button
-                          key={effectStyle.value}
-                          type="button"
-                          onClick={() =>
-                            handleEditDraftChange(
-                              "popupAnimationStyle",
-                              effectStyle.value,
-                            )
-                          }
-                          className={`rounded-[1.1rem] border px-3 py-3 text-left transition ${
-                            isSelected
-                              ? "border-cyan-300/50 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
-                              : "border-white/10 bg-black/25 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06]"
-                          }`}
-                        >
-                          <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
-                            {translateExisting(
-                              t,
-                              effectStyle.labelKey,
-                              effectStyle.fallback,
-                            )}
-                          </span>
-                          <span className="mt-1 block text-[11px] font-semibold leading-relaxed text-white/42">
-                            {translateExisting(
-                              t,
-                              effectStyle.descriptionKey,
-                              effectStyle.descriptionFallback,
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 <div className="mt-4">
