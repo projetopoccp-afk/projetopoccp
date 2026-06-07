@@ -112,6 +112,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           tags,
           created_at,
           trending_score,
+          profile_level,
           creator_cards (
             rarity,
             rank,
@@ -170,7 +171,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
             translate(t, "creatorGridDefaultEvolutionStage", "Stage 1 — Rising Creator"),
           powerScore: card?.power_score || 0,
           collectedBy: 0,
-          level: card?.level || 1,
+          level: item.profile_level || card?.level || 1,
           followers: 0,
           likes: 0,
           views: 0,
