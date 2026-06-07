@@ -99,10 +99,14 @@ export const translations = {
     albumPageBackHome: "Voltar para Home",
     albumPageBadge: "Álbum Cardpoc",
     albumPageTitle: "Álbum de Criadores",
+    albumPageDescription:
+      "Complete cada criador conquistando as 4 raridades. A carta do álbum só acende quando você tiver Comum, Raro, Épico e Lendário.",
     albumPageLoading: "Carregando álbum...",
     albumPageComplete: "Completa",
     albumPageIncomplete: "Incompleta",
     albumPageProgressLabel: "Progresso",
+    albumPageLoginHint:
+      "Entre na sua conta para ver quais cartas do álbum já estão acesas.",
 
     legalBackHome: "Voltar para o início",
     legalLastUpdated: "Última atualização: Junho de 2026",
@@ -1275,10 +1279,14 @@ export const translations = {
     albumPageBackHome: "Back to Home",
     albumPageBadge: "Cardpoc Album",
     albumPageTitle: "Creator Album",
+    albumPageDescription:
+      "Complete each creator by collecting all 4 rarities. The album card only lights up when you have Common, Rare, Epic, and Legendary.",
     albumPageLoading: "Loading album...",
     albumPageComplete: "Complete",
     albumPageIncomplete: "Incomplete",
     albumPageProgressLabel: "Progress",
+    albumPageLoginHint:
+      "Sign in to see which album cards are already lit up.",
 
     legalBackHome: "Back to home",
     legalLastUpdated: "Last updated: June 2026",
@@ -2440,10 +2448,14 @@ export const translations = {
     albumPageBackHome: "Volver al inicio",
     albumPageBadge: "Álbum Cardpoc",
     albumPageTitle: "Álbum de Creadores",
+    albumPageDescription:
+      "Completa cada creador consiguiendo las 4 rarezas. La carta del álbum solo se enciende cuando tienes Común, Rara, Épica y Legendaria.",
     albumPageLoading: "Cargando álbum...",
     albumPageComplete: "Completa",
     albumPageIncomplete: "Incompleta",
     albumPageProgressLabel: "Progreso",
+    albumPageLoginHint:
+      "Inicia sesión para ver qué cartas del álbum ya están encendidas.",
 
     legalBackHome: "Volver al inicio",
     legalLastUpdated: "Última actualización: Junio de 2026",
