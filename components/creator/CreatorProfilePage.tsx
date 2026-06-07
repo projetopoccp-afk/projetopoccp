@@ -405,8 +405,11 @@ function getHighestRarityFromStats(stats: CreatorCollectionStats): CreatorRarity
   return null;
 }
 
-function getCreatorCardLevel(card: CreatorCardRow | null | undefined) {
-  return Number(card?.level || 1);
+function getCreatorCardLevel(
+  card: CreatorCardRow | null | undefined,
+  profile: CreatorProfileRow | null | undefined,
+) {
+  return Number((profile as any)?.profile_level || card?.level || 1);
 }
 
 function getCreatorCardPower(card: CreatorCardRow | null | undefined) {
@@ -1773,6 +1776,8 @@ export function CreatorProfilePage({
           created_at,
           trending_score,
           share_count,
+          profile_level,
+          profile_xp,
           creator_cards (
             rarity,
             rank,
@@ -2296,7 +2301,7 @@ export function CreatorProfilePage({
   const visibleTags = tags;
   const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
   const highestCollectedRarity = getHighestRarityFromStats(collectionStats);
-  const cardLevel = getCreatorCardLevel(card);
+  const cardLevel = getCreatorCardLevel(card, profile);
   const cardPowerScore = getCreatorCardPower(card);
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
@@ -3412,7 +3417,7 @@ export function CreatorProfilePage({
         evolutionStage: card?.evolution_stage || "Stage 1 — Rising Creator",
         powerScore: card?.power_score || 0,
         collectedBy: 0,
-        level: card?.level || 1,
+        level: (profile as any)?.profile_level || card?.level || 1,
         followers: stats.followers,
         likes: 0,
         views: stats.views,
