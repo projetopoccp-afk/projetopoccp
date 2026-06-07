@@ -15,6 +15,8 @@ import { Creator } from "@/types/creator";
 type CreatorWithMeta = Creator & {
   createdAt: string;
   trendingScore: number;
+  profile_level?: number | null;
+  profile_xp?: number | null;
 };
 
 type UserCardProgress = {
@@ -192,6 +194,8 @@ export default function AlbumPage() {
           tags,
           created_at,
           trending_score,
+          profile_level,
+          profile_xp,
           creator_cards (
             rarity,
             rank,
@@ -261,7 +265,7 @@ export default function AlbumPage() {
               preferredCard?.evolution_stage || "Stage 1 — Rising Creator",
             powerScore: preferredCard?.power_score || 0,
             collectedBy: 0,
-            level: preferredCard?.level || 1,
+            level: item.profile_level || preferredCard?.level || 1,
             followers: 0,
             likes: 0,
             views: 0,
