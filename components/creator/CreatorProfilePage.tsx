@@ -3529,7 +3529,7 @@ export function CreatorProfilePage({
       <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex min-h-[40px] flex-wrap items-center justify-end gap-3">
           {canManageProfile && !isEditing ? (
             <div ref={creatorPanelDropdownRef} className="relative">
               <button
@@ -3772,7 +3772,7 @@ export function CreatorProfilePage({
             ) : null}
           </div>
 
-          <div className="min-w-0 self-start rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:p-7">
+          <div className="min-w-0 self-start rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:min-h-[626px] lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
                 {translate(t, "creatorProfilePublicProfile", "Perfil público")}
