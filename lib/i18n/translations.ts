@@ -16,6 +16,8 @@ export const translations = {
     linkedAccountsConnectedAt: "Conectada em",
     linkedAccountsKickDescription:
       "Conecte sua conta Kick para participar de drops via chat, eventos e recompensas automáticas.",
+    linkedAccountsTwitchDescription:
+      "Conecte sua conta Twitch para participar dos mesmos drops via chat junto com a Kick.",
     linkedAccountsConnect: "Conectar conta",
     linkedAccountsDisconnect: "Desconectar",
     linkedAccountsDisconnecting: "Desconectando...",
@@ -1235,6 +1237,8 @@ export const translations = {
     linkedAccountsConnectedAt: "Connected on",
     linkedAccountsKickDescription:
       "Connect your Kick account to join chat drops, events, and automatic rewards.",
+    linkedAccountsTwitchDescription:
+      "Connect your Twitch account to join the same chat drops alongside Kick.",
     linkedAccountsConnect: "Connect account",
     linkedAccountsDisconnect: "Disconnect",
     linkedAccountsDisconnecting: "Disconnecting...",
@@ -2443,6 +2447,8 @@ export const translations = {
     linkedAccountsConnectedAt: "Conectada el",
     linkedAccountsKickDescription:
       "Conecta tu cuenta Kick para participar en drops por chat, eventos y recompensas automáticas.",
+    linkedAccountsTwitchDescription:
+      "Conecta tu cuenta Twitch para participar en los mismos drops por chat junto con Kick.",
     linkedAccountsConnect: "Conectar cuenta",
     linkedAccountsDisconnect: "Desconectar",
     linkedAccountsDisconnecting: "Desconectando...",

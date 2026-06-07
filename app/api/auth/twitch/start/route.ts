@@ -1,0 +1,162 @@
+import { createHash, randomBytes } from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type StartTwitchOAuthBody = {
+  accessToken?: string;
+  returnTo?: string;
+};
+
+function base64Url(buffer: Buffer) {
+  return buffer
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function getSiteUrl(request: NextRequest) {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.startsWith("http")
+      ? configuredUrl.replace(/\/$/, "")
+      : `https://${configuredUrl.replace(/\/$/, "")}`;
+  }
+
+  return request.nextUrl.origin;
+}
+
+function getTwitchRedirectUri(request: NextRequest) {
+  return (
+    process.env.TWITCH_REDIRECT_URI ||
+    `${getSiteUrl(request)}/api/auth/twitch/callback`
+  );
+}
+
+function getSafeReturnTo(value: unknown) {
+  if (typeof value !== "string") return "/";
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue || !trimmedValue.startsWith("/")) return "/";
+  if (trimmedValue.startsWith("//")) return "/";
+
+  return trimmedValue;
+}
+
+function getRequiredEnv(name: string) {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(`Missing environment variable: ${name}`);
+  }
+
+  return value;
+}
+
+function createSupabaseAnonClient() {
+  return createClient(
+    getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    },
+  );
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = (await request.json().catch(() => ({}))) as StartTwitchOAuthBody;
+    const accessToken = body.accessToken;
+    const returnTo = getSafeReturnTo(body.returnTo);
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "missing_supabase_access_token" },
+        { status: 401 },
+      );
+    }
+
+    const supabase = createSupabaseAnonClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "invalid_supabase_session" },
+        { status: 401 },
+      );
+    }
+
+    const twitchClientId = getRequiredEnv("TWITCH_CLIENT_ID");
+    const redirectUri = getTwitchRedirectUri(request);
+    const state = base64Url(randomBytes(32));
+    const codeVerifier = base64Url(randomBytes(64));
+    const codeChallenge = base64Url(
+      createHash("sha256").update(codeVerifier).digest(),
+    );
+
+    const authorizeUrl = new URL("https://id.twitch.tv/oauth2/authorize");
+    authorizeUrl.searchParams.set("response_type", "code");
+    authorizeUrl.searchParams.set("client_id", twitchClientId);
+    authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+    authorizeUrl.searchParams.set(
+      "scope",
+      "user:read:email user:read:chat user:bot channel:bot",
+    );
+    authorizeUrl.searchParams.set("state", state);
+    authorizeUrl.searchParams.set("code_challenge", codeChallenge);
+    authorizeUrl.searchParams.set("code_challenge_method", "S256");
+
+    const response = NextResponse.json({ url: authorizeUrl.toString() });
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: 60 * 10,
+    };
+
+    response.cookies.set("cardpoc_twitch_oauth_state", state, cookieOptions);
+    response.cookies.set(
+      "cardpoc_twitch_oauth_code_verifier",
+      codeVerifier,
+      cookieOptions,
+    );
+    response.cookies.set("cardpoc_twitch_oauth_user_id", user.id, cookieOptions);
+    response.cookies.set(
+      "cardpoc_twitch_oauth_return_to",
+      returnTo,
+      cookieOptions,
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Twitch OAuth start error:", error);
+
+    return NextResponse.json(
+      { error: "twitch_oauth_start_failed" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { error: "method_not_allowed_use_post" },
+    { status: 405 },
+  );
+}
