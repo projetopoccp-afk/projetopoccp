@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -34,11 +32,6 @@ const RARITY_SHOWCASE_CYCLE = [
 ] as const;
 
 const RARITY_SHOWCASE_INTERVAL = 9800;
-const RARITY_STACK_TRANSITION = {
-  duration: 0.72,
-  ease: [0.22, 1, 0.36, 1],
-} as const;
-
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
     return tags
@@ -549,51 +542,8 @@ function AnimatedRarityCreatorCard({
   };
 
   return (
-    <div className="relative h-[360px] w-[240px] overflow-visible [perspective:1200px]">
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.div
-          key={`${creator.id}-${showcase.rarity}`}
-          className="absolute inset-0 will-change-transform"
-          initial={{
-            x: 32,
-            y: 18,
-            rotateZ: 4.5,
-            rotateY: -7,
-            scale: 0.985,
-            opacity: 0.92,
-            zIndex: 1,
-          }}
-          animate={{
-            x: 0,
-            y: 0,
-            rotateZ: 0,
-            rotateY: 0,
-            scale: 1,
-            opacity: 1,
-            zIndex: 3,
-            transition: RARITY_STACK_TRANSITION,
-          }}
-          exit={{
-            x: -24,
-            y: -12,
-            rotateZ: -3.5,
-            rotateY: 5,
-            scale: 0.992,
-            opacity: 0,
-            zIndex: 2,
-            transition: {
-              duration: 0.58,
-              ease: [0.4, 0, 0.2, 1],
-            },
-          }}
-          style={{
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-          }}
-        >
-          <CreatorCard creator={showcasedCreator} onClick={onClick} />
-        </motion.div>
-      </AnimatePresence>
+    <div className="relative h-[360px] w-[240px] overflow-visible">
+      <CreatorCard creator={showcasedCreator} onClick={onClick} />
     </div>
   );
 }
