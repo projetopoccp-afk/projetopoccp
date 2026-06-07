@@ -47,8 +47,6 @@ import type {
   SocialPlatform,
 } from "@/types/creator";
 
-type TranslationKey = Parameters<typeof translate>[1];
-
 function translateExisting(t: unknown, key: string, fallback: string) {
   const value = (t as Record<string, string | undefined>)[key];
   return typeof value === "string" && value.trim().length > 0
@@ -4058,16 +4056,16 @@ export function CreatorProfilePage({
                           }`}
                         >
                           <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
-                            {translate(
+                            {translateExisting(
                               t,
-                              effectStyle.labelKey as TranslationKey,
+                              effectStyle.labelKey,
                               effectStyle.fallback,
                             )}
                           </span>
                           <span className="mt-1 block text-[11px] font-semibold leading-relaxed text-white/42">
-                            {translate(
+                            {translateExisting(
                               t,
-                              effectStyle.descriptionKey as TranslationKey,
+                              effectStyle.descriptionKey,
                               effectStyle.descriptionFallback,
                             )}
                           </span>
