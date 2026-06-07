@@ -106,6 +106,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           status,
           avatar_url,
           banner_url,
+          popup_animation_style,
           bio,
           description,
           tags,
@@ -145,6 +146,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
           status: item.status || "offline",
           avatarUrl: item.avatar_url || "",
           bannerUrl: item.banner_url || "",
+          popupAnimationStyle: item.popup_animation_style || "none",
           bio:
             item.bio ||
             translate(
