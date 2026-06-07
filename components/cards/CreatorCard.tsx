@@ -1226,7 +1226,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           </div>
 
           <div className="creator-card-level-badge absolute right-4 top-4 z-20 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs text-white/85 backdrop-blur-md">
-            {translate(t, "creatorCardLevelPrefix", "Lv.")} {creator.level}
+            {translate(t, "creatorCardLevelPrefix", "Lv.")} {(creator as any).profile_level ?? creator.level ?? 1}
           </div>
 
           <div className="absolute bottom-5 left-0 right-0 z-20 px-4">
