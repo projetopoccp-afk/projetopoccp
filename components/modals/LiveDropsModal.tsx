@@ -27,7 +27,7 @@ type LiveDropsModalProps = {
   onClose: () => void;
   creatorId: string;
   creatorName: string;
-  platform: "kick";
+  platform: "kick" | "twitch";
   isLive: boolean;
   viewerCount: number;
   liveTitle?: string | null;
@@ -248,6 +248,8 @@ export function LiveDropsModal({
   const safeDurationMinutes = useMemo(() => {
     return Math.max(1, Math.floor(Number(durationMinutes) || 1));
   }, [durationMinutes]);
+
+  const currentPlatformLabel = getPlatformLabel(platform);
 
   const activeDrops = useMemo(
     () => drops.filter((drop) => isDropCurrentlyActive(drop, nowTime)),
@@ -705,7 +707,7 @@ export function LiveDropsModal({
           t,
           "liveDropsCreatedDescription",
           "Drop ativado com sucesso. Os participantes entram pelo chat da Kick.",
-        ),
+        ).replace(/Kick/g, currentPlatformLabel),
       );
       await loadDrops();
     } catch (dropError) {
@@ -845,7 +847,7 @@ export function LiveDropsModal({
           ? translate(
               t,
               "liveDropsNoEligibleWinner",
-              "Nenhum usuário elegível encontrado. O usuário precisa ter a Kick vinculada e ainda não ter resgatado este drop.",
+              "Nenhum usuário elegível encontrado. O usuário precisa ter a plataforma vinculada e ainda não ter resgatado este drop.",
             )
           : translate(
               t,
@@ -1000,7 +1002,7 @@ export function LiveDropsModal({
                   t,
                   "liveDropsOfflineWarning",
                   "O criador precisa estar ao vivo na Kick para ativar drops.",
-                )}
+                ).replace(/Kick/g, currentPlatformLabel)}
               </div>
             ) : normalizedViewerCount <= 0 ? (
               <div className="mt-5 flex gap-3 rounded-2xl border border-yellow-300/20 bg-yellow-500/10 p-4 text-sm leading-6 text-yellow-100/80">
@@ -1313,7 +1315,7 @@ export function LiveDropsModal({
                 {translate(
                   t,
                   "liveDropsFutureNote",
-                  "Nesta primeira versão o drop é criado; a leitura automática do chat entra na próxima etapa.",
+                  "Digite CARDPOC no chat da plataforma conectada para entrar no sorteio.",
                 )}
               </p>
             </div>
