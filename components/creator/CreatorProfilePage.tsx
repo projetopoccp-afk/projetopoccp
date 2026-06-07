@@ -4060,14 +4060,14 @@ export function CreatorProfilePage({
                           <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
                             {translate(
                               t,
-                              effectStyle.labelKey,
+                              effectStyle.labelKey as TranslationKey,
                               effectStyle.fallback,
                             )}
                           </span>
                           <span className="mt-1 block text-[11px] font-semibold leading-relaxed text-white/42">
                             {translate(
                               t,
-                              effectStyle.descriptionKey,
+                              effectStyle.descriptionKey as TranslationKey,
                               effectStyle.descriptionFallback,
                             )}
                           </span>
