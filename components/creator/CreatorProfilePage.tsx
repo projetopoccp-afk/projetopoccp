@@ -39,7 +39,6 @@ import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
-import { updateCreatorProfileLevel } from "@/lib/update-creator-profile-level";
 import type {
   Creator,
   CreatorRank,
@@ -3195,10 +3194,6 @@ export function CreatorProfilePage({
           ...current,
           followers: Math.max(0, current.followers - 1),
         }));
-        await updateCreatorProfileLevel(
-          supabase,
-          currentProfile.id,
-        );
         return;
       }
 
@@ -3289,10 +3284,6 @@ export function CreatorProfilePage({
               rarity: newCard?.rarity,
               source: newCard?.source,
             },
-            await updateCreatorProfileLevel(
-              supabase,
-              currentProfile.id,
-            );
           });
 
           await createUserNotification({
