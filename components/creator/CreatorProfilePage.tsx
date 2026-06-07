@@ -39,7 +39,6 @@ import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
-import { updateCreatorProfileLevel } from "@/lib/update-creator-profile-level";
 import type {
   Creator,
   CreatorRank,
@@ -3158,7 +3157,9 @@ export function CreatorProfilePage({
   }
 
   async function handleFollow() {
-    if (!profile) return;
+    const currentProfile = profile;
+
+    if (!currentProfile) return;
 
     const {
       data: { user },
@@ -3182,7 +3183,7 @@ export function CreatorProfilePage({
         const { error } = await supabase
           .from("creator_followers")
           .delete()
-          .eq("creator_id", profile.id)
+          .eq("creator_id", currentProfile.id)
           .eq("user_id", user.id);
 
         if (error) {
@@ -3199,7 +3200,7 @@ export function CreatorProfilePage({
       }
 
       const { error } = await supabase.from("creator_followers").insert({
-        creator_id: profile.id,
+        creator_id: currentProfile.id,
         user_id: user.id,
       });
 
@@ -3208,29 +3209,22 @@ export function CreatorProfilePage({
         return;
       }
 
-      setIsFollowing(false);
+      setIsFollowing(true);
       setStats((current) => ({
         ...current,
-        followers: Math.max(0, current.followers - 1),
+        followers: current.followers + 1,
       }));
 
-      await updateCreatorProfileLevel(
-        supabase,
-        profile.id,
-      );
-
-      return;
-
       const metadata = {
-        creator_id: profile.id,
-        creator_username: profile.username,
+        creator_id: currentProfile.id,
+        creator_username: currentProfile.username,
         creator_nickname: nickname,
       };
 
       const followAlreadyRewarded = await hasXpEvent(
         user.id,
         "follow_creator",
-        { creator_id: profile.id },
+        { creator_id: currentProfile.id },
       );
 
       if (!followAlreadyRewarded) {
@@ -3262,7 +3256,7 @@ export function CreatorProfilePage({
       const { data: existingCard } = await supabase
         .from("user_cards")
         .select("id")
-        .eq("creator_id", profile.id)
+        .eq("creator_id", currentProfile.id)
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -3270,7 +3264,7 @@ export function CreatorProfilePage({
         const { data: newCard, error: cardError } = await supabase
           .from("user_cards")
           .insert({
-            creator_id: profile.id,
+            creator_id: currentProfile.id,
             user_id: user.id,
             rarity: "common",
             source: "follow",
@@ -3285,8 +3279,8 @@ export function CreatorProfilePage({
             userId: user.id,
             eventType: "collect_common_card",
             metadata: {
-              creator_id: profile.id,
-              creator_username: profile.username,
+              creator_id: currentProfile.id,
+              creator_username: currentProfile.username,
               creator_nickname: nickname,
               card_id: newCard?.id,
               rarity: newCard?.rarity,
@@ -3308,8 +3302,8 @@ export function CreatorProfilePage({
               "Você ganhou uma carta comum por seguir este creator.",
             ),
             metadata: {
-              creator_id: profile.id,
-              creator_username: profile.username,
+              creator_id: currentProfile.id,
+              creator_username: currentProfile.username,
               creator_nickname: nickname,
               card_id: newCard?.id,
               rarity: newCard?.rarity,
@@ -3318,8 +3312,8 @@ export function CreatorProfilePage({
           });
 
           await updateMissionProgress("collect_card", 1, {
-            creator_id: profile.id,
-            creator_username: profile.username,
+            creator_id: currentProfile.id,
+            creator_username: currentProfile.username,
             creator_nickname: nickname,
             rarity: newCard?.rarity,
             source: newCard?.source,
