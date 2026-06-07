@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +34,11 @@ const RARITY_SHOWCASE_CYCLE = [
 ] as const;
 
 const RARITY_SHOWCASE_INTERVAL = 9800;
+const RARITY_STACK_TRANSITION = {
+  duration: 0.72,
+  ease: [0.22, 1, 0.36, 1],
+} as const;
+
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
     return tags
@@ -506,22 +513,48 @@ function AnimatedRarityCreatorCard({
   index: number;
   onClick: (creator: Creator) => void;
 }) {
-  const [rarityIndex, setRarityIndex] = useState(
-    index % RARITY_SHOWCASE_CYCLE.length
+  const initialRarityIndex = index % RARITY_SHOWCASE_CYCLE.length;
+  const [activeRarityIndex, setActiveRarityIndex] = useState(initialRarityIndex);
+  const [incomingRarityIndex, setIncomingRarityIndex] = useState<number | null>(
+    null
   );
 
+  const activeRarityIndexRef = useRef(initialRarityIndex);
+  const isTransitioningRef = useRef(false);
+  const transitionTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
+    function beginCardStackTransition() {
+      if (isTransitioningRef.current) return;
+
+      const nextIndex =
+        (activeRarityIndexRef.current + 1) % RARITY_SHOWCASE_CYCLE.length;
+
+      isTransitioningRef.current = true;
+      setIncomingRarityIndex(nextIndex);
+
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+
+      transitionTimeoutRef.current = window.setTimeout(() => {
+        activeRarityIndexRef.current = nextIndex;
+        setActiveRarityIndex(nextIndex);
+        setIncomingRarityIndex(null);
+        isTransitioningRef.current = false;
+        transitionTimeoutRef.current = null;
+      }, 760);
+    }
+
     const startDelay = index * 1100;
     let intervalId: number | null = null;
 
     const timeoutId = window.setTimeout(() => {
-      setRarityIndex((current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length);
-
-      intervalId = window.setInterval(() => {
-        setRarityIndex(
-          (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length
-        );
-      }, RARITY_SHOWCASE_INTERVAL);
+      beginCardStackTransition();
+      intervalId = window.setInterval(
+        beginCardStackTransition,
+        RARITY_SHOWCASE_INTERVAL
+      );
     }, startDelay);
 
     return () => {
@@ -530,20 +563,68 @@ function AnimatedRarityCreatorCard({
       if (intervalId !== null) {
         window.clearInterval(intervalId);
       }
+
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
     };
   }, [index]);
 
-  const showcase = RARITY_SHOWCASE_CYCLE[rarityIndex];
+  const activeShowcase = RARITY_SHOWCASE_CYCLE[activeRarityIndex];
+  const incomingShowcase =
+    incomingRarityIndex !== null
+      ? RARITY_SHOWCASE_CYCLE[incomingRarityIndex]
+      : null;
 
-  const showcasedCreator: CreatorWithMeta = {
+  const activeCreator: CreatorWithMeta = {
     ...creator,
-    rarity: showcase.rarity,
+    rarity: activeShowcase.rarity,
     level: creator.level || 1,
   };
 
+  const incomingCreator: CreatorWithMeta | null = incomingShowcase
+    ? {
+        ...creator,
+        rarity: incomingShowcase.rarity,
+        level: creator.level || 1,
+      }
+    : null;
+
   return (
-    <div className="relative h-[360px] w-[240px] overflow-visible">
-      <CreatorCard creator={showcasedCreator} onClick={onClick} />
+    <div className="relative h-[360px] w-[240px] overflow-visible [perspective:1200px]">
+      <div className="relative z-10 h-full w-full">
+        <CreatorCard creator={activeCreator} onClick={onClick} />
+      </div>
+
+      {incomingCreator && (
+        <motion.div
+          key={`${creator.id}-${incomingCreator.rarity}-incoming`}
+          className="pointer-events-none absolute inset-0 z-20 will-change-transform"
+          initial={{
+            x: 34,
+            y: 18,
+            rotateZ: 4.25,
+            rotateY: -6,
+            scale: 0.985,
+            opacity: 0.94,
+          }}
+          animate={{
+            x: 0,
+            y: 0,
+            rotateZ: 0,
+            rotateY: 0,
+            scale: 1,
+            opacity: 1,
+            transition: RARITY_STACK_TRANSITION,
+          }}
+          style={{
+            transformStyle: "preserve-3d",
+            backfaceVisibility: "hidden",
+          }}
+        >
+          <CreatorCard creator={incomingCreator} onClick={onClick} />
+        </motion.div>
+      )}
     </div>
   );
 }
