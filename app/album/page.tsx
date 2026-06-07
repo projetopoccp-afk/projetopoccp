@@ -480,7 +480,7 @@ function MythicAlbumCard({
     ...creator,
     rarity: "mythic" as CreatorWithMeta["rarity"],
     aura: "Sakura Mythic Aura",
-    rank: "Mythic",
+    rank: creator.rank || "Bronze",
   };
 
   const petals = Array.from({ length: 16 }, (_, index) => index);
