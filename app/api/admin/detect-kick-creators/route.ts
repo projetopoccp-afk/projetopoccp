@@ -427,9 +427,9 @@ export async function POST(request: NextRequest) {
         const displayName = normalizeUsernameForCompare(creator.display_name);
 
         creator.already_exists =
-          (slug && existingSet.has(slug)) ||
-          (username && existingSet.has(username)) ||
-          (displayName && existingSet.has(displayName));
+          Boolean(slug && existingSet.has(slug)) ||
+          Boolean(username && existingSet.has(username)) ||
+          Boolean(displayName && existingSet.has(displayName));
       }
     }
 
