@@ -2471,7 +2471,7 @@ export function CreatorProfilePage({
           (total, status) => total + (status?.isLive ? Number(status.viewerCount || 0) : 0),
           0,
         ),
-        level: getCreatorCardLevel(selectedCard),
+        level: getCreatorCardLevel(selectedCard, profile),
         powerScore: getCreatorCardPower(selectedCard),
       });
       setBattleLoading(false);
