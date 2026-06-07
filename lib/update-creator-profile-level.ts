@@ -77,27 +77,44 @@ export async function updateCreatorProfileLevel(
     };
   }
 
-  const { data: collectedCards } = await supabase
-    .from("user_cards")
-    .select("user_id, rarity")
+  const { data: profileCards } = await supabase
+    .from("creator_cards")
+    .select("id")
     .eq("creator_id", creatorProfileId);
 
+  const creatorCardIds = (profileCards || [])
+    .map((card) => card.id)
+    .filter(Boolean);
+
+  const primaryCreatorCardId = creatorCardIds[0] || creatorProfileId;
+
+  let collectedCards: Array<{ user_id: string | null; rarity: string | null }> = [];
+
+  if (creatorCardIds.length > 0) {
+    const { data } = await supabase
+      .from("user_cards")
+      .select("user_id, rarity")
+      .in("creator_id", creatorCardIds);
+
+    collectedCards = data || [];
+  }
+
   const uniqueCollectors = new Set(
-    (collectedCards || [])
+    collectedCards
       .map((card) => card.user_id)
       .filter(Boolean),
   ).size;
 
-  const totalCardsCollected = collectedCards?.length || 0;
+  const totalCardsCollected = collectedCards.length;
 
-  const rarityScore = (collectedCards || []).reduce((total, card) => {
+  const rarityScore = collectedCards.reduce((total, card) => {
     return total + getRarityPoints(card.rarity);
   }, 0);
 
   const { count: cardpocFollowersCount } = await supabase
     .from("creator_followers")
     .select("id", { count: "exact", head: true })
-    .eq("creator_id", creatorProfileId);
+    .eq("creator_id", primaryCreatorCardId);
 
   const { profileXp, profileLevel } = calculateCreatorProfileLevel({
     shareCount: normalizeNumber(profile.share_count),
