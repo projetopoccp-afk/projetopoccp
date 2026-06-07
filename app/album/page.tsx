@@ -28,6 +28,62 @@ type AlbumCreator = CreatorWithMeta & {
 };
 
 const REQUIRED_RARITIES = ["common", "rare", "epic", "legendary"] as const;
+const MYTHIC_RARITY = "mythic";
+
+function hasCompletedBaseRarities(rarities: Set<string>) {
+  return REQUIRED_RARITIES.every((rarity) => rarities.has(rarity));
+}
+
+async function ensureMythicAlbumRewards({
+  userId,
+  progressByCreator,
+}: {
+  userId: string;
+  progressByCreator: Map<string, UserCardProgress>;
+}) {
+  const creatorsToReward = Array.from(progressByCreator.values()).filter(
+    (progress) =>
+      hasCompletedBaseRarities(progress.rarities) &&
+      !progress.rarities.has(MYTHIC_RARITY),
+  );
+
+  if (creatorsToReward.length === 0) return progressByCreator;
+
+  const nextProgress = new Map(progressByCreator);
+
+  for (const progress of creatorsToReward) {
+    const { data: existingMythic } = await supabase
+      .from("user_cards")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("creator_id", progress.creatorId)
+      .eq("rarity", MYTHIC_RARITY)
+      .maybeSingle();
+
+    if (!existingMythic) {
+      const { error } = await supabase.from("user_cards").insert({
+        user_id: userId,
+        creator_id: progress.creatorId,
+        rarity: MYTHIC_RARITY,
+      });
+
+      if (error) {
+        console.error("Failed to unlock mythic album reward", error);
+        continue;
+      }
+    }
+
+    const current = nextProgress.get(progress.creatorId) ?? {
+      creatorId: progress.creatorId,
+      rarities: new Set<string>(),
+    };
+
+    current.rarities.add(MYTHIC_RARITY);
+    nextProgress.set(progress.creatorId, current);
+  }
+
+  return nextProgress;
+}
 
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -254,6 +310,13 @@ export default function AlbumPage() {
         }, new Map<string, UserCardProgress>());
       }
 
+      if (user) {
+        nextProgress = await ensureMythicAlbumRewards({
+          userId: user.id,
+          progressByCreator: nextProgress,
+        });
+      }
+
       if (!mounted) return;
 
       setCreators(mappedCreators);
@@ -427,18 +490,7 @@ function AlbumTile({
             transition={{ duration: 0.3 }}
           >
             <span className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[22px] border border-white/10 bg-black/45">
-              {creator.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={creator.avatarUrl}
-                  alt={creator.nickname}
-                  className="h-full w-full scale-110 object-cover opacity-10 grayscale blur-[2px] transition duration-500 group-hover:opacity-16"
-                />
-              ) : (
-                <span className="text-4xl text-white/12">✦</span>
-              )}
-
-              <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.06),transparent_30%),linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.82))]" />
+              <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(255,255,255,0.075),transparent_28%),radial-gradient(circle_at_50%_72%,rgba(34,211,238,0.07),transparent_38%),linear-gradient(180deg,rgba(0,0,0,0.22),rgba(0,0,0,0.86))]" />
               <span className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_9px)] opacity-25" />
               <span className="absolute flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/55 text-2xl text-white/28 shadow-[0_0_28px_rgba(0,0,0,0.65)]">
                 ✦
