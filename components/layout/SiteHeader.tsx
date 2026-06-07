@@ -241,27 +241,6 @@ function getMetadataString(
   return null;
 }
 
-function metadataHasIntent(
-  metadata: Record<string, unknown>,
-  intents: string[],
-): boolean {
-  const possibleValues = [
-    metadata.action,
-    metadata.target,
-    metadata.destination,
-    metadata.kind,
-    metadata.entity,
-    metadata.source,
-  ];
-
-  return possibleValues.some((value) => {
-    if (typeof value !== "string") return false;
-
-    const normalizedValue = value.toLowerCase();
-
-    return intents.some((intent) => normalizedValue.includes(intent));
-  });
-}
 
 function getMetadataBoolean(
   metadata: Record<string, unknown>,
@@ -312,10 +291,66 @@ function notificationHasText(
   return values.some((value) => text.includes(value));
 }
 
+function metadataHasIntent(
+  metadata: Record<string, unknown>,
+  intents: string[],
+): boolean {
+  const possibleValues = [
+    metadata.action,
+    metadata.target,
+    metadata.destination,
+    metadata.kind,
+    metadata.entity,
+    metadata.source,
+  ];
+
+  return possibleValues.some((value) => {
+    if (typeof value !== "string") return false;
+
+    const normalizedValue = value.toLowerCase();
+
+    return intents.some((intent) => normalizedValue.includes(intent));
+  });
+}
+
+function isMissionNotification(notification: UserNotification) {
+  const metadata = notification.metadata || {};
+
+  return (
+    notification.type === "mission_completed" ||
+    Boolean(
+      getMetadataString(metadata, [
+        "mission_id",
+        "missionId",
+        "user_mission_id",
+        "userMissionId",
+      ]),
+    ) ||
+    metadataHasIntent(metadata, [
+      "mission",
+      "missions",
+      "missao",
+      "missão",
+      "missoes",
+      "missões",
+    ]) ||
+    notificationHasText(notification, [
+      "missão",
+      "missao",
+      "missões",
+      "missoes",
+    ])
+  );
+}
+
 function isXpOnlyNotification(notification: UserNotification) {
   const metadata = notification.metadata || {};
 
   if (notification.type === "card_collected" || notification.type === "card_won") {
+    return false;
+  }
+
+  if (notification.type === "mission_completed") {
     return false;
   }
 
@@ -345,7 +380,8 @@ function isXpOnlyNotification(notification: UserNotification) {
       "xpReward",
       "reward_xp",
       "rewardXp",
-    ]) !== null
+    ]) !== null &&
+    !isMissionNotification(notification)
   ) {
     return true;
   }
@@ -910,6 +946,44 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     */
   }
 
+  function openMissionsFromNotification(notification: UserNotification) {
+    setCollectionOpen(false);
+    setPacksOpen(false);
+    clearCollectionInitialState();
+    setAccountOpen(true);
+
+    /*
+      Missões não devem cair na regra genérica de XP.
+      Abrimos a conta e avisamos o AccountModal para ir direto para a aba/área
+      de missões, quando ele estiver preparado para escutar esse evento.
+    */
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:open-missions", {
+          detail: {
+            notificationId: notification.id,
+            missionId: getMetadataString(notification.metadata || {}, [
+              "mission_id",
+              "missionId",
+              "user_mission_id",
+              "userMissionId",
+            ]),
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:account-open-tab", {
+          detail: {
+            tab: "missions",
+            source: "notification",
+            notificationId: notification.id,
+          },
+        }),
+      );
+    }, 0);
+  }
+
   function handleNotificationClick(notification: UserNotification) {
     if (activeNotificationActionRef.current === notification.id) {
       return;
@@ -922,6 +996,16 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     markNotificationAsRead(notification.id);
     setNotificationsOpen(false);
 
+    if (isMissionNotification(notification)) {
+      openMissionsFromNotification(notification);
+      return;
+    }
+
+    if (isPackNotification(notification)) {
+      openPacksFromNotification();
+      return;
+    }
+
     if (isXpOnlyNotification(notification)) {
       clearCollectionInitialState();
       setCollectionOpen(false);
@@ -932,11 +1016,6 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
     if (isCardNotification(notification)) {
       openCollectionFromNotification(notification);
-      return;
-    }
-
-    if (isPackNotification(notification)) {
-      openPacksFromNotification();
       return;
     }
 
