@@ -416,6 +416,7 @@ export const translations = {
     creatorGridFeaturedCards: "Cartas em Destaque",
     creatorGridNewCards: "Cartas Novas",
     creatorGridActiveDropsTitle: "Drops ativos",
+    creatorGridActiveDropsDescription: "Criadores que fizeram drops nas últimas 2 horas aparecem aqui.",
     creatorGridDropLastTwoHours: "Drop criado nas últimas 2 horas",
     creatorGridEmptyTitle:
       "Não identificamos nenhuma identidade correspondente à sua busca.",
@@ -1589,6 +1590,7 @@ export const translations = {
     creatorGridFeaturedCards: "Featured Cards",
     creatorGridNewCards: "New Cards",
     creatorGridActiveDropsTitle: "Active drops",
+    creatorGridActiveDropsDescription: "Creators who made drops in the last 2 hours appear here.",
     creatorGridDropLastTwoHours: "Drop created in the last 2 hours",
     creatorGridEmptyTitle:
       "We could not identify any identity matching your search.",
@@ -2759,6 +2761,7 @@ export const translations = {
     creatorGridFeaturedCards: "Cartas Destacadas",
     creatorGridNewCards: "Cartas Nuevas",
     creatorGridActiveDropsTitle: "Drops activos",
+    creatorGridActiveDropsDescription: "Los creadores que hicieron drops en las últimas 2 horas aparecen aquí.",
     creatorGridDropLastTwoHours: "Drop creado en las últimas 2 horas",
     creatorGridEmptyTitle:
       "No identificamos ninguna identidad que coincida con tu búsqueda.",
