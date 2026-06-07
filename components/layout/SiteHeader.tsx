@@ -23,6 +23,7 @@ import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MissionsModal } from "@/components/missions/MissionsModal";
 
 type SiteHeaderProps = {
   search?: string;
@@ -947,42 +948,27 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }
 
   function openMissionsFromNotification(notification: UserNotification) {
-    setCollectionOpen(false);
-    setPacksOpen(false);
-    clearCollectionInitialState();
-    setAccountOpen(true);
+  setCollectionOpen(false);
+  setPacksOpen(false);
+  setAccountOpen(false);
+  clearCollectionInitialState();
 
-    /*
-      Missões não devem cair na regra genérica de XP.
-      Abrimos a conta e avisamos o AccountModal para ir direto para a aba/área
-      de missões, quando ele estiver preparado para escutar esse evento.
-    */
-    window.setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent("creator-nexus:open-missions", {
-          detail: {
-            notificationId: notification.id,
-            missionId: getMetadataString(notification.metadata || {}, [
-              "mission_id",
-              "missionId",
-              "user_mission_id",
-              "userMissionId",
-            ]),
-          },
-        }),
-      );
-
-      window.dispatchEvent(
-        new CustomEvent("creator-nexus:account-open-tab", {
-          detail: {
-            tab: "missions",
-            source: "notification",
-            notificationId: notification.id,
-          },
-        }),
-      );
-    }, 0);
-  }
+  window.setTimeout(() => {
+    window.dispatchEvent(
+      new CustomEvent("creator-nexus:open-missions", {
+        detail: {
+          notificationId: notification.id,
+          missionId: getMetadataString(notification.metadata || {}, [
+            "mission_id",
+            "missionId",
+            "user_mission_id",
+            "userMissionId",
+          ]),
+        },
+      }),
+    );
+  }, 0);
+}
 
   function handleNotificationClick(notification: UserNotification) {
     if (activeNotificationActionRef.current === notification.id) {
