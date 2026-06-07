@@ -60,6 +60,10 @@ export const translations = {
     creatorProfileEditSocialLinks: "Links sociais",
     creatorProfileEditAddSocialLink: "Adicionar link",
     creatorProfileEditRemoveSocialLink: "Remover link",
+    creatorProfileRecentlyApproved: "Aprovado recentemente",
+    creatorProfileOfficialCardShort: "Carta oficial",
+    creatorProfileCategory: "Categoria",
+    creatorProfileReadiness: "Pronto para",
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
@@ -922,8 +926,9 @@ export const translations = {
     creatorProfilePartnershipSince: "Desde",
     creatorProfilePartnershipWebsite: "Site",
     creatorProfilePartnershipEvidence: "Ver vídeo",
+    creatorProfileNoPartnershipsTitle: "Nenhuma parceria publicada ainda",
     creatorProfileNoPartnerships:
-      "Nenhuma parceria verificada publicada ainda.",
+      "Parcerias aprovadas pela equipe Cardpoc ou adicionadas pelo criador aparecerão aqui.",
     creatorProfileManualPartnershipTitle: "Adicionar parceria manual",
     creatorProfileManualPartnershipDescription:
       "Parcerias adicionadas pelo criador aparecem publicamente sem passar pela fila automática.",
@@ -946,8 +951,9 @@ export const translations = {
     creatorProfilePartnershipTypeEvent: "Evento",
     creatorProfilePartnershipTypePartnership: "Parceria",
     creatorProfileFeaturedClips: "Clipes em destaque",
+    creatorProfileNoClipsTitle: "Nenhum clipe disponível ainda",
     creatorProfileNoClips:
-      "Este criador ainda não possui clipes públicos em destaque.",
+      "Conecte YouTube, Twitch ou Kick para exibir os melhores momentos deste criador.",
     creatorProfileSocialLinks: "Redes sociais",
     creatorProfileNoSocialLinks:
       "As redes sociais deste criador ainda não foram adicionadas.",
@@ -1067,11 +1073,11 @@ export const translations = {
       "Nome de usuário e nome de exibição são obrigatórios.",
     creatorProfileEditSaveError:
       "Não foi possível salvar as alterações do perfil.",
-    creatorProfileUnsavedChanges: "Alterações não salvas",
+    creatorProfileUnsavedChanges: "Rascunho com alterações",
     creatorProfileUnsavedChangesDescription:
-      "Salve para publicar as mudanças no perfil ou cancele para voltar ao modo de visualização.",
+      "Revise a prévia e publique quando estiver pronto. Nada muda para o público até publicar as alterações.",
     creatorProfileCancelEdit: "Cancelar",
-    creatorProfileSaveEdit: "Salvar",
+    creatorProfileSaveEdit: "Publicar alterações",
     creatorProfileLiveNow: "Ao vivo agora",
     creatorProfileLiveBadge: "Live",
     creatorProfileOffline: "Offline",
@@ -1281,6 +1287,19 @@ export const translations = {
       "Quanto mais completo, mais confiança para novos colecionadores e marcas.",
     creatorProfileOfflineDescription:
       "Quando este criador entrar ao vivo, o status aparecerá aqui com acesso rápido.",
+    creatorProfilePulseTitle: "Sinal do perfil",
+    creatorProfilePulseVerified:
+      "Perfil verificado, público e pronto para receber novos colecionadores.",
+    creatorProfilePulsePublic:
+      "Perfil público no Cardpoc com carta oficial e página compartilhável.",
+    creatorProfileAuthorityTitle: "Credibilidade",
+    creatorProfileAuthorityText:
+      "Dados, redes, clips e parcerias ajudam marcas e fãs a entenderem o alcance do criador.",
+    creatorProfileNextStepTitle: "Próximo passo",
+    creatorProfileNextStepDone:
+      "Perfil completo. Mantenha clips, lives e parcerias atualizados.",
+    creatorProfileNextStepText:
+      "Complete os itens pendentes para deixar esta página mais forte para SEO e descoberta.",
   },
 
   en: {
@@ -1344,6 +1363,10 @@ export const translations = {
     creatorProfileEditSocialLinks: "Social links",
     creatorProfileEditAddSocialLink: "Add link",
     creatorProfileEditRemoveSocialLink: "Remove link",
+    creatorProfileRecentlyApproved: "Recently approved",
+    creatorProfileOfficialCardShort: "Official card",
+    creatorProfileCategory: "Category",
+    creatorProfileReadiness: "Ready for",
 
     rankings: "Rankings",
     openRankings: "Open rankings",
@@ -2188,7 +2211,9 @@ export const translations = {
     creatorProfilePartnershipSince: "Since",
     creatorProfilePartnershipWebsite: "Website",
     creatorProfilePartnershipEvidence: "View video",
-    creatorProfileNoPartnerships: "No verified partnerships published yet.",
+    creatorProfileNoPartnershipsTitle: "No partnerships published yet",
+    creatorProfileNoPartnerships:
+      "Partnerships approved by Cardpoc or added by the creator will appear here.",
     creatorProfileManualPartnershipTitle: "Add manual partnership",
     creatorProfileManualPartnershipDescription:
       "Partnerships added by the creator appear publicly without entering the automatic review queue.",
@@ -2211,8 +2236,9 @@ export const translations = {
     creatorProfilePartnershipTypeEvent: "Event",
     creatorProfilePartnershipTypePartnership: "Partnership",
     creatorProfileFeaturedClips: "Featured clips",
+    creatorProfileNoClipsTitle: "No clips available yet",
     creatorProfileNoClips:
-      "This creator does not have public featured clips yet.",
+      "Connect YouTube, Twitch or Kick to show this creator's best moments.",
     creatorProfileSocialLinks: "Social links",
     creatorProfileNoSocialLinks:
       "This creator's social links have not been added yet.",
@@ -2331,11 +2357,11 @@ export const translations = {
     creatorProfileEditTags: "Tags",
     creatorProfileEditRequiredFields: "Username and display name are required.",
     creatorProfileEditSaveError: "Could not save profile changes.",
-    creatorProfileUnsavedChanges: "Unsaved changes",
+    creatorProfileUnsavedChanges: "Draft with changes",
     creatorProfileUnsavedChangesDescription:
-      "Save to publish your profile changes or cancel to return to view mode.",
+      "Review the preview and publish when ready. Nothing changes publicly until you publish.",
     creatorProfileCancelEdit: "Cancel",
-    creatorProfileSaveEdit: "Save",
+    creatorProfileSaveEdit: "Publish changes",
     creatorProfileLiveNow: "Live now",
     creatorProfileLiveBadge: "Live",
     creatorProfileOffline: "Offline",
@@ -2551,6 +2577,19 @@ export const translations = {
       "The more complete it is, the more trust for new collectors and brands.",
     creatorProfileOfflineDescription:
       "When this creator goes live, the status will appear here with quick access.",
+    creatorProfilePulseTitle: "Profile signal",
+    creatorProfilePulseVerified:
+      "Verified, public, and ready to welcome new collectors.",
+    creatorProfilePulsePublic:
+      "Public Cardpoc profile with an official card and shareable page.",
+    creatorProfileAuthorityTitle: "Credibility",
+    creatorProfileAuthorityText:
+      "Data, networks, clips, and partnerships help brands and fans understand the creator's reach.",
+    creatorProfileNextStepTitle: "Next step",
+    creatorProfileNextStepDone:
+      "Profile complete. Keep clips, lives, and partnerships updated.",
+    creatorProfileNextStepText:
+      "Complete the pending items to make this page stronger for SEO and discovery.",
   },
 
   es: {
@@ -2614,6 +2653,10 @@ export const translations = {
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
     creatorProfileEditRemoveSocialLink: "Eliminar enlace",
+    creatorProfileRecentlyApproved: "Aprobado recientemente",
+    creatorProfileOfficialCardShort: "Carta oficial",
+    creatorProfileCategory: "Categoría",
+    creatorProfileReadiness: "Listo para",
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
@@ -3457,8 +3500,9 @@ export const translations = {
     creatorProfilePartnershipSince: "Desde",
     creatorProfilePartnershipWebsite: "Sitio",
     creatorProfilePartnershipEvidence: "Ver video",
+    creatorProfileNoPartnershipsTitle: "Aún no hay colaboraciones publicadas",
     creatorProfileNoPartnerships:
-      "Aún no hay colaboraciones verificadas publicadas.",
+      "Las colaboraciones aprobadas por Cardpoc o añadidas por el creador aparecerán aquí.",
     creatorProfileManualPartnershipTitle: "Añadir colaboración manual",
     creatorProfileManualPartnershipDescription:
       "Las colaboraciones añadidas por el creador aparecen públicamente sin pasar por la fila automática.",
@@ -3482,8 +3526,9 @@ export const translations = {
     creatorProfilePartnershipTypeEvent: "Evento",
     creatorProfilePartnershipTypePartnership: "Colaboración",
     creatorProfileFeaturedClips: "Clips destacados",
+    creatorProfileNoClipsTitle: "Aún no hay clips disponibles",
     creatorProfileNoClips:
-      "Este creador aún no tiene clips públicos destacados.",
+      "Conecta YouTube, Twitch o Kick para mostrar los mejores momentos de este creador.",
     creatorProfileSocialLinks: "Redes sociales",
     creatorProfileNoSocialLinks:
       "Las redes sociales de este creador aún no fueron añadidas.",
@@ -3605,11 +3650,11 @@ export const translations = {
       "El usuario y el nombre visible son obligatorios.",
     creatorProfileEditSaveError:
       "No se pudieron guardar los cambios del perfil.",
-    creatorProfileUnsavedChanges: "Cambios no guardados",
+    creatorProfileUnsavedChanges: "Borrador con cambios",
     creatorProfileUnsavedChangesDescription:
-      "Guarda para publicar los cambios del perfil o cancela para volver al modo de visualización.",
+      "Revisa la vista previa y publica cuando esté listo. Nada cambia para el público hasta publicar.",
     creatorProfileCancelEdit: "Cancelar",
-    creatorProfileSaveEdit: "Guardar",
+    creatorProfileSaveEdit: "Publicar cambios",
     creatorProfileLiveNow: "En vivo ahora",
     creatorProfileLiveBadge: "Live",
     creatorProfileOffline: "Offline",
@@ -3836,6 +3881,19 @@ export const translations = {
       "Cuanto más completo, más confianza para nuevos coleccionistas y marcas.",
     creatorProfileOfflineDescription:
       "Cuando este creador entre en vivo, el estado aparecerá aquí con acceso rápido.",
+    creatorProfilePulseTitle: "Señal del perfil",
+    creatorProfilePulseVerified:
+      "Perfil verificado, público y listo para recibir nuevos coleccionistas.",
+    creatorProfilePulsePublic:
+      "Perfil público en Cardpoc con carta oficial y página compartible.",
+    creatorProfileAuthorityTitle: "Credibilidad",
+    creatorProfileAuthorityText:
+      "Datos, redes, clips y alianzas ayudan a marcas y fans a entender el alcance del creador.",
+    creatorProfileNextStepTitle: "Próximo paso",
+    creatorProfileNextStepDone:
+      "Perfil completo. Mantén clips, lives y alianzas actualizados.",
+    creatorProfileNextStepText:
+      "Completa los elementos pendientes para fortalecer esta página en SEO y descubrimiento.",
   },
 } as const;
 

@@ -3162,7 +3162,10 @@ export function CreatorProfilePage({
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main
+      className="relative min-h-screen overflow-hidden bg-black text-white"
+      data-cardpoc-profile-ux="alignment-v3"
+    >
       <GlowBackground />
       <ParticleBackground />
 
@@ -3170,7 +3173,20 @@ export function CreatorProfilePage({
       <div className="pointer-events-none absolute left-1/2 top-28 z-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[90px]" />
       <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[30rem] overflow-hidden opacity-70">
+        {profile.banner_url ? (
+          <img
+            src={profile.banner_url}
+            alt=""
+            className="h-full w-full scale-110 object-cover blur-2xl"
+          />
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.16),transparent_34%),radial-gradient(circle_at_52%_24%,rgba(34,211,238,0.15),transparent_30%),radial-gradient(circle_at_78%_20%,rgba(168,85,247,0.14),transparent_34%)]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/82 to-black" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[76rem] px-5 pb-20 pt-8 sm:px-6">
         <div className="flex flex-wrap items-center justify-end gap-3">
           {canManageProfile && !isEditing ? (
             <div ref={creatorPanelDropdownRef} className="relative">
@@ -3299,20 +3315,25 @@ export function CreatorProfilePage({
           ) : null}
         </div>
 
-        <section className="mt-8 grid gap-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-          <div className="flex flex-col items-center gap-4 lg:items-start">
-            {creatorForCard ? (
-              <div className="relative w-fit scale-[1.18] py-7 sm:scale-[1.24] lg:scale-[1.24]">
-                <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
-                <CreatorCard
-                  key={`${creatorForCard.id}-${creatorForCard.rarity}`}
-                  creator={creatorForCard}
-                  onClick={() => undefined}
-                />
-              </div>
-            ) : null}
+        <section className="mt-8 grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start xl:grid-cols-[380px_minmax(0,1fr)]">
+          <div className="flex w-full flex-col items-center gap-4 lg:sticky lg:top-28">
+            <div className="w-full max-w-[340px]">
+              {creatorForCard ? (
+                <div className="relative flex min-h-[420px] w-full items-center justify-center overflow-visible rounded-[2.4rem] border border-cyan-300/15 bg-[radial-gradient(circle_at_50%_8%,rgba(34,211,238,0.10),transparent_34%),rgba(255,255,255,0.025)] shadow-2xl shadow-black/35 backdrop-blur-sm sm:min-h-[445px]">
+                  <div className="pointer-events-none absolute -inset-7 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_62%)] blur-2xl" />
+                  <div className="pointer-events-none absolute inset-0 rounded-[2.2rem] bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.06),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent)]" />
+                  <div className="relative origin-center scale-[1.12] sm:scale-[1.18]">
+                    <CreatorCard
+                      key={`${creatorForCard.id}-${creatorForCard.rarity}`}
+                      creator={creatorForCard}
+                      onClick={() => undefined}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
 
-            <div className="w-full max-w-[340px] rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/25 backdrop-blur-xl">
+            <div className="w-full max-w-[340px] rounded-[1.55rem] border border-cyan-300/12 bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.08),transparent_32%),rgba(255,255,255,0.04)] p-4 shadow-2xl shadow-black/25 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/55">
@@ -3354,7 +3375,7 @@ export function CreatorProfilePage({
             {isEditing && editDraft ? (
               <div
                 ref={popupEffectDropdownRef}
-                className="relative z-40 w-full max-w-[300px] px-2 sm:max-w-[330px] lg:px-0"
+                className="relative z-40 w-full max-w-[340px] px-2 lg:px-0"
               >
                 <button
                   type="button"
@@ -3464,7 +3485,7 @@ export function CreatorProfilePage({
             </div>
 
             {isEditing && editDraft ? (
-              <div className="mt-6 rounded-[2rem] border border-cyan-300/15 bg-cyan-300/[0.04] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl md:p-5">
+              <div className="mt-6 overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-[radial-gradient(circle_at_12%_0%,rgba(34,211,238,0.08),transparent_34%),rgba(255,255,255,0.035)] p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/65">
@@ -3501,7 +3522,7 @@ export function CreatorProfilePage({
                       onChange={(event) =>
                         handleEditDraftChange("nickname", event.target.value)
                       }
-                      className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-3xl font-black tracking-[-0.04em] text-white outline-none transition focus:border-cyan-300/55 md:text-5xl"
+                      className="mt-2 w-full rounded-[1.4rem] border border-cyan-300/20 bg-black/25 px-4 py-4 text-3xl font-black tracking-[-0.04em] text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/55 focus:bg-cyan-300/[0.04] md:text-5xl"
                     />
                   </label>
 
@@ -3515,7 +3536,7 @@ export function CreatorProfilePage({
                         onChange={(event) =>
                           handleEditDraftChange("title", event.target.value)
                         }
-                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-cyan-100 outline-none transition focus:border-cyan-300/45"
+                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/25 px-4 py-3 text-base font-semibold text-cyan-100 outline-none transition focus:border-cyan-300/45 focus:bg-cyan-300/[0.035]"
                       />
                     </label>
 
@@ -3532,7 +3553,7 @@ export function CreatorProfilePage({
                         onChange={(event) =>
                           handleEditDraftChange("category", event.target.value)
                         }
-                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base font-semibold text-white/85 outline-none transition focus:border-cyan-300/45"
+                        className="mt-2 w-full rounded-[1.2rem] border border-white/10 bg-black/25 px-4 py-3 text-base font-semibold text-white/85 outline-none transition focus:border-cyan-300/45 focus:bg-cyan-300/[0.035]"
                       />
                     </label>
                   </div>
@@ -3547,7 +3568,7 @@ export function CreatorProfilePage({
                         handleEditDraftChange("bio", event.target.value)
                       }
                       rows={3}
-                      className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/35 px-4 py-3 text-base leading-7 text-white/80 outline-none transition focus:border-cyan-300/45"
+                      className="mt-2 w-full resize-none rounded-[1.2rem] border border-white/10 bg-black/25 px-4 py-3 text-base leading-7 text-white/80 outline-none transition focus:border-cyan-300/45 focus:bg-cyan-300/[0.035]"
                     />
                   </label>
                 </div>
@@ -3571,22 +3592,51 @@ export function CreatorProfilePage({
                   {bio}
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {creatorSinceLabel ? (
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/55">
-                      {translate(t, "creatorProfileSince", "Criador desde")}{" "}
-                      {creatorSinceLabel}
-                    </span>
-                  ) : null}
-                  <span className="rounded-full border border-yellow-300/15 bg-yellow-300/10 px-3 py-1.5 text-xs font-bold text-yellow-100/80">
-                    {creatorCardRarityLabel} • LVL {creatorCardLevel}
-                  </span>
-                  <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100/80">
-                    {category}
-                  </span>
-                  <span className="rounded-full border border-fuchsia-300/15 bg-fuchsia-300/10 px-3 py-1.5 text-xs font-bold text-fuchsia-100/80">
-                    {profileCompletionLabel}
-                  </span>
+                <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white/[0.035] px-3 py-2.5 backdrop-blur">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">
+                      {translate(t, "creatorProfileSince", "Criador desde")}
+                    </p>
+                    <p className="mt-1 truncate text-xs font-black text-white/70">
+                      {creatorSinceLabel ||
+                        translate(
+                          t,
+                          "creatorProfileRecentlyApproved",
+                          "Aprovado recentemente",
+                        )}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.15rem] border border-yellow-300/15 bg-yellow-300/10 px-3 py-2.5 backdrop-blur">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-yellow-100/45">
+                      {translate(
+                        t,
+                        "creatorProfileOfficialCardShort",
+                        "Carta oficial",
+                      )}
+                    </p>
+                    <p className="mt-1 truncate text-xs font-black text-yellow-100/85">
+                      {creatorCardRarityLabel} • LVL {creatorCardLevel}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.15rem] border border-cyan-300/15 bg-cyan-300/10 px-3 py-2.5 backdrop-blur">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-cyan-100/45">
+                      {translate(t, "creatorProfileCategory", "Categoria")}
+                    </p>
+                    <p className="mt-1 truncate text-xs font-black text-cyan-100/85">
+                      {category}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.15rem] border border-fuchsia-300/15 bg-fuchsia-300/10 px-3 py-2.5 backdrop-blur">
+                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-fuchsia-100/45">
+                      {translate(t, "creatorProfileReadiness", "Pronto para")}
+                    </p>
+                    <p className="mt-1 truncate text-xs font-black text-fuchsia-100/85">
+                      {profileCompletionLabel}
+                    </p>
+                  </div>
                 </div>
               </>
             )}
@@ -3846,8 +3896,8 @@ export function CreatorProfilePage({
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-              <div className="rounded-[1.6rem] border border-cyan-300/15 bg-cyan-300/[0.035] p-5 backdrop-blur-xl">
+            <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+              <div className="rounded-[1.35rem] border border-cyan-300/10 bg-cyan-300/[0.018] p-3 backdrop-blur-xl">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/65">
@@ -3865,7 +3915,7 @@ export function CreatorProfilePage({
                       )}
                     </p>
                   </div>
-                  <span className="text-2xl font-black text-cyan-100">
+                  <span className="text-base font-black text-cyan-100">
                     {profileCompletionPercent}%
                   </span>
                 </div>
@@ -3877,7 +3927,7 @@ export function CreatorProfilePage({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2 rounded-[1.45rem] border border-white/10 bg-white/[0.03] p-3 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-2">
                 {completionChecks.map((item) => (
                   <div
                     key={item.key}
@@ -3890,6 +3940,66 @@ export function CreatorProfilePage({
                     {item.done ? "✓" : "○"} {item.label}
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-100/65">
+                  <Sparkles className="h-4 w-4" />
+                  {translate(t, "creatorProfilePulseTitle", "Sinal do perfil")}
+                </div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/55">
+                  {profile.is_verified
+                    ? translate(
+                        t,
+                        "creatorProfilePulseVerified",
+                        "Perfil verificado, público e pronto para receber novos colecionadores.",
+                      )
+                    : translate(
+                        t,
+                        "creatorProfilePulsePublic",
+                        "Perfil público no Cardpoc com carta oficial e página compartilhável.",
+                      )}
+                </p>
+              </div>
+
+              <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-yellow-100/65">
+                  <ShieldCheck className="h-4 w-4" />
+                  {translate(
+                    t,
+                    "creatorProfileAuthorityTitle",
+                    "Credibilidade",
+                  )}
+                </div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/55">
+                  {translate(
+                    t,
+                    "creatorProfileAuthorityText",
+                    "Dados, redes, clips e parcerias ajudam marcas e fãs a entenderem o alcance do criador.",
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-fuchsia-100/65">
+                  <PlayCircle className="h-4 w-4" />
+                  {translate(t, "creatorProfileNextStepTitle", "Próximo passo")}
+                </div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/55">
+                  {profileCompletionPercent >= 100
+                    ? translate(
+                        t,
+                        "creatorProfileNextStepDone",
+                        "Perfil completo. Mantenha clips, lives e parcerias atualizados.",
+                      )
+                    : translate(
+                        t,
+                        "creatorProfileNextStepText",
+                        "Complete os itens pendentes para deixar esta página mais forte para SEO e descoberta.",
+                      )}
+                </p>
               </div>
             </div>
           </div>
@@ -4085,13 +4195,29 @@ export function CreatorProfilePage({
                   })}
                 </div>
               ) : (
-                <p className="mt-5 text-sm leading-7 text-white/50">
-                  {translate(
-                    t,
-                    "creatorProfileNoPartnerships",
-                    "Nenhuma parceria verificada publicada ainda.",
-                  )}
-                </p>
+                <div className="mt-5 rounded-[1.4rem] border border-fuchsia-300/12 bg-fuchsia-300/[0.035] p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/10 text-fuchsia-100">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-black text-white">
+                        {translate(
+                          t,
+                          "creatorProfileNoPartnershipsTitle",
+                          "Nenhuma parceria publicada ainda",
+                        )}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-white/48">
+                        {translate(
+                          t,
+                          "creatorProfileNoPartnerships",
+                          "Parcerias aprovadas pela equipe Cardpoc ou adicionadas pelo criador aparecerão aqui.",
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {isEditing && editDraft ? (
@@ -4639,13 +4765,29 @@ export function CreatorProfilePage({
                   ) : null}
                 </div>
               ) : (
-                <p className="mt-5 text-sm leading-7 text-white/50">
-                  {translate(
-                    t,
-                    "creatorProfileNoClips",
-                    "Este criador ainda não possui clipes públicos em destaque.",
-                  )}
-                </p>
+                <div className="mt-5 rounded-[1.4rem] border border-cyan-300/12 bg-cyan-300/[0.035] p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
+                      <PlayCircle className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-black text-white">
+                        {translate(
+                          t,
+                          "creatorProfileNoClipsTitle",
+                          "Nenhum clipe disponível ainda",
+                        )}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-white/48">
+                        {translate(
+                          t,
+                          "creatorProfileNoClips",
+                          "Conecte YouTube, Twitch ou Kick para exibir os melhores momentos deste criador.",
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </article>
           </div>
@@ -5028,18 +5170,19 @@ export function CreatorProfilePage({
         <div className="fixed inset-x-0 bottom-4 z-[80] px-4 sm:bottom-6">
           <div className="mx-auto flex max-w-4xl flex-col gap-4 rounded-[1.8rem] border border-cyan-300/25 bg-[#020617]/92 p-4 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-black text-white">
+              <p className="inline-flex items-center gap-2 text-sm font-black text-white">
+                <span className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(34,211,238,0.75)]" />
                 {translate(
                   t,
                   "creatorProfileUnsavedChanges",
-                  "Alterações pendentes",
+                  "Rascunho com alterações",
                 )}
               </p>
               <p className="mt-1 text-xs leading-5 text-white/50">
                 {translate(
                   t,
                   "creatorProfileUnsavedChangesDescription",
-                  "Revise a prévia e publique quando estiver pronto. Nada muda para o público até salvar.",
+                  "Revise a prévia e publique quando estiver pronto. Nada muda para o público até publicar as alterações.",
                 )}
               </p>
               {profileSaveError ? (
@@ -5077,3 +5220,5 @@ export function CreatorProfilePage({
     </main>
   );
 }
+
+// Cardpoc creator profile UX alignment v3 - generated after review
