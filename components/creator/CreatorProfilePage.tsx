@@ -4173,8 +4173,16 @@ export function CreatorProfilePage({
         </section>
 
         {battleModalOpen ? (
-          <div className="fixed inset-x-0 bottom-0 top-[76px] z-[90] flex items-center justify-center bg-black/78 px-4 py-4 backdrop-blur-md" role="dialog" aria-modal="true">
-            <div className="relative max-h-[calc(100vh-108px)] w-full max-w-7xl overflow-y-auto rounded-[2rem] border border-fuchsia-300/25 bg-[#07040b]/95 p-4 shadow-2xl shadow-fuchsia-500/20 [scrollbar-width:none] [-ms-overflow-style:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/78 px-4 py-6 pt-[92px] backdrop-blur-md"
+            role="dialog"
+            aria-modal="true"
+            onClick={closeBattleModal}
+          >
+            <div
+              className="relative max-h-[calc(100vh-116px)] w-full max-w-[1440px] overflow-y-auto rounded-[2rem] border border-fuchsia-300/25 bg-[#07040b]/95 p-4 shadow-2xl shadow-fuchsia-500/20 [scrollbar-width:none] [-ms-overflow-style:none] sm:p-6 [&::-webkit-scrollbar]:hidden"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(34,211,238,0.22),transparent_33%),radial-gradient(circle_at_82%_42%,rgba(248,113,113,0.18),transparent_33%),linear-gradient(90deg,rgba(34,211,238,0.08),transparent,rgba(217,70,239,0.08))]" />
               {battleStarted ? (
                 <div className="pointer-events-none absolute inset-0 opacity-50 animate-[battleFriction_1100ms_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,rgba(34,211,238,0.12),transparent,rgba(244,63,94,0.12),transparent)]" />
