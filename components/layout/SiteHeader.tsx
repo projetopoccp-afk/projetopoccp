@@ -771,37 +771,15 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     }
 
     /*
-      A notificação deve abrir a carta apenas uma vez.
-      Depois que o modal recebe o foco inicial, limpamos os estados initial*
-      para evitar que qualquer re-render abra a mesma carta novamente ao fechar.
+      A notificação deve abrir a coleção/carta apenas uma vez.
+      O CollectionModal já recebe initialCardId/initialCreatorId por props e
+      consome esse valor internamente. Não disparamos mais eventos globais aqui,
+      porque isso criava um segundo gatilho capaz de reabrir a coleção depois
+      que o usuário tentava fechar o modal.
     */
-    openCollectionCardTimeoutRef.current = window.setTimeout(() => {
-      const detail = {
-        cardId,
-        card_id: cardId,
-        userCardId: cardId,
-        user_card_id: cardId,
-        creatorId,
-        creator_id: creatorId,
-        notificationId: notification.id,
-        notification_id: notification.id,
-        metadata,
-      };
-
-      window.dispatchEvent(
-        new CustomEvent("creator-nexus:focus-collection-card", { detail }),
-      );
-
-      window.dispatchEvent(
-        new CustomEvent("creator-nexus:open-collection-card", { detail }),
-      );
-
-      openCollectionCardTimeoutRef.current = null;
-
-      clearCollectionInitialStateTimeoutRef.current = window.setTimeout(() => {
-        clearCollectionInitialState();
-      }, 250);
-    }, 120);
+    clearCollectionInitialStateTimeoutRef.current = window.setTimeout(() => {
+      clearCollectionInitialState();
+    }, 1600);
   }
 
   function openPacksFromNotification() {
@@ -810,8 +788,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     clearCollectionInitialState();
     setPacksOpen(true);
 
-    window.dispatchEvent(new CustomEvent("cardpoc:open-packs"));
-    window.dispatchEvent(new CustomEvent("creator-nexus:open-packs"));
+    /*
+      O PacksModal já é controlado pelo estado packsOpen.
+      Evitamos eventos globais para não manter um gatilho externo vivo que
+      possa reabrir o modal após o fechamento.
+    */
   }
 
   function handleNotificationClick(notification: UserNotification) {
