@@ -1582,7 +1582,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       } = await supabase.auth.getSession();
 
       const {
-  data: { session },
+  data: { session: detectorSession },
   error: sessionError,
 } = await supabase.auth.getSession();
 
