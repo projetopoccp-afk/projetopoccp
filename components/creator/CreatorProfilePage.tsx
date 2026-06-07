@@ -3772,7 +3772,8 @@ export function CreatorProfilePage({
             ) : null}
           </div>
 
-          <div className="min-w-0 self-start rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:p-7">
+          <div className="flex h-full min-w-0 self-stretch rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:min-h-full lg:p-7">
+            <div className="flex w-full min-w-0 flex-col">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
                 {translate(t, "creatorProfilePublicProfile", "Perfil público")}
@@ -4167,6 +4168,7 @@ export function CreatorProfilePage({
               </div>
             </div>
 
+            </div>
           </div>
         </section>
 
