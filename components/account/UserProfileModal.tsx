@@ -6,12 +6,14 @@ import {
   BadgeCheck,
   CalendarDays,
   Crown,
+  Edit3,
   Gem,
   ShieldCheck,
   Sparkles,
   Star,
   Trophy,
   UserRound,
+  XCircle,
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -25,6 +27,7 @@ type AccountProfile = {
   display_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  bio?: string | null;
   is_admin: boolean | null;
   xp?: number | null;
   level?: number | null;
@@ -49,6 +52,12 @@ type ProfileXp = {
   level: number;
 };
 
+type EditableProfile = {
+  display_name: string;
+  username: string;
+  avatar_url: string;
+  bio: string;
+};
 
 type TranslateFunction = (key: any) => string;
 
@@ -132,18 +141,159 @@ export function UserProfileModal({
     xp: profile?.xp ?? 0,
     level: profile?.level ?? 1,
   });
+  const [editableProfile, setEditableProfile] = useState<EditableProfile>({
+    display_name: profile?.display_name ?? "",
+    username: profile?.username ?? "",
+    avatar_url: profile?.avatar_url ?? "",
+    bio: profile?.bio ?? "",
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [highlightLevelUp, setHighlightLevelUp] = useState(false);
   const { language, t } = useLanguage();
 
   const isVisible = open || notificationOpen;
 
+  useEffect(() => {
+    setEditableProfile({
+      display_name: profile?.display_name ?? "",
+      username: profile?.username ?? "",
+      avatar_url: profile?.avatar_url ?? "",
+      bio: profile?.bio ?? "",
+    });
+  }, [
+    profile?.avatar_url,
+    profile?.bio,
+    profile?.display_name,
+    profile?.username,
+  ]);
+
   function handleClose() {
     setNotificationOpen(false);
     setHighlightLevelUp(false);
+    setEditMode(false);
+    setProfileMessage(null);
     onClose();
   }
 
+  function handleCancelEdit() {
+    setEditableProfile({
+      display_name: profile?.display_name ?? "",
+      username: profile?.username ?? "",
+      avatar_url: profile?.avatar_url ?? "",
+      bio: profile?.bio ?? "",
+    });
+    setEditMode(false);
+    setProfileMessage(null);
+  }
+
+  async function handleSaveProfile() {
+    const displayName = editableProfile.display_name.trim();
+    const username = editableProfile.username
+      .trim()
+      .replace(/^@+/, "")
+      .toLowerCase();
+    const avatarUrl = editableProfile.avatar_url.trim();
+    const bio = editableProfile.bio.trim();
+
+    if (!displayName) {
+      setProfileMessage({
+        type: "error",
+        text: translate(
+          t,
+          "profileEditDisplayNameRequired",
+          "Informe um nome exibido.",
+        ),
+      });
+      return;
+    }
+
+    if (username && !/^[a-z0-9_.]{3,24}$/.test(username)) {
+      setProfileMessage({
+        type: "error",
+        text: translate(
+          t,
+          "profileEditUsernameInvalid",
+          "Use um username com 3 a 24 caracteres, apenas letras, números, ponto ou underline.",
+        ),
+      });
+      return;
+    }
+
+    setSavingProfile(true);
+    setProfileMessage(null);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setSavingProfile(false);
+      setProfileMessage({
+        type: "error",
+        text: translate(
+          t,
+          "profileEditUserNotFound",
+          "Não foi possível identificar sua sessão.",
+        ),
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: displayName,
+        username: username || null,
+        avatar_url: avatarUrl || null,
+        bio: bio || null,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      setSavingProfile(false);
+      setProfileMessage({
+        type: "error",
+        text: translate(
+          t,
+          "profileEditSaveError",
+          "Não foi possível salvar o perfil. Confira os dados e tente novamente.",
+        ),
+      });
+      return;
+    }
+
+    setEditableProfile({
+      display_name: displayName,
+      username,
+      avatar_url: avatarUrl,
+      bio,
+    });
+    setEditMode(false);
+    setSavingProfile(false);
+    setProfileMessage({
+      type: "success",
+      text: translate(t, "profileEditSaveSuccess", "Perfil atualizado."),
+    });
+
+    window.dispatchEvent(
+      new CustomEvent("creator-nexus:user-profile-updated", {
+        detail: {
+          display_name: displayName,
+          username,
+          avatar_url: avatarUrl,
+          bio,
+        },
+      }),
+    );
+  }
 
   useEffect(() => {
     function handleOpenUserProfile(event: Event) {
@@ -173,7 +323,6 @@ export function UserProfileModal({
     };
   }, []);
 
-
   useEffect(() => {
     if (!isVisible) return;
 
@@ -194,7 +343,7 @@ export function UserProfileModal({
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("xp, level")
+        .select("display_name, username, avatar_url, bio, xp, level")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -207,6 +356,12 @@ export function UserProfileModal({
         level: profileData?.level ?? profile?.level ?? 1,
       });
 
+      setEditableProfile({
+        display_name: profileData?.display_name ?? profile?.display_name ?? "",
+        username: profileData?.username ?? profile?.username ?? "",
+        avatar_url: profileData?.avatar_url ?? profile?.avatar_url ?? "",
+        bio: profileData?.bio ?? profile?.bio ?? "",
+      });
 
       const { data, error } = await supabase
         .from("user_cards")
@@ -226,7 +381,15 @@ export function UserProfileModal({
     }
 
     loadProfileStats();
-  }, [isVisible, profile?.level, profile?.xp]);
+  }, [
+    isVisible,
+    profile?.avatar_url,
+    profile?.bio,
+    profile?.display_name,
+    profile?.level,
+    profile?.username,
+    profile?.xp,
+  ]);
 
   const stats = useMemo(() => {
     const total = cards.length;
@@ -383,10 +546,10 @@ export function UserProfileModal({
 
                 <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
                   <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-black/25 lg:h-24 lg:w-24 [@media(max-height:760px)]:h-18 [@media(max-height:760px)]:w-18">
-                    {profile?.avatar_url ? (
+                    {editableProfile.avatar_url ? (
                       <img
-                        src={profile.avatar_url}
-                        alt={profile.display_name || "Avatar"}
+                        src={editableProfile.avatar_url}
+                        alt={editableProfile.display_name || "Avatar"}
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -396,7 +559,7 @@ export function UserProfileModal({
 
                   <div className="min-w-0 flex-1">
                     <h2 className="text-2xl font-black leading-tight text-white lg:text-3xl">
-                      {profile?.display_name ||
+                      {editableProfile.display_name ||
                         translate(t, "creator", "Creator")}
                     </h2>
 
@@ -407,7 +570,7 @@ export function UserProfileModal({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm text-white/60">
                         @
-                        {profile?.username ||
+                        {editableProfile.username ||
                           translate(t, "noUsername", "sem_username")}
                       </span>
 
@@ -428,7 +591,27 @@ export function UserProfileModal({
                           {translate(t, "admin", "Admin")}
                         </span>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditMode((current) => !current);
+                          setProfileMessage(null);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+                      >
+                        <Edit3 size={14} />
+                        {editMode
+                          ? translate(t, "profileEditHide", "Fechar edição")
+                          : translate(t, "profileEditOpen", "Editar perfil")}
+                      </button>
                     </div>
+
+                    {editableProfile.bio && !editMode && (
+                      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/55">
+                        {editableProfile.bio}
+                      </p>
+                    )}
 
                     <div className="mt-5 max-w-2xl">
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/45">
@@ -465,6 +648,157 @@ export function UserProfileModal({
                 </div>
               </div>
             </div>
+
+            {editMode && (
+              <div className="mt-5 rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.045] p-5 [@media(max-height:760px)]:p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-bold text-cyan-100">
+                      {translate(t, "profileEditTitle", "Editar perfil")}
+                    </p>
+                    <p className="mt-1 text-sm text-white/45">
+                      {translate(
+                        t,
+                        "profileEditDescription",
+                        "Atualize as informações visíveis do seu perfil de colecionador.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
+                      {translate(t, "profileEditDisplayName", "Nome exibido")}
+                    </span>
+                    <input
+                      value={editableProfile.display_name}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({
+                          ...current,
+                          display_name: event.target.value,
+                        }))
+                      }
+                      maxLength={40}
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                      placeholder={translate(
+                        t,
+                        "profileEditDisplayNamePlaceholder",
+                        "Seu nome no Cardpoc",
+                      )}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
+                      {translate(t, "profileEditUsername", "Username")}
+                    </span>
+                    <input
+                      value={editableProfile.username}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({
+                          ...current,
+                          username: event.target.value,
+                        }))
+                      }
+                      maxLength={24}
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                      placeholder={translate(
+                        t,
+                        "profileEditUsernamePlaceholder",
+                        "ex: jeanzadax",
+                      )}
+                    />
+                    <p className="mt-2 text-xs text-white/35">
+                      {translate(
+                        t,
+                        "profileEditUsernameHelp",
+                        "Use letras, números, ponto ou underline. O @ é adicionado automaticamente.",
+                      )}
+                    </p>
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
+                      {translate(t, "profileEditAvatarUrl", "Avatar URL")}
+                    </span>
+                    <input
+                      value={editableProfile.avatar_url}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({
+                          ...current,
+                          avatar_url: event.target.value,
+                        }))
+                      }
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                      placeholder="https://..."
+                    />
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
+                      {translate(t, "profileEditBio", "Bio curta")}
+                    </span>
+                    <textarea
+                      value={editableProfile.bio}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({
+                          ...current,
+                          bio: event.target.value,
+                        }))
+                      }
+                      maxLength={160}
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+                      placeholder={translate(
+                        t,
+                        "profileEditBioPlaceholder",
+                        "Conte rapidamente quem você é como colecionador.",
+                      )}
+                    />
+                    <p className="mt-2 text-xs text-white/35">
+                      {editableProfile.bio.length}/160
+                    </p>
+                  </label>
+                </div>
+
+                {profileMessage && (
+                  <div
+                    className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                      profileMessage.type === "success"
+                        ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+                        : "border-red-300/20 bg-red-300/10 text-red-100"
+                    }`}
+                  >
+                    {profileMessage.text}
+                  </div>
+                )}
+
+                <div className="mt-5 flex flex-wrap justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={savingProfile}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-bold text-white/70 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <XCircle size={16} />
+                    {translate(t, "cancel", "Cancelar")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                    className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300 px-5 py-2.5 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Edit3 size={16} />
+                    {savingProfile
+                      ? translate(t, "saving", "Salvando...")
+                      : translate(t, "save", "Salvar")}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {highlightLevelUp && (
               <div className="mt-5 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4">

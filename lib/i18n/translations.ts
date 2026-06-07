@@ -3,6 +3,28 @@ export const translations = {
     notifications: "Notificações",
     collection: "Minha Coleção",
     profile: "Meu Perfil",
+    profileEditOpen: "Editar perfil",
+    profileEditHide: "Fechar edição",
+    profileEditTitle: "Editar perfil",
+    profileEditDescription:
+      "Atualize as informações visíveis do seu perfil de colecionador.",
+    profileEditDisplayName: "Nome exibido",
+    profileEditDisplayNamePlaceholder: "Seu nome no Cardpoc",
+    profileEditUsername: "Username",
+    profileEditUsernamePlaceholder: "ex: jeanzadax",
+    profileEditUsernameHelp:
+      "Use letras, números, ponto ou underline. O @ é adicionado automaticamente.",
+    profileEditAvatarUrl: "Avatar URL",
+    profileEditBio: "Bio curta",
+    profileEditBioPlaceholder:
+      "Conte rapidamente quem você é como colecionador.",
+    profileEditDisplayNameRequired: "Informe um nome exibido.",
+    profileEditUsernameInvalid:
+      "Use um username com 3 a 24 caracteres, apenas letras, números, ponto ou underline.",
+    profileEditUserNotFound: "Não foi possível identificar sua sessão.",
+    profileEditSaveError:
+      "Não foi possível salvar o perfil. Confira os dados e tente novamente.",
+    profileEditSaveSuccess: "Perfil atualizado.",
     linkedAccountsTitle: "Contas Linkadas",
     linkedAccountsProfileDescription:
       "Conecte plataformas para drops, missões e recompensas.",
@@ -232,6 +254,8 @@ export const translations = {
 
     close: "Fechar",
     cancel: "Cancelar",
+    save: "Salvar",
+    saving: "Salvando...",
     myAccount: "Minha Conta",
     noUsername: "sem_username",
     level: "Nível",
@@ -1233,6 +1257,28 @@ export const translations = {
     notifications: "Notifications",
     collection: "My Collection",
     profile: "My Profile",
+    profileEditOpen: "Edit profile",
+    profileEditHide: "Close editor",
+    profileEditTitle: "Edit profile",
+    profileEditDescription:
+      "Update the visible information on your collector profile.",
+    profileEditDisplayName: "Display name",
+    profileEditDisplayNamePlaceholder: "Your name on Cardpoc",
+    profileEditUsername: "Username",
+    profileEditUsernamePlaceholder: "ex: jeanzadax",
+    profileEditUsernameHelp:
+      "Use letters, numbers, dots, or underscores. The @ is added automatically.",
+    profileEditAvatarUrl: "Avatar URL",
+    profileEditBio: "Short bio",
+    profileEditBioPlaceholder:
+      "Briefly tell others who you are as a collector.",
+    profileEditDisplayNameRequired: "Enter a display name.",
+    profileEditUsernameInvalid:
+      "Use a username with 3 to 24 characters: letters, numbers, dots, or underscores only.",
+    profileEditUserNotFound: "We could not identify your session.",
+    profileEditSaveError:
+      "We could not save your profile. Check the details and try again.",
+    profileEditSaveSuccess: "Profile updated.",
     linkedAccountsTitle: "Linked Accounts",
     linkedAccountsProfileDescription:
       "Connect platforms for drops, missions, and rewards.",
@@ -1459,6 +1505,8 @@ export const translations = {
 
     close: "Close",
     cancel: "Cancel",
+    save: "Save",
+    saving: "Saving...",
     myAccount: "My Account",
     noUsername: "no_username",
     level: "Level",
@@ -2449,6 +2497,28 @@ export const translations = {
     notifications: "Notificaciones",
     collection: "Mi Colección",
     profile: "Mi Perfil",
+    profileEditOpen: "Editar perfil",
+    profileEditHide: "Cerrar edición",
+    profileEditTitle: "Editar perfil",
+    profileEditDescription:
+      "Actualiza la información visible de tu perfil de coleccionista.",
+    profileEditDisplayName: "Nombre visible",
+    profileEditDisplayNamePlaceholder: "Tu nombre en Cardpoc",
+    profileEditUsername: "Username",
+    profileEditUsernamePlaceholder: "ej: jeanzadax",
+    profileEditUsernameHelp:
+      "Usa letras, números, punto o guion bajo. El @ se agrega automáticamente.",
+    profileEditAvatarUrl: "URL del avatar",
+    profileEditBio: "Bio corta",
+    profileEditBioPlaceholder:
+      "Cuenta brevemente quién eres como coleccionista.",
+    profileEditDisplayNameRequired: "Ingresa un nombre visible.",
+    profileEditUsernameInvalid:
+      "Usa un username de 3 a 24 caracteres, solo letras, números, punto o guion bajo.",
+    profileEditUserNotFound: "No fue posible identificar tu sesión.",
+    profileEditSaveError:
+      "No fue posible guardar el perfil. Revisa los datos e inténtalo de nuevo.",
+    profileEditSaveSuccess: "Perfil actualizado.",
     linkedAccountsTitle: "Cuentas vinculadas",
     linkedAccountsProfileDescription:
       "Conecta plataformas para drops, misiones y recompensas.",
@@ -2678,6 +2748,8 @@ export const translations = {
 
     close: "Cerrar",
     cancel: "Cancelar",
+    save: "Guardar",
+    saving: "Guardando...",
     myAccount: "Mi Cuenta",
     noUsername: "sin_usuario",
     level: "Nivel",
