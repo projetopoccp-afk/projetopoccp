@@ -17,6 +17,7 @@ import {
 import { AccountModal } from "@/components/account/AccountModal";
 import { CollectionModal } from "@/components/collection/CollectionModal";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { PacksModal } from "@/components/packs/PacksModal";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
@@ -49,6 +50,8 @@ type NotificationType =
   | "level_up"
   | "pack_received"
   | "pack_opened"
+  | "package_received"
+  | "package_opened"
   | "mission_completed"
   | "badge_unlocked"
   | "generic";
@@ -102,7 +105,12 @@ function getNotificationIcon(type: NotificationType) {
   if (type === "card_collected" || type === "card_won")
     return <Sparkles size={16} />;
   if (type === "level_up") return <Trophy size={16} />;
-  if (type === "pack_received" || type === "pack_opened")
+  if (
+    type === "pack_received" ||
+    type === "pack_opened" ||
+    type === "package_received" ||
+    type === "package_opened"
+  )
     return <Package size={16} />;
 
   return <Bell size={16} />;
@@ -113,7 +121,12 @@ function getNotificationTone(type: NotificationType) {
     return "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
   if (type === "level_up")
     return "border-yellow-300/20 bg-yellow-300/10 text-yellow-100";
-  if (type === "pack_received" || type === "pack_opened") {
+  if (
+    type === "pack_received" ||
+    type === "pack_opened" ||
+    type === "package_received" ||
+    type === "package_opened"
+  ) {
     return "border-purple-300/20 bg-purple-300/10 text-purple-100";
   }
 
@@ -136,7 +149,12 @@ function getNotificationActionLabel(
     return translate(t, "viewCard", "Ver carta");
   }
 
-  if (type === "pack_received" || type === "pack_opened") {
+  if (
+    type === "pack_received" ||
+    type === "pack_opened" ||
+    type === "package_received" ||
+    type === "package_opened"
+  ) {
     return translate(t, "openPack", "Abrir pacote");
   }
 
@@ -163,11 +181,11 @@ function getNotificationToastTitle(
     return translate(t, "cardNotificationToast", "Nova carta");
   }
 
-  if (type === "pack_received") {
+  if (type === "pack_received" || type === "package_received") {
     return translate(t, "packReceivedToast", "Pacote recebido");
   }
 
-  if (type === "pack_opened") {
+  if (type === "pack_opened" || type === "package_opened") {
     return translate(t, "packOpenedToast", "Pacote aberto");
   }
 
@@ -202,6 +220,92 @@ function formatNotificationDate(date: string, language: SiteLanguage) {
   }).format(new Date(date));
 }
 
+function getMetadataString(
+  metadata: Record<string, unknown>,
+  keys: string[],
+): string | null {
+  for (const key of keys) {
+    const value = metadata[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return null;
+}
+
+function metadataHasIntent(
+  metadata: Record<string, unknown>,
+  intents: string[],
+): boolean {
+  const possibleValues = [
+    metadata.action,
+    metadata.target,
+    metadata.destination,
+    metadata.kind,
+    metadata.entity,
+    metadata.source,
+  ];
+
+  return possibleValues.some((value) => {
+    if (typeof value !== "string") return false;
+
+    const normalizedValue = value.toLowerCase();
+
+    return intents.some((intent) => normalizedValue.includes(intent));
+  });
+}
+
+function isPackNotification(notification: UserNotification) {
+  const metadata = notification.metadata || {};
+
+  return (
+    notification.type === "pack_received" ||
+    notification.type === "pack_opened" ||
+    notification.type === "package_received" ||
+    notification.type === "package_opened" ||
+    Boolean(
+      getMetadataString(metadata, [
+        "pack_id",
+        "user_pack_id",
+        "pack_type",
+        "pack_rarity",
+      ]),
+    ) ||
+    metadataHasIntent(metadata, ["pack", "pacote", "packs"])
+  );
+}
+
+function isCardNotification(notification: UserNotification) {
+  const metadata = notification.metadata || {};
+
+  return (
+    notification.type === "card_collected" ||
+    notification.type === "card_won" ||
+    Boolean(
+      getMetadataString(metadata, [
+        "card_id",
+        "user_card_id",
+        "collection_card_id",
+        "creator_id",
+        "creator_username",
+      ]),
+    ) ||
+    metadataHasIntent(metadata, [
+      "card",
+      "carta",
+      "collection",
+      "colecao",
+      "coleção",
+    ])
+  );
+}
+
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const [internalSearch, setInternalSearch] = useState("");
   const effectiveSearch = search ?? internalSearch;
@@ -210,6 +314,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -600,37 +705,101 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     }
   }
 
+  function openCollectionFromNotification(notification: UserNotification) {
+    const metadata = notification.metadata || {};
+    const cardId = getMetadataString(metadata, [
+      "card_id",
+      "user_card_id",
+      "collection_card_id",
+    ]);
+    const creatorId = getMetadataString(metadata, [
+      "creator_id",
+      "creatorId",
+      "creator_username",
+      "username",
+    ]);
+
+    setAccountOpen(false);
+    setPacksOpen(false);
+    setCollectionInitialCardId(cardId);
+    setCollectionInitialCreatorId(creatorId);
+    setCollectionOpen(true);
+
+    if (openCollectionCardTimeoutRef.current) {
+      window.clearTimeout(openCollectionCardTimeoutRef.current);
+    }
+
+    /*
+      Mantém compatibilidade com a CollectionModal caso ela já escute eventos
+      para focar/abrir a carta específica depois que o modal montar.
+    */
+    openCollectionCardTimeoutRef.current = window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:focus-collection-card", {
+          detail: {
+            cardId,
+            card_id: cardId,
+            userCardId: cardId,
+            user_card_id: cardId,
+            creatorId,
+            creator_id: creatorId,
+            notificationId: notification.id,
+            notification_id: notification.id,
+            metadata,
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("creator-nexus:open-collection-card", {
+          detail: {
+            cardId,
+            card_id: cardId,
+            userCardId: cardId,
+            user_card_id: cardId,
+            creatorId,
+            creator_id: creatorId,
+            notificationId: notification.id,
+            notification_id: notification.id,
+            metadata,
+          },
+        }),
+      );
+
+      openCollectionCardTimeoutRef.current = null;
+    }, 120);
+  }
+
+  function openPacksFromNotification() {
+    setAccountOpen(false);
+    setCollectionOpen(false);
+    setCollectionInitialCardId(null);
+    setCollectionInitialCreatorId(null);
+    setPacksOpen(true);
+
+    window.dispatchEvent(new CustomEvent("cardpoc:open-packs"));
+    window.dispatchEvent(new CustomEvent("creator-nexus:open-packs"));
+  }
+
   function handleNotificationClick(notification: UserNotification) {
     markNotificationAsRead(notification.id);
     setNotificationsOpen(false);
 
-    const metadata = notification.metadata || {};
-    const cardId = metadata.card_id || metadata.user_card_id;
-    const creatorId = metadata.creator_id;
-
-    if (
-      notification.type === "card_collected" ||
-      notification.type === "card_won"
-    ) {
-      /*
-        Importante:
-        antes o SiteHeader disparava um window.dispatchEvent("creator-nexus:open-collection-card").
-        Esse evento continuava sendo consumido pelo CollectionModal e podia reabrir a carta
-        infinitamente ao fechar. Agora o fluxo é controlado por props: o header guarda qual
-        carta deve abrir, passa isso para o CollectionModal e limpa esse estado assim que a
-        carta é aberta.
-      */
-      setAccountOpen(false);
-      setCollectionInitialCardId(typeof cardId === "string" ? cardId : null);
-      setCollectionInitialCreatorId(
-        typeof creatorId === "string" ? creatorId : null,
-      );
-      setCollectionOpen(true);
-
+    if (isCardNotification(notification)) {
+      openCollectionFromNotification(notification);
       return;
     }
 
+    if (isPackNotification(notification)) {
+      openPacksFromNotification();
+      return;
+    }
+
+    const metadata = notification.metadata || {};
+
     if (notification.type === "level_up") {
+      setCollectionOpen(false);
+      setPacksOpen(false);
       setAccountOpen(true);
 
       window.dispatchEvent(
@@ -681,6 +850,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     setNotificationsOpen(false);
     setAccountOpen(false);
     setCollectionOpen(false);
+    setPacksOpen(false);
     setLogoutConfirmOpen(false);
   }
 
@@ -986,6 +1156,8 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         onClose={() => setLogoutConfirmOpen(false)}
         onConfirm={handleLogout}
       />
+
+      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
 
       <CollectionModal
         open={collectionOpen}
