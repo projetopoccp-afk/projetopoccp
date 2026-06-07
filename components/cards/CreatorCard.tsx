@@ -24,7 +24,8 @@ type ParticleShape =
   | "star"
   | "solar"
   | "flare"
-  | "arc";
+  | "arc"
+  | "petal";
 
 type ParticleSpec = {
   left: string;
@@ -84,18 +85,150 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
     auraEffect: "soft-edge-silver",
     intensity: 0.28,
     particles: [
-      { left: "10%", top: "20%", size: "5px", tx: "22px", ty: "-36px", rotate: "42deg", duration: 8.8, delay: 0, shape: "shard", opacity: 0.58 },
-      { left: "22%", top: "76%", size: "4px", tx: "36px", ty: "-62px", rotate: "-28deg", duration: 9.6, delay: -1.2, shape: "dust", opacity: 0.42 },
-      { left: "36%", top: "28%", size: "7px", tx: "-18px", ty: "-44px", rotate: "68deg", duration: 10.2, delay: -2.8, shape: "shard", opacity: 0.5 },
-      { left: "52%", top: "82%", size: "3px", tx: "20px", ty: "-48px", rotate: "18deg", duration: 8.4, delay: -3.4, shape: "dust", opacity: 0.38 },
-      { left: "70%", top: "34%", size: "6px", tx: "-30px", ty: "-38px", rotate: "-54deg", duration: 9.2, delay: -4.2, shape: "shard", opacity: 0.48 },
-      { left: "84%", top: "68%", size: "3px", tx: "-42px", ty: "-54px", rotate: "24deg", duration: 10.8, delay: -5.1, shape: "dust", opacity: 0.34 },
-      { left: "16%", top: "48%", size: "3px", tx: "28px", ty: "-28px", rotate: "0deg", duration: 7.8, delay: -1.9, shape: "dust", opacity: 0.36 },
-      { left: "46%", top: "16%", size: "4px", tx: "-12px", ty: "-32px", rotate: "81deg", duration: 11, delay: -6.2, shape: "shard", opacity: 0.44 },
-      { left: "64%", top: "62%", size: "3px", tx: "-26px", ty: "-46px", rotate: "-15deg", duration: 8.9, delay: -7.4, shape: "dust", opacity: 0.32 },
-      { left: "30%", top: "58%", size: "5px", tx: "18px", ty: "-40px", rotate: "36deg", duration: 10.4, delay: -3.8, shape: "shard", opacity: 0.46 },
-      { left: "76%", top: "18%", size: "3px", tx: "-22px", ty: "-34px", rotate: "-30deg", duration: 9.8, delay: -8, shape: "dust", opacity: 0.3 },
-      { left: "58%", top: "42%", size: "4px", tx: "14px", ty: "-30px", rotate: "61deg", duration: 8.6, delay: -6.7, shape: "shard", opacity: 0.42 },
+      {
+        left: "10%",
+        top: "20%",
+        size: "5px",
+        tx: "22px",
+        ty: "-36px",
+        rotate: "42deg",
+        duration: 8.8,
+        delay: 0,
+        shape: "shard",
+        opacity: 0.58,
+      },
+      {
+        left: "22%",
+        top: "76%",
+        size: "4px",
+        tx: "36px",
+        ty: "-62px",
+        rotate: "-28deg",
+        duration: 9.6,
+        delay: -1.2,
+        shape: "dust",
+        opacity: 0.42,
+      },
+      {
+        left: "36%",
+        top: "28%",
+        size: "7px",
+        tx: "-18px",
+        ty: "-44px",
+        rotate: "68deg",
+        duration: 10.2,
+        delay: -2.8,
+        shape: "shard",
+        opacity: 0.5,
+      },
+      {
+        left: "52%",
+        top: "82%",
+        size: "3px",
+        tx: "20px",
+        ty: "-48px",
+        rotate: "18deg",
+        duration: 8.4,
+        delay: -3.4,
+        shape: "dust",
+        opacity: 0.38,
+      },
+      {
+        left: "70%",
+        top: "34%",
+        size: "6px",
+        tx: "-30px",
+        ty: "-38px",
+        rotate: "-54deg",
+        duration: 9.2,
+        delay: -4.2,
+        shape: "shard",
+        opacity: 0.48,
+      },
+      {
+        left: "84%",
+        top: "68%",
+        size: "3px",
+        tx: "-42px",
+        ty: "-54px",
+        rotate: "24deg",
+        duration: 10.8,
+        delay: -5.1,
+        shape: "dust",
+        opacity: 0.34,
+      },
+      {
+        left: "16%",
+        top: "48%",
+        size: "3px",
+        tx: "28px",
+        ty: "-28px",
+        rotate: "0deg",
+        duration: 7.8,
+        delay: -1.9,
+        shape: "dust",
+        opacity: 0.36,
+      },
+      {
+        left: "46%",
+        top: "16%",
+        size: "4px",
+        tx: "-12px",
+        ty: "-32px",
+        rotate: "81deg",
+        duration: 11,
+        delay: -6.2,
+        shape: "shard",
+        opacity: 0.44,
+      },
+      {
+        left: "64%",
+        top: "62%",
+        size: "3px",
+        tx: "-26px",
+        ty: "-46px",
+        rotate: "-15deg",
+        duration: 8.9,
+        delay: -7.4,
+        shape: "dust",
+        opacity: 0.32,
+      },
+      {
+        left: "30%",
+        top: "58%",
+        size: "5px",
+        tx: "18px",
+        ty: "-40px",
+        rotate: "36deg",
+        duration: 10.4,
+        delay: -3.8,
+        shape: "shard",
+        opacity: 0.46,
+      },
+      {
+        left: "76%",
+        top: "18%",
+        size: "3px",
+        tx: "-22px",
+        ty: "-34px",
+        rotate: "-30deg",
+        duration: 9.8,
+        delay: -8,
+        shape: "dust",
+        opacity: 0.3,
+      },
+      {
+        left: "58%",
+        top: "42%",
+        size: "4px",
+        tx: "14px",
+        ty: "-30px",
+        rotate: "61deg",
+        duration: 8.6,
+        delay: -6.7,
+        shape: "shard",
+        opacity: 0.42,
+      },
     ],
   },
 
@@ -115,24 +248,222 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
     auraEffect: "quick-blue-pulses",
     intensity: 0.68,
     particles: [
-      { left: "8%", top: "18%", size: "3px", tx: "82px", ty: "-8px", rotate: "0deg", duration: 2.8, delay: 0, shape: "pixel", opacity: 0.72 },
-      { left: "18%", top: "74%", size: "4px", tx: "98px", ty: "-34px", rotate: "0deg", duration: 3.1, delay: -0.7, shape: "spark", opacity: 0.78 },
-      { left: "30%", top: "32%", size: "3px", tx: "-62px", ty: "24px", rotate: "0deg", duration: 2.6, delay: -1.4, shape: "pixel", opacity: 0.68 },
-      { left: "46%", top: "84%", size: "3px", tx: "54px", ty: "-72px", rotate: "0deg", duration: 3.4, delay: -2.1, shape: "pixel", opacity: 0.65 },
-      { left: "62%", top: "22%", size: "5px", tx: "-96px", ty: "16px", rotate: "0deg", duration: 2.9, delay: -1, shape: "spark", opacity: 0.82 },
-      { left: "78%", top: "64%", size: "3px", tx: "-84px", ty: "-26px", rotate: "0deg", duration: 3.2, delay: -1.9, shape: "pixel", opacity: 0.7 },
-      { left: "88%", top: "36%", size: "4px", tx: "-102px", ty: "30px", rotate: "0deg", duration: 2.7, delay: -2.5, shape: "spark", opacity: 0.76 },
-      { left: "14%", top: "46%", size: "3px", tx: "112px", ty: "22px", rotate: "0deg", duration: 3.6, delay: -3, shape: "pixel", opacity: 0.62 },
-      { left: "38%", top: "14%", size: "3px", tx: "44px", ty: "92px", rotate: "0deg", duration: 3.3, delay: -0.4, shape: "pixel", opacity: 0.56 },
-      { left: "70%", top: "88%", size: "4px", tx: "-48px", ty: "-98px", rotate: "0deg", duration: 3, delay: -3.4, shape: "spark", opacity: 0.74 },
-      { left: "24%", top: "58%", size: "2px", tx: "74px", ty: "-16px", rotate: "0deg", duration: 2.4, delay: -2.8, shape: "pixel", opacity: 0.62 },
-      { left: "54%", top: "50%", size: "3px", tx: "-72px", ty: "0px", rotate: "0deg", duration: 2.9, delay: -3.7, shape: "pixel", opacity: 0.66 },
-      { left: "82%", top: "16%", size: "2px", tx: "-54px", ty: "70px", rotate: "0deg", duration: 3.5, delay: -4.2, shape: "pixel", opacity: 0.58 },
-      { left: "6%", top: "86%", size: "4px", tx: "116px", ty: "-56px", rotate: "0deg", duration: 3.8, delay: -4.7, shape: "spark", opacity: 0.72 },
-      { left: "42%", top: "70%", size: "2px", tx: "60px", ty: "-42px", rotate: "0deg", duration: 2.5, delay: -5.1, shape: "pixel", opacity: 0.5 },
-      { left: "66%", top: "42%", size: "3px", tx: "-92px", ty: "18px", rotate: "0deg", duration: 3.1, delay: -5.5, shape: "pixel", opacity: 0.7 },
-      { left: "32%", top: "90%", size: "2px", tx: "26px", ty: "-92px", rotate: "0deg", duration: 3.7, delay: -6, shape: "pixel", opacity: 0.52 },
-      { left: "92%", top: "78%", size: "3px", tx: "-110px", ty: "-40px", rotate: "0deg", duration: 3.4, delay: -6.4, shape: "spark", opacity: 0.64 },
+      {
+        left: "8%",
+        top: "18%",
+        size: "3px",
+        tx: "82px",
+        ty: "-8px",
+        rotate: "0deg",
+        duration: 2.8,
+        delay: 0,
+        shape: "pixel",
+        opacity: 0.72,
+      },
+      {
+        left: "18%",
+        top: "74%",
+        size: "4px",
+        tx: "98px",
+        ty: "-34px",
+        rotate: "0deg",
+        duration: 3.1,
+        delay: -0.7,
+        shape: "spark",
+        opacity: 0.78,
+      },
+      {
+        left: "30%",
+        top: "32%",
+        size: "3px",
+        tx: "-62px",
+        ty: "24px",
+        rotate: "0deg",
+        duration: 2.6,
+        delay: -1.4,
+        shape: "pixel",
+        opacity: 0.68,
+      },
+      {
+        left: "46%",
+        top: "84%",
+        size: "3px",
+        tx: "54px",
+        ty: "-72px",
+        rotate: "0deg",
+        duration: 3.4,
+        delay: -2.1,
+        shape: "pixel",
+        opacity: 0.65,
+      },
+      {
+        left: "62%",
+        top: "22%",
+        size: "5px",
+        tx: "-96px",
+        ty: "16px",
+        rotate: "0deg",
+        duration: 2.9,
+        delay: -1,
+        shape: "spark",
+        opacity: 0.82,
+      },
+      {
+        left: "78%",
+        top: "64%",
+        size: "3px",
+        tx: "-84px",
+        ty: "-26px",
+        rotate: "0deg",
+        duration: 3.2,
+        delay: -1.9,
+        shape: "pixel",
+        opacity: 0.7,
+      },
+      {
+        left: "88%",
+        top: "36%",
+        size: "4px",
+        tx: "-102px",
+        ty: "30px",
+        rotate: "0deg",
+        duration: 2.7,
+        delay: -2.5,
+        shape: "spark",
+        opacity: 0.76,
+      },
+      {
+        left: "14%",
+        top: "46%",
+        size: "3px",
+        tx: "112px",
+        ty: "22px",
+        rotate: "0deg",
+        duration: 3.6,
+        delay: -3,
+        shape: "pixel",
+        opacity: 0.62,
+      },
+      {
+        left: "38%",
+        top: "14%",
+        size: "3px",
+        tx: "44px",
+        ty: "92px",
+        rotate: "0deg",
+        duration: 3.3,
+        delay: -0.4,
+        shape: "pixel",
+        opacity: 0.56,
+      },
+      {
+        left: "70%",
+        top: "88%",
+        size: "4px",
+        tx: "-48px",
+        ty: "-98px",
+        rotate: "0deg",
+        duration: 3,
+        delay: -3.4,
+        shape: "spark",
+        opacity: 0.74,
+      },
+      {
+        left: "24%",
+        top: "58%",
+        size: "2px",
+        tx: "74px",
+        ty: "-16px",
+        rotate: "0deg",
+        duration: 2.4,
+        delay: -2.8,
+        shape: "pixel",
+        opacity: 0.62,
+      },
+      {
+        left: "54%",
+        top: "50%",
+        size: "3px",
+        tx: "-72px",
+        ty: "0px",
+        rotate: "0deg",
+        duration: 2.9,
+        delay: -3.7,
+        shape: "pixel",
+        opacity: 0.66,
+      },
+      {
+        left: "82%",
+        top: "16%",
+        size: "2px",
+        tx: "-54px",
+        ty: "70px",
+        rotate: "0deg",
+        duration: 3.5,
+        delay: -4.2,
+        shape: "pixel",
+        opacity: 0.58,
+      },
+      {
+        left: "6%",
+        top: "86%",
+        size: "4px",
+        tx: "116px",
+        ty: "-56px",
+        rotate: "0deg",
+        duration: 3.8,
+        delay: -4.7,
+        shape: "spark",
+        opacity: 0.72,
+      },
+      {
+        left: "42%",
+        top: "70%",
+        size: "2px",
+        tx: "60px",
+        ty: "-42px",
+        rotate: "0deg",
+        duration: 2.5,
+        delay: -5.1,
+        shape: "pixel",
+        opacity: 0.5,
+      },
+      {
+        left: "66%",
+        top: "42%",
+        size: "3px",
+        tx: "-92px",
+        ty: "18px",
+        rotate: "0deg",
+        duration: 3.1,
+        delay: -5.5,
+        shape: "pixel",
+        opacity: 0.7,
+      },
+      {
+        left: "32%",
+        top: "90%",
+        size: "2px",
+        tx: "26px",
+        ty: "-92px",
+        rotate: "0deg",
+        duration: 3.7,
+        delay: -6,
+        shape: "pixel",
+        opacity: 0.52,
+      },
+      {
+        left: "92%",
+        top: "78%",
+        size: "3px",
+        tx: "-110px",
+        ty: "-40px",
+        rotate: "0deg",
+        duration: 3.4,
+        delay: -6.4,
+        shape: "spark",
+        opacity: 0.64,
+      },
     ],
   },
 
@@ -152,22 +483,176 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
     auraEffect: "subtle-emerald-arcs",
     intensity: 0.68,
     particles: [
-      { left: "10%", top: "24%", size: "26px", tx: "16px", ty: "20px", rotate: "-28deg", duration: 3.4, delay: -0.4, shape: "arc", opacity: 0.72 },
-      { left: "82%", top: "31%", size: "28px", tx: "-18px", ty: "18px", rotate: "34deg", duration: 3.7, delay: -1.8, shape: "arc", opacity: 0.68 },
-      { left: "12%", top: "61%", size: "24px", tx: "18px", ty: "-18px", rotate: "22deg", duration: 3.9, delay: -2.7, shape: "arc", opacity: 0.62 },
-      { left: "80%", top: "70%", size: "25px", tx: "-22px", ty: "-26px", rotate: "-36deg", duration: 3.5, delay: -4.1, shape: "arc", opacity: 0.66 },
+      {
+        left: "10%",
+        top: "24%",
+        size: "26px",
+        tx: "16px",
+        ty: "20px",
+        rotate: "-28deg",
+        duration: 3.4,
+        delay: -0.4,
+        shape: "arc",
+        opacity: 0.72,
+      },
+      {
+        left: "82%",
+        top: "31%",
+        size: "28px",
+        tx: "-18px",
+        ty: "18px",
+        rotate: "34deg",
+        duration: 3.7,
+        delay: -1.8,
+        shape: "arc",
+        opacity: 0.68,
+      },
+      {
+        left: "12%",
+        top: "61%",
+        size: "24px",
+        tx: "18px",
+        ty: "-18px",
+        rotate: "22deg",
+        duration: 3.9,
+        delay: -2.7,
+        shape: "arc",
+        opacity: 0.62,
+      },
+      {
+        left: "80%",
+        top: "70%",
+        size: "25px",
+        tx: "-22px",
+        ty: "-26px",
+        rotate: "-36deg",
+        duration: 3.5,
+        delay: -4.1,
+        shape: "arc",
+        opacity: 0.66,
+      },
 
-      { left: "18%", top: "79%", size: "7px", tx: "22px", ty: "-78px", rotate: "72deg", duration: 6.2, delay: 0, shape: "rune", opacity: 0.48 },
-      { left: "31%", top: "86%", size: "6px", tx: "18px", ty: "-88px", rotate: "-120deg", duration: 6.8, delay: -2.2, shape: "rune", opacity: 0.42 },
-      { left: "58%", top: "80%", size: "7px", tx: "-18px", ty: "-84px", rotate: "140deg", duration: 6.4, delay: -4.2, shape: "rune", opacity: 0.46 },
-      { left: "73%", top: "23%", size: "6px", tx: "-36px", ty: "32px", rotate: "96deg", duration: 6, delay: -1.7, shape: "rune", opacity: 0.38 },
-      { left: "39%", top: "16%", size: "6px", tx: "8px", ty: "38px", rotate: "-150deg", duration: 7, delay: -5.8, shape: "rune", opacity: 0.36 },
-      { left: "84%", top: "84%", size: "6px", tx: "-48px", ty: "-76px", rotate: "166deg", duration: 6.9, delay: -5.5, shape: "rune", opacity: 0.34 },
+      {
+        left: "18%",
+        top: "79%",
+        size: "7px",
+        tx: "22px",
+        ty: "-78px",
+        rotate: "72deg",
+        duration: 6.2,
+        delay: 0,
+        shape: "rune",
+        opacity: 0.48,
+      },
+      {
+        left: "31%",
+        top: "86%",
+        size: "6px",
+        tx: "18px",
+        ty: "-88px",
+        rotate: "-120deg",
+        duration: 6.8,
+        delay: -2.2,
+        shape: "rune",
+        opacity: 0.42,
+      },
+      {
+        left: "58%",
+        top: "80%",
+        size: "7px",
+        tx: "-18px",
+        ty: "-84px",
+        rotate: "140deg",
+        duration: 6.4,
+        delay: -4.2,
+        shape: "rune",
+        opacity: 0.46,
+      },
+      {
+        left: "73%",
+        top: "23%",
+        size: "6px",
+        tx: "-36px",
+        ty: "32px",
+        rotate: "96deg",
+        duration: 6,
+        delay: -1.7,
+        shape: "rune",
+        opacity: 0.38,
+      },
+      {
+        left: "39%",
+        top: "16%",
+        size: "6px",
+        tx: "8px",
+        ty: "38px",
+        rotate: "-150deg",
+        duration: 7,
+        delay: -5.8,
+        shape: "rune",
+        opacity: 0.36,
+      },
+      {
+        left: "84%",
+        top: "84%",
+        size: "6px",
+        tx: "-48px",
+        ty: "-76px",
+        rotate: "166deg",
+        duration: 6.9,
+        delay: -5.5,
+        shape: "rune",
+        opacity: 0.34,
+      },
 
-      { left: "8%", top: "45%", size: "3px", tx: "48px", ty: "-18px", rotate: "0deg", duration: 5.4, delay: -2.4, shape: "star", opacity: 0.38 },
-      { left: "25%", top: "56%", size: "3px", tx: "34px", ty: "-38px", rotate: "-20deg", duration: 4.9, delay: -4.6, shape: "star", opacity: 0.34 },
-      { left: "54%", top: "18%", size: "3px", tx: "-16px", ty: "54px", rotate: "0deg", duration: 4.7, delay: -7.2, shape: "star", opacity: 0.36 },
-      { left: "72%", top: "65%", size: "3px", tx: "-34px", ty: "-58px", rotate: "0deg", duration: 5.1, delay: -8.6, shape: "star", opacity: 0.34 },
+      {
+        left: "8%",
+        top: "45%",
+        size: "3px",
+        tx: "48px",
+        ty: "-18px",
+        rotate: "0deg",
+        duration: 5.4,
+        delay: -2.4,
+        shape: "star",
+        opacity: 0.38,
+      },
+      {
+        left: "25%",
+        top: "56%",
+        size: "3px",
+        tx: "34px",
+        ty: "-38px",
+        rotate: "-20deg",
+        duration: 4.9,
+        delay: -4.6,
+        shape: "star",
+        opacity: 0.34,
+      },
+      {
+        left: "54%",
+        top: "18%",
+        size: "3px",
+        tx: "-16px",
+        ty: "54px",
+        rotate: "0deg",
+        duration: 4.7,
+        delay: -7.2,
+        shape: "star",
+        opacity: 0.36,
+      },
+      {
+        left: "72%",
+        top: "65%",
+        size: "3px",
+        tx: "-34px",
+        ty: "-58px",
+        rotate: "0deg",
+        duration: 5.1,
+        delay: -8.6,
+        shape: "star",
+        opacity: 0.34,
+      },
     ],
   },
 
@@ -187,59 +672,413 @@ const RARITY_VISUALS: Record<CardRarity, RarityVisualConfig> = {
     auraEffect: "premium-solar-flare",
     intensity: 0.9,
     particles: [
-      { left: "8%", top: "86%", size: "5px", tx: "42px", ty: "-152px", rotate: "0deg", duration: 5.8, delay: 0, shape: "solar", opacity: 0.74 },
-      { left: "14%", top: "28%", size: "10px", tx: "86px", ty: "-40px", rotate: "35deg", duration: 4.9, delay: -1, shape: "flare", opacity: 0.62 },
-      { left: "22%", top: "74%", size: "4px", tx: "58px", ty: "-126px", rotate: "0deg", duration: 5.2, delay: -1.8, shape: "solar", opacity: 0.8 },
-      { left: "34%", top: "18%", size: "6px", tx: "34px", ty: "58px", rotate: "-20deg", duration: 6.4, delay: -2.6, shape: "solar", opacity: 0.58 },
-      { left: "44%", top: "90%", size: "12px", tx: "18px", ty: "-150px", rotate: "55deg", duration: 5.6, delay: -3.4, shape: "flare", opacity: 0.7 },
-      { left: "56%", top: "34%", size: "5px", tx: "-42px", ty: "-78px", rotate: "0deg", duration: 5, delay: -4.2, shape: "solar", opacity: 0.72 },
-      { left: "68%", top: "82%", size: "4px", tx: "-58px", ty: "-138px", rotate: "0deg", duration: 5.9, delay: -5, shape: "solar", opacity: 0.84 },
-      { left: "80%", top: "20%", size: "14px", tx: "-74px", ty: "12px", rotate: "-45deg", duration: 6.8, delay: -5.8, shape: "flare", opacity: 0.56 },
-      { left: "90%", top: "62%", size: "5px", tx: "-104px", ty: "-92px", rotate: "0deg", duration: 5.4, delay: -6.6, shape: "solar", opacity: 0.74 },
-      { left: "16%", top: "54%", size: "3px", tx: "82px", ty: "-88px", rotate: "0deg", duration: 4.8, delay: -2.2, shape: "solar", opacity: 0.7 },
-      { left: "30%", top: "42%", size: "11px", tx: "68px", ty: "-72px", rotate: "38deg", duration: 6.2, delay: -7.2, shape: "flare", opacity: 0.46 },
-      { left: "48%", top: "12%", size: "4px", tx: "2px", ty: "94px", rotate: "0deg", duration: 5.1, delay: -8, shape: "solar", opacity: 0.64 },
-      { left: "62%", top: "58%", size: "3px", tx: "-76px", ty: "-72px", rotate: "0deg", duration: 5.5, delay: -8.7, shape: "solar", opacity: 0.68 },
-      { left: "74%", top: "92%", size: "5px", tx: "-96px", ty: "-156px", rotate: "0deg", duration: 6, delay: -9.2, shape: "solar", opacity: 0.76 },
-      { left: "86%", top: "38%", size: "4px", tx: "-110px", ty: "-24px", rotate: "0deg", duration: 4.7, delay: -3.1, shape: "solar", opacity: 0.62 },
-      { left: "40%", top: "66%", size: "4px", tx: "28px", ty: "-114px", rotate: "0deg", duration: 5.7, delay: -4.6, shape: "solar", opacity: 0.72 },
-      { left: "54%", top: "78%", size: "9px", tx: "-18px", ty: "-122px", rotate: "-30deg", duration: 6.6, delay: -9.8, shape: "flare", opacity: 0.52 },
-      { left: "24%", top: "12%", size: "3px", tx: "70px", ty: "64px", rotate: "0deg", duration: 5.3, delay: -10.4, shape: "solar", opacity: 0.58 },
-      { left: "6%", top: "40%", size: "4px", tx: "104px", ty: "-16px", rotate: "0deg", duration: 4.9, delay: -11, shape: "solar", opacity: 0.68 },
-      { left: "96%", top: "86%", size: "10px", tx: "-128px", ty: "-112px", rotate: "44deg", duration: 6.9, delay: -11.6, shape: "flare", opacity: 0.48 },
+      {
+        left: "8%",
+        top: "86%",
+        size: "5px",
+        tx: "42px",
+        ty: "-152px",
+        rotate: "0deg",
+        duration: 5.8,
+        delay: 0,
+        shape: "solar",
+        opacity: 0.74,
+      },
+      {
+        left: "14%",
+        top: "28%",
+        size: "10px",
+        tx: "86px",
+        ty: "-40px",
+        rotate: "35deg",
+        duration: 4.9,
+        delay: -1,
+        shape: "flare",
+        opacity: 0.62,
+      },
+      {
+        left: "22%",
+        top: "74%",
+        size: "4px",
+        tx: "58px",
+        ty: "-126px",
+        rotate: "0deg",
+        duration: 5.2,
+        delay: -1.8,
+        shape: "solar",
+        opacity: 0.8,
+      },
+      {
+        left: "34%",
+        top: "18%",
+        size: "6px",
+        tx: "34px",
+        ty: "58px",
+        rotate: "-20deg",
+        duration: 6.4,
+        delay: -2.6,
+        shape: "solar",
+        opacity: 0.58,
+      },
+      {
+        left: "44%",
+        top: "90%",
+        size: "12px",
+        tx: "18px",
+        ty: "-150px",
+        rotate: "55deg",
+        duration: 5.6,
+        delay: -3.4,
+        shape: "flare",
+        opacity: 0.7,
+      },
+      {
+        left: "56%",
+        top: "34%",
+        size: "5px",
+        tx: "-42px",
+        ty: "-78px",
+        rotate: "0deg",
+        duration: 5,
+        delay: -4.2,
+        shape: "solar",
+        opacity: 0.72,
+      },
+      {
+        left: "68%",
+        top: "82%",
+        size: "4px",
+        tx: "-58px",
+        ty: "-138px",
+        rotate: "0deg",
+        duration: 5.9,
+        delay: -5,
+        shape: "solar",
+        opacity: 0.84,
+      },
+      {
+        left: "80%",
+        top: "20%",
+        size: "14px",
+        tx: "-74px",
+        ty: "12px",
+        rotate: "-45deg",
+        duration: 6.8,
+        delay: -5.8,
+        shape: "flare",
+        opacity: 0.56,
+      },
+      {
+        left: "90%",
+        top: "62%",
+        size: "5px",
+        tx: "-104px",
+        ty: "-92px",
+        rotate: "0deg",
+        duration: 5.4,
+        delay: -6.6,
+        shape: "solar",
+        opacity: 0.74,
+      },
+      {
+        left: "16%",
+        top: "54%",
+        size: "3px",
+        tx: "82px",
+        ty: "-88px",
+        rotate: "0deg",
+        duration: 4.8,
+        delay: -2.2,
+        shape: "solar",
+        opacity: 0.7,
+      },
+      {
+        left: "30%",
+        top: "42%",
+        size: "11px",
+        tx: "68px",
+        ty: "-72px",
+        rotate: "38deg",
+        duration: 6.2,
+        delay: -7.2,
+        shape: "flare",
+        opacity: 0.46,
+      },
+      {
+        left: "48%",
+        top: "12%",
+        size: "4px",
+        tx: "2px",
+        ty: "94px",
+        rotate: "0deg",
+        duration: 5.1,
+        delay: -8,
+        shape: "solar",
+        opacity: 0.64,
+      },
+      {
+        left: "62%",
+        top: "58%",
+        size: "3px",
+        tx: "-76px",
+        ty: "-72px",
+        rotate: "0deg",
+        duration: 5.5,
+        delay: -8.7,
+        shape: "solar",
+        opacity: 0.68,
+      },
+      {
+        left: "74%",
+        top: "92%",
+        size: "5px",
+        tx: "-96px",
+        ty: "-156px",
+        rotate: "0deg",
+        duration: 6,
+        delay: -9.2,
+        shape: "solar",
+        opacity: 0.76,
+      },
+      {
+        left: "86%",
+        top: "38%",
+        size: "4px",
+        tx: "-110px",
+        ty: "-24px",
+        rotate: "0deg",
+        duration: 4.7,
+        delay: -3.1,
+        shape: "solar",
+        opacity: 0.62,
+      },
+      {
+        left: "40%",
+        top: "66%",
+        size: "4px",
+        tx: "28px",
+        ty: "-114px",
+        rotate: "0deg",
+        duration: 5.7,
+        delay: -4.6,
+        shape: "solar",
+        opacity: 0.72,
+      },
+      {
+        left: "54%",
+        top: "78%",
+        size: "9px",
+        tx: "-18px",
+        ty: "-122px",
+        rotate: "-30deg",
+        duration: 6.6,
+        delay: -9.8,
+        shape: "flare",
+        opacity: 0.52,
+      },
+      {
+        left: "24%",
+        top: "12%",
+        size: "3px",
+        tx: "70px",
+        ty: "64px",
+        rotate: "0deg",
+        duration: 5.3,
+        delay: -10.4,
+        shape: "solar",
+        opacity: 0.58,
+      },
+      {
+        left: "6%",
+        top: "40%",
+        size: "4px",
+        tx: "104px",
+        ty: "-16px",
+        rotate: "0deg",
+        duration: 4.9,
+        delay: -11,
+        shape: "solar",
+        opacity: 0.68,
+      },
+      {
+        left: "96%",
+        top: "86%",
+        size: "10px",
+        tx: "-128px",
+        ty: "-112px",
+        rotate: "44deg",
+        duration: 6.9,
+        delay: -11.6,
+        shape: "flare",
+        opacity: 0.48,
+      },
     ],
   },
   mythic: {
     label: "Mítica Sakura",
     className: "creator-card-mythic",
-    borderColor: "rgba(255, 228, 236, 0.96)",
-    glowColor: "rgba(244, 114, 182, 0.28)",
-    particleColor: "rgba(255, 228, 236, 0.95)",
-    secondaryColor: "rgba(251, 207, 232, 0.68)",
-    tertiaryColor: "rgba(255, 255, 255, 0.48)",
-    textGlow: "rgba(251, 207, 232, 0.72)",
-    particleShape: "shard",
-    particleCount: 18,
-    particleAnimation: "creatorMythicPetalFall",
-    backgroundEffect: "sakura-mythic",
-    auraEffect: "rose-white-bloom",
-    intensity: 0.95,
+    borderColor: "rgba(255, 241, 246, 0.98)",
+    glowColor: "rgba(255, 168, 203, 0.42)",
+    particleColor: "rgba(255, 238, 246, 0.96)",
+    secondaryColor: "rgba(251, 182, 215, 0.78)",
+    tertiaryColor: "rgba(255, 255, 255, 0.66)",
+    textGlow: "rgba(255, 215, 232, 0.9)",
+    particleShape: "petal",
+    particleCount: 24,
+    particleAnimation: "creatorMythicSakuraFall",
+    backgroundEffect: "pearl-sakura-mist",
+    auraEffect: "mythic-sakura-bloom",
+    intensity: 1,
     particles: [
-      { left: "8%", top: "-8%", size: "8px", tx: "28px", ty: "378px", rotate: "280deg", duration: 6.8, delay: 0, shape: "shard", opacity: 0.86 },
-      { left: "18%", top: "-16%", size: "10px", tx: "-18px", ty: "392px", rotate: "-240deg", duration: 7.4, delay: -1.2, shape: "shard", opacity: 0.78 },
-      { left: "28%", top: "-10%", size: "6px", tx: "34px", ty: "386px", rotate: "320deg", duration: 6.4, delay: -2.4, shape: "dust", opacity: 0.82 },
-      { left: "38%", top: "-18%", size: "9px", tx: "-30px", ty: "410px", rotate: "-300deg", duration: 7.9, delay: -3.1, shape: "shard", opacity: 0.8 },
-      { left: "48%", top: "-12%", size: "7px", tx: "24px", ty: "398px", rotate: "260deg", duration: 6.9, delay: -4.2, shape: "dust", opacity: 0.74 },
-      { left: "58%", top: "-20%", size: "11px", tx: "-22px", ty: "420px", rotate: "-340deg", duration: 8.2, delay: -1.8, shape: "shard", opacity: 0.84 },
-      { left: "68%", top: "-8%", size: "7px", tx: "30px", ty: "382px", rotate: "290deg", duration: 7.1, delay: -3.8, shape: "shard", opacity: 0.78 },
-      { left: "78%", top: "-14%", size: "9px", tx: "-28px", ty: "400px", rotate: "-260deg", duration: 7.7, delay: -5.2, shape: "dust", opacity: 0.76 },
-      { left: "88%", top: "-18%", size: "6px", tx: "18px", ty: "390px", rotate: "310deg", duration: 6.6, delay: -2.8, shape: "shard", opacity: 0.72 },
-      { left: "96%", top: "-10%", size: "10px", tx: "-36px", ty: "416px", rotate: "-330deg", duration: 8.4, delay: -6.1, shape: "shard", opacity: 0.8 },
+      {
+        left: "6%",
+        top: "-8%",
+        size: "9px",
+        tx: "28px",
+        ty: "390px",
+        rotate: "280deg",
+        duration: 7.8,
+        delay: 0,
+        shape: "petal",
+        opacity: 0.82,
+      },
+      {
+        left: "16%",
+        top: "-14%",
+        size: "6px",
+        tx: "-18px",
+        ty: "410px",
+        rotate: "-240deg",
+        duration: 8.7,
+        delay: -1.1,
+        shape: "petal",
+        opacity: 0.72,
+      },
+      {
+        left: "25%",
+        top: "-10%",
+        size: "10px",
+        tx: "36px",
+        ty: "380px",
+        rotate: "320deg",
+        duration: 7.2,
+        delay: -2.4,
+        shape: "petal",
+        opacity: 0.88,
+      },
+      {
+        left: "38%",
+        top: "-18%",
+        size: "7px",
+        tx: "-26px",
+        ty: "420px",
+        rotate: "-300deg",
+        duration: 9.1,
+        delay: -3.2,
+        shape: "petal",
+        opacity: 0.7,
+      },
+      {
+        left: "50%",
+        top: "-12%",
+        size: "11px",
+        tx: "22px",
+        ty: "395px",
+        rotate: "360deg",
+        duration: 8.1,
+        delay: -4.6,
+        shape: "petal",
+        opacity: 0.84,
+      },
+      {
+        left: "63%",
+        top: "-20%",
+        size: "7px",
+        tx: "-34px",
+        ty: "430px",
+        rotate: "-260deg",
+        duration: 9.6,
+        delay: -5.4,
+        shape: "petal",
+        opacity: 0.68,
+      },
+      {
+        left: "74%",
+        top: "-9%",
+        size: "10px",
+        tx: "30px",
+        ty: "385px",
+        rotate: "330deg",
+        duration: 7.6,
+        delay: -6.3,
+        shape: "petal",
+        opacity: 0.86,
+      },
+      {
+        left: "88%",
+        top: "-16%",
+        size: "6px",
+        tx: "-24px",
+        ty: "415px",
+        rotate: "-290deg",
+        duration: 8.9,
+        delay: -7.2,
+        shape: "petal",
+        opacity: 0.74,
+      },
+      {
+        left: "12%",
+        top: "20%",
+        size: "3px",
+        tx: "42px",
+        ty: "-72px",
+        rotate: "0deg",
+        duration: 4.8,
+        delay: -1.7,
+        shape: "solar",
+        opacity: 0.6,
+      },
+      {
+        left: "82%",
+        top: "24%",
+        size: "3px",
+        tx: "-52px",
+        ty: "-64px",
+        rotate: "0deg",
+        duration: 5.3,
+        delay: -2.8,
+        shape: "solar",
+        opacity: 0.62,
+      },
+      {
+        left: "44%",
+        top: "18%",
+        size: "2px",
+        tx: "18px",
+        ty: "-92px",
+        rotate: "0deg",
+        duration: 4.5,
+        delay: -3.6,
+        shape: "solar",
+        opacity: 0.54,
+      },
+      {
+        left: "72%",
+        top: "62%",
+        size: "2px",
+        tx: "-26px",
+        ty: "-88px",
+        rotate: "0deg",
+        duration: 5,
+        delay: -4.4,
+        shape: "solar",
+        opacity: 0.52,
+      },
     ],
   },
 };
 
-function normalizeRarity(rarity: Creator["rarity"] | string): CardRarity {
+function normalizeRarity(rarity: Creator["rarity"]): CardRarity {
   const value = String(rarity || "").toLowerCase();
 
   if (value === "mítica" || value === "mitica" || value === "mythic") {
@@ -278,11 +1117,13 @@ function particleShapeClass(shape: ParticleShape) {
 }
 
 function getTranslatedRarityLabel(
-  t: (key: keyof typeof import("@/lib/i18n/translations").translations.pt) => string,
-  rarity: CardRarity
+  t: (
+    key: keyof typeof import("@/lib/i18n/translations").translations.pt,
+  ) => string,
+  rarity: CardRarity,
 ) {
   if (rarity === "mythic") {
-    return "Mítica";
+    return "MÍTICA";
   }
 
   if (rarity === "legendary") {
@@ -304,8 +1145,13 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
   const { t } = useLanguage();
   const internalRarity = normalizeRarity(creator.rarity);
   const rarity =
-    rarityStyles[internalRarity as keyof typeof rarityStyles] ??
-    rarityStyles.legendary;
+    internalRarity === "mythic"
+      ? {
+          badge:
+            "border-pink-100/55 bg-white/15 text-pink-50 shadow-[0_0_18px_rgba(251,207,232,0.28)]",
+          text: "text-pink-50",
+        }
+      : (rarityStyles[creator.rarity] ?? rarityStyles.common);
   const config = RARITY_VISUALS[internalRarity];
 
   return (
@@ -339,7 +1185,7 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               <span
                 key={`${internalRarity}-${particle.shape || config.particleShape}-${index}`}
                 className={`creator-particle absolute ${particleShapeClass(
-                  particle.shape || config.particleShape
+                  particle.shape || config.particleShape,
                 )}`}
                 style={
                   {
@@ -581,6 +1427,18 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               --frame-soft: rgba(251,191,36,0.58);
             }
 
+            .creator-card-mythic {
+              --frame-edge: rgba(255,244,249,1);
+              --frame-core: rgba(251,207,232,0.96);
+              --frame-soft: rgba(244,114,182,0.5);
+              box-shadow:
+                inset 0 0 14px rgba(255,255,255,0.12),
+                inset 0 0 28px rgba(251,207,232,0.2),
+                0 0 0 1px rgba(255,255,255,0.24),
+                0 20px 44px rgba(0,0,0,0.64),
+                0 0 42px rgba(244,114,182,0.28);
+            }
+
             .creator-particle {
               background: var(--rarity-particle);
               box-shadow:
@@ -732,70 +1590,15 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               animation-iteration-count: infinite;
             }
 
-
-            /* MYTHIC — branco rosado com pétalas de cerejeira */
-            .creator-card-mythic .creator-card-image {
-              filter: contrast(1.12) saturate(0.92) brightness(1.08);
-            }
-
-            .creator-card-mythic .creator-effect-base {
-              background:
-                linear-gradient(to bottom, rgba(255,255,255,0.14), transparent 28%, rgba(244,114,182,0.18) 68%, rgba(0,0,0,0.78)),
-                radial-gradient(circle at 50% 26%, rgba(255,255,255,0.2), transparent 34%),
-                radial-gradient(circle at 50% 70%, rgba(251,207,232,0.2), transparent 42%);
-            }
-
-            .creator-card-mythic .creator-effect-texture {
-              opacity: 0.62;
-              background-image:
-                radial-gradient(circle at 22% 20%, rgba(255,255,255,0.3), transparent 18%),
-                radial-gradient(circle at 74% 24%, rgba(251,207,232,0.34), transparent 18%),
-                radial-gradient(circle at 48% 64%, rgba(244,114,182,0.18), transparent 26%),
-                linear-gradient(132deg, transparent 0 22%, rgba(255,255,255,0.14) 23%, transparent 28% 100%);
-              animation: creatorMythicSoftBloom 4.8s ease-in-out infinite;
-            }
-
-            .creator-card-mythic .creator-effect-aura {
-              opacity: 0.74;
-              background:
-                radial-gradient(circle at 18% 18%, rgba(255,255,255,0.28), transparent 24%),
-                radial-gradient(circle at 78% 36%, rgba(251,207,232,0.24), transparent 30%),
-                radial-gradient(circle at 46% 88%, rgba(244,114,182,0.2), transparent 34%);
-              animation: creatorMythicAuraBreath 3.8s ease-in-out infinite;
-            }
-
-            .creator-card-mythic .creator-effect-special {
-              opacity: 0.54;
-              background:
-                linear-gradient(90deg, transparent, rgba(255,255,255,0.32), rgba(251,207,232,0.2), transparent),
-                radial-gradient(circle at 50% 18%, rgba(255,255,255,0.28), transparent 22%);
-              transform: translateX(-110%);
-              animation: creatorMythicPearlShine 4.9s ease-in-out infinite;
-            }
-
-            .creator-card-mythic .creator-card-holographic {
-              opacity: 0.2;
-              background:
-                linear-gradient(115deg, transparent 0 28%, rgba(255,255,255,0.28) 34%, transparent 42% 100%),
-                radial-gradient(circle at 50% 50%, rgba(251,207,232,0.18), transparent 58%);
-              mix-blend-mode: screen;
-              animation: creatorCardHoloDrift 6.6s ease-in-out infinite;
-            }
-
-            .creator-card-mythic .creator-card-readability {
-              background:
-                linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.36) 26%, rgba(244,114,182,0.08) 56%, rgba(255,255,255,0.08) 100%),
-                linear-gradient(to right, rgba(251,207,232,0.12), transparent 30%, transparent 70%, rgba(244,114,182,0.12));
-            }
-
-            .creator-card-mythic .creator-particle-shard,
-            .creator-card-mythic .creator-particle-dust {
+            .creator-particle-petal {
+              width: calc(var(--petal-w, 1) * 1px);
               border-radius: 999px 0 999px 0;
-              background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(251,207,232,0.88), rgba(244,114,182,0.5));
+              background:
+                radial-gradient(circle at 32% 28%, rgba(255,255,255,0.98), rgba(255,241,246,0.92) 28%, rgba(251,207,232,0.82) 62%, rgba(244,114,182,0.38));
               box-shadow:
-                0 0 10px rgba(255,255,255,0.72),
-                0 0 18px rgba(244,114,182,0.54);
-              animation-name: creatorMythicPetalFall;
+                0 0 8px rgba(255,244,249,0.9),
+                0 0 18px rgba(244,114,182,0.34);
+              animation-name: creatorMythicSakuraFall;
               animation-timing-function: linear;
               animation-iteration-count: infinite;
             }
@@ -959,6 +1762,59 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
                 linear-gradient(118deg, transparent 0 34%, rgba(255,255,255,0.18) 37%, rgba(253,224,71,0.24) 39%, transparent 43%),
                 linear-gradient(72deg, transparent 0 60%, rgba(251,191,36,0.18) 63%, transparent 66%);
               animation: creatorLegendaryNobleFlare 6.4s ease-in-out infinite;
+            }
+
+            /* MYTHIC — branco perolado, rosé e pétalas de sakura */
+            .creator-card-mythic .creator-card-image {
+              filter: contrast(1.08) saturate(0.96) brightness(1.08);
+            }
+
+            .creator-card-mythic .creator-effect-base {
+              background:
+                linear-gradient(to bottom, rgba(255,244,249,0.16), transparent 26%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.82)),
+                radial-gradient(circle at 50% 18%, rgba(255,255,255,0.34), transparent 22%),
+                radial-gradient(circle at 50% 58%, rgba(251,207,232,0.15), transparent 42%);
+            }
+
+            .creator-card-mythic .creator-effect-texture {
+              opacity: 0.74;
+              background:
+                radial-gradient(circle at 16% 16%, rgba(255,255,255,0.42), transparent 12%),
+                radial-gradient(circle at 84% 20%, rgba(251,207,232,0.32), transparent 16%),
+                radial-gradient(circle at 50% 92%, rgba(244,114,182,0.22), transparent 34%),
+                linear-gradient(115deg, transparent 0 28%, rgba(255,255,255,0.18) 34%, rgba(251,207,232,0.2) 39%, transparent 48% 100%);
+              animation: creatorMythicPearlMist 7.8s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-effect-aura {
+              opacity: 0.62;
+              background:
+                radial-gradient(circle at 50% 18%, rgba(255,255,255,0.34), transparent 24%),
+                radial-gradient(circle at 18% 48%, rgba(251,207,232,0.18), transparent 30%),
+                radial-gradient(circle at 82% 60%, rgba(244,114,182,0.2), transparent 30%),
+                conic-gradient(from 180deg at 50% 50%, transparent 0 18%, rgba(255,255,255,0.16) 24%, transparent 34%, rgba(251,207,232,0.15) 42%, transparent 54%, rgba(255,255,255,0.12) 62%, transparent 100%);
+              animation: creatorMythicAuraBloom 6.6s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-effect-special {
+              opacity: 0.62;
+              background:
+                linear-gradient(100deg, transparent 0 18%, rgba(255,255,255,0.14) 27%, rgba(251,207,232,0.2) 33%, transparent 42% 100%),
+                linear-gradient(78deg, transparent 0 58%, rgba(255,255,255,0.16) 64%, rgba(244,114,182,0.16) 68%, transparent 76% 100%);
+              animation: creatorMythicRoseGleam 5.8s ease-in-out infinite;
+            }
+
+            .creator-card-mythic .creator-card-holographic {
+              opacity: 0.18;
+              background:
+                linear-gradient(118deg, transparent 0 20%, rgba(255,255,255,0.16) 32%, rgba(251,207,232,0.24) 42%, transparent 58%),
+                conic-gradient(from 210deg at 50% 18%, transparent 0 18%, rgba(255,255,255,0.13) 28%, rgba(244,114,182,0.17) 38%, transparent 52%, rgba(255,255,255,0.1) 78%, transparent 100%);
+            }
+
+            .creator-card-mythic .creator-card-readability {
+              background:
+                linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.34) 25%, rgba(80,16,44,0.08) 54%, rgba(255,244,249,0.06) 100%),
+                linear-gradient(to right, rgba(80,16,44,0.13), transparent 28%, transparent 72%, rgba(244,114,182,0.1));
             }
 
             .creator-card-rare .creator-card-readability {
@@ -1259,6 +2115,64 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               }
             }
 
+            @keyframes creatorMythicSakuraFall {
+              0% {
+                transform: translate3d(0, -28px, 0) rotate(0deg) scale(0.62);
+                opacity: 0;
+                filter: brightness(1.05);
+              }
+              12% {
+                opacity: var(--particle-opacity, 0.82);
+              }
+              52% {
+                transform: translate3d(calc(var(--particle-x) * 0.48), calc(var(--particle-y) * 0.52), 0) rotate(calc(var(--particle-rotate) * 0.52)) scale(1);
+                opacity: 0.94;
+                filter: brightness(1.28);
+              }
+              100% {
+                transform: translate3d(var(--particle-x), var(--particle-y), 0) rotate(var(--particle-rotate)) scale(0.8);
+                opacity: 0;
+                filter: brightness(0.96);
+              }
+            }
+
+            @keyframes creatorMythicPearlMist {
+              0%, 100% {
+                transform: translate3d(-3%, -2%, 0) scale(1.08);
+                opacity: 0.58;
+              }
+              50% {
+                transform: translate3d(4%, 3%, 0) scale(1.14);
+                opacity: 0.82;
+              }
+            }
+
+            @keyframes creatorMythicAuraBloom {
+              0%, 100% {
+                transform: scale(1) rotate(0deg);
+                filter: brightness(1);
+              }
+              50% {
+                transform: scale(1.08) rotate(5deg);
+                filter: brightness(1.24);
+              }
+            }
+
+            @keyframes creatorMythicRoseGleam {
+              0%, 38% {
+                transform: translateX(-18%) rotate(-2deg);
+                opacity: 0.38;
+              }
+              58% {
+                transform: translateX(16%) rotate(2deg);
+                opacity: 0.78;
+              }
+              100% {
+                transform: translateX(28%) rotate(3deg);
+                opacity: 0.42;
+              }
+            }
+
             @keyframes creatorCardHolographicDrift {
               0%, 100% {
                 transform: translate3d(-10%, -7%, 0) rotate(-4deg) scale(1.18);
@@ -1280,57 +2194,6 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
               }
               75%, 100% {
                 transform: translateX(120%);
-              }
-            }
-
-
-            @keyframes creatorMythicPetalFall {
-              0% {
-                transform: translate3d(0, -28px, 0) rotate(0deg) scale(0.78);
-                opacity: 0;
-              }
-              10% {
-                opacity: var(--particle-opacity);
-              }
-              100% {
-                transform: translate3d(var(--particle-x), var(--particle-y), 0) rotate(var(--particle-rotate)) scale(1.08);
-                opacity: 0;
-              }
-            }
-
-            @keyframes creatorMythicSoftBloom {
-              0%, 100% {
-                transform: scale(1);
-                opacity: 0.5;
-              }
-              50% {
-                transform: scale(1.05);
-                opacity: 0.78;
-              }
-            }
-
-            @keyframes creatorMythicAuraBreath {
-              0%, 100% {
-                filter: blur(0px);
-                opacity: 0.52;
-              }
-              50% {
-                filter: blur(1px);
-                opacity: 0.82;
-              }
-            }
-
-            @keyframes creatorMythicPearlShine {
-              0%, 38% {
-                transform: translateX(-120%);
-                opacity: 0;
-              }
-              58% {
-                opacity: 0.72;
-              }
-              86%, 100% {
-                transform: translateX(120%);
-                opacity: 0;
               }
             }
 

@@ -35,10 +35,6 @@ type AlbumCreator = CreatorWithMeta & {
 const REQUIRED_RARITIES = ["common", "rare", "epic", "legendary"] as const;
 const MYTHIC_RARITY = "mythic";
 
-function hasCompletedBaseRarities(rarities: Set<string>) {
-  return REQUIRED_RARITIES.every((rarity) => rarities.has(rarity));
-}
-
 function createEmptyProgress(creatorId: string): UserCardProgress {
   return {
     creatorId,
@@ -46,6 +42,10 @@ function createEmptyProgress(creatorId: string): UserCardProgress {
     mythicCardId: null,
     mythicSeenAt: null,
   };
+}
+
+function hasCompletedBaseRarities(rarities: Set<string>) {
+  return REQUIRED_RARITIES.every((rarity) => rarities.has(rarity));
 }
 
 async function ensureMythicAlbumRewards({
@@ -101,6 +101,7 @@ async function ensureMythicAlbumRewards({
     const current =
       nextProgress.get(progress.creatorId) ??
       createEmptyProgress(progress.creatorId);
+
     current.rarities.add(MYTHIC_RARITY);
     current.mythicCardId = mythicCardId;
     current.mythicSeenAt = mythicSeenAt;
@@ -215,56 +216,50 @@ export default function AlbumPage() {
 
       const mappedCreators: CreatorWithMeta[] = creatorsData.map(
         (item: any) => {
-          const baseCards = Array.isArray(item.creator_cards)
+          const cards = Array.isArray(item.creator_cards)
             ? item.creator_cards
             : [];
-          const card =
-            baseCards.find(
-              (creatorCard: any) => creatorCard?.rarity === "common",
-            ) ?? baseCards[0];
+          const preferredCard =
+            cards.find(
+              (card: any) =>
+                String(card?.rarity).toLowerCase() === MYTHIC_RARITY,
+            ) ||
+            cards.find(
+              (card: any) => String(card?.rarity).toLowerCase() === "legendary",
+            ) ||
+            cards.find(
+              (card: any) => String(card?.rarity).toLowerCase() === "epic",
+            ) ||
+            cards.find(
+              (card: any) => String(card?.rarity).toLowerCase() === "rare",
+            ) ||
+            cards[0];
 
           return {
             id: item.id,
-            ownerId: item.user_id,
-            username: item.username,
-            nickname: item.nickname,
-            title:
-              item.title ||
-              translate(t, "creatorGridDefaultTitle", "Rising Creator"),
-            faction: item.faction || "",
-            category: item.category || translate(t, "creator", "Creator"),
-            mainPlatform: "youtube",
-            status: item.status || "offline",
-            avatarUrl: item.avatar_url || "",
-            bannerUrl: item.banner_url || "",
-            bio:
-              item.bio ||
-              translate(
-                t,
-                "creatorGridDefaultBio",
-                "Novo criador aprovado na plataforma.",
-              ),
-            description:
-              item.description ||
-              translate(
-                t,
-                "creatorGridDefaultDescription",
-                "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
-              ),
+            userId: item.user_id || item.id,
+            username: item.username || "creator",
+            nickname: item.nickname || item.username || "Creator",
+            title: item.title || "Creator Card",
+            faction: item.faction || "Cardpoc",
+            category: item.category || "creator",
+            status: item.status || "approved",
+            avatarUrl:
+              item.avatar_url || item.banner_url || "/placeholder-card.png",
+            bannerUrl:
+              item.banner_url || item.avatar_url || "/placeholder-card.png",
+            bio: item.bio || item.description || "",
+            description: item.description || item.bio || "",
             tags: normalizeCreatorTags(item.tags),
-            rank: card?.rank || "Bronze",
-            rarity: card?.rarity || "common",
-            aura: card?.aura || "Origin Aura",
+            rarity: (preferredCard?.rarity ||
+              "common") as CreatorWithMeta["rarity"],
+            rank: preferredCard?.rank || "Bronze",
+            aura: preferredCard?.aura || "Cardpoc Aura",
             evolutionStage:
-              card?.evolution_stage ||
-              translate(
-                t,
-                "creatorGridDefaultEvolutionStage",
-                "Stage 1 — Rising Creator",
-              ),
-            powerScore: card?.power_score || 0,
+              preferredCard?.evolution_stage || "Stage 1 — Rising Creator",
+            powerScore: preferredCard?.power_score || 0,
             collectedBy: 0,
-            level: card?.level || 1,
+            level: preferredCard?.level || 1,
             followers: 0,
             likes: 0,
             views: 0,
@@ -336,24 +331,27 @@ export default function AlbumPage() {
           .select("id,creator_id,rarity,seen_at")
           .eq("user_id", user.id);
 
-        nextProgress = (cardsData ?? []).reduce((map, card: any) => {
-          const creatorId = String(card.creator_id || "");
-          const rarity = String(card.rarity || "").toLowerCase();
+        nextProgress = (cardsData ?? []).reduce(
+          (map: Map<string, UserCardProgress>, card: any) => {
+            const creatorId = String(card.creator_id || "");
+            const rarity = String(card.rarity || "").toLowerCase();
 
-          if (!creatorId || !rarity) return map;
+            if (!creatorId || !rarity) return map;
 
-          const current = map.get(creatorId) ?? createEmptyProgress(creatorId);
+            const current =
+              map.get(creatorId) ?? createEmptyProgress(creatorId);
+            current.rarities.add(rarity);
 
-          current.rarities.add(rarity);
+            if (rarity === MYTHIC_RARITY) {
+              current.mythicCardId = card.id ?? current.mythicCardId;
+              current.mythicSeenAt = card.seen_at ?? current.mythicSeenAt;
+            }
 
-          if (rarity === MYTHIC_RARITY) {
-            current.mythicCardId = card.id ?? current.mythicCardId;
-            current.mythicSeenAt = card.seen_at ?? current.mythicSeenAt;
-          }
-
-          map.set(creatorId, current);
-          return map;
-        }, new Map<string, UserCardProgress>());
+            map.set(creatorId, current);
+            return map;
+          },
+          new Map<string, UserCardProgress>(),
+        );
       }
 
       if (user) {
@@ -383,45 +381,54 @@ export default function AlbumPage() {
       const ownedRarityCount = REQUIRED_RARITIES.filter((rarity) =>
         progress?.rarities.has(rarity),
       ).length;
+      const hasMythic = Boolean(progress?.rarities.has(MYTHIC_RARITY));
 
       return {
         ...creator,
         ownedRarityCount,
         isComplete: ownedRarityCount === REQUIRED_RARITIES.length,
-        hasMythic: Boolean(progress?.rarities.has(MYTHIC_RARITY)),
+        hasMythic,
         mythicCardId: progress?.mythicCardId ?? null,
         mythicSeenAt: progress?.mythicSeenAt ?? null,
       };
     });
   }, [creators, progressByCreator]);
 
-  async function handleRevealMythic(creator: AlbumCreator) {
-    if (!creator.mythicCardId || openingCreatorIds.has(creator.id)) return;
+  const completedCount = albumCreators.filter(
+    (creator) => creator.isComplete,
+  ).length;
+  const totalCount = albumCreators.length;
 
-    setOpeningCreatorIds((current) => {
-      const next = new Set(current);
-      next.add(creator.id);
-      return next;
-    });
+  async function revealMythic(creator: AlbumCreator) {
+    if (!creator.mythicCardId || creator.mythicSeenAt) return;
 
-    const now = new Date().toISOString();
+    setOpeningCreatorIds((current) => new Set(current).add(creator.id));
+
+    const revealedAt = new Date().toISOString();
 
     const { error } = await supabase
       .from("user_cards")
-      .update({ seen_at: now })
+      .update({ seen_at: revealedAt })
       .eq("id", creator.mythicCardId);
 
     if (error) {
-      console.error("Failed to mark mythic card as revealed", error);
+      console.error("Failed to mark mythic album card as revealed", error);
+      setOpeningCreatorIds((current) => {
+        const next = new Set(current);
+        next.delete(creator.id);
+        return next;
+      });
+      return;
     }
 
     window.setTimeout(() => {
       setProgressByCreator((current) => {
         const next = new Map(current);
-        const progress = next.get(creator.id) ?? createEmptyProgress(creator.id);
+        const progress =
+          next.get(creator.id) ?? createEmptyProgress(creator.id);
         progress.rarities.add(MYTHIC_RARITY);
         progress.mythicCardId = creator.mythicCardId;
-        progress.mythicSeenAt = now;
+        progress.mythicSeenAt = revealedAt;
         next.set(creator.id, progress);
         return next;
       });
@@ -431,21 +438,16 @@ export default function AlbumPage() {
         next.delete(creator.id);
         return next;
       });
-    }, 760);
+    }, 1150);
   }
-
-  const completedCount = albumCreators.filter(
-    (creator) => creator.isComplete,
-  ).length;
-  const totalCount = albumCreators.length;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <GlowBackground />
       <ParticleBackground />
 
-      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-10">
-        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section className="relative z-10 mx-auto max-w-[1540px] px-5 pb-24 pt-10 sm:px-8 lg:px-10">
+        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-5 py-2 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
               <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
@@ -461,18 +463,34 @@ export default function AlbumPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.035] px-5 py-4 backdrop-blur-xl">
+          <div className="w-full max-w-[310px] rounded-[28px] border border-white/10 bg-white/[0.035] px-6 py-5 backdrop-blur-xl shadow-[0_0_34px_rgba(0,0,0,0.32)]">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
               {translate(t, "albumPageProgressLabel", "Progresso")}
             </p>
-            <p className="mt-1 text-xl font-black text-white">
-              {completedCount}/{totalCount}
-            </p>
+            <div className="mt-2 flex items-end justify-between gap-4">
+              <p className="text-2xl font-black text-white">
+                {completedCount}/{totalCount}
+              </p>
+              <span className="rounded-full border border-pink-100/20 bg-pink-100/[0.06] px-3 py-1 text-xs font-black text-pink-50/80">
+                {totalCount > 0
+                  ? Math.round((completedCount / totalCount) * 100)
+                  : 0}
+                %
+              </span>
+            </div>
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-white to-pink-200 shadow-[0_0_18px_rgba(251,207,232,0.48)] transition-all duration-500"
+                style={{
+                  width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {!isLoggedIn && !loading && (
-          <div className="mb-6 rounded-3xl border border-amber-300/20 bg-amber-300/[0.055] p-5 text-sm font-semibold text-amber-50/75 backdrop-blur-xl">
+          <div className="mb-8 rounded-3xl border border-amber-300/20 bg-amber-300/[0.055] p-5 text-sm font-semibold text-amber-50/75 backdrop-blur-xl">
             {translate(
               t,
               "albumPageLoginHint",
@@ -486,15 +504,15 @@ export default function AlbumPage() {
             {translate(t, "albumPageLoading", "Carregando álbum...")}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-8 gap-y-12">
             {albumCreators.map((creator, index) => (
               <AlbumTile
                 key={creator.id}
                 creator={creator}
                 index={index}
                 isOpening={openingCreatorIds.has(creator.id)}
-                onOpenCreator={() => setSelectedCreator(toMythicCreator(creator))}
-                onReveal={() => handleRevealMythic(creator)}
+                onReveal={() => revealMythic(creator)}
+                onOpenCreator={(nextCreator) => setSelectedCreator(nextCreator)}
               />
             ))}
           </div>
@@ -532,153 +550,232 @@ function AlbumTile({
   creator,
   index,
   isOpening,
-  onOpenCreator,
   onReveal,
+  onOpenCreator,
 }: {
   creator: AlbumCreator;
   index: number;
   isOpening: boolean;
-  onOpenCreator: () => void;
   onReveal: () => void;
+  onOpenCreator: (creator: Creator) => void;
 }) {
   const { t } = useLanguage();
-
   const progressPercentage =
     (creator.ownedRarityCount / REQUIRED_RARITIES.length) * 100;
+  const isReadyToReveal =
+    creator.isComplete && creator.hasMythic && !creator.mythicSeenAt;
   const isRevealed =
     creator.isComplete && creator.hasMythic && Boolean(creator.mythicSeenAt);
-  const canReveal =
-    creator.isComplete && creator.hasMythic && !creator.mythicSeenAt;
+  const mythicCreator = toMythicCreator(creator);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 18, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.42, delay: Math.min(index * 0.025, 0.35) }}
-      className="relative min-h-[430px]"
+      className="relative mx-auto h-[482px] w-full max-w-[292px]"
     >
-      <AnimatePresence mode="wait" initial={false}>
-        {isRevealed ? (
-          <motion.div
-            key="revealed"
-            className="relative flex min-h-[430px] items-center justify-center overflow-visible"
-            initial={{ opacity: 0, scale: 0.88, rotateY: -18 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <CreatorCard
-              creator={toMythicCreator(creator)}
-              onClick={onOpenCreator}
-            />
-          </motion.div>
-        ) : (
-          <motion.button
-            key="sealed"
-            type="button"
-            onClick={canReveal ? onReveal : undefined}
-            disabled={!canReveal || isOpening}
-            className={`group relative flex min-h-[430px] w-full flex-col overflow-hidden rounded-[34px] border p-4 text-left transition duration-300 ${
-              canReveal
-                ? "cursor-pointer border-pink-100/28 bg-pink-200/[0.045] shadow-[0_0_34px_rgba(244,114,182,0.16)] hover:border-pink-100/55 hover:shadow-[0_0_52px_rgba(244,114,182,0.28)]"
-                : creator.ownedRarityCount > 0
-                  ? "cursor-default border-white/14 bg-white/[0.04]"
-                  : "cursor-default border-white/8 bg-white/[0.025] opacity-80"
-            }`}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={
-              isOpening
-                ? {
-                    opacity: 1,
-                    scale: [1, 1.04, 0.98, 1.08],
-                    rotateY: [0, -6, 10, 0],
-                  }
-                : { opacity: 1, scale: 1, rotateY: 0 }
-            }
-            exit={{ opacity: 0, scale: 0.92, rotateY: 22 }}
-            transition={{
-              duration: isOpening ? 0.76 : 0.32,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            aria-label={
-              canReveal
-                ? `Revelar carta mítica de ${creator.nickname}`
-                : `Carta de ${creator.nickname} ainda bloqueada`
-            }
-          >
-            <span className="pointer-events-none absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.12),transparent_34%),radial-gradient(circle_at_50%_82%,rgba(244,114,182,0.12),transparent_42%)] opacity-70" />
-            <span className="pointer-events-none absolute inset-[1px] rounded-[33px] border border-white/[0.055]" />
+      <div
+        className={`relative h-full overflow-hidden rounded-[36px] border p-4 transition duration-300 ${
+          isRevealed
+            ? "border-pink-100/40 bg-pink-100/[0.055] shadow-[0_0_48px_rgba(244,114,182,0.2)]"
+            : isReadyToReveal || isOpening
+              ? "border-pink-100/34 bg-pink-100/[0.045] shadow-[0_0_42px_rgba(244,114,182,0.16)]"
+              : creator.ownedRarityCount > 0
+                ? "border-white/14 bg-white/[0.04]"
+                : "border-white/8 bg-white/[0.025] opacity-85"
+        }`}
+      >
+        <span className="pointer-events-none absolute inset-0 rounded-[36px] bg-[radial-gradient(circle_at_50%_10%,rgba(255,255,255,0.11),transparent_28%),radial-gradient(circle_at_50%_88%,rgba(244,114,182,0.13),transparent_42%)] opacity-80" />
+        <span className="pointer-events-none absolute inset-[1px] rounded-[35px] border border-white/[0.055]" />
 
-            <span className="relative z-10 flex flex-1 flex-col rounded-[26px] border border-white/10 bg-black/44 p-3 backdrop-blur-sm">
-              <span className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[22px] border border-white/10 bg-black/45">
-                <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(255,255,255,0.075),transparent_28%),radial-gradient(circle_at_50%_72%,rgba(34,211,238,0.07),transparent_38%),linear-gradient(180deg,rgba(0,0,0,0.22),rgba(0,0,0,0.86))]" />
-                <span className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_9px)] opacity-25" />
-
-                {canReveal && (
-                  <span className="absolute inset-0 opacity-80">
-                    <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-pink-100/18 shadow-[0_0_22px_rgba(251,207,232,0.45)]" />
-                    <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-pink-100/14 shadow-[0_0_20px_rgba(251,207,232,0.36)]" />
-                    <span className="absolute inset-8 rounded-[26px] border border-pink-100/18" />
-                  </span>
-                )}
-
-                <span
-                  className={`absolute flex h-16 w-16 items-center justify-center rounded-2xl border bg-black/55 text-2xl shadow-[0_0_28px_rgba(0,0,0,0.65)] transition ${
-                    canReveal
-                      ? "border-pink-100/30 text-pink-50/70 shadow-[0_0_34px_rgba(244,114,182,0.28)]"
-                      : "border-white/10 text-white/28"
-                  }`}
+        <div className="relative z-10 flex h-full flex-col">
+          <div className="relative flex h-[386px] items-center justify-center overflow-visible rounded-[28px] border border-white/10 bg-black/34 shadow-[inset_0_0_34px_rgba(0,0,0,0.5)]">
+            <AnimatePresence mode="wait" initial={false}>
+              {isRevealed ? (
+                <motion.div
+                  key="revealed"
+                  initial={{ opacity: 0, scale: 0.92, rotateY: -12 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative flex h-full w-full items-center justify-center overflow-visible"
                 >
-                  ✦
-                </span>
+                  <MythicCardStage
+                    creator={mythicCreator}
+                    onClick={() => onOpenCreator(mythicCreator)}
+                  />
+                </motion.div>
+              ) : isOpening ? (
+                <motion.div
+                  key="opening"
+                  className="absolute inset-0 overflow-hidden rounded-[26px]"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <OpeningEnvelope />
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="locked"
+                  type="button"
+                  onClick={
+                    isReadyToReveal ? onReveal : () => onOpenCreator(creator)
+                  }
+                  className="absolute inset-0 overflow-hidden rounded-[26px] text-left"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.28 }}
+                  aria-label={
+                    isReadyToReveal
+                      ? `Revelar carta mítica de ${creator.nickname}`
+                      : `Abrir criador ${creator.nickname}`
+                  }
+                >
+                  <LockedAlbumPack
+                    creator={creator}
+                    progressPercentage={progressPercentage}
+                    isReadyToReveal={isReadyToReveal}
+                  />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
 
-                {isOpening && (
-                  <span className="absolute inset-0 z-20 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.82),rgba(251,207,232,0.34)_28%,transparent_62%)] animate-[albumRevealFlash_0.76s_ease-out_forwards]" />
-                )}
-
-                <span
-                  className={`absolute bottom-0 left-0 h-1 shadow-[0_0_16px_rgba(103,232,249,0.8)] transition-all ${
-                    canReveal ? "bg-pink-100" : "bg-cyan-200"
-                  }`}
-                  style={{ width: `${progressPercentage}%` }}
-                />
+          <div className="mt-4 min-w-0 px-1">
+            <div className="flex items-start justify-between gap-3">
+              <span className="block min-w-0 truncate text-base font-black uppercase tracking-[0.12em] text-white/66">
+                {creator.nickname}
               </span>
+              {isRevealed && (
+                <span className="shrink-0 rounded-full border border-pink-100/35 bg-pink-100/[0.08] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-pink-50">
+                  Mítica
+                </span>
+              )}
+            </div>
 
-              <span className="mt-3 block min-w-0">
-                <span className="block truncate text-sm font-black uppercase tracking-[0.12em] text-white/58">
-                  {canReveal ? "???" : creator.nickname}
-                </span>
-                <span className="mt-1 flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
-                  <span>
-                    {creator.ownedRarityCount}/{REQUIRED_RARITIES.length}
-                  </span>
-                  <span className={canReveal ? "text-pink-50/60" : "text-white/32"}>
-                    {canReveal
-                      ? "Revelar"
-                      : translate(t, "albumPageIncomplete", "Incompleta")}
-                  </span>
-                </span>
+            <div className="mt-2 flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+              <span>
+                {creator.ownedRarityCount}/{REQUIRED_RARITIES.length}
               </span>
-            </span>
-
-            <style jsx>{`
-              @keyframes albumRevealFlash {
-                0% {
-                  opacity: 0;
-                  transform: scale(0.72);
-                }
-                36% {
-                  opacity: 1;
-                  transform: scale(1.04);
-                }
-                100% {
-                  opacity: 0;
-                  transform: scale(1.38);
-                }
-              }
-            `}</style>
-          </motion.button>
-        )}
-      </AnimatePresence>
+              <span
+                className={isRevealed ? "text-pink-50/72" : "text-white/32"}
+              >
+                {isRevealed
+                  ? translate(t, "albumPageComplete", "Completa")
+                  : isReadyToReveal
+                    ? "Pronta"
+                    : translate(t, "albumPageIncomplete", "Incompleta")}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
+  );
+}
+
+function LockedAlbumPack({
+  creator,
+  progressPercentage,
+  isReadyToReveal,
+}: {
+  creator: AlbumCreator;
+  progressPercentage: number;
+  isReadyToReveal: boolean;
+}) {
+  return (
+    <span className="relative flex h-full w-full items-center justify-center rounded-[26px] border border-white/10 bg-black/48">
+      <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.075),transparent_28%),radial-gradient(circle_at_50%_78%,rgba(34,211,238,0.075),transparent_40%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.88))]" />
+      <span className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_9px)] opacity-25" />
+      <span className="absolute inset-x-6 top-6 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+      <span className="absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+
+      {isReadyToReveal ? (
+        <span className="absolute -inset-1 rounded-[28px] border border-pink-100/25 bg-[radial-gradient(circle_at_50%_40%,rgba(251,207,232,0.14),transparent_46%)] shadow-[0_0_34px_rgba(244,114,182,0.18)]" />
+      ) : null}
+
+      <span className="relative z-10 flex flex-col items-center gap-3 text-center">
+        <span
+          className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-2xl shadow-[0_0_28px_rgba(0,0,0,0.65)] ${
+            isReadyToReveal
+              ? "border-pink-100/28 bg-pink-100/[0.06] text-pink-50/75"
+              : "border-white/10 bg-black/55 text-white/28"
+          }`}
+        >
+          ✦
+        </span>
+        {isReadyToReveal && (
+          <span className="rounded-full border border-pink-100/25 bg-black/40 px-4 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-pink-50/80">
+            Clique para revelar
+          </span>
+        )}
+      </span>
+
+      <span
+        className="absolute bottom-0 left-0 h-1 bg-cyan-200 shadow-[0_0_16px_rgba(103,232,249,0.8)] transition-all"
+        style={{ width: `${progressPercentage}%` }}
+      />
+      <span className="sr-only">{creator.nickname}</span>
+    </span>
+  );
+}
+
+function OpeningEnvelope() {
+  const petals = Array.from({ length: 18 }, (_, index) => index);
+
+  return (
+    <span className="relative block h-full w-full rounded-[26px] bg-black/50">
+      <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(251,207,232,0.26),transparent_45%),linear-gradient(180deg,rgba(255,244,249,0.1),rgba(0,0,0,0.8))]" />
+      <motion.span
+        className="absolute inset-x-0 top-0 h-1/2 origin-top rounded-t-[26px] border-b border-pink-100/20 bg-[linear-gradient(145deg,rgba(255,244,249,0.18),rgba(42,12,28,0.78))] shadow-[0_0_34px_rgba(244,114,182,0.2)]"
+        animate={{ rotateX: -78, y: -18, opacity: 0.18 }}
+        transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+      />
+      <motion.span
+        className="absolute inset-x-0 bottom-0 h-1/2 origin-bottom rounded-b-[26px] border-t border-pink-100/20 bg-[linear-gradient(35deg,rgba(255,244,249,0.16),rgba(22,6,16,0.88))] shadow-[0_0_34px_rgba(244,114,182,0.16)]"
+        animate={{ rotateX: 72, y: 18, opacity: 0.18 }}
+        transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+      />
+      <motion.span
+        className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/80 blur-2xl"
+        initial={{ scale: 0.2, opacity: 0 }}
+        animate={{ scale: 2.2, opacity: [0, 0.75, 0] }}
+        transition={{ duration: 1.1, ease: "easeOut" }}
+      />
+      {petals.map((petal) => (
+        <motion.span
+          key={petal}
+          className="absolute left-1/2 top-1/2 h-2.5 w-4 rounded-[999px_0_999px_0] bg-pink-100/90 shadow-[0_0_14px_rgba(251,207,232,0.9)]"
+          initial={{ x: 0, y: 0, rotate: 0, opacity: 0 }}
+          animate={{
+            x: Math.cos(petal * 0.9) * (80 + (petal % 4) * 20),
+            y: Math.sin(petal * 0.9) * (80 + (petal % 5) * 18),
+            rotate: 220 + petal * 28,
+            opacity: [0, 1, 0],
+          }}
+          transition={{ duration: 1.05, delay: petal * 0.025, ease: "easeOut" }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function MythicCardStage({
+  creator,
+  onClick,
+}: {
+  creator: CreatorWithMeta;
+  onClick: () => void;
+}) {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-visible">
+      <span className="pointer-events-none absolute -inset-3 rounded-[30px] bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.42),transparent_30%),radial-gradient(circle_at_50%_58%,rgba(251,207,232,0.3),transparent_44%),radial-gradient(circle_at_50%_90%,rgba(244,114,182,0.22),transparent_42%)] blur-xl" />
+      <span className="pointer-events-none absolute inset-3 rounded-[28px] border border-pink-100/24 shadow-[inset_0_0_24px_rgba(255,255,255,0.1),0_0_30px_rgba(244,114,182,0.16)]" />
+      <div className="relative z-10 origin-center scale-[0.94]">
+        <CreatorCard creator={creator} onClick={() => onClick()} />
+      </div>
+    </div>
   );
 }
