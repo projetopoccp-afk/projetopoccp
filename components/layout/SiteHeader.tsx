@@ -48,6 +48,8 @@ type NotificationType =
   | "card_collected"
   | "card_won"
   | "level_up"
+  | "xp_gained"
+  | "xp_reward"
   | "pack_received"
   | "pack_opened"
   | "package_received"
@@ -259,6 +261,119 @@ function metadataHasIntent(
 
     return intents.some((intent) => normalizedValue.includes(intent));
   });
+}
+
+function getMetadataBoolean(
+  metadata: Record<string, unknown>,
+  keys: string[],
+): boolean {
+  return keys.some((key) => {
+    const value = metadata[key];
+
+    if (typeof value === "boolean") return value;
+
+    if (typeof value === "string") {
+      const normalizedValue = value.trim().toLowerCase();
+      return ["true", "yes", "sim", "1"].includes(normalizedValue);
+    }
+
+    if (typeof value === "number") return value === 1;
+
+    return false;
+  });
+}
+
+function getMetadataNumber(
+  metadata: Record<string, unknown>,
+  keys: string[],
+): number | null {
+  for (const key of keys) {
+    const value = metadata[key];
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      const parsedValue = Number(value);
+      if (Number.isFinite(parsedValue)) return parsedValue;
+    }
+  }
+
+  return null;
+}
+
+function notificationHasText(
+  notification: UserNotification,
+  values: string[],
+): boolean {
+  const text = `${notification.title || ""} ${notification.message || ""}`.toLowerCase();
+
+  return values.some((value) => text.includes(value));
+}
+
+function isXpOnlyNotification(notification: UserNotification) {
+  const metadata = notification.metadata || {};
+
+  if (notification.type === "card_collected" || notification.type === "card_won") {
+    return false;
+  }
+
+  if (notification.type === "xp_gained" || notification.type === "xp_reward") {
+    return true;
+  }
+
+  if (
+    getMetadataBoolean(metadata, [
+      "converted_to_xp",
+      "convertedToXp",
+      "duplicate_to_xp",
+      "duplicateToXp",
+      "xp_only",
+      "xpOnly",
+    ])
+  ) {
+    return true;
+  }
+
+  if (
+    getMetadataNumber(metadata, [
+      "xp",
+      "xp_amount",
+      "xpAmount",
+      "xp_reward",
+      "xpReward",
+      "reward_xp",
+      "rewardXp",
+    ]) !== null
+  ) {
+    return true;
+  }
+
+  if (
+    metadataHasIntent(metadata, [
+      "xp",
+      "experience",
+      "experiencia",
+      "experiência",
+      "duplicate",
+      "duplicada",
+      "duplicado",
+    ])
+  ) {
+    return true;
+  }
+
+  return notificationHasText(notification, [
+    " xp",
+    "+xp",
+    "experiência",
+    "experiencia",
+    "convertida em xp",
+    "convertido em xp",
+    "virou xp",
+    "ganhou xp",
+  ]);
 }
 
 function isPackNotification(notification: UserNotification) {
@@ -806,6 +921,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     setNotificationToast(null);
     markNotificationAsRead(notification.id);
     setNotificationsOpen(false);
+
+    if (isXpOnlyNotification(notification)) {
+      clearCollectionInitialState();
+      setCollectionOpen(false);
+      setPacksOpen(false);
+      setAccountOpen(true);
+      return;
+    }
 
     if (isCardNotification(notification)) {
       openCollectionFromNotification(notification);
