@@ -1623,6 +1623,7 @@ export function CreatorProfilePage({
   const [selectedBattleCreatorId, setSelectedBattleCreatorId] = useState("");
   const [battleStats, setBattleStats] = useState<CreatorBattleStats | null>(null);
   const [battleLoading, setBattleLoading] = useState(false);
+  const [battleModalOpen, setBattleModalOpen] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -3355,6 +3356,58 @@ export function CreatorProfilePage({
         rarity: normalizeCreatorRarity(showcaseRarity),
       }
     : null;
+
+  const selectedBattleCard = selectedBattleCreator
+    ? Array.isArray(selectedBattleCreator.creator_cards)
+      ? selectedBattleCreator.creator_cards[0] || null
+      : selectedBattleCreator.creator_cards || null
+    : null;
+
+  const selectedBattleCreatorForCard: Creator | null = selectedBattleCreator
+    ? {
+        id: selectedBattleCreator.id,
+        username: selectedBattleCreator.username,
+        nickname: selectedBattleCreator.nickname,
+        title: translate(t, "creatorProfileBattleOpponent", "Oponente"),
+        faction: "",
+        category: translate(t, "creatorProfileDefaultCategory", "Criador"),
+        mainPlatform: "youtube",
+        status: "offline" as CreatorStatus,
+        avatarUrl: selectedBattleCreator.avatar_url || "",
+        bannerUrl: selectedBattleCreator.avatar_url || "",
+        popupAnimationStyle: "none",
+        bio: "",
+        description: "",
+        tags: [],
+        rank: normalizeCreatorRank(selectedBattleCard?.rank),
+        rarity: normalizeCreatorRarity(selectedBattleCard?.rarity || "common"),
+        aura: selectedBattleCard?.aura || "Origin Aura",
+        evolutionStage: selectedBattleCard?.evolution_stage || "Stage 1 — Rising Creator",
+        powerScore: selectedBattleCard?.power_score || 0,
+        collectedBy: battleStats?.uniqueCollectors || 0,
+        level: selectedBattleCard?.level || battleStats?.level || 1,
+        followers: battleStats?.followers || 0,
+        likes: 0,
+        views: battleStats?.views || 0,
+        socials: [],
+        traits: [],
+        featuredMoment: {
+          title: "",
+          description: "",
+        },
+        achievements: [],
+      }
+    : null;
+
+  const battleScore = battleRows.reduce(
+    (score, row) => {
+      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
+      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
+      return { ...score, draws: score.draws + 1 };
+    },
+    { current: 0, opponent: 0, draws: 0 },
+  );
+
   const isProfileClaimable = !profile?.user_id;
 
   if (loading) {
@@ -3497,11 +3550,11 @@ export function CreatorProfilePage({
           ) : null}
         </div>
 
-        <section className="mt-8 grid gap-7 rounded-[2.4rem] border border-white/10 bg-white/[0.025] p-4 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:grid-cols-[390px_minmax(0,1fr)] lg:items-stretch lg:p-6 xl:grid-cols-[430px_minmax(0,1fr)]">
-          <div className="flex min-h-full flex-col items-center justify-center gap-4 rounded-[2rem] border border-cyan-300/10 bg-black/25 px-3 py-6 lg:items-center">
+        <section className="mt-8 grid gap-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:items-start xl:grid-cols-[430px_minmax(0,1fr)]">
+          <div className="flex min-h-full flex-col items-center gap-5 px-0 py-2 lg:sticky lg:top-24">
             {creatorForCard ? (
-              <div className="relative w-fit scale-[1.18] py-8 sm:scale-[1.25] lg:scale-[1.22] xl:scale-[1.3]">
-                <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
+              <div className="relative w-fit scale-[1.12] py-4 sm:scale-[1.18] lg:scale-[1.2] xl:scale-[1.26]">
+                <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_66%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
                   creator={creatorForCard}
@@ -3594,9 +3647,63 @@ export function CreatorProfilePage({
                 ) : null}
               </div>
             ) : null}
+
+            {!isEditing ? (
+              <div className="w-full max-w-[360px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[390px]">
+                <div className="flex items-center gap-2 text-cyan-100/70">
+                  <Users className="h-4 w-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em]">
+                    {translate(t, "creatorProfileCommunityCollection", "Coleção da comunidade")}
+                  </p>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-2 py-3">
+                    <p className="text-xl font-black text-white">{formatNumber(collectionStats.uniqueCollectors)}</p>
+                    <p className="mt-1 text-[8px] font-black uppercase tracking-[0.14em] text-cyan-100/55">
+                      {translate(t, "creatorProfileCollectors", "Colecionadores")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-2 py-3">
+                    <p className="text-xl font-black text-white">{formatNumber(collectionStats.total)}</p>
+                    <p className="mt-1 text-[8px] font-black uppercase tracking-[0.14em] text-fuchsia-100/55">
+                      {translate(t, "creatorProfileCollectedCards", "Cartas")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-yellow-300/15 bg-yellow-300/[0.07] px-2 py-3">
+                    <p className="truncate text-xl font-black text-white">
+                      {highestCollectedRarity ? getRarityLabel(highestCollectedRarity) : "-"}
+                    </p>
+                    <p className="mt-1 text-[8px] font-black uppercase tracking-[0.14em] text-yellow-100/55">
+                      {translate(t, "creatorProfileHighestRarity", "Maior")}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {RARITY_SHOWCASE_CYCLE.map((item) => {
+                    const rarityKey = item.rarity as keyof Omit<CreatorCollectionStats, "total" | "uniqueCollectors">;
+                    const amount = collectionStats[rarityKey] || 0;
+                    const percentage = collectionStats.total > 0 ? Math.round((amount / collectionStats.total) * 100) : 0;
+
+                    return (
+                      <div key={item.rarity} className="grid grid-cols-[74px_1fr_42px] items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
+                          {getRarityLabel(item.rarity as CreatorRarity)}
+                        </span>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full rounded-full bg-cyan-300/60" style={{ width: `${percentage}%` }} />
+                        </div>
+                        <span className="text-right text-[10px] font-black text-cyan-100/70">{percentage}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          <div className="min-w-0 self-center py-2 lg:py-4">
+          <div className="min-w-0 self-start rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
                 {translate(t, "creatorProfilePublicProfile", "Perfil público")}
@@ -3965,166 +4072,179 @@ export function CreatorProfilePage({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.95fr)]">
-              <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/55">
-                      {translate(t, "creatorProfileCommunityCollection", "Coleção da comunidade")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-white/45">
-                      {translate(t, "creatorProfileCommunityCollectionHint", "Dados reais das cartas deste criador nas coleções.")}
+            <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-fuchsia-300/15 bg-[radial-gradient(circle_at_82%_50%,rgba(217,70,239,0.16),transparent_34%),linear-gradient(135deg,rgba(34,211,238,0.08),rgba(217,70,239,0.08),rgba(0,0,0,0.18))] p-5 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl">
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)] xl:items-center">
+                <div>
+                  <div className="flex items-center gap-2 text-fuchsia-100/80">
+                    <Sparkles className="h-4 w-4" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em]">
+                      {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2">
-                      <p className="text-lg font-black text-white">{formatNumber(collectionStats.uniqueCollectors)}</p>
-                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/55">
-                        {translate(t, "creatorProfileCollectors", "Colecionadores")}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
-                      <p className="text-lg font-black text-white">{formatNumber(collectionStats.total)}</p>
-                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
-                        {translate(t, "creatorProfileCollectedCards", "Cartas")}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-yellow-300/15 bg-yellow-300/[0.07] px-3 py-2">
-                      <p className="text-lg font-black text-white">
-                        {highestCollectedRarity
-                          ? getRarityLabel(highestCollectedRarity)
-                          : "-"}
-                      </p>
-                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-yellow-100/55">
-                        {translate(t, "creatorProfileHighestRarity", "Maior")}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/55">
+                    {translate(t, "creatorProfileBattleModeDescription", "Compare métricas reais com outro criador.")}
+                  </p>
                 </div>
 
-                <div className="mt-5 grid gap-2 sm:grid-cols-4">
-                  {RARITY_SHOWCASE_CYCLE.map((item) => {
-                    const rarityKey = item.rarity as keyof Omit<CreatorCollectionStats, "total" | "uniqueCollectors">;
-                    const amount = collectionStats[rarityKey] || 0;
-                    const percentage = collectionStats.total > 0 ? Math.round((amount / collectionStats.total) * 100) : 0;
-
-                    return (
-                      <div key={item.rarity} className="rounded-[1.1rem] border border-white/10 bg-black/25 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/48">
-                            {getRarityLabel(item.rarity as CreatorRarity)}
-                          </span>
-                          <span className="text-xs font-black text-cyan-100/70">{percentage}%</span>
-                        </div>
-                        <p className="mt-2 text-2xl font-black text-white">{formatNumber(amount)}</p>
-                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                          <div className="h-full rounded-full bg-cyan-300/60" style={{ width: `${percentage}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-[1.6rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.055] p-5 backdrop-blur-xl">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-fuchsia-100/70">
-                      <Users className="h-4 w-4" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em]">
-                        {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
-                      </p>
-                    </div>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-white/50">
-                      {translate(t, "creatorProfileBattleModeDescription", "Compare métricas reais com outro criador.")}
-                    </p>
-                  </div>
-                  {currentCreatorBattleStats.isLive ? (
-                    <span className="rounded-full border border-red-300/25 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
-                      {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
-                    </span>
-                  ) : null}
-                </div>
-
-                <select
-                  value={selectedBattleCreatorId}
-                  onChange={(event) => setSelectedBattleCreatorId(event.target.value)}
-                  className="mt-4 w-full rounded-[1.15rem] border border-fuchsia-300/20 bg-black/35 px-4 py-3 text-sm font-black text-fuchsia-50 outline-none transition focus:border-fuchsia-300/45"
-                >
-                  <option value="">
-                    {translate(t, "creatorProfileBattleSelectCreator", "Selecione um criador")}
-                  </option>
-                  {battleCandidates.map((candidate) => (
-                    <option key={candidate.id} value={candidate.id}>
-                      {candidate.nickname || candidate.username}
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <select
+                    value={selectedBattleCreatorId}
+                    onChange={(event) => {
+                      setSelectedBattleCreatorId(event.target.value);
+                      setBattleModalOpen(false);
+                    }}
+                    className="w-full rounded-[1.15rem] border border-fuchsia-300/20 bg-black/45 px-4 py-3 text-sm font-black text-fuchsia-50 outline-none transition focus:border-fuchsia-300/45"
+                  >
+                    <option value="">
+                      {translate(t, "creatorProfileBattleSelectCreator", "Selecione um criador")}
                     </option>
-                  ))}
-                </select>
+                    {battleCandidates.map((candidate) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.nickname || candidate.username}
+                      </option>
+                    ))}
+                  </select>
 
-                {battleLoading ? (
-                  <div className="mt-4 flex items-center justify-center rounded-[1.2rem] border border-white/10 bg-black/25 px-4 py-6 text-sm font-black text-white/55">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {translate(t, "creatorProfileBattleLoading", "Carregando comparação...")}
-                  </div>
-                ) : selectedBattleCreator && battleStats ? (
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3 rounded-[1.2rem] border border-white/10 bg-black/25 p-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-cyan-100">{nickname}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
-                          {translate(t, "creatorProfileBattleCurrent", "Atual")}
-                        </p>
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100/60">VS</span>
-                      <div className="min-w-0 text-right">
-                        <p className="truncate text-sm font-black text-fuchsia-100">
-                          {selectedBattleCreator.nickname || selectedBattleCreator.username}
-                        </p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
-                          {translate(t, "creatorProfileBattleOpponent", "Oponente")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {battleRows.map((row) => {
-                      const currentWins = row.current > row.opponent;
-                      const opponentWins = row.opponent > row.current;
-
-                      return (
-                        <div key={row.key} className="rounded-[1rem] border border-white/10 bg-black/20 p-3">
-                          <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                            <span>{row.label}</span>
-                            <span>
-                              {currentWins
-                                ? translate(t, "creatorProfileBattleCurrentWins", "Você vence")
-                                : opponentWins
-                                  ? translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")
-                                  : translate(t, "creatorProfileBattleDraw", "Empate")}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <p className={`text-lg font-black ${currentWins ? "text-cyan-100" : "text-white/70"}`}>
-                              {formatNumber(row.current)}
-                            </p>
-                            <span className="text-xs font-black text-white/28">×</span>
-                            <p className={`text-right text-lg font-black ${opponentWins ? "text-fuchsia-100" : "text-white/70"}`}>
-                              {formatNumber(row.opponent)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-black/20 px-4 py-5 text-sm font-semibold leading-6 text-white/48">
-                    {translate(t, "creatorProfileBattleEmpty", "Escolha outro criador para comparar seguidores, alcance, coleção, compartilhamentos e nível.")}
-                  </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setBattleModalOpen(true)}
+                    disabled={!selectedBattleCreator || !battleStats || battleLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-[1.15rem] border border-fuchsia-300/30 bg-fuchsia-400/15 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-50 shadow-lg shadow-fuchsia-500/10 transition hover:bg-fuchsia-400/25 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {battleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {translate(t, "creatorProfileBattleStart", "Iniciar batalha")}
+                  </button>
+                </div>
               </div>
             </div>
 
           </div>
         </section>
+
+        {battleModalOpen && selectedBattleCreator && battleStats ? (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-md" role="dialog" aria-modal="true">
+            <div className="relative w-full max-w-6xl overflow-hidden rounded-[2rem] border border-fuchsia-300/25 bg-[#08040d]/95 p-4 shadow-2xl shadow-fuchsia-500/20 sm:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_50%,rgba(34,211,238,0.22),transparent_34%),radial-gradient(circle_at_82%_50%,rgba(248,113,113,0.2),transparent_34%),linear-gradient(90deg,rgba(34,211,238,0.08),transparent,rgba(217,70,239,0.08))]" />
+              <button
+                type="button"
+                onClick={() => setBattleModalOpen(false)}
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-2xl font-light text-white/70 transition hover:border-fuchsia-300/30 hover:text-white"
+                aria-label="Fechar batalha"
+              >
+                ×
+              </button>
+
+              <div className="relative z-10">
+                <div className="mb-5 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.34em] text-fuchsia-100/60">
+                    {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white md:text-4xl">
+                    {nickname} <span className="text-fuchsia-200">VS</span> {selectedBattleCreator.nickname || selectedBattleCreator.username}
+                  </h2>
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)_230px] lg:items-center">
+                  <div className="flex justify-center animate-[battleSlideInLeft_520ms_ease-out_both]">
+                    {creatorForCard ? (
+                      <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86]">
+                        <CreatorCard creator={creatorForCard} onClick={() => undefined} />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+                    <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
+                      <div>
+                        <p className="truncate text-sm font-black text-cyan-100 md:text-base">{nickname}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                          {translate(t, "creatorProfileBattleCurrent", "Atual")}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-3 py-1 text-xs font-black text-fuchsia-100">VS</span>
+                      <div>
+                        <p className="truncate text-sm font-black text-fuchsia-100 md:text-base">
+                          {selectedBattleCreator.nickname || selectedBattleCreator.username}
+                        </p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                          {translate(t, "creatorProfileBattleOpponent", "Oponente")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {battleRows.map((row) => {
+                        const currentWins = row.current > row.opponent;
+                        const opponentWins = row.opponent > row.current;
+
+                        return (
+                          <div key={row.key} className="grid grid-cols-[80px_minmax(0,1fr)_80px] items-center gap-3 rounded-[1rem] border border-white/10 bg-white/[0.035] px-3 py-2.5">
+                            <p className={`text-lg font-black ${currentWins ? "text-cyan-200" : "text-white/65"}`}>
+                              {formatNumber(row.current)}
+                            </p>
+                            <div className="text-center">
+                              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">{row.label}</p>
+                              <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/30">
+                                {currentWins
+                                  ? translate(t, "creatorProfileBattleCurrentWins", "Você vence")
+                                  : opponentWins
+                                    ? translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")
+                                    : translate(t, "creatorProfileBattleDraw", "Empate")}
+                              </p>
+                            </div>
+                            <p className={`text-right text-lg font-black ${opponentWins ? "text-fuchsia-200" : "text-white/65"}`}>
+                              {formatNumber(row.opponent)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2">
+                        <p className="text-xl font-black text-cyan-100">{battleScore.current}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/50">
+                          {translate(t, "creatorProfileBattleCurrentWins", "Você vence")}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                        <p className="text-xl font-black text-white">{battleScore.draws}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">
+                          {translate(t, "creatorProfileBattleDraw", "Empate")}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-3 py-2">
+                        <p className="text-xl font-black text-fuchsia-100">{battleScore.opponent}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-fuchsia-100/50">
+                          {translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center animate-[battleSlideInRight_520ms_ease-out_both]">
+                    {selectedBattleCreatorForCard ? (
+                      <div className="scale-[0.82] sm:scale-[0.9] lg:scale-[0.86]">
+                        <CreatorCard creator={selectedBattleCreatorForCard} onClick={() => undefined} />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <style jsx>{`
+                @keyframes battleSlideInLeft {
+                  from { opacity: 0; transform: translateX(-48px) rotate(-4deg) scale(0.92); }
+                  to { opacity: 1; transform: translateX(0) rotate(0deg) scale(1); }
+                }
+                @keyframes battleSlideInRight {
+                  from { opacity: 0; transform: translateX(48px) rotate(4deg) scale(0.92); }
+                  to { opacity: 1; transform: translateX(0) rotate(0deg) scale(1); }
+                }
+              `}</style>
+            </div>
+          </div>
+        ) : null}
 
         {heroLiveStatus ? (
           <button
