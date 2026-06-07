@@ -334,6 +334,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const notificationMobileBoxRef = useRef<HTMLDivElement | null>(null);
   const languageBoxRef = useRef<HTMLDivElement | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
+  const clearCollectionInitialStateTimeoutRef = useRef<number | null>(null);
+  const notificationActionUnlockTimeoutRef = useRef<number | null>(null);
+  const activeNotificationActionRef = useRef<string | null>(null);
   const notificationToastTimeoutRef = useRef<number | null>(null);
   const notificationBellPulseTimeoutRef = useRef<number | null>(null);
 
@@ -613,6 +616,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         window.clearTimeout(openCollectionCardTimeoutRef.current);
       }
 
+      if (clearCollectionInitialStateTimeoutRef.current) {
+        window.clearTimeout(clearCollectionInitialStateTimeoutRef.current);
+      }
+
+      if (notificationActionUnlockTimeoutRef.current) {
+        window.clearTimeout(notificationActionUnlockTimeoutRef.current);
+      }
+
       if (notificationToastTimeoutRef.current) {
         window.clearTimeout(notificationToastTimeoutRef.current);
       }
@@ -705,6 +716,30 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     }
   }
 
+  function clearCollectionInitialState() {
+    setCollectionInitialCardId(null);
+    setCollectionInitialCreatorId(null);
+
+    if (clearCollectionInitialStateTimeoutRef.current) {
+      window.clearTimeout(clearCollectionInitialStateTimeoutRef.current);
+      clearCollectionInitialStateTimeoutRef.current = null;
+    }
+  }
+
+  function unlockNotificationAction(notificationId: string) {
+    if (notificationActionUnlockTimeoutRef.current) {
+      window.clearTimeout(notificationActionUnlockTimeoutRef.current);
+    }
+
+    notificationActionUnlockTimeoutRef.current = window.setTimeout(() => {
+      if (activeNotificationActionRef.current === notificationId) {
+        activeNotificationActionRef.current = null;
+      }
+
+      notificationActionUnlockTimeoutRef.current = null;
+    }, 1400);
+  }
+
   function openCollectionFromNotification(notification: UserNotification) {
     const metadata = notification.metadata || {};
     const cardId = getMetadataString(metadata, [
@@ -727,54 +762,52 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
     if (openCollectionCardTimeoutRef.current) {
       window.clearTimeout(openCollectionCardTimeoutRef.current);
+      openCollectionCardTimeoutRef.current = null;
+    }
+
+    if (clearCollectionInitialStateTimeoutRef.current) {
+      window.clearTimeout(clearCollectionInitialStateTimeoutRef.current);
+      clearCollectionInitialStateTimeoutRef.current = null;
     }
 
     /*
-      Mantém compatibilidade com a CollectionModal caso ela já escute eventos
-      para focar/abrir a carta específica depois que o modal montar.
+      A notificação deve abrir a carta apenas uma vez.
+      Depois que o modal recebe o foco inicial, limpamos os estados initial*
+      para evitar que qualquer re-render abra a mesma carta novamente ao fechar.
     */
     openCollectionCardTimeoutRef.current = window.setTimeout(() => {
+      const detail = {
+        cardId,
+        card_id: cardId,
+        userCardId: cardId,
+        user_card_id: cardId,
+        creatorId,
+        creator_id: creatorId,
+        notificationId: notification.id,
+        notification_id: notification.id,
+        metadata,
+      };
+
       window.dispatchEvent(
-        new CustomEvent("creator-nexus:focus-collection-card", {
-          detail: {
-            cardId,
-            card_id: cardId,
-            userCardId: cardId,
-            user_card_id: cardId,
-            creatorId,
-            creator_id: creatorId,
-            notificationId: notification.id,
-            notification_id: notification.id,
-            metadata,
-          },
-        }),
+        new CustomEvent("creator-nexus:focus-collection-card", { detail }),
       );
 
       window.dispatchEvent(
-        new CustomEvent("creator-nexus:open-collection-card", {
-          detail: {
-            cardId,
-            card_id: cardId,
-            userCardId: cardId,
-            user_card_id: cardId,
-            creatorId,
-            creator_id: creatorId,
-            notificationId: notification.id,
-            notification_id: notification.id,
-            metadata,
-          },
-        }),
+        new CustomEvent("creator-nexus:open-collection-card", { detail }),
       );
 
       openCollectionCardTimeoutRef.current = null;
+
+      clearCollectionInitialStateTimeoutRef.current = window.setTimeout(() => {
+        clearCollectionInitialState();
+      }, 250);
     }, 120);
   }
 
   function openPacksFromNotification() {
     setAccountOpen(false);
     setCollectionOpen(false);
-    setCollectionInitialCardId(null);
-    setCollectionInitialCreatorId(null);
+    clearCollectionInitialState();
     setPacksOpen(true);
 
     window.dispatchEvent(new CustomEvent("cardpoc:open-packs"));
@@ -782,6 +815,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }
 
   function handleNotificationClick(notification: UserNotification) {
+    if (activeNotificationActionRef.current === notification.id) {
+      return;
+    }
+
+    activeNotificationActionRef.current = notification.id;
+    unlockNotificationAction(notification.id);
+
+    setNotificationToast(null);
     markNotificationAsRead(notification.id);
     setNotificationsOpen(false);
 
@@ -852,6 +893,8 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     setCollectionOpen(false);
     setPacksOpen(false);
     setLogoutConfirmOpen(false);
+    clearCollectionInitialState();
+    activeNotificationActionRef.current = null;
   }
 
   function requestLogout() {
@@ -1157,20 +1200,25 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         onConfirm={handleLogout}
       />
 
-      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
+      <PacksModal
+        open={packsOpen}
+        onClose={() => {
+          setPacksOpen(false);
+          activeNotificationActionRef.current = null;
+        }}
+      />
 
       <CollectionModal
         open={collectionOpen}
         initialCardId={collectionInitialCardId}
         initialCreatorId={collectionInitialCreatorId}
         onInitialCardOpened={() => {
-          setCollectionInitialCardId(null);
-          setCollectionInitialCreatorId(null);
+          clearCollectionInitialState();
         }}
         onClose={() => {
           setCollectionOpen(false);
-          setCollectionInitialCardId(null);
-          setCollectionInitialCreatorId(null);
+          clearCollectionInitialState();
+          activeNotificationActionRef.current = null;
 
           if (openCollectionCardTimeoutRef.current) {
             window.clearTimeout(openCollectionCardTimeoutRef.current);
