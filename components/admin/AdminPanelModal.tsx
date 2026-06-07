@@ -586,6 +586,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState(0);
   const [kickDetectorLimit, setKickDetectorLimit] = useState(50);
   const [kickDetectorSearch, setKickDetectorSearch] = useState("");
+  const [showExistingKickCreators, setShowExistingKickCreators] =
+    useState(false);
   const [detectedKickCreators, setDetectedKickCreators] = useState<
     DetectedKickCreator[]
   >([]);
@@ -2473,6 +2475,10 @@ const response = await fetch("/api/admin/detect-kick-creators", {
 
   const filteredDetectedKickCreators = detectedKickCreators.filter(
     (creator) => {
+      if (creator.already_exists && !showExistingKickCreators) {
+        return false;
+      }
+
       const search = kickDetectorSearch.toLowerCase().trim();
 
       const searchableText = [
@@ -3464,7 +3470,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
+              <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
                 <SearchInput
                   value={kickDetectorSearch}
                   onChange={setKickDetectorSearch}
@@ -3474,6 +3480,35 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                     "Buscar por criador, categoria, título ou idioma...",
                   )}
                 />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowExistingKickCreators((current) => !current)
+                  }
+                  className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-black transition hover:scale-105 ${
+                    showExistingKickCreators
+                      ? "border-yellow-300/25 bg-yellow-300/[0.08] text-yellow-100"
+                      : "border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-100"
+                  }`}
+                >
+                  {showExistingKickCreators ? (
+                    <Eye size={16} />
+                  ) : (
+                    <EyeOff size={16} />
+                  )}
+                  {showExistingKickCreators
+                    ? translate(
+                        t,
+                        "adminKickCreatorShowingExisting",
+                        "Mostrando cadastrados",
+                      )
+                    : translate(
+                        t,
+                        "adminKickCreatorHidingExisting",
+                        "Ocultando cadastrados",
+                      )}
+                </button>
 
                 <button
                   type="button"
@@ -3487,22 +3522,30 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                   <Check size={16} />
                   {actionLoading === "import-kick-creators"
                     ? translate(t, "adminKickCreatorImporting", "Importando...")
-                    : translate(
+                    : `${translate(
                         t,
                         "adminKickCreatorImportSelected",
-                        `Importar selecionados (${selectedKickCreatorsCount})`,
-                      )}
+                        "Importar selecionados",
+                      )} (${selectedKickCreatorsCount})`}
                 </button>
               </div>
 
               <div className="mt-5 grid gap-4">
                 {filteredDetectedKickCreators.length === 0 && (
                   <EmptyBox
-                    text={translate(
-                      t,
-                      "adminNoKickCreatorsDetected",
-                      "Nenhum criador detectado ainda. Escolha uma categoria e clique em Detectar na Kick.",
-                    )}
+                    text={
+                      detectedKickCreators.length > 0
+                        ? translate(
+                            t,
+                            "adminOnlyExistingKickCreatorsHidden",
+                            "Os criadores encontrados já estão cadastrados ou não correspondem ao filtro. Ative Mostrar cadastrados para revisar.",
+                          )
+                        : translate(
+                            t,
+                            "adminNoKickCreatorsDetected",
+                            "Nenhum criador detectado ainda. Escolha uma categoria e clique em Detectar na Kick.",
+                          )
+                    }
                   />
                 )}
 
@@ -3527,17 +3570,54 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                             type="button"
                             onClick={() => toggleDetectedKickCreator(creator)}
                             disabled={creator.already_exists}
-                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition disabled:opacity-40 ${
+                            aria-pressed={selected}
+                            title={
+                              creator.already_exists
+                                ? translate(
+                                    t,
+                                    "adminKickCreatorAlreadyExists",
+                                    "Já existe",
+                                  )
+                                : selected
+                                  ? translate(
+                                      t,
+                                      "adminKickCreatorSelected",
+                                      "Selecionado",
+                                    )
+                                  : translate(
+                                      t,
+                                      "adminKickCreatorSelect",
+                                      "Selecionar",
+                                    )
+                            }
+                            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-xs font-black uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
                               selected
-                                ? "border-emerald-300/30 bg-emerald-300 text-black"
-                                : "border-white/10 bg-black/30 text-white/50 hover:bg-white/[0.08]"
+                                ? "border-emerald-300/40 bg-emerald-300 text-black shadow-[0_0_22px_rgba(110,231,183,0.22)]"
+                                : "border-cyan-300/20 bg-black/30 text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-300/[0.08]"
                             }`}
                           >
-                            {selected ? (
-                              <Check size={18} />
-                            ) : (
-                              <Search size={18} />
-                            )}
+                            <span
+                              className={`flex h-5 w-5 items-center justify-center rounded-md border ${
+                                selected
+                                  ? "border-black/20 bg-black/10"
+                                  : "border-cyan-100/30 bg-white/[0.03]"
+                              }`}
+                            >
+                              {selected && <Check size={14} />}
+                            </span>
+                            <span className="hidden sm:inline">
+                              {selected
+                                ? translate(
+                                    t,
+                                    "adminKickCreatorSelected",
+                                    "Selecionado",
+                                  )
+                                : translate(
+                                    t,
+                                    "adminKickCreatorSelect",
+                                    "Selecionar",
+                                  )}
+                            </span>
                           </button>
 
                           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
