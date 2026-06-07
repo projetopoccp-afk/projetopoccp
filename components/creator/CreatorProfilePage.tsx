@@ -3157,9 +3157,7 @@ export function CreatorProfilePage({
   }
 
   async function handleFollow() {
-    const currentProfile = profile;
-
-    if (!currentProfile) return;
+    if (!profile) return;
 
     const {
       data: { user },
@@ -3183,7 +3181,7 @@ export function CreatorProfilePage({
         const { error } = await supabase
           .from("creator_followers")
           .delete()
-          .eq("creator_id", currentProfile.id)
+          .eq("creator_id", profile.id)
           .eq("user_id", user.id);
 
         if (error) {
@@ -3200,7 +3198,7 @@ export function CreatorProfilePage({
       }
 
       const { error } = await supabase.from("creator_followers").insert({
-        creator_id: currentProfile.id,
+        creator_id: profile.id,
         user_id: user.id,
       });
 
@@ -3216,15 +3214,15 @@ export function CreatorProfilePage({
       }));
 
       const metadata = {
-        creator_id: currentProfile.id,
-        creator_username: currentProfile.username,
+        creator_id: profile.id,
+        creator_username: profile.username,
         creator_nickname: nickname,
       };
 
       const followAlreadyRewarded = await hasXpEvent(
         user.id,
         "follow_creator",
-        { creator_id: currentProfile.id },
+        { creator_id: profile.id },
       );
 
       if (!followAlreadyRewarded) {
@@ -3256,7 +3254,7 @@ export function CreatorProfilePage({
       const { data: existingCard } = await supabase
         .from("user_cards")
         .select("id")
-        .eq("creator_id", currentProfile.id)
+        .eq("creator_id", profile.id)
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -3264,7 +3262,7 @@ export function CreatorProfilePage({
         const { data: newCard, error: cardError } = await supabase
           .from("user_cards")
           .insert({
-            creator_id: currentProfile.id,
+            creator_id: profile.id,
             user_id: user.id,
             rarity: "common",
             source: "follow",
@@ -3279,8 +3277,8 @@ export function CreatorProfilePage({
             userId: user.id,
             eventType: "collect_common_card",
             metadata: {
-              creator_id: currentProfile.id,
-              creator_username: currentProfile.username,
+              creator_id: profile.id,
+              creator_username: profile.username,
               creator_nickname: nickname,
               card_id: newCard?.id,
               rarity: newCard?.rarity,
@@ -3302,8 +3300,8 @@ export function CreatorProfilePage({
               "Você ganhou uma carta comum por seguir este creator.",
             ),
             metadata: {
-              creator_id: currentProfile.id,
-              creator_username: currentProfile.username,
+              creator_id: profile.id,
+              creator_username: profile.username,
               creator_nickname: nickname,
               card_id: newCard?.id,
               rarity: newCard?.rarity,
@@ -3312,8 +3310,8 @@ export function CreatorProfilePage({
           });
 
           await updateMissionProgress("collect_card", 1, {
-            creator_id: currentProfile.id,
-            creator_username: currentProfile.username,
+            creator_id: profile.id,
+            creator_username: profile.username,
             creator_nickname: nickname,
             rarity: newCard?.rarity,
             source: newCard?.source,
@@ -3531,7 +3529,7 @@ export function CreatorProfilePage({
       <div className="pointer-events-none absolute bottom-24 right-10 z-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-[100px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-8">
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex min-h-[40px] flex-wrap items-center justify-end gap-3">
           {canManageProfile && !isEditing ? (
             <div ref={creatorPanelDropdownRef} className="relative">
               <button
@@ -3624,7 +3622,7 @@ export function CreatorProfilePage({
         <section className="mt-8 grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-stretch xl:grid-cols-[390px_minmax(0,1fr)]">
           <div className="flex h-full min-h-full flex-col items-center px-0 py-0 lg:sticky lg:top-24 lg:self-stretch">
             {creatorForCard ? (
-              <div className="relative z-10 mb-16 w-fit origin-top scale-[1.1] sm:mb-20 sm:scale-[1.16] lg:mb-24 lg:scale-[1.18] xl:mb-28 xl:scale-[1.22]">
+              <div className="relative z-10 w-fit origin-top scale-[1.1] sm:scale-[1.16] lg:scale-[1.18] xl:scale-[1.22]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.22),transparent_66%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
@@ -3720,7 +3718,7 @@ export function CreatorProfilePage({
             ) : null}
 
             {!isEditing ? (
-              <div className="relative z-20 mt-6 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-4">
+              <div className="relative z-20 mt-10 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-auto">
                 <div className="flex items-center gap-2 text-cyan-100/70">
                   <Users className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.24em]">
@@ -3774,8 +3772,7 @@ export function CreatorProfilePage({
             ) : null}
           </div>
 
-          <div className="flex h-full min-w-0 self-stretch rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:min-h-full lg:p-7">
-            <div className="flex w-full min-w-0 flex-col">
+          <div className="min-w-0 self-start rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:min-h-[626px] lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
                 {translate(t, "creatorProfilePublicProfile", "Perfil público")}
@@ -4170,21 +4167,12 @@ export function CreatorProfilePage({
               </div>
             </div>
 
-            </div>
           </div>
         </section>
 
         {battleModalOpen ? (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/78 px-4 py-6 pt-[92px] backdrop-blur-md"
-            role="dialog"
-            aria-modal="true"
-            onClick={closeBattleModal}
-          >
-            <div
-              className="relative max-h-[calc(100vh-116px)] w-full max-w-[1440px] overflow-y-auto rounded-[2rem] border border-fuchsia-300/25 bg-[#07040b]/95 p-4 shadow-2xl shadow-fuchsia-500/20 [scrollbar-width:none] [-ms-overflow-style:none] sm:p-6 [&::-webkit-scrollbar]:hidden"
-              onClick={(event) => event.stopPropagation()}
-            >
+          <div className="fixed inset-x-0 bottom-0 top-[76px] z-[90] flex items-center justify-center bg-black/78 px-4 py-4 backdrop-blur-md" role="dialog" aria-modal="true">
+            <div className="relative max-h-[calc(100vh-108px)] w-full max-w-7xl overflow-y-auto rounded-[2rem] border border-fuchsia-300/25 bg-[#07040b]/95 p-4 shadow-2xl shadow-fuchsia-500/20 [scrollbar-width:none] [-ms-overflow-style:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(34,211,238,0.22),transparent_33%),radial-gradient(circle_at_82%_42%,rgba(248,113,113,0.18),transparent_33%),linear-gradient(90deg,rgba(34,211,238,0.08),transparent,rgba(217,70,239,0.08))]" />
               {battleStarted ? (
                 <div className="pointer-events-none absolute inset-0 opacity-50 animate-[battleFriction_1100ms_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,rgba(34,211,238,0.12),transparent,rgba(244,63,94,0.12),transparent)]" />
