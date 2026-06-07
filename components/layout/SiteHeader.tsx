@@ -128,6 +128,64 @@ function translate(t: TranslateFunction, key: string, fallback: string) {
   return value && value !== key ? value : fallback;
 }
 
+function getNotificationActionLabel(
+  type: NotificationType,
+  t: TranslateFunction,
+) {
+  if (type === "card_collected" || type === "card_won") {
+    return translate(t, "viewCard", "Ver carta");
+  }
+
+  if (type === "pack_received" || type === "pack_opened") {
+    return translate(t, "openPack", "Abrir pacote");
+  }
+
+  if (type === "level_up") {
+    return translate(t, "viewProgress", "Ver progresso");
+  }
+
+  if (type === "mission_completed") {
+    return translate(t, "viewMissions", "Ver missões");
+  }
+
+  if (type === "badge_unlocked") {
+    return translate(t, "viewBadge", "Ver badge");
+  }
+
+  return translate(t, "open", "Abrir");
+}
+
+function getNotificationToastTitle(
+  type: NotificationType,
+  t: TranslateFunction,
+) {
+  if (type === "card_collected" || type === "card_won") {
+    return translate(t, "cardNotificationToast", "Nova carta");
+  }
+
+  if (type === "pack_received") {
+    return translate(t, "packReceivedToast", "Pacote recebido");
+  }
+
+  if (type === "pack_opened") {
+    return translate(t, "packOpenedToast", "Pacote aberto");
+  }
+
+  if (type === "level_up") {
+    return translate(t, "levelUpToast", "Level up");
+  }
+
+  if (type === "mission_completed") {
+    return translate(t, "missionCompletedToast", "Missão completa");
+  }
+
+  if (type === "badge_unlocked") {
+    return translate(t, "badgeUnlockedToast", "Badge desbloqueada");
+  }
+
+  return translate(t, "newNotification", "Nova notificação");
+}
+
 function getDateLocale(language: SiteLanguage) {
   if (language === "en") return "en-US";
   if (language === "es") return "es-ES";
@@ -157,6 +215,9 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [notificationToast, setNotificationToast] =
+    useState<UserNotification | null>(null);
+  const [notificationBellPulse, setNotificationBellPulse] = useState(false);
   const [collectionInitialCardId, setCollectionInitialCardId] = useState<
     string | null
   >(null);
@@ -165,8 +226,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   >(null);
   const [languageOpen, setLanguageOpen] = useState(false);
   const notificationBoxRef = useRef<HTMLDivElement | null>(null);
+  const notificationMobileBoxRef = useRef<HTMLDivElement | null>(null);
   const languageBoxRef = useRef<HTMLDivElement | null>(null);
   const openCollectionCardTimeoutRef = useRef<number | null>(null);
+  const notificationToastTimeoutRef = useRef<number | null>(null);
+  const notificationBellPulseTimeoutRef = useRef<number | null>(null);
 
   const { language, setLanguage, t } = useLanguage();
 
@@ -174,6 +238,65 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications],
   );
+
+  function pushNotificationFeedback(notification: UserNotification) {
+    setNotificationToast(notification);
+    setNotificationBellPulse(true);
+
+    if (notificationToastTimeoutRef.current) {
+      window.clearTimeout(notificationToastTimeoutRef.current);
+    }
+
+    if (notificationBellPulseTimeoutRef.current) {
+      window.clearTimeout(notificationBellPulseTimeoutRef.current);
+    }
+
+    notificationToastTimeoutRef.current = window.setTimeout(() => {
+      setNotificationToast(null);
+      notificationToastTimeoutRef.current = null;
+    }, 5600);
+
+    notificationBellPulseTimeoutRef.current = window.setTimeout(() => {
+      setNotificationBellPulse(false);
+      notificationBellPulseTimeoutRef.current = null;
+    }, 2800);
+  }
+
+  function addNotificationToState(
+    notification: UserNotification,
+    options: { showFeedback?: boolean } = {},
+  ) {
+    setNotifications((current) => {
+      const alreadyExists = current.some((item) => item.id === notification.id);
+
+      if (alreadyExists) {
+        return current.map((item) =>
+          item.id === notification.id ? { ...item, ...notification } : item,
+        );
+      }
+
+      return [notification, ...current].slice(0, 12);
+    });
+
+    if (options.showFeedback) {
+      pushNotificationFeedback(notification);
+    }
+  }
+
+  async function refreshProfile(userId: string) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao carregar profile:", error);
+      return;
+    }
+
+    setProfile(data);
+  }
 
   useEffect(() => {
     async function getUser() {
@@ -200,13 +323,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         email: user.email || "",
       });
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      setProfile(data);
+      await refreshProfile(user.id);
       await loadNotifications(user.id);
     }
 
@@ -224,41 +341,49 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }, []);
 
   useEffect(() => {
-  if (!user?.id) return;
+    if (!user?.id) return;
 
-  const channelName = `user-notifications-${user.id}`;
+    const channelName = `user-notifications-${user.id}`;
 
-  // Remove canais antigos com o mesmo nome para evitar duplicação
-  supabase
-    .getChannels()
-    .filter(
-      (existingChannel) =>
-        existingChannel.topic === `realtime:${channelName}`,
-    )
-    .forEach((existingChannel) => {
-      supabase.removeChannel(existingChannel);
-    });
+    supabase
+      .getChannels()
+      .filter(
+        (existingChannel) =>
+          existingChannel.topic === `realtime:${channelName}`,
+      )
+      .forEach((existingChannel) => {
+        supabase.removeChannel(existingChannel);
+      });
 
-  const channel = supabase
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "user_notifications",
-        filter: `user_id=eq.${user.id}`,
-      },
-      () => {
-        loadNotifications(user.id);
-      },
-    )
-    .subscribe();
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT" && payload.new) {
+            const notification = payload.new as UserNotification;
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user?.id]);
+            if (notification.user_id === user.id) {
+              addNotificationToState(notification, { showFeedback: true });
+              return;
+            }
+          }
+
+          loadNotifications(user.id);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -267,7 +392,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
     const interval = window.setInterval(() => {
       loadNotifications(userId);
-    }, 2500);
+    }, 30000);
 
     return () => {
       window.clearInterval(interval);
@@ -292,17 +417,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         return;
       }
 
-      setNotifications((current) => {
-        const alreadyExists = current.some(
-          (item) => item.id === notification.id,
-        );
-
-        if (alreadyExists) {
-          return current;
-        }
-
-        return [notification, ...current].slice(0, 12);
-      });
+      addNotificationToState(notification, { showFeedback: true });
     }
 
     window.addEventListener(
@@ -329,10 +444,45 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id) return;
+
+    const userId = user.id;
+
+    function handleProfileUpdated() {
+      refreshProfile(userId);
+    }
+
+    window.addEventListener("cardpoc-profile-updated", handleProfileUpdated);
+
+    window.addEventListener(
+      "creator-nexus:profile-updated",
+      handleProfileUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "cardpoc-profile-updated",
+        handleProfileUpdated,
+      );
+
+      window.removeEventListener(
+        "creator-nexus:profile-updated",
+        handleProfileUpdated,
+      );
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const clickedInsideDesktopNotifications =
+        notificationBoxRef.current?.contains(target) ?? false;
+      const clickedInsideMobileNotifications =
+        notificationMobileBoxRef.current?.contains(target) ?? false;
+
       if (
-        notificationBoxRef.current &&
-        !notificationBoxRef.current.contains(event.target as Node)
+        !clickedInsideDesktopNotifications &&
+        !clickedInsideMobileNotifications
       ) {
         setNotificationsOpen(false);
       }
@@ -356,6 +506,14 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     return () => {
       if (openCollectionCardTimeoutRef.current) {
         window.clearTimeout(openCollectionCardTimeoutRef.current);
+      }
+
+      if (notificationToastTimeoutRef.current) {
+        window.clearTimeout(notificationToastTimeoutRef.current);
+      }
+
+      if (notificationBellPulseTimeoutRef.current) {
+        window.clearTimeout(notificationBellPulseTimeoutRef.current);
       }
     };
   }, []);
@@ -518,6 +676,8 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     setUser(null);
     setProfile(null);
     setNotifications([]);
+    setNotificationToast(null);
+    setNotificationBellPulse(false);
     setNotificationsOpen(false);
     setAccountOpen(false);
     setCollectionOpen(false);
@@ -529,10 +689,12 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   }
 
   const displayName = profile?.display_name || user?.name || "Creator";
+  const avatarUrl = profile?.avatar_url || null;
   const userLevel = Number(profile?.level ?? 0);
-  const accountMeta = userLevel > 0
-    ? `LVL ${userLevel} • ${translate(t, "collectorRole", "Colecionador")}`
-    : translate(t, "collectorRole", "Colecionador");
+  const accountMeta =
+    userLevel > 0
+      ? `LVL ${userLevel} • ${translate(t, "collectorRole", "Colecionador")}`
+      : translate(t, "collectorRole", "Colecionador");
 
   return (
     <>
@@ -581,7 +743,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
             {user ? (
               <div className="flex items-center gap-2 md:hidden">
-                <div ref={notificationBoxRef} className="relative">
+                <div ref={notificationMobileBoxRef} className="relative">
                   <button
                     type="button"
                     onClick={(event) => {
@@ -589,7 +751,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                       event.stopPropagation();
                       setNotificationsOpen((current) => !current);
                     }}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
+                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
+                      notificationBellPulse
+                        ? "animate-pulse border-cyan-200/60 bg-cyan-300/15 shadow-[0_0_30px_rgba(34,211,238,0.45)]"
+                        : "border-white/10 bg-white/[0.03]"
+                    }`}
                     aria-label={translate(
                       t,
                       "openNotifications",
@@ -618,9 +784,15 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
                 <button
                   onClick={() => setAccountOpen(true)}
-                  className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
+                  className="group flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)] transition hover:bg-cyan-300/20"
+                  aria-label={translate(t, "account", "Conta")}
+                  title={displayName}
                 >
-                  {translate(t, "account", "Conta")}
+                  <UserAvatar
+                    avatarUrl={avatarUrl}
+                    displayName={displayName}
+                    size="mobile"
+                  />
                 </button>
 
                 <button
@@ -695,7 +867,11 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                     event.stopPropagation();
                     setNotificationsOpen((current) => !current);
                   }}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10"
+                  className={`relative flex h-11 w-11 items-center justify-center rounded-full border text-white transition hover:border-cyan-300/30 hover:bg-cyan-300/10 ${
+                    notificationBellPulse
+                      ? "animate-pulse border-cyan-200/60 bg-cyan-300/15 shadow-[0_0_30px_rgba(34,211,238,0.45)]"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
                   aria-label={translate(
                     t,
                     "openNotifications",
@@ -727,8 +903,12 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                 className="group inline-flex max-w-[190px] items-center gap-3 rounded-2xl border border-white/0 px-2.5 py-2 text-left transition hover:border-cyan-300/15 hover:bg-white/[0.04]"
                 title={translate(t, "openPanel", "Abrir painel")}
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)] transition group-hover:border-cyan-200/45 group-hover:bg-cyan-300/15">
-                  <User size={16} />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)] transition group-hover:border-cyan-200/45 group-hover:bg-cyan-300/15">
+                  <UserAvatar
+                    avatarUrl={avatarUrl}
+                    displayName={displayName}
+                    size="desktop"
+                  />
                 </span>
 
                 <span className="min-w-0 leading-none">
@@ -782,6 +962,15 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         </div>
       </header>
 
+      <NotificationToast
+        notification={notificationToast}
+        onClose={() => setNotificationToast(null)}
+        onOpen={(notification) => {
+          setNotificationToast(null);
+          handleNotificationClick(notification);
+        }}
+      />
+
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
 
       <AccountModal
@@ -818,6 +1007,98 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         }}
       />
     </>
+  );
+}
+
+function UserAvatar({
+  avatarUrl,
+  displayName,
+  size,
+}: {
+  avatarUrl: string | null;
+  displayName: string;
+  size: "mobile" | "desktop";
+}) {
+  const fallbackSize = size === "desktop" ? 16 : 15;
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={displayName}
+        className="h-full w-full object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return <User size={fallbackSize} />;
+}
+
+function NotificationToast({
+  notification,
+  onClose,
+  onOpen,
+}: {
+  notification: UserNotification | null;
+  onClose: () => void;
+  onOpen: (notification: UserNotification) => void;
+}) {
+  const { t } = useLanguage();
+
+  if (!notification) return null;
+
+  return (
+    <div className="fixed right-4 top-24 z-[90] w-[min(360px,calc(100vw-32px))] md:right-6">
+      <div className="relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-zinc-950/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_42px_rgba(34,211,238,0.16)] backdrop-blur-2xl animate-in slide-in-from-right-6 fade-in duration-300">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-cyan-400/20 blur-[54px]" />
+        <div className="pointer-events-none absolute -bottom-14 -left-14 h-32 w-32 rounded-full bg-fuchsia-500/15 blur-[58px]" />
+
+        <div className="relative z-10 flex items-start gap-3">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${getNotificationTone(
+              notification.type,
+            )}`}
+          >
+            {getNotificationIcon(notification.type)}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-100/70">
+              {getNotificationToastTitle(notification.type, t)}
+            </p>
+
+            <p className="mt-1 line-clamp-1 text-sm font-black text-white">
+              {notification.title}
+            </p>
+
+            {notification.message && (
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-white/50">
+                {notification.message}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => onOpen(notification)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+            >
+              {getNotificationActionLabel(notification.type, t)}
+              <ChevronRight size={13} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-white/45 transition hover:bg-white/10 hover:text-white"
+            aria-label={translate(t, "closeNotification", "Fechar notificação")}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1061,9 +1342,15 @@ function NotificationsPopover({
                   </p>
                 )}
 
-                <p className="mt-2 text-[11px] text-white/30">
-                  {formatNotificationDate(notification.created_at, language)}
-                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <p className="text-[11px] text-white/30">
+                    {formatNotificationDate(notification.created_at, language)}
+                  </p>
+
+                  <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-bold text-cyan-100/80 opacity-0 transition group-hover:opacity-100">
+                    {getNotificationActionLabel(notification.type, t)}
+                  </span>
+                </div>
               </div>
 
               <ChevronRight
