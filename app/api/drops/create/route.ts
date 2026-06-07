@@ -17,6 +17,7 @@ type CreateDropBody = {
 
 const DROP_CREATE_COOLDOWN_HOURS = 2;
 const DEFAULT_PLATFORM = "kick";
+const SUPPORTED_DROP_PLATFORMS = new Set(["kick", "twitch"]);
 const DEFAULT_KEYWORD = "CARDPOC";
 const DEFAULT_DROP_PERCENTAGE = 15;
 
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "missing_creator_id" }, { status: 400 });
     }
 
-    if (platform !== "kick") {
+    if (!SUPPORTED_DROP_PLATFORMS.has(platform)) {
       return NextResponse.json(
         { error: "unsupported_drop_platform" },
         { status: 400 },
