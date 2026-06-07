@@ -3718,7 +3718,7 @@ export function CreatorProfilePage({
             ) : null}
 
             {!isEditing ? (
-              <div className="relative z-20 mt-10 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-8">
+              <div className="relative z-20 mt-10 w-full max-w-[340px] rounded-[1.65rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl sm:max-w-[360px] lg:mt-auto">
                 <div className="flex items-center gap-2 text-cyan-100/70">
                   <Users className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.24em]">
