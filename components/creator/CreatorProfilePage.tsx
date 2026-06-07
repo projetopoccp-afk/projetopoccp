@@ -2588,6 +2588,14 @@ export function CreatorProfilePage({
     },
     { current: 0, opponent: 0, draws: 0 },
   );
+  const battleScore = battleRows.reduce(
+    (score, row) => {
+      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
+      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
+      return { ...score, draws: score.draws + 1 };
+    },
+    { current: 0, opponent: 0, draws: 0 },
+  );
   const battleFinalWinner =
     battleScore.current > battleScore.opponent
       ? "current"
@@ -3468,15 +3476,6 @@ export function CreatorProfilePage({
         achievements: [],
       }
     : null;
-
-  const battleScore = battleRows.reduce(
-    (score, row) => {
-      if (row.current > row.opponent) return { ...score, current: score.current + 1 };
-      if (row.opponent > row.current) return { ...score, opponent: score.opponent + 1 };
-      return { ...score, draws: score.draws + 1 };
-    },
-    { current: 0, opponent: 0, draws: 0 },
-  );
 
   const isProfileClaimable = !profile?.user_id;
 
