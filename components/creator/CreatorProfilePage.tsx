@@ -282,6 +282,31 @@ type CreatorCollectionStats = {
   epic: number;
   legendary: number;
   total: number;
+  uniqueCollectors: number;
+};
+
+type CreatorBattleCandidate = {
+  id: string;
+  username: string;
+  nickname: string;
+  avatar_url: string | null;
+  share_count: number | null;
+  trending_score: number | null;
+  creator_cards?: CreatorCardRow[] | CreatorCardRow | null;
+};
+
+type CreatorBattleStats = {
+  views: number;
+  followers: number;
+  shares: number;
+  globalReach: number;
+  collectedCards: number;
+  uniqueCollectors: number;
+  highestRarity: CreatorRarity | null;
+  isLive: boolean;
+  liveViewers: number;
+  level: number;
+  powerScore: number;
 };
 
 type VisibleYoutubeChannel = {
@@ -334,34 +359,59 @@ const EMPTY_COLLECTION_STATS: CreatorCollectionStats = {
   epic: 0,
   legendary: 0,
   total: 0,
+  uniqueCollectors: 0,
 };
 
-const CARDPOC_RANKING_REFERENCE = 1000;
 
-function buildCreatorCollectionStats(rows: Array<{ rarity?: string | null }> | null | undefined): CreatorCollectionStats {
+function normalizeRarityValue(rarity: string | null | undefined): keyof Omit<CreatorCollectionStats, "total" | "uniqueCollectors"> {
+  const normalizedRarity = String(rarity || "common").toLowerCase();
+
+  if (normalizedRarity === "rare") return "rare";
+  if (normalizedRarity === "epic") return "epic";
+  if (normalizedRarity === "legendary" || normalizedRarity === "mythic") {
+    return "legendary";
+  }
+
+  return "common";
+}
+
+function buildCreatorCollectionStats(
+  rows: Array<{ rarity?: string | null; user_id?: string | null }> | null | undefined,
+): CreatorCollectionStats {
   const nextStats: CreatorCollectionStats = { ...EMPTY_COLLECTION_STATS };
+  const uniqueCollectorIds = new Set<string>();
 
   (rows || []).forEach((row) => {
-    const rarity = String(row?.rarity || "common").toLowerCase();
-
-    if (rarity === "rare") nextStats.rare += 1;
-    else if (rarity === "epic") nextStats.epic += 1;
-    else if (rarity === "legendary") nextStats.legendary += 1;
-    else nextStats.common += 1;
-
+    const rarity = normalizeRarityValue(row?.rarity);
+    nextStats[rarity] += 1;
     nextStats.total += 1;
+
+    if (row?.user_id) {
+      uniqueCollectorIds.add(row.user_id);
+    }
   });
+
+  nextStats.uniqueCollectors = uniqueCollectorIds.size || nextStats.total;
 
   return nextStats;
 }
 
-function getCreatorRankingPercentile(trendingScore: number, externalReach: number, followers: number, shares: number) {
-  const score = Math.max(0, trendingScore) + externalReach * 0.04 + followers * 6 + shares * 3;
-  const normalized = Math.min(99, Math.max(1, Math.round(100 - (score / (score + CARDPOC_RANKING_REFERENCE)) * 100)));
+function getHighestRarityFromStats(stats: CreatorCollectionStats): CreatorRarity | null {
+  if (stats.legendary > 0) return "legendary";
+  if (stats.epic > 0) return "epic";
+  if (stats.rare > 0) return "rare";
+  if (stats.common > 0) return "common";
 
-  return normalized;
+  return null;
 }
 
+function getCreatorCardLevel(card: CreatorCardRow | null | undefined) {
+  return Number(card?.level || 1);
+}
+
+function getCreatorCardPower(card: CreatorCardRow | null | undefined) {
+  return Number(card?.power_score || 0);
+}
 
 function normalizeCreatorTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -1569,6 +1619,10 @@ export function CreatorProfilePage({
   const [liveDropsOpen, setLiveDropsOpen] = useState(false);
   const [creatorPanelOpen, setCreatorPanelOpen] = useState(false);
   const creatorPanelDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [battleCandidates, setBattleCandidates] = useState<CreatorBattleCandidate[]>([]);
+  const [selectedBattleCreatorId, setSelectedBattleCreatorId] = useState("");
+  const [battleStats, setBattleStats] = useState<CreatorBattleStats | null>(null);
+  const [battleLoading, setBattleLoading] = useState(false);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -1808,7 +1862,7 @@ export function CreatorProfilePage({
           .in("status", ["verified", "manual"]),
         supabase
           .from("user_cards")
-          .select("rarity")
+          .select("rarity, user_id")
           .eq("creator_id", typedProfile.id),
       ]);
 
@@ -1829,7 +1883,7 @@ export function CreatorProfilePage({
       });
       setCollectionStats(
         buildCreatorCollectionStats(
-          (collectionData || []) as Array<{ rarity?: string | null }>,
+          (collectionData || []) as Array<{ rarity?: string | null; user_id?: string | null }>,
         ),
       );
       setLoading(false);
@@ -2237,13 +2291,9 @@ export function CreatorProfilePage({
   const tags = normalizeCreatorTags(profile?.tags);
   const visibleTags = tags;
   const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
-  const creatorTopPercent = getCreatorRankingPercentile(
-    Number(profile?.trending_score || 0),
-    externalReach,
-    stats.followers,
-    stats.shares,
-  );
-  const cardpocRankEstimate = Math.max(1, Math.round((creatorTopPercent / 100) * CARDPOC_RANKING_REFERENCE));
+  const highestCollectedRarity = getHighestRarityFromStats(collectionStats);
+  const cardLevel = getCreatorCardLevel(card);
+  const cardPowerScore = getCreatorCardPower(card);
   const twitchStatus = getPlatformLiveStatus(liveStatus, "twitch");
   const kickStatus = getPlatformLiveStatus(liveStatus, "kick");
   const youtubeStatus = getPlatformLiveStatus(liveStatus, "youtube");
@@ -2275,6 +2325,22 @@ export function CreatorProfilePage({
     };
   });
   const isLive = Boolean(twitchStatus?.isLive || kickStatus?.isLive);
+  const currentCreatorBattleStats: CreatorBattleStats = {
+    views: stats.views,
+    followers: stats.followers,
+    shares: stats.shares,
+    globalReach: externalReach,
+    collectedCards: collectionStats.total,
+    uniqueCollectors: collectionStats.uniqueCollectors,
+    highestRarity: highestCollectedRarity,
+    isLive,
+    liveViewers: Object.values(liveStatus).reduce(
+      (total, status) => total + (status?.isLive ? Number(status.viewerCount || 0) : 0),
+      0,
+    ),
+    level: cardLevel,
+    powerScore: cardPowerScore,
+  };
   const isOwner = Boolean(
     profile?.user_id && currentUserId === profile.user_id,
   );
@@ -2282,6 +2348,181 @@ export function CreatorProfilePage({
   const profileUrl = `/creator/${encodeURIComponent(
     profile?.username || decodedUsername,
   )}`;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBattleCandidates() {
+      if (!profile?.id) {
+        setBattleCandidates([]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("creator_profiles")
+        .select(
+          `
+          id,
+          username,
+          nickname,
+          avatar_url,
+          share_count,
+          trending_score,
+          creator_cards (
+            rarity,
+            rank,
+            aura,
+            evolution_stage,
+            level,
+            power_score
+          )
+        `,
+        )
+        .eq("is_public", true)
+        .neq("id", profile.id)
+        .order("nickname", { ascending: true });
+
+      if (!cancelled) {
+        setBattleCandidates((data || []) as CreatorBattleCandidate[]);
+      }
+    }
+
+    loadBattleCandidates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBattleStats() {
+      const selectedCreator = battleCandidates.find(
+        (candidate) => candidate.id === selectedBattleCreatorId,
+      );
+
+      if (!selectedCreator) {
+        setBattleStats(null);
+        return;
+      }
+
+      setBattleLoading(true);
+
+      const [
+        { count: viewCount },
+        { count: followerCount },
+        { data: collectionRows },
+        { data: liveRows },
+      ] = await Promise.all([
+        supabase
+          .from("creator_views")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_id", selectedCreator.id),
+        supabase
+          .from("creator_followers")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_id", selectedCreator.id),
+        supabase
+          .from("user_cards")
+          .select("rarity, user_id")
+          .eq("creator_id", selectedCreator.id),
+        supabase
+          .from("creator_live_status")
+          .select("id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, raw_payload, last_checked_at, updated_at")
+          .eq("creator_id", selectedCreator.id),
+      ]);
+
+      if (cancelled) return;
+
+      const selectedCollectionStats = buildCreatorCollectionStats(
+        (collectionRows || []) as Array<{ rarity?: string | null; user_id?: string | null }>,
+      );
+      const selectedLiveStatus = ((liveRows || []) as CreatorLiveStatusRow[]).reduce<LiveStatusMap>(
+        (accumulator, row) => {
+          accumulator[row.platform] = mapCreatorLiveStatusRowToLiveStatus(row);
+          return accumulator;
+        },
+        {},
+      );
+      const selectedCard = Array.isArray(selectedCreator.creator_cards)
+        ? selectedCreator.creator_cards[0] || null
+        : selectedCreator.creator_cards || null;
+
+      setBattleStats({
+        views: viewCount || 0,
+        followers: followerCount || 0,
+        shares: Number(selectedCreator.share_count || 0),
+        globalReach: getCreatorExternalReachFromLiveStatus(selectedLiveStatus),
+        collectedCards: selectedCollectionStats.total,
+        uniqueCollectors: selectedCollectionStats.uniqueCollectors,
+        highestRarity: getHighestRarityFromStats(selectedCollectionStats),
+        isLive: Object.values(selectedLiveStatus).some((status) => Boolean(status?.isLive)),
+        liveViewers: Object.values(selectedLiveStatus).reduce(
+          (total, status) => total + (status?.isLive ? Number(status.viewerCount || 0) : 0),
+          0,
+        ),
+        level: getCreatorCardLevel(selectedCard),
+        powerScore: getCreatorCardPower(selectedCard),
+      });
+      setBattleLoading(false);
+    }
+
+    loadBattleStats().finally(() => {
+      if (!cancelled) {
+        setBattleLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [battleCandidates, selectedBattleCreatorId]);
+
+  const selectedBattleCreator = battleCandidates.find(
+    (candidate) => candidate.id === selectedBattleCreatorId,
+  );
+
+  const battleRows = battleStats
+    ? [
+        {
+          key: "followers",
+          label: translate(t, "creatorProfileBattleFollowers", "Seguidores Cardpoc"),
+          current: currentCreatorBattleStats.followers,
+          opponent: battleStats.followers,
+        },
+        {
+          key: "views",
+          label: translate(t, "creatorProfileBattleViews", "Visualizações"),
+          current: currentCreatorBattleStats.views,
+          opponent: battleStats.views,
+        },
+        {
+          key: "globalReach",
+          label: translate(t, "creatorProfileBattleGlobalReach", "Alcance global"),
+          current: currentCreatorBattleStats.globalReach,
+          opponent: battleStats.globalReach,
+        },
+        {
+          key: "collectedCards",
+          label: translate(t, "creatorProfileBattleCards", "Cartas coletadas"),
+          current: currentCreatorBattleStats.collectedCards,
+          opponent: battleStats.collectedCards,
+        },
+        {
+          key: "shares",
+          label: translate(t, "creatorProfileBattleShares", "Compartilhamentos"),
+          current: currentCreatorBattleStats.shares,
+          opponent: battleStats.shares,
+        },
+        {
+          key: "level",
+          label: translate(t, "creatorProfileBattleLevel", "Nível da carta"),
+          current: currentCreatorBattleStats.level,
+          opponent: battleStats.level,
+        },
+      ]
+    : [];
 
   const groupedClips = clips.reduce<Record<string, AutoClip[]>>(
     (accumulator, clip) => {
@@ -3256,10 +3497,10 @@ export function CreatorProfilePage({
           ) : null}
         </div>
 
-        <section className="mt-8 grid gap-10 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-center">
-          <div className="flex flex-col items-center gap-4 lg:items-start">
+        <section className="mt-8 grid gap-7 rounded-[2.4rem] border border-white/10 bg-white/[0.025] p-4 shadow-2xl shadow-cyan-500/5 backdrop-blur-xl lg:grid-cols-[390px_minmax(0,1fr)] lg:items-stretch lg:p-6 xl:grid-cols-[430px_minmax(0,1fr)]">
+          <div className="flex min-h-full flex-col items-center justify-center gap-4 rounded-[2rem] border border-cyan-300/10 bg-black/25 px-3 py-6 lg:items-center">
             {creatorForCard ? (
-              <div className="relative w-fit scale-[1.14] py-6 sm:scale-[1.2] lg:scale-[1.16]">
+              <div className="relative w-fit scale-[1.18] py-8 sm:scale-[1.25] lg:scale-[1.22] xl:scale-[1.3]">
                 <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_64%)] blur-2xl" />
                 <CreatorCard
                   key={`${creatorForCard.id}-${creatorForCard.rarity}`}
@@ -3355,7 +3596,7 @@ export function CreatorProfilePage({
             ) : null}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 self-center py-2 lg:py-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 backdrop-blur">
                 {translate(t, "creatorProfilePublicProfile", "Perfil público")}
@@ -3397,8 +3638,8 @@ export function CreatorProfilePage({
                   </span>
                 </div>
 
-                <div className="grid gap-4">
-                <label className="block">
+                <div className="grid gap-4 xl:grid-cols-2">
+                <label className="block xl:col-span-2">
                   <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
                     {translate(
                       t,
@@ -3443,7 +3684,7 @@ export function CreatorProfilePage({
                   </label>
                 </div>
 
-                <label className="block">
+                <label className="block xl:col-span-2">
                   <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
                     {translate(t, "creatorProfileEditBio", "Bio curta")}
                   </span>
@@ -3683,14 +3924,12 @@ export function CreatorProfilePage({
             <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/[0.06] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-cyan-100/55">
-                  <Sparkles className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileTopCardpoc", "Top Cardpoc")}
+                    {translate(t, "creatorProfileViews", "Visualizações")}
                   </p>
                 </div>
-                <p className="mt-3 text-3xl font-black">
-                  {translate(t, "creatorProfileTopPercentPrefix", "Top")} {creatorTopPercent}%
-                </p>
+                <p className="mt-3 text-3xl font-black">{formatNumber(stats.views)}</p>
               </div>
 
               <div className="rounded-[1.4rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.06] p-5 backdrop-blur-xl">
@@ -3700,16 +3939,14 @@ export function CreatorProfilePage({
                     {translate(t, "creatorProfileCardpocReach", "Alcance Cardpoc")}
                   </p>
                 </div>
-                <p className="mt-3 text-3xl font-black">
-                  {formatNumber(stats.followers)}
-                </p>
+                <p className="mt-3 text-3xl font-black">{formatNumber(stats.followers)}</p>
               </div>
 
               <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-2 text-white/40">
                   <Globe2 className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileGlobalReach", "Alcance Global")}
+                    {translate(t, "creatorProfileGlobalReach", "Alcance global")}
                   </p>
                 </div>
                 <p className="mt-3 text-3xl font-black">
@@ -3721,34 +3958,53 @@ export function CreatorProfilePage({
                 <div className="flex items-center gap-2 text-white/40">
                   <Share2 className="h-4 w-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileSharedImpact", "Impacto compartilhado")}
+                    {translate(t, "creatorProfileSharedImpact", "Compartilhamentos")}
                   </p>
                 </div>
-                <p className="mt-3 text-3xl font-black">
-                  {formatNumber(stats.shares)}
-                </p>
+                <p className="mt-3 text-3xl font-black">{formatNumber(stats.shares)}</p>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.95fr)]">
               <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/55">
-                      {translate(t, "creatorProfileRarityDistribution", "Distribuição por raridade")}
+                      {translate(t, "creatorProfileCommunityCollection", "Coleção da comunidade")}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-white/45">
-                      {translate(t, "creatorProfileRarityDistributionHint", "Cartas deste criador na coleção dos usuários")}
+                      {translate(t, "creatorProfileCommunityCollectionHint", "Dados reais das cartas deste criador nas coleções.")}
                     </p>
                   </div>
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-100">
-                    {formatNumber(collectionStats.total)} total
-                  </span>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2">
+                      <p className="text-lg font-black text-white">{formatNumber(collectionStats.uniqueCollectors)}</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/55">
+                        {translate(t, "creatorProfileCollectors", "Colecionadores")}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+                      <p className="text-lg font-black text-white">{formatNumber(collectionStats.total)}</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
+                        {translate(t, "creatorProfileCollectedCards", "Cartas")}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-yellow-300/15 bg-yellow-300/[0.07] px-3 py-2">
+                      <p className="text-lg font-black text-white">
+                        {highestCollectedRarity
+                          ? getRarityLabel(highestCollectedRarity)
+                          : "-"}
+                      </p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-yellow-100/55">
+                        {translate(t, "creatorProfileHighestRarity", "Maior")}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-2 sm:grid-cols-4">
                   {RARITY_SHOWCASE_CYCLE.map((item) => {
-                    const rarityKey = item.rarity as keyof Omit<CreatorCollectionStats, "total">;
+                    const rarityKey = item.rarity as keyof Omit<CreatorCollectionStats, "total" | "uniqueCollectors">;
                     const amount = collectionStats[rarityKey] || 0;
                     const percentage = collectionStats.total > 0 ? Math.round((amount / collectionStats.total) * 100) : 0;
 
@@ -3770,29 +4026,103 @@ export function CreatorProfilePage({
                 </div>
               </div>
 
-              <div className="rounded-[1.6rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.06] p-5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-fuchsia-100/70">
-                  <Users className="h-4 w-4" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em]">
-                    {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
-                  </p>
+              <div className="rounded-[1.6rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.055] p-5 backdrop-blur-xl">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-fuchsia-100/70">
+                      <Users className="h-4 w-4" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em]">
+                        {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-white/50">
+                      {translate(t, "creatorProfileBattleModeDescription", "Compare métricas reais com outro criador.")}
+                    </p>
+                  </div>
+                  {currentCreatorBattleStats.isLive ? (
+                    <span className="rounded-full border border-red-300/25 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                      {translate(t, "creatorProfileLiveNow", "Ao vivo agora")}
+                    </span>
+                  ) : null}
                 </div>
-                <p className="mt-3 text-2xl font-black tracking-[-0.03em] text-white">
-                  #{formatNumber(cardpocRankEstimate)} · {translate(t, "creatorProfileTopPercentPrefix", "Top")} {creatorTopPercent}%
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-white/50">
-                  {translate(t, "creatorProfileBattleModeDescription", "Compare alcance, coleção, compartilhamentos e status de live com outro criador.")}
-                </p>
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-fuchsia-100/65"
+
+                <select
+                  value={selectedBattleCreatorId}
+                  onChange={(event) => setSelectedBattleCreatorId(event.target.value)}
+                  className="mt-4 w-full rounded-[1.15rem] border border-fuchsia-300/20 bg-black/35 px-4 py-3 text-sm font-black text-fuchsia-50 outline-none transition focus:border-fuchsia-300/45"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  {translate(t, "creatorProfileBattleComingSoon", "Comparação em breve")}
-                </button>
+                  <option value="">
+                    {translate(t, "creatorProfileBattleSelectCreator", "Selecione um criador")}
+                  </option>
+                  {battleCandidates.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.nickname || candidate.username}
+                    </option>
+                  ))}
+                </select>
+
+                {battleLoading ? (
+                  <div className="mt-4 flex items-center justify-center rounded-[1.2rem] border border-white/10 bg-black/25 px-4 py-6 text-sm font-black text-white/55">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {translate(t, "creatorProfileBattleLoading", "Carregando comparação...")}
+                  </div>
+                ) : selectedBattleCreator && battleStats ? (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3 rounded-[1.2rem] border border-white/10 bg-black/25 p-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-cyan-100">{nickname}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
+                          {translate(t, "creatorProfileBattleCurrent", "Atual")}
+                        </p>
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-100/60">VS</span>
+                      <div className="min-w-0 text-right">
+                        <p className="truncate text-sm font-black text-fuchsia-100">
+                          {selectedBattleCreator.nickname || selectedBattleCreator.username}
+                        </p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
+                          {translate(t, "creatorProfileBattleOpponent", "Oponente")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {battleRows.map((row) => {
+                      const currentWins = row.current > row.opponent;
+                      const opponentWins = row.opponent > row.current;
+
+                      return (
+                        <div key={row.key} className="rounded-[1rem] border border-white/10 bg-black/20 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                            <span>{row.label}</span>
+                            <span>
+                              {currentWins
+                                ? translate(t, "creatorProfileBattleCurrentWins", "Você vence")
+                                : opponentWins
+                                  ? translate(t, "creatorProfileBattleOpponentWins", "Oponente vence")
+                                  : translate(t, "creatorProfileBattleDraw", "Empate")}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                            <p className={`text-lg font-black ${currentWins ? "text-cyan-100" : "text-white/70"}`}>
+                              {formatNumber(row.current)}
+                            </p>
+                            <span className="text-xs font-black text-white/28">×</span>
+                            <p className={`text-right text-lg font-black ${opponentWins ? "text-fuchsia-100" : "text-white/70"}`}>
+                              {formatNumber(row.opponent)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-black/20 px-4 py-5 text-sm font-semibold leading-6 text-white/48">
+                    {translate(t, "creatorProfileBattleEmpty", "Escolha outro criador para comparar seguidores, alcance, coleção, compartilhamentos e nível.")}
+                  </div>
+                )}
               </div>
             </div>
+
           </div>
         </section>
 
