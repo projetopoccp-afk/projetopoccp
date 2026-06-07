@@ -63,6 +63,8 @@ type CreatorProfile = {
   status?: string | null;
   avatar_url: string | null;
   banner_url: string | null;
+  profile_level?: number | null;
+  profile_xp?: number | null;
   bio?: string | null;
   description?: string | null;
   tags?: string[] | null;
@@ -252,6 +254,8 @@ export function CollectionModal({
             bio,
             description,
             tags,
+            profile_level,
+            profile_xp,
             creator_cards (*)
           )
         `,
@@ -599,7 +603,10 @@ function buildCreatorFromCard(card: UserCard): Creator | null {
       (creatorCard.evolution_stage as Creator["evolutionStage"]) || "Stage 1",
     powerScore: creatorCard.power_score || 0,
     collectedBy: 0,
-    level: creatorCard.level || 1,
+    level:
+    profile.profile_level ||
+    creatorCard.level ||
+    1,
     followers: 0,
     likes: 0,
     views: 0,
