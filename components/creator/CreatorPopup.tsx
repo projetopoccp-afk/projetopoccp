@@ -20,6 +20,7 @@ import {
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
+import { updateCreatorProfileLevel } from "@/lib/update-creator-profile-level";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
 import { Creator } from "@/types/creator";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -473,7 +474,9 @@ export function CreatorPopup({
   const [youtubeChannels, setYoutubeChannels] = useState<string[]>([""]);
   const [clips, setClips] = useState<AutoClip[]>([]);
   const [clipsLoading, setClipsLoading] = useState(false);
-  const [creatorCardLevel, setCreatorCardLevel] = useState(creator?.level || 1);
+  const [creatorCardLevel, setCreatorCardLevel] = useState(
+    (creator as any)?.profile_level ?? creator?.level ?? 1,
+  );
   const [syncedCardProgressKey, setSyncedCardProgressKey] = useState("");
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -528,7 +531,7 @@ export function CreatorPopup({
     setClaimUrl("");
     setShareOpen(false);
     setLiveStatus({});
-    setCreatorCardLevel(creator.level || 1);
+    setCreatorCardLevel((creator as any).profile_level ?? creator.level ?? 1);
     setSyncedCardProgressKey("");
 
     setNickname(creator.nickname);
@@ -802,16 +805,14 @@ export function CreatorPopup({
     const creatorId = creator.id;
 
     const externalReach = getCreatorExternalReachFromLiveStatus(liveStatus);
-    const { powerScore, level } = calculateCreatorCardProgress({
+    const { powerScore } = calculateCreatorCardProgress({
       views: viewCount,
       followers: followerCount,
       shares: shareCount,
       externalReach,
     });
 
-    setCreatorCardLevel(level);
-
-    const progressKey = `${creatorId}:${powerScore}:${level}`;
+    const progressKey = `${creatorId}:${powerScore}`;
 
     if (syncedCardProgressKey === progressKey) {
       return;
@@ -824,12 +825,11 @@ export function CreatorPopup({
         .from("creator_cards")
         .update({
           power_score: powerScore,
-          level,
         })
         .eq("creator_id", creatorId);
 
       if (error) {
-        console.error("Erro ao atualizar level da carta do criador:", error);
+        console.error("Erro ao atualizar power score da carta do criador:", error);
         return;
       }
 
@@ -1068,6 +1068,15 @@ export function CreatorPopup({
 
       setIsFollowing(false);
       setFollowerCount((current) => Math.max(0, current - 1));
+
+      const updatedLevel = await updateCreatorProfileLevel(supabase, creatorId);
+      setCreatorCardLevel(updatedLevel.profileLevel);
+      onCreatorUpdated?.({
+        ...creator,
+        profile_level: updatedLevel.profileLevel,
+        profile_xp: updatedLevel.profileXp,
+      } as Creator);
+
       setFollowLoading(false);
       return;
     }
@@ -1186,6 +1195,15 @@ export function CreatorPopup({
 
     setIsFollowing(true);
     setFollowerCount((current) => current + 1);
+
+    const updatedLevel = await updateCreatorProfileLevel(supabase, creatorId);
+    setCreatorCardLevel(updatedLevel.profileLevel);
+    onCreatorUpdated?.({
+      ...creator,
+      profile_level: updatedLevel.profileLevel,
+      profile_xp: updatedLevel.profileXp,
+    } as Creator);
+
     setFollowLoading(false);
   }
 
