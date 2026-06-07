@@ -274,7 +274,7 @@ export function AccountModal({
             closeLabel={translate(t, "close", "Fechar")}
             zIndexClassName="z-[80]"
             className="max-w-[96rem]"
-            contentClassName="hide-scrollbar overflow-y-auto p-4 pb-4 sm:p-5 sm:pb-5 lg:p-6 xl:p-8 [@media(max-height:760px)]:p-4 [@media(max-height:760px)]:pb-4"
+            contentClassName="hide-scrollbar overflow-y-auto p-4 pb-12 sm:p-5 sm:pb-14 lg:p-6 lg:pb-16 xl:p-8 xl:pb-20 [@media(max-height:760px)]:p-4 [@media(max-height:760px)]:pb-14"
           >
             <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100">
               {translate(t, "myAccount", "Minha Conta")}
@@ -499,14 +499,16 @@ export function AccountModal({
               </section>
             </div>
 
-            <button
-              type="button"
-              onClick={onLogout}
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:py-2.5"
-            >
-              <LogOut size={18} />
-              {translate(t, "logoutAccount", "Sair da conta")}
-            </button>
+            <div className="mt-5 flex pb-2 [@media(max-height:760px)]:mt-4">
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20 [@media(max-height:760px)]:py-2.5"
+              >
+                <LogOut size={18} />
+                {translate(t, "logoutAccount", "Sair da conta")}
+              </button>
+            </div>
           </CardpocModalShell>
         )}
       </AnimatePresence>
