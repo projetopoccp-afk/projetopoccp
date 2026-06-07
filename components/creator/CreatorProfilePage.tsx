@@ -3756,7 +3756,7 @@ export function CreatorProfilePage({
                       <div key={item.rarity} className="rounded-[1.1rem] border border-white/10 bg-black/25 p-3">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/48">
-                            {getRarityLabel(item.rarity as CreatorRarity, t)}
+                            {getRarityLabel(item.rarity as CreatorRarity)}
                           </span>
                           <span className="text-xs font-black text-cyan-100/70">{percentage}%</span>
                         </div>
