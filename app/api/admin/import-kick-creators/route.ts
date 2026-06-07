@@ -255,7 +255,6 @@ export async function POST(request: NextRequest) {
           image_usage_consent_version: null,
           image_usage_consent_source: "kick_detector",
           image_usage_consent_text: null,
-          popup_animation: "none",
           profile_xp: 0,
           profile_level: 1,
           profile_level_updated_at: null,
