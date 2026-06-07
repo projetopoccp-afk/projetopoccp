@@ -57,12 +57,17 @@ function normalizeSlug(value: unknown) {
 
 async function assertAdmin(request: NextRequest) {
   const authHeader = request.headers.get("authorization") || "";
-  const token = authHeader.replace(/^Bearer\\s+/i, "").trim();
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  console.log("Kick detector token recebido?", Boolean(token));
 
   if (!token) {
     return {
       ok: false as const,
-      response: NextResponse.json({ error: "Não autenticado." }, { status: 401 }),
+      response: NextResponse.json(
+        { error: "Sessão inválida. Token não enviado." },
+        { status: 401 },
+      ),
     };
   }
 
@@ -73,10 +78,18 @@ async function assertAdmin(request: NextRequest) {
     error: userError,
   } = await supabaseAdmin.auth.getUser(token);
 
+  console.log("Kick detector userError:", userError?.message || null);
+  console.log("Kick detector userId:", user?.id || null);
+
   if (userError || !user) {
     return {
       ok: false as const,
-      response: NextResponse.json({ error: "Sessão inválida." }, { status: 401 }),
+      response: NextResponse.json(
+        {
+          error: `Sessão inválida: ${userError?.message || "usuário não encontrado"}`,
+        },
+        { status: 401 },
+      ),
     };
   }
 
