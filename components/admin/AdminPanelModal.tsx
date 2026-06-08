@@ -1841,21 +1841,22 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         },
       );
 
-      const importEndpoints: {
-        platform: CreatorDetectorPlatform;
-        url: string;
-        creators: DetectedKickCreator[];
-      }[] = [
-        {
-          platform: "kick",
-          url: "/api/admin/import-kick-creators",
-          creators: creatorsByPlatform.kick,
-        },
-        {
-          platform: "twitch",
-          url: "/api/admin/import-twitch-creators",
-          creators: creatorsByPlatform.twitch,
-        },
+      const importEndpoints = [
+  {
+    platform: "kick" as const,
+    url: "/api/admin/import-kick-creators",
+    creators: creatorsByPlatform.kick,
+  },
+  {
+    platform: "twitch" as const,
+    url: "/api/admin/import-twitch-creators",
+    creators: creatorsByPlatform.twitch,
+  },
+] satisfies {
+  platform: CreatorDetectorPlatform;
+  url: string;
+  creators: DetectedKickCreator[];
+}[];
       ].filter((endpoint) => endpoint.creators.length > 0);
 
       const responses = await Promise.all(
