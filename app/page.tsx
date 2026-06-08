@@ -1,513 +1,728 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { AnimatePresence } from "framer-motion";
-import { GlowBackground } from "@/components/effects/GlowBackground";
-import { ParticleBackground } from "@/components/effects/ParticleBackground";
-import { CreatorGrid } from "@/components/home/CreatorGrid";
-import { LoadingScreen } from "@/components/loading/LoadingScreen";
-import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+
+import { CreatorCard } from "@/components/cards/CreatorCard";
+import { CreatorPopup } from "@/components/creator/CreatorPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
+import { Creator } from "@/types/creator";
 
-type FaqArticle = {
-  id: string;
-  title: string;
-  content: string;
-  sort_order?: number | null;
-  isCustom?: boolean;
+type CreatorGridProps = {
+  search: string;
 };
 
-export default function HomePage() {
-  const [search, setSearch] = useState("");
+type CreatorWithMeta = Creator & {
+  createdAt: string;
+  trendingScore: number;
+};
 
-  const { t } = useLanguage();
-  const [loading, setLoading] = useState(false);
-  const [showCardpocGuide, setShowCardpocGuide] = useState(false);
-  const [hasSeenCardpocGuide, setHasSeenCardpocGuide] = useState(false);
-  const [guideSearch, setGuideSearch] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [customFaqArticles, setCustomFaqArticles] = useState<FaqArticle[]>([]);
-  const [newFaqTitle, setNewFaqTitle] = useState("");
-  const [newFaqContent, setNewFaqContent] = useState("");
-  const [savingFaq, setSavingFaq] = useState(false);
-  const [faqFeedback, setFaqFeedback] = useState("");
+type ActiveDrop = {
+  id: string;
+  creatorId: string;
+  createdAt: string;
+  creator?: CreatorWithMeta;
+};
 
-  useEffect(() => {
-    function handleCreatorSearch(event: Event) {
-      const customEvent = event as CustomEvent<{ value?: string }>;
-      setSearch(customEvent.detail?.value ?? "");
-    }
+const RARITY_SHOWCASE_CYCLE = [
+  { rarity: "common" },
+  { rarity: "rare" },
+  { rarity: "epic" },
+  { rarity: "legendary" },
+] as const;
 
-    window.addEventListener("cardpoc:creator-search", handleCreatorSearch);
+const RARITY_SHOWCASE_INTERVAL = 9800;
+const HOME_SHOWCASE_LIMIT = 32;
+const HOME_SHOWCASE_ROTATION_INTERVAL = 30000;
+const RARITY_STACK_TRANSITION = {
+  duration: 0.72,
+  ease: [0.22, 1, 0.36, 1],
+} as const;
 
-    return () => {
-      window.removeEventListener("cardpoc:creator-search", handleCreatorSearch);
-    };
-  }, []);
-
-  useEffect(() => {
-    const hasSeenLoading = sessionStorage.getItem(
-      "cardpoc-initial-loading"
-    );
-
-    if (!hasSeenLoading) {
-      setLoading(true);
-
-      const timer = setTimeout(() => {
-        setLoading(false);
-        sessionStorage.setItem(
-          "cardpoc-initial-loading",
-          "true"
-        );
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  useEffect(() => {
-    setHasSeenCardpocGuide(localStorage.getItem("cardpoc-help-seen") === "true");
-  }, []);
-
-  function openCardpocGuide() {
-    localStorage.setItem("cardpoc-help-seen", "true");
-    setHasSeenCardpocGuide(true);
-    setShowCardpocGuide(true);
+function normalizeCreatorTags(tags: unknown): string[] {
+  if (Array.isArray(tags)) {
+    return tags
+      .map((tag) => String(tag).trim())
+      .filter(Boolean);
   }
 
+  if (typeof tags !== "string") return [];
+
+  const trimmed = tags.trim();
+
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((tag) => String(tag).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Fallback below for comma-separated values.
+  }
+
+  return trimmed
+    .replace(/^\[|\]$/g, "")
+    .split(",")
+    .map((tag) => tag.replace(/"/g, "").trim())
+    .filter(Boolean);
+}
+
+
+
+function getRotatingCreatorScore(creator: CreatorWithMeta, seed: number) {
+  const source = `${creator.id}:${creator.username}:${seed}`;
+  let hash = 2166136261;
+
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function getRotatingCreators(creators: CreatorWithMeta[], seed: number) {
+  return [...creators]
+    .sort((a, b) => {
+      const scoreDifference =
+        getRotatingCreatorScore(a, seed) - getRotatingCreatorScore(b, seed);
+
+      if (scoreDifference !== 0) return scoreDifference;
+
+      return b.trendingScore - a.trendingScore;
+    })
+    .slice(0, HOME_SHOWCASE_LIMIT);
+}
+
+function getCreatorUsernameFromPath() {
+  if (typeof window === "undefined") return null;
+
+  const match = window.location.pathname.match(/^\/creator\/([^/]+)$/);
+
+  if (!match?.[1]) return null;
+
+  return decodeURIComponent(match[1]);
+}
+
+export function CreatorGrid({ search }: CreatorGridProps) {
+  const { t } = useLanguage();
+
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
+  const [creators, setCreators] = useState<CreatorWithMeta[]>([]);
+  const [activeDrops, setActiveDrops] = useState<ActiveDrop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [homeShowcaseSeed, setHomeShowcaseSeed] = useState(0);
 
   useEffect(() => {
-    let mounted = true;
+    async function loadCreators() {
+      const { data, error } = await supabase
+        .from("creator_profiles")
+        .select(
+          `
+          id,
+          user_id,
+          username,
+          nickname,
+          title,
+          faction,
+          category,
+          status,
+          avatar_url,
+          banner_url,
+          popup_animation_style,
+          bio,
+          description,
+          tags,
+          created_at,
+          trending_score,
+          profile_level,
+          creator_cards (
+            rarity,
+            rank,
+            aura,
+            evolution_stage,
+            level,
+            power_score
+          )
+        `
+        )
+        .eq("is_public", true)
+        .order("created_at", { ascending: false });
 
-    async function loadGuideData() {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData.user;
-
-      if (user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (mounted) {
-          setIsAdmin(Boolean(profileData?.is_admin));
-        }
+      if (error || !data) {
+        setCreators([]);
+        setLoading(false);
+        return;
       }
 
-      const { data: faqData, error: faqError } = await supabase
-        .from("faq_articles")
-        .select("id,title,content,sort_order,is_active")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true });
+      const mappedCreators: CreatorWithMeta[] = data.map((item: any) => {
+        const card = item.creator_cards?.[0];
 
-      if (!mounted || faqError) return;
+        return {
+          id: item.id,
+          ownerId: item.user_id,
+          username: item.username,
+          nickname: item.nickname,
+          title: item.title || translate(t, "creatorGridDefaultTitle", "Rising Creator"),
+          faction: item.faction || "",
+          category: item.category || translate(t, "creator", "Creator"),
+          mainPlatform: "youtube",
+          status: item.status || "offline",
+          avatarUrl: item.avatar_url || "",
+          bannerUrl: item.banner_url || "",
+          popupAnimationStyle: item.popup_animation_style || "none",
+          bio:
+            item.bio ||
+            translate(
+              t,
+              "creatorGridDefaultBio",
+              "Novo criador aprovado na plataforma."
+            ),
+          description:
+            item.description ||
+            translate(
+              t,
+              "creatorGridDefaultDescription",
+              "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve."
+            ),
+          tags: normalizeCreatorTags(item.tags),
+          rank: card?.rank || "Bronze",
+          rarity: card?.rarity || "common",
+          aura: card?.aura || "Origin Aura",
+          evolutionStage:
+            card?.evolution_stage ||
+            translate(t, "creatorGridDefaultEvolutionStage", "Stage 1 — Rising Creator"),
+          powerScore: card?.power_score || 0,
+          collectedBy: 0,
+          level: item.profile_level || card?.level || 1,
+          followers: 0,
+          likes: 0,
+          views: 0,
+          socials: [],
+          traits: [
+            {
+              label: translate(t, "status", "Status"),
+              value: translate(t, "creatorGridRecentlyApproved", "Recently approved"),
+            },
+            {
+              label: translate(t, "creatorGridOrigin", "Origin"),
+              value: translate(t, "creatorGridCreatorRequest", "Creator request"),
+            },
+            {
+              label: translate(t, "creatorGridStyle", "Style"),
+              value: translate(t, "creatorGridPendingCustomization", "Pending customization"),
+            },
+          ],
+          featuredMoment: {
+            title: translate(t, "creatorGridFirstAppearance", "First appearance"),
+            description: translate(
+              t,
+              "creatorGridFirstAppearanceDescription",
+              "Este creator acabou de entrar no universo da plataforma."
+            ),
+          },
+          achievements: [
+            {
+              id: "approved",
+              title: translate(t, "creatorGridCreatorApproved", "Creator Approved"),
+              description: translate(
+                t,
+                "creatorGridCreatorApprovedDescription",
+                "Perfil aprovado pela moderação."
+              ),
+            },
+          ],
+          createdAt: item.created_at || new Date().toISOString(),
+          trendingScore: item.trending_score || 0,
+        };
+      });
 
-      setCustomFaqArticles(
-        (faqData ?? []).map((article) => ({
-          id: article.id,
-          title: article.title,
-          content: article.content,
-          sort_order: article.sort_order,
-          isCustom: true,
+      setCreators(mappedCreators);
+
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const { data: dropsData } = await supabase
+        .from("live_drops")
+        .select("id,creator_id,created_at")
+        .gte("created_at", twoHoursAgo)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      const mappedDrops: ActiveDrop[] = (dropsData ?? [])
+        .map((drop: any) => ({
+          id: drop.id,
+          creatorId: drop.creator_id,
+          createdAt: drop.created_at,
+          creator: mappedCreators.find((creator) => creator.id === drop.creator_id),
         }))
-      );
+        .filter((drop) => Boolean(drop.creator));
+
+      setActiveDrops(mappedDrops);
+      setLoading(false);
     }
 
-    loadGuideData();
+    loadCreators();
+  }, [t]);
+
+  useEffect(() => {
+    if (creators.length <= 1) return;
+
+    const intervalId = window.setInterval(() => {
+      setHomeShowcaseSeed((currentSeed) => currentSeed + 1);
+    }, HOME_SHOWCASE_ROTATION_INTERVAL);
 
     return () => {
-      mounted = false;
+      window.clearInterval(intervalId);
     };
-  }, []);
+  }, [creators.length]);
 
-  const defaultFaqArticles = useMemo<FaqArticle[]>(
-    () => [
-      {
-        id: "what-is-cardpoc",
-        title: translate(t, "homePageFaqWhatIsTitle", "O que é o Cardpoc?"),
-        content: translate(
-          t,
-          "homePageFaqWhatIsContent",
-          "Cardpoc é uma plataforma para descobrir, acompanhar e colecionar criadores de conteúdo através de cartas digitais. Cada criador funciona como um perfil vivo, com estatísticas, redes sociais, clips, cartas e evolução."
-        ),
-      },
-      {
-        id: "profiles",
-        title: translate(t, "homePageFaqProfilesTitle", "O que são perfis de criadores?"),
-        content: translate(
-          t,
-          "homePageFaqProfilesContent",
-          "Perfis de criadores reúnem informações públicas como bio, links sociais, clips, lives, seguidores globais, cartas e histórico dentro do Cardpoc. Alguns perfis ainda podem estar sem dono até serem reivindicados ou aprovados."
-        ),
-      },
-      {
-        id: "get-profile",
-        title: translate(t, "homePageFaqGetProfileTitle", "Como faço para ter um perfil?"),
-        content: translate(
-          t,
-          "homePageFaqGetProfileContent",
-          "Criadores podem solicitar um perfil ou reivindicar um perfil já existente. A equipe Cardpoc analisa a solicitação para evitar perfis falsos, dados incorretos ou uso indevido de imagem."
-        ),
-      },
-      {
-        id: "first-card",
-        title: translate(t, "homePageFaqFirstCardTitle", "Como consigo uma carta comum?"),
-        content: translate(
-          t,
-          "homePageFaqFirstCardContent",
-          "A forma mais simples de conquistar uma carta comum é seguir um criador dentro do Cardpoc quando essa recompensa estiver disponível. Cartas comuns são a entrada da coleção e ajudam você a começar seu álbum de criadores."
-        ),
-      },
-      {
-        id: "cards-packs",
-        title: translate(t, "homePageFaqCardsPacksTitle", "Como consigo cartas e pacotes?"),
-        content: translate(
-          t,
-          "homePageFaqCardsPacksContent",
-          "Você pode ganhar cartas e pacotes através de ações da plataforma, missões, eventos, recompensas, distribuições administrativas e futuras campanhas. Pacotes podem revelar cartas de diferentes raridades."
-        ),
-      },
-      {
-        id: "rarities",
-        title: translate(t, "homePageFaqRaritiesTitle", "Como funcionam as raridades?"),
-        content: translate(
-          t,
-          "homePageFaqRaritiesContent",
-          "As cartas podem ser comuns, raras, épicas, lendárias ou míticas. Raridades maiores são mais especiais, podem ter visuais mais fortes e normalmente dependem de pacotes, eventos, recompensas ou distribuições específicas."
-        ),
-      },
-      {
-        id: "xp-levels",
-        title: translate(t, "homePageFaqXpLevelsTitle", "Como ganho XP e subo de nível?"),
-        content: translate(
-          t,
-          "homePageFaqXpLevelsContent",
-          "XP pode ser ganho ao interagir com o Cardpoc, seguir criadores, conquistar cartas, abrir pacotes, completar missões e participar de ações futuras. O nível mostra sua evolução como colecionador dentro da plataforma."
-        ),
-      },
-      {
-        id: "login-needed",
-        title: translate(t, "homePageFaqLoginTitle", "Preciso estar logado?"),
-        content: translate(
-          t,
-          "homePageFaqLoginContent",
-          "Você pode explorar perfis públicos sem login, mas precisa entrar para seguir criadores, guardar cartas na coleção, ganhar XP, abrir pacotes, receber notificações e participar da progressão."
-        ),
-      },
-      {
-        id: "plain-images",
-        title: translate(t, "homePageFaqPlainImagesTitle", "Por que algumas cartas usam imagem comum?"),
-        content: translate(
-          t,
-          "homePageFaqPlainImagesContent",
-          "Algumas cartas podem usar imagem comum porque o criador ainda não aprovou ou autorizou o uso de uma arte editada para o Cardpoc. Nesses casos, a imagem pode ser atualizada depois com aprovação ou solicitação do próprio criador."
-        ),
-      },
-      {
-        id: "global-followers",
-        title: translate(t, "homePageFaqGlobalFollowersTitle", "O que são seguidores globais?"),
-        content: translate(
-          t,
-          "homePageFaqGlobalFollowersContent",
-          "Seguidores globais são uma soma das audiências públicas do criador em plataformas conectadas ao perfil, como Twitch, YouTube, Kick, Instagram, TikTok e outras redes quando disponíveis."
-        ),
-      },
-      {
-        id: "support",
-        title: translate(t, "homePageFaqSupportTitle", "Como falar com a equipe Cardpoc?"),
-        content: translate(
-          t,
-          "homePageFaqSupportContent",
-          "Usuários e criadores podem usar os canais de suporte dentro da plataforma para reportar bugs, pedir correções, tirar dúvidas, solicitar reivindicação de perfil ou falar sobre cartas e pacotes."
-        ),
-      },
-    ],
-    [t]
-  );
+  useEffect(() => {
+    function syncPopupWithUrl() {
+      const usernameFromUrl = getCreatorUsernameFromPath();
 
-  const faqArticles = useMemo(
-    () => [...defaultFaqArticles, ...customFaqArticles],
-    [customFaqArticles, defaultFaqArticles]
-  );
+      if (!usernameFromUrl) {
+        setSelectedCreator(null);
+        return;
+      }
 
-  const filteredFaqArticles = useMemo(() => {
-    const normalizedSearch = guideSearch.trim().toLowerCase();
-
-    if (!normalizedSearch) return faqArticles;
-
-    return faqArticles.filter((article) => {
-      const searchable = `${article.title} ${article.content}`.toLowerCase();
-      return searchable.includes(normalizedSearch);
-    });
-  }, [faqArticles, guideSearch]);
-
-  async function handleCreateFaqArticle(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const title = newFaqTitle.trim();
-    const content = newFaqContent.trim();
-
-    if (!title || !content) return;
-
-    setSavingFaq(true);
-    setFaqFeedback("");
-
-    const nextSortOrder = customFaqArticles.length + defaultFaqArticles.length + 1;
-
-    const { data, error } = await supabase
-      .from("faq_articles")
-      .insert({
-        title,
-        content,
-        sort_order: nextSortOrder,
-        is_active: true,
-      })
-      .select("id,title,content,sort_order")
-      .single();
-
-    setSavingFaq(false);
-
-    if (error || !data) {
-      setFaqFeedback(
-        translate(
-          t,
-          "homePageFaqAdminError",
-          "Não foi possível salvar. Confira se a tabela faq_articles existe no Supabase."
-        )
+      const creatorFromUrl = creators.find(
+        (creator) =>
+          creator.username.toLowerCase() === usernameFromUrl.toLowerCase()
       );
-      return;
+
+      if (creatorFromUrl) {
+        setSelectedCreator(creatorFromUrl);
+      }
     }
 
-    setCustomFaqArticles((current) => [
-      ...current,
-      {
-        id: data.id,
-        title: data.title,
-        content: data.content,
-        sort_order: data.sort_order,
-        isCustom: true,
-      },
-    ]);
-    setNewFaqTitle("");
-    setNewFaqContent("");
-    setFaqFeedback(translate(t, "homePageFaqAdminSuccess", "Tópico adicionado."));
+    syncPopupWithUrl();
+
+    window.addEventListener("popstate", syncPopupWithUrl);
+
+    return () => {
+      window.removeEventListener("popstate", syncPopupWithUrl);
+    };
+  }, [creators]);
+
+  function handleOpenCreator(creator: Creator) {
+    setSelectedCreator(creator);
   }
 
+  function handleCloseCreator() {
+    setSelectedCreator(null);
+  }
+
+  function handleCreatorUpdated(updatedCreator: Creator) {
+    setCreators((currentCreators) =>
+      currentCreators.map((creator) =>
+        creator.id === updatedCreator.id
+          ? {
+              ...creator,
+              ...updatedCreator,
+              createdAt: creator.createdAt,
+              trendingScore: creator.trendingScore,
+            }
+          : creator
+      )
+    );
+
+    setSelectedCreator((currentCreator) =>
+      currentCreator?.id === updatedCreator.id
+        ? {
+            ...currentCreator,
+            ...updatedCreator,
+          }
+        : currentCreator
+    );
+  }
+
+  const normalizedSearch = search.toLowerCase().trim();
+  const hasSearch = normalizedSearch.length > 0;
+
+  const filteredCreators = creators.filter((creator) => {
+    const searchableText = [
+      creator.nickname,
+      creator.username,
+      creator.category,
+      creator.rank,
+      creator.rarity,
+      creator.aura,
+      creator.mainPlatform,
+      creator.title,
+      creator.faction,
+      creator.status,
+      ...creator.tags,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(normalizedSearch);
+  });
+
+  const homeShowcaseCreators = useMemo(() => {
+    return getRotatingCreators(creators, homeShowcaseSeed);
+  }, [creators, homeShowcaseSeed]);
+
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <AnimatePresence>
-        {loading && <LoadingScreen />}
-      </AnimatePresence>
-
-      <GlowBackground />
-      <ParticleBackground />
-
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-8">
-        <div className="relative flex flex-col items-center text-center">
-          <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
-            {translate(t, "homePageBadge", "Conheça e colecione criadores")}
+    <>
+      <section className="relative z-10 mx-auto max-w-[1760px] px-4 pb-20 pt-10 sm:px-6">
+        {loading && (
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
+            {translate(t, "creatorGridLoading", "Carregando creators...")}
           </div>
-
-          <p className="mt-5 max-w-2xl text-sm font-medium text-white/55 sm:text-base">
-            {translate(
-              t,
-              "homePageDescription",
-              "Descubra criadores de conteúdo, acompanhe lives, clips e estatísticas, ganhe cartas digitais e complete sua coleção."
-            )}
-          </p>
-
-          <div className="mt-4 flex w-full flex-col items-center justify-center gap-4 lg:flex-row lg:gap-6">
-            <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarLives", "Lives")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarClips", "Clips")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarStats", "Estatísticas")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarCards", "Cartas Digitais")}
-              </span>
-            </div>
-
-            <Link
-              href="/album"
-              className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)] lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:hover:-translate-y-[calc(50%+0.125rem)]"
-            >
-              <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
-              <span className="relative flex items-center gap-2">
-                <span className="text-sm">▣</span>
-                {translate(t, "homePageAlbumButton", "Álbum")}
-              </span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <CreatorGrid search={search} />
-
-      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
-        {!hasSeenCardpocGuide && (
-          <button
-            type="button"
-            onClick={openCardpocGuide}
-            className="relative rounded-full border border-amber-200/35 bg-amber-300 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-black shadow-[0_0_26px_rgba(251,191,36,0.22)] transition hover:-translate-y-0.5 hover:bg-amber-200"
-          >
-            {translate(t, "homePageGuideBubble", "Dúvidas?")}
-            <span className="absolute -bottom-1.5 right-5 h-3 w-3 rotate-45 border-b border-r border-amber-200/35 bg-amber-300" />
-          </button>
         )}
 
-        <button
-          type="button"
-          onClick={openCardpocGuide}
-          className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-black/70 text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/40 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.25)]"
-          aria-label={translate(t, "homePageGuideOpenAria", "Entender o Cardpoc")}
-        >
-          <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-400/10 via-transparent to-purple-500/10 opacity-80" />
-          <span className="relative text-lg">◈</span>
-          <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-full border border-white/10 bg-black/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/70 shadow-2xl backdrop-blur-xl group-hover:block">
-            {translate(t, "homePageGuideTooltip", "O que é o Cardpoc?")}
-          </span>
-        </button>
+        {!loading && hasSearch && (
+          <CreatorSection
+            title={translate(t, "creatorGridSearchResults", "Resultado da busca")}
+            description={translate(
+              t,
+              "creatorGridSearchResultsDescription",
+              "Creators encontrados com base no termo pesquisado."
+            )}
+            creators={filteredCreators}
+            onOpenCreator={handleOpenCreator}
+          />
+        )}
+
+        {!loading && !hasSearch && (
+          <div className="space-y-10">
+            <ActiveDropsSection
+              drops={activeDrops}
+              onOpenCreator={handleOpenCreator}
+            />
+
+            <CreatorSection
+              title=""
+              description=""
+              creators={homeShowcaseCreators}
+              onOpenCreator={handleOpenCreator}
+              hideHeader
+              compact
+            />
+          </div>
+        )}
+
+        {!loading && hasSearch && filteredCreators.length === 0 && <EmptyState />}
+      </section>
+
+      <CreatorPopup
+        creator={selectedCreator}
+        onClose={handleCloseCreator}
+        onCreatorUpdated={handleCreatorUpdated}
+      />
+    </>
+  );
+}
+
+function ActiveDropsSection({
+  drops,
+  onOpenCreator,
+}: {
+  drops: ActiveDrop[];
+  onOpenCreator: (creator: Creator) => void;
+}) {
+  const { t } = useLanguage();
+
+  if (drops.length === 0) return null;
+
+  return (
+    <section className="rounded-[32px] border border-amber-300/15 bg-amber-300/[0.035] p-5 shadow-[0_0_40px_rgba(251,191,36,0.08)] backdrop-blur-xl sm:p-6">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-3 rounded-full border border-amber-200/20 bg-amber-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-amber-100">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-200 shadow-[0_0_14px_rgba(251,191,36,0.95)]" />
+            {translate(t, "creatorGridActiveDropsTitle", "Drops ativos")}
+          </div>
+          <p className="mt-3 max-w-2xl text-sm text-white/50">
+            {translate(
+              t,
+              "creatorGridActiveDropsDescription",
+              "Criadores que fizeram drops nas últimas 2 horas aparecem aqui."
+            )}
+          </p>
+        </div>
       </div>
 
-      {showCardpocGuide && (
-        <CardpocModalShell
-          onClose={() => setShowCardpocGuide(false)}
-          showCloseButton
-          closeLabel={translate(t, "close", "Fechar")}
-          zIndexClassName="z-50"
-          className="max-w-4xl"
-          contentClassName="flex max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden"
-        >
-          <div
-            className="flex min-h-0 flex-col"
-            role="dialog"
-            aria-modal="true"
-            aria-label={translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
-          >
-            <div className="relative border-b border-white/10 p-6 pr-16 sm:p-8 sm:pr-20">
-              <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {drops.map((drop) => {
+          const creator = drop.creator;
+          if (!creator) return null;
+
+          return (
+            <button
+              key={drop.id}
+              type="button"
+              onClick={() => onOpenCreator(creator)}
+              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black/35 p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-200/35 hover:bg-amber-300/[0.06]"
+            >
+              <span className="absolute inset-0 bg-gradient-to-br from-amber-300/10 via-transparent to-cyan-400/5 opacity-80" />
+              <span className="relative flex items-center gap-4">
+                <span className="h-14 w-14 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  {creator.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={creator.avatarUrl}
+                      alt={creator.nickname}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-xl">✦</span>
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-black uppercase tracking-[0.12em] text-white">
+                    {creator.nickname}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold text-amber-100/70">
+                    {translate(t, "creatorGridDropLastTwoHours", "Drop recente disponível")}
+                  </span>
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function CreatorSection({
+  eyebrow,
+  title,
+  description,
+  creators,
+  onOpenCreator,
+  hideHeader = false,
+  compact = false,
+}: {
+  eyebrow?: string;
+  title: string;
+  description: string;
+  creators: CreatorWithMeta[];
+  onOpenCreator: (creator: Creator) => void;
+  hideHeader?: boolean;
+  compact?: boolean;
+}) {
+  if (creators.length === 0) return null;
+
+  return (
+    <div>
+      {!hideHeader && (
+        <div className="mb-5 flex flex-col gap-2 text-center sm:text-left">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-5 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
                 <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
-                {translate(t, "homePageGuideBadge", "Central de ajuda")}
+                <h2 className="text-base font-bold uppercase tracking-[0.28em] text-cyan-100">
+                  {title}
+                </h2>
               </div>
 
-              <h2 className="text-2xl font-black uppercase tracking-[0.12em] text-white sm:text-4xl">
-                {translate(t, "homePageGuideTitle", "Central de Ajuda Cardpoc")}
-              </h2>
-
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/60">
-                {translate(
-                  t,
-                  "homePageGuideDescription",
-                  "Tire dúvidas sobre cartas, pacotes, XP, níveis, raridades, perfis de criadores e como participar do Cardpoc."
-                )}
-              </p>
-
-              <label className="mt-6 block">
-                <span className="sr-only">
-                  {translate(t, "homePageFaqSearchLabel", "Pesquisar no guia")}
-                </span>
-                <input
-                  value={guideSearch}
-                  onChange={(event) => setGuideSearch(event.target.value)}
-                  placeholder={translate(t, "homePageFaqSearchPlaceholder", "Pesquisar por XP, cartas, pacotes, perfil...")}
-                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-5 py-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-cyan-300/40 focus:bg-cyan-300/[0.04]"
-                />
-              </label>
-            </div>
-
-            <div className="relative flex-1 hide-scrollbar overflow-y-auto p-6 sm:p-8">
-              {filteredFaqArticles.length > 0 ? (
-                <div className="grid gap-3">
-                  {filteredFaqArticles.map((article) => (
-                    <details
-                      key={article.id}
-                      className="group rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition open:border-cyan-300/25 open:bg-cyan-300/[0.045]"
-                    >
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left">
-                        <span className="text-sm font-black uppercase tracking-[0.12em] text-white">
-                          {article.title}
-                        </span>
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/25 text-white/50 transition group-open:rotate-45 group-open:text-cyan-100">
-                          +
-                        </span>
-                      </summary>
-                      <p className="mt-3 text-sm leading-6 text-white/58">
-                        {article.content}
-                      </p>
-                    </details>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-sm font-semibold text-white/55">
-                  {translate(t, "homePageFaqNoResults", "Nenhum tópico encontrado para essa busca.")}
-                </div>
-              )}
-
-              {isAdmin && (
-                <form
-                  onSubmit={handleCreateFaqArticle}
-                  className="mt-6 rounded-3xl border border-amber-300/20 bg-amber-300/[0.04] p-5"
-                >
-                  <div className="mb-4">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100">
-                      {translate(t, "homePageFaqAdminTitle", "Administração do FAQ")}
-                    </p>
-                    <p className="mt-2 text-sm text-white/52">
-                      {translate(
-                        t,
-                        "homePageFaqAdminDescription",
-                        "Adicione novas explicações para usuários sem precisar alterar o código da home."
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3">
-                    <input
-                      value={newFaqTitle}
-                      onChange={(event) => setNewFaqTitle(event.target.value)}
-                      placeholder={translate(t, "homePageFaqAdminTitlePlaceholder", "Título do tópico")}
-                      className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-amber-200/35"
-                    />
-                    <textarea
-                      value={newFaqContent}
-                      onChange={(event) => setNewFaqContent(event.target.value)}
-                      placeholder={translate(t, "homePageFaqAdminContentPlaceholder", "Explicação do tópico")}
-                      rows={4}
-                      className="resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/28 focus:border-amber-200/35"
-                    />
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="submit"
-                        disabled={savingFaq || !newFaqTitle.trim() || !newFaqContent.trim()}
-                        className="rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-black transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {savingFaq
-                          ? translate(t, "homePageFaqAdminSaving", "Salvando...")
-                          : translate(t, "homePageFaqAdminAdd", "Adicionar tópico")}
-                      </button>
-                      {faqFeedback && (
-                        <span className="text-sm font-semibold text-white/55">
-                          {faqFeedback}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </form>
+              {description && (
+                <p className="mt-3 max-w-2xl text-sm text-white/45">
+                  {description}
+                </p>
               )}
             </div>
           </div>
-        </CardpocModalShell>
+        </div>
       )}
-    </main>
+
+      <div
+        className={
+          compact
+            ? "grid grid-cols-2 justify-items-center gap-x-5 gap-y-9 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8"
+            : "grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        }
+      >
+        {creators.map((creator, index) => (
+          <AnimatedRarityCreatorCard
+            key={`${compact ? "home" : "creator"}-${index}-${creator.id}`}
+            creator={creator}
+            index={index}
+            onClick={onOpenCreator}
+            compact={compact}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedRarityCreatorCard({
+  creator,
+  index,
+  onClick,
+  compact = false,
+}: {
+  creator: CreatorWithMeta;
+  index: number;
+  onClick: (creator: Creator) => void;
+  compact?: boolean;
+}) {
+  const initialRarityIndex = index % RARITY_SHOWCASE_CYCLE.length;
+  const [activeRarityIndex, setActiveRarityIndex] = useState(initialRarityIndex);
+  const [incomingRarityIndex, setIncomingRarityIndex] = useState<number | null>(
+    null
+  );
+
+  const activeRarityIndexRef = useRef(initialRarityIndex);
+  const isTransitioningRef = useRef(false);
+  const transitionTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function beginCardStackTransition() {
+      if (isTransitioningRef.current) return;
+
+      const nextIndex =
+        (activeRarityIndexRef.current + 1) % RARITY_SHOWCASE_CYCLE.length;
+
+      isTransitioningRef.current = true;
+      setIncomingRarityIndex(nextIndex);
+
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+
+      transitionTimeoutRef.current = window.setTimeout(() => {
+        activeRarityIndexRef.current = nextIndex;
+        setActiveRarityIndex(nextIndex);
+        setIncomingRarityIndex(null);
+        isTransitioningRef.current = false;
+        transitionTimeoutRef.current = null;
+      }, 760);
+    }
+
+    const startDelay = index * 1100;
+    let intervalId: number | null = null;
+
+    const timeoutId = window.setTimeout(() => {
+      beginCardStackTransition();
+      intervalId = window.setInterval(
+        beginCardStackTransition,
+        RARITY_SHOWCASE_INTERVAL
+      );
+    }, startDelay);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+      }
+
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [index]);
+
+  const activeShowcase = RARITY_SHOWCASE_CYCLE[activeRarityIndex];
+  const incomingShowcase =
+    incomingRarityIndex !== null
+      ? RARITY_SHOWCASE_CYCLE[incomingRarityIndex]
+      : null;
+
+  const activeCreator: CreatorWithMeta = {
+    ...creator,
+    rarity: activeShowcase.rarity,
+    level: creator.level || 1,
+  };
+
+  const incomingCreator: CreatorWithMeta | null = incomingShowcase
+    ? {
+        ...creator,
+        rarity: incomingShowcase.rarity,
+        level: creator.level || 1,
+      }
+    : null;
+
+  return (
+    <div
+      className={
+        compact
+          ? "relative h-[252px] w-[168px] overflow-visible [perspective:1200px]"
+          : "relative h-[360px] w-[240px] overflow-visible [perspective:1200px]"
+      }
+    >
+      <div
+        className={
+          compact
+            ? "absolute left-0 top-0 h-[360px] w-[240px] origin-top-left scale-[0.7]"
+            : "relative h-full w-full"
+        }
+      >
+        <div className="relative z-10 h-full w-full">
+          <CreatorCard creator={activeCreator} onClick={onClick} />
+        </div>
+
+        {incomingCreator && (
+          <motion.div
+            key={`${creator.id}-${incomingCreator.rarity}-incoming`}
+            className="pointer-events-none absolute inset-0 z-20 will-change-transform"
+            initial={{
+              x: 34,
+              y: 18,
+              rotateZ: 4.25,
+              rotateY: -6,
+              scale: 0.985,
+              opacity: 0.94,
+            }}
+            animate={{
+              x: 0,
+              y: 0,
+              rotateZ: 0,
+              rotateY: 0,
+              scale: 1,
+              opacity: 1,
+              transition: RARITY_STACK_TRANSITION,
+            }}
+            style={{
+              transformStyle: "preserve-3d",
+              backfaceVisibility: "hidden",
+            }}
+          >
+            <CreatorCard creator={incomingCreator} onClick={onClick} />
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  const { t } = useLanguage();
+
+  return (
+    <div className="flex w-full flex-col items-center rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center backdrop-blur-xl">
+      <div className="h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400/20 to-purple-500/20 blur-2xl" />
+
+      <div className="relative -mt-12 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black/40 text-3xl">
+        ✦
+      </div>
+
+      <h3 className="mt-6 text-2xl font-bold text-white">
+        {translate(
+          t,
+          "creatorGridEmptyTitle",
+          "Não identificamos nenhuma identidade correspondente à sua busca."
+        )}
+      </h3>
+
+      <p className="mt-3 max-w-md text-sm text-white/50">
+        {translate(
+          t,
+          "creatorGridEmptyDescription",
+          "Tente pesquisar por nome do criador, categoria, raridade, plataforma ou tags."
+        )}
+      </p>
+    </div>
   );
 }
