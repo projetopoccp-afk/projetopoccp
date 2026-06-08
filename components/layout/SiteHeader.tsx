@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronRight,
@@ -459,8 +460,20 @@ function isCardNotification(notification: UserNotification) {
 }
 
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [internalSearch, setInternalSearch] = useState("");
   const effectiveSearch = search ?? internalSearch;
+
+  function dispatchCreatorSearch(value: string) {
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent("cardpoc:creator-search", {
+        detail: { value },
+      }),
+    );
+  }
 
   function handleSearchChange(value: string) {
     if (onSearchChange) {
@@ -470,14 +483,25 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
     setInternalSearch(value);
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("cardpoc:creator-search", {
-          detail: { value },
-        })
-      );
+    const normalizedValue = value.trim();
+    const isHomePage = pathname === "/";
+
+    if (!isHomePage && normalizedValue.length > 0) {
+      router.push("/");
+      return;
+    }
+
+    if (isHomePage) {
+      dispatchCreatorSearch(value);
     }
   }
+
+  useEffect(() => {
+    if (onSearchChange) return;
+    if (pathname !== "/") return;
+
+    dispatchCreatorSearch(internalSearch);
+  }, [internalSearch, onSearchChange, pathname]);
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
