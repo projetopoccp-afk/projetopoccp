@@ -47,7 +47,7 @@ export const translations = {
     linkedAccountsComingSoonDescription:
       "Novas plataformas serão adicionadas para missões e eventos.",
     logout: "Sair",
-    login: "Entrar",
+    login: "Começe sua coleção!",
     account: "Conta",
     openPanel: "Abrir painel",
     collectorRole: "Colecionador",
