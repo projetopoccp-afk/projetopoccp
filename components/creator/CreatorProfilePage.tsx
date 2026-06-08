@@ -5818,10 +5818,10 @@ export function CreatorProfilePage({
                           }`}
                         >
                           <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
-                            {translateExisting(t, effectStyle.labelKey)}
+                            {translateExisting(t, effectStyle.labelKey, effectStyle.fallback)}
                           </span>
                           <span className="mt-1 block text-xs leading-5 text-white/45">
-                            {translateExisting(t, effectStyle.descriptionKey)}
+                            {translateExisting(t, effectStyle.descriptionKey, effectStyle.descriptionFallback)}
                           </span>
                         </button>
                       );
