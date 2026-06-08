@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
@@ -15,16 +16,42 @@ import {
   User,
   X,
 } from "lucide-react";
-import { AccountModal } from "@/components/account/AccountModal";
-import { CollectionModal } from "@/components/collection/CollectionModal";
-import { LoginModal } from "@/components/auth/LoginModal";
-import { PacksModal } from "@/components/packs/PacksModal";
-import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MissionsModal } from "@/components/missions/MissionsModal";
+
+
+const AccountModal = dynamic(
+  () => import("@/components/account/AccountModal").then((mod) => mod.AccountModal),
+  { ssr: false },
+);
+
+const CollectionModal = dynamic(
+  () =>
+    import("@/components/collection/CollectionModal").then(
+      (mod) => mod.CollectionModal,
+    ),
+  { ssr: false },
+);
+
+const LoginModal = dynamic(
+  () => import("@/components/auth/LoginModal").then((mod) => mod.LoginModal),
+  { ssr: false },
+);
+
+const PacksModal = dynamic(
+  () => import("@/components/packs/PacksModal").then((mod) => mod.PacksModal),
+  { ssr: false },
+);
+
+const LogoutConfirmModal = dynamic(
+  () =>
+    import("@/components/auth/LogoutConfirmModal").then(
+      (mod) => mod.LogoutConfirmModal,
+    ),
+  { ssr: false },
+);
 
 type SiteHeaderProps = {
   search?: string;
@@ -1393,48 +1420,58 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
         }}
       />
 
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      {loginOpen ? (
+        <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      ) : null}
 
-      <AccountModal
-        open={accountOpen}
-        email={user?.email || ""}
-        profile={profile}
-        onClose={() => setAccountOpen(false)}
-        onLogout={requestLogout}
-      />
+      {accountOpen ? (
+        <AccountModal
+          open={accountOpen}
+          email={user?.email || ""}
+          profile={profile}
+          onClose={() => setAccountOpen(false)}
+          onLogout={requestLogout}
+        />
+      ) : null}
 
-      <LogoutConfirmModal
-        open={logoutConfirmOpen}
-        onClose={() => setLogoutConfirmOpen(false)}
-        onConfirm={handleLogout}
-      />
+      {logoutConfirmOpen ? (
+        <LogoutConfirmModal
+          open={logoutConfirmOpen}
+          onClose={() => setLogoutConfirmOpen(false)}
+          onConfirm={handleLogout}
+        />
+      ) : null}
 
-      <PacksModal
-        open={packsOpen}
-        onClose={() => {
-          setPacksOpen(false);
-          activeNotificationActionRef.current = null;
-        }}
-      />
+      {packsOpen ? (
+        <PacksModal
+          open={packsOpen}
+          onClose={() => {
+            setPacksOpen(false);
+            activeNotificationActionRef.current = null;
+          }}
+        />
+      ) : null}
 
-      <CollectionModal
-        open={collectionOpen}
-        initialCardId={collectionInitialCardId}
-        initialCreatorId={collectionInitialCreatorId}
-        onInitialCardOpened={() => {
-          clearCollectionInitialState();
-        }}
-        onClose={() => {
-          setCollectionOpen(false);
-          clearCollectionInitialState();
-          activeNotificationActionRef.current = null;
+      {collectionOpen ? (
+        <CollectionModal
+          open={collectionOpen}
+          initialCardId={collectionInitialCardId}
+          initialCreatorId={collectionInitialCreatorId}
+          onInitialCardOpened={() => {
+            clearCollectionInitialState();
+          }}
+          onClose={() => {
+            setCollectionOpen(false);
+            clearCollectionInitialState();
+            activeNotificationActionRef.current = null;
 
-          if (openCollectionCardTimeoutRef.current) {
-            window.clearTimeout(openCollectionCardTimeoutRef.current);
-            openCollectionCardTimeoutRef.current = null;
-          }
-        }}
-      />
+            if (openCollectionCardTimeoutRef.current) {
+              window.clearTimeout(openCollectionCardTimeoutRef.current);
+              openCollectionCardTimeoutRef.current = null;
+            }
+          }}
+        />
+      ) : null}
     </>
   );
 }
