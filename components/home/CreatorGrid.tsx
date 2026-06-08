@@ -34,7 +34,7 @@ const RARITY_SHOWCASE_CYCLE = [
 ] as const;
 
 const RARITY_SHOWCASE_INTERVAL = 9800;
-const HOME_SHOWCASE_LIMIT = 24;
+const HOME_SHOWCASE_LIMIT = 32;
 const HOME_SHOWCASE_ROTATION_INTERVAL = 30000;
 const RARITY_STACK_TRANSITION = {
   duration: 0.72,
@@ -74,6 +74,7 @@ function normalizeCreatorTags(tags: unknown): string[] {
 }
 
 
+
 function getRotatingCreatorScore(creator: CreatorWithMeta, seed: number) {
   const source = `${creator.id}:${creator.username}:${seed}`;
   let hash = 2166136261;
@@ -98,7 +99,6 @@ function getRotatingCreators(creators: CreatorWithMeta[], seed: number) {
     })
     .slice(0, HOME_SHOWCASE_LIMIT);
 }
-
 
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
@@ -270,7 +270,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   }, [t]);
 
   useEffect(() => {
-    if (creators.length <= HOME_SHOWCASE_LIMIT) return;
+    if (creators.length <= 1) return;
 
     const intervalId = window.setInterval(() => {
       setHomeShowcaseSeed((currentSeed) => currentSeed + 1);
@@ -365,10 +365,6 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   });
 
   const homeShowcaseCreators = useMemo(() => {
-    if (creators.length <= HOME_SHOWCASE_LIMIT) {
-      return [...creators].sort((a, b) => b.trendingScore - a.trendingScore);
-    }
-
     return getRotatingCreators(creators, homeShowcaseSeed);
   }, [creators, homeShowcaseSeed]);
 
@@ -548,7 +544,7 @@ function CreatorSection({
       >
         {creators.map((creator, index) => (
           <AnimatedRarityCreatorCard
-            key={`creator-${creator.id}`}
+            key={`${compact ? "home" : "creator"}-${index}-${creator.id}`}
             creator={creator}
             index={index}
             onClick={onOpenCreator}
