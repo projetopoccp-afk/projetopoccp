@@ -590,7 +590,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [kickDetectorCategory, setKickDetectorCategory] =
     useState("");
   const [kickDetectorLanguage, setKickDetectorLanguage] = useState("pt");
-  const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState();
+  const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState(0);
   const [kickDetectorLimit, setKickDetectorLimit] = useState(50);
   const [kickDetectorSearch, setKickDetectorSearch] = useState("");
   const [detectedKickCreators, setDetectedKickCreators] = useState<
