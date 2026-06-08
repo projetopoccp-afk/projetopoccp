@@ -12,6 +12,7 @@ type CreatorCardProps = {
   creator: Creator;
   onClick: (creator: Creator) => void;
   hoverOnlyEffects?: boolean;
+  effectsOnHoverOnly?: boolean;
 };
 
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
@@ -1146,10 +1147,12 @@ export function CreatorCard({
   creator,
   onClick,
   hoverOnlyEffects = false,
+  effectsOnHoverOnly = false,
 }: CreatorCardProps) {
   const { t } = useLanguage();
   const [isPointerActive, setIsPointerActive] = useState(false);
-  const shouldRenderMotionEffects = !hoverOnlyEffects || isPointerActive;
+  const shouldUseHoverOnlyEffects = hoverOnlyEffects || effectsOnHoverOnly;
+  const shouldRenderMotionEffects = !shouldUseHoverOnlyEffects || isPointerActive;
   const internalRarity = normalizeRarity(creator.rarity);
   const rarity =
     internalRarity === "mythic"
