@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Archive,
   CheckCircle2,
@@ -15,15 +16,57 @@ import {
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
-import { AdminPanelModal } from "@/components/admin/AdminPanelModal";
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
-import { CollectionModal } from "@/components/collection/CollectionModal";
-import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
-import { UserProfileModal } from "@/components/account/UserProfileModal";
-import { MissionsModal } from "@/components/missions/MissionsModal";
-import { PacksModal } from "@/components/packs/PacksModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
+
+const AdminPanelModal = dynamic(
+  () =>
+    import("@/components/admin/AdminPanelModal").then(
+      (module) => module.AdminPanelModal,
+    ),
+  { ssr: false },
+);
+
+const CollectionModal = dynamic(
+  () =>
+    import("@/components/collection/CollectionModal").then(
+      (module) => module.CollectionModal,
+    ),
+  { ssr: false },
+);
+
+const CreatorRequestModal = dynamic(
+  () =>
+    import("@/components/creator-request/CreatorRequestModal").then(
+      (module) => module.CreatorRequestModal,
+    ),
+  { ssr: false },
+);
+
+const UserProfileModal = dynamic(
+  () =>
+    import("@/components/account/UserProfileModal").then(
+      (module) => module.UserProfileModal,
+    ),
+  { ssr: false },
+);
+
+const MissionsModal = dynamic(
+  () =>
+    import("@/components/missions/MissionsModal").then(
+      (module) => module.MissionsModal,
+    ),
+  { ssr: false },
+);
+
+const PacksModal = dynamic(
+  () =>
+    import("@/components/packs/PacksModal").then(
+      (module) => module.PacksModal,
+    ),
+  { ssr: false },
+);
 
 type AccountProfile = {
   display_name: string | null;
@@ -288,6 +331,8 @@ export function AccountModal({
                       <img
                         src={profile.avatar_url}
                         alt={profile.display_name || "Avatar"}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -513,13 +558,17 @@ export function AccountModal({
         )}
       </AnimatePresence>
 
-      <CreatorRequestModal
-        open={requestOpen}
-        email={email}
-        onClose={() => setRequestOpen(false)}
-      />
+      {requestOpen && (
+        <CreatorRequestModal
+          open={requestOpen}
+          email={email}
+          onClose={() => setRequestOpen(false)}
+        />
+      )}
 
-      <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
+      {adminOpen && (
+        <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
+      )}
 
       <UserProfileModal
         open={profileOpen}
@@ -528,17 +577,23 @@ export function AccountModal({
         onClose={() => setProfileOpen(false)}
       />
 
-      <CollectionModal
-        open={collectionOpen}
-        onClose={() => setCollectionOpen(false)}
-      />
+      {collectionOpen && (
+        <CollectionModal
+          open={collectionOpen}
+          onClose={() => setCollectionOpen(false)}
+        />
+      )}
 
-      <MissionsModal
-        open={missionsOpen}
-        onClose={() => setMissionsOpen(false)}
-      />
+      {missionsOpen && (
+        <MissionsModal
+          open={missionsOpen}
+          onClose={() => setMissionsOpen(false)}
+        />
+      )}
 
-      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
+      {packsOpen && (
+        <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
+      )}
 
       <AnimatePresence>
         {linkedAccountsOpen && (

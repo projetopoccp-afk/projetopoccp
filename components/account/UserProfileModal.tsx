@@ -549,6 +549,8 @@ export function UserProfileModal({
                       <img
                         src={editableProfile.avatar_url}
                         alt={editableProfile.display_name || "Avatar"}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (
