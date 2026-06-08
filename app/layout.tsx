@@ -22,9 +22,14 @@ export const metadata: Metadata = {
     template: "%s | Cardpoc",
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: [
+      {
+        url: "/icon.png?v=2",
+        type: "image/png",
+      },
+    ],
+    shortcut: "/icon.png?v=2",
+    apple: "/icon.png?v=2",
   },
   description:
     "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings, reputação, conquistas e métricas exclusivas.",
