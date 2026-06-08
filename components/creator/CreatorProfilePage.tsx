@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +35,7 @@ import { CREATOR_POPUP_IMAGE_EFFECT_STYLES } from "@/components/creator/CreatorP
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
+import { CreatorStatsModal } from "@/components/creator/CreatorStatsModal";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
@@ -1620,6 +1622,7 @@ export function CreatorProfilePage({
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
   const [liveDropsOpen, setLiveDropsOpen] = useState(false);
+  const [creatorStatsOpen, setCreatorStatsOpen] = useState(false);
   const [creatorPanelOpen, setCreatorPanelOpen] = useState(false);
   const creatorPanelDropdownRef = useRef<HTMLDivElement | null>(null);
   const [battleCandidates, setBattleCandidates] = useState<CreatorBattleCandidate[]>([]);
@@ -3540,41 +3543,59 @@ export function CreatorProfilePage({
               <button
                 type="button"
                 onClick={() => setCreatorPanelOpen((current) => !current)}
-                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
+                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
                 aria-expanded={creatorPanelOpen}
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
                 {translate(
                   t,
                   "creatorProfileCreatorPanelButton",
                   "Painel do Criador",
                 )}
                 <ChevronDown
-                  className={`h-4 w-4 transition ${creatorPanelOpen ? "rotate-180" : ""}`}
+                  className={`h-3.5 w-3.5 transition ${creatorPanelOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {creatorPanelOpen ? (
-                <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#100913]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                <div className="absolute right-0 z-50 mt-2 w-[min(19rem,calc(100vw-2rem))] overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#100913]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatorPanelOpen(false);
+                      setCreatorStatsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-emerald-100 transition hover:bg-emerald-300/10"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-300/10">
+                      <BarChart3 className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileStatsButton",
+                        "Estatísticas",
+                      )}
+                    </span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
                       setCreatorPanelOpen(false);
                       setLiveDropsOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/10"
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-amber-100 transition hover:bg-amber-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
                       <Gift className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileLiveDropsButton",
-                          "Drops de Live",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileLiveDropsButton",
+                        "Drops de Live",
+                      )}
                     </span>
                   </button>
 
@@ -3584,38 +3605,34 @@ export function CreatorProfilePage({
                       setCreatorPanelOpen(false);
                       setSupportChatOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
                       <MessageCircle className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileTalkToTeam",
-                          "Falar com a equipe",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileTalkToTeam",
+                        "Falar com a equipe",
+                      )}
                     </span>
                   </button>
 
                   <Link
                     href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
                     onClick={() => setCreatorPanelOpen(false)}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
                       <Sparkles className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileManageProfile",
-                          "Gerenciar perfil",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileManageProfile",
+                        "Gerenciar perfil",
+                      )}
                     </span>
                   </Link>
                 </div>
@@ -5225,6 +5242,21 @@ export function CreatorProfilePage({
           isLive={Boolean(liveDropsPlatform.status?.isLive)}
           viewerCount={liveDropsPlatform.status?.viewerCount || 0}
           liveTitle={liveDropsPlatform.status?.title || null}
+        />
+      ) : null}
+
+      {profile ? (
+        <CreatorStatsModal
+          open={creatorStatsOpen}
+          onClose={() => setCreatorStatsOpen(false)}
+          creatorName={profile.nickname || profile.username}
+          stats={stats}
+          collectionStats={collectionStats}
+          liveStatus={liveStatus}
+          externalReach={externalReach}
+          cardLevel={cardLevel}
+          profileXp={Number((profile as any)?.profile_xp || 0)}
+          dropsCount={0}
         />
       ) : null}
 
