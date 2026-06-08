@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +34,8 @@ import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CREATOR_POPUP_IMAGE_EFFECT_STYLES } from "@/components/creator/CreatorPopupImageEffects";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
+import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
+import { CreatorStatsModal } from "@/components/creator/CreatorStatsModal";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
@@ -46,14 +48,6 @@ import type {
   CreatorStatus,
   SocialPlatform,
 } from "@/types/creator";
-
-const LiveDropsModal = dynamic(
-  () =>
-    import("@/components/modals/LiveDropsModal").then(
-      (module) => module.LiveDropsModal,
-    ),
-  { ssr: false },
-);
 
 function translateExisting(t: unknown, key: string, fallback: string) {
   const value = (t as Record<string, string | undefined>)[key];
@@ -1603,7 +1597,7 @@ export function CreatorProfilePage({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState<CreatorProfileEditDraft | null>(
     null,
   );
@@ -1628,6 +1622,8 @@ export function CreatorProfilePage({
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
   const [liveDropsOpen, setLiveDropsOpen] = useState(false);
+  const [creatorStatsOpen, setCreatorStatsOpen] = useState(false);
+  const [profileEditModalOpen, setProfileEditModalOpen] = useState(startInEditMode);
   const [creatorPanelOpen, setCreatorPanelOpen] = useState(false);
   const creatorPanelDropdownRef = useRef<HTMLDivElement | null>(null);
   const [battleCandidates, setBattleCandidates] = useState<CreatorBattleCandidate[]>([]);
@@ -1662,8 +1658,6 @@ export function CreatorProfilePage({
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "hidden") return;
-
       setShowcaseRarityIndex(
         (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length,
       );
@@ -2156,13 +2150,7 @@ export function CreatorProfilePage({
     loadCachedLiveStatuses();
     loadLiveStatuses();
 
-    function loadLiveStatusesWhenVisible() {
-      if (document.visibilityState === "hidden") return;
-      void loadLiveStatuses();
-    }
-
-    const pollingInterval = window.setInterval(loadLiveStatusesWhenVisible, 30000);
-    document.addEventListener("visibilitychange", loadLiveStatusesWhenVisible);
+    const pollingInterval = window.setInterval(loadLiveStatuses, 30000);
 
     const liveStatusChannel = supabase
       .channel(`creator-live-status:${creatorId}`)
@@ -2210,7 +2198,6 @@ export function CreatorProfilePage({
     return () => {
       cancelled = true;
       window.clearInterval(pollingInterval);
-      document.removeEventListener("visibilitychange", loadLiveStatusesWhenVisible);
       void supabase.removeChannel(liveStatusChannel);
     };
   }, [profile, socialLinks]);
@@ -2584,8 +2571,6 @@ export function CreatorProfilePage({
     setRevealedBattleRows(0);
 
     const interval = window.setInterval(() => {
-      if (document.visibilityState === "hidden") return;
-
       setRevealedBattleRows((current) => {
         if (current >= battleRows.length) {
           window.clearInterval(interval);
@@ -2888,10 +2873,32 @@ export function CreatorProfilePage({
 
     setProfileSaveError(null);
     setIsEditing(false);
+    setProfileEditModalOpen(false);
 
     if (startInEditMode) {
       router.replace(creatorPublicPath);
     }
+  }
+
+  function handleOpenProfileEditModal() {
+    if (!profile || !canManageProfile) return;
+
+    setEditDraft(createProfileEditDraft(profile, socialLinks));
+    setProfileSaveError(null);
+    setPopupEffectDropdownOpen(false);
+    setProfileEditModalOpen(true);
+  }
+
+  function handleCloseProfileEditModal() {
+    if (isSavingProfile) return;
+
+    if (profile) {
+      setEditDraft(createProfileEditDraft(profile, socialLinks));
+    }
+
+    setProfileSaveError(null);
+    setPopupEffectDropdownOpen(false);
+    setProfileEditModalOpen(false);
   }
 
   function handleManualPartnershipDraftChange(
@@ -3089,6 +3096,7 @@ export function CreatorProfilePage({
     setSocialLinks(nextSocialLinks);
     setIsSavingProfile(false);
     setIsEditing(false);
+    setProfileEditModalOpen(false);
 
     await refreshCreatorProfile();
 
@@ -3559,41 +3567,59 @@ export function CreatorProfilePage({
               <button
                 type="button"
                 onClick={() => setCreatorPanelOpen((current) => !current)}
-                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
+                className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-fuchsia-100 backdrop-blur transition hover:bg-fuchsia-300/20"
                 aria-expanded={creatorPanelOpen}
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
                 {translate(
                   t,
                   "creatorProfileCreatorPanelButton",
                   "Painel do Criador",
                 )}
                 <ChevronDown
-                  className={`h-4 w-4 transition ${creatorPanelOpen ? "rotate-180" : ""}`}
+                  className={`h-3.5 w-3.5 transition ${creatorPanelOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {creatorPanelOpen ? (
-                <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#100913]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                <div className="absolute right-0 z-50 mt-2 w-[min(19rem,calc(100vw-2rem))] overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#100913]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatorPanelOpen(false);
+                      setCreatorStatsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-emerald-100 transition hover:bg-emerald-300/10"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-300/10">
+                      <BarChart3 className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileStatsButton",
+                        "Estatísticas",
+                      )}
+                    </span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
                       setCreatorPanelOpen(false);
                       setLiveDropsOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/10"
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-amber-100 transition hover:bg-amber-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
                       <Gift className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileLiveDropsButton",
-                          "Drops de Live",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileLiveDropsButton",
+                        "Drops de Live",
+                      )}
                     </span>
                   </button>
 
@@ -3603,40 +3629,39 @@ export function CreatorProfilePage({
                       setCreatorPanelOpen(false);
                       setSupportChatOpen(true);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
                       <MessageCircle className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileTalkToTeam",
-                          "Falar com a equipe",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileTalkToTeam",
+                        "Falar com a equipe",
+                      )}
                     </span>
                   </button>
 
-                  <Link
-                    href={`/creator/${encodeURIComponent(profile.username)}/dashboard`}
-                    onClick={() => setCreatorPanelOpen(false)}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatorPanelOpen(false);
+                      handleOpenProfileEditModal();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-[0.85rem] px-2.5 py-2.5 text-left text-xs font-bold text-fuchsia-100 transition hover:bg-fuchsia-300/10"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10">
                       <Sparkles className="h-4 w-4" />
                     </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translate(
-                          t,
-                          "creatorProfileManageProfile",
-                          "Gerenciar perfil",
-                        )}
-                      </span>
+                    <span className="min-w-0 uppercase tracking-[0.16em]">
+                      {translate(
+                        t,
+                        "creatorProfileManageProfile",
+                        "Gerenciar perfil",
+                      )}
                     </span>
-                  </Link>
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -4280,13 +4305,7 @@ export function CreatorProfilePage({
                                 <span className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-white/10">
                                   {candidate.avatar_url ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      src={candidate.avatar_url}
-                                      alt=""
-                                      loading="lazy"
-                                      decoding="async"
-                                      className="h-full w-full object-cover"
-                                    />
+                                    <img src={candidate.avatar_url} alt="" className="h-full w-full object-cover" />
                                   ) : null}
                                 </span>
                                 <span className="min-w-0 flex-1">
@@ -4619,8 +4638,6 @@ export function CreatorProfilePage({
                               <img
                                 src={logo}
                                 alt={brandName}
-                                loading="lazy"
-                                decoding="async"
                                 className="h-full w-full object-contain p-2"
                               />
                             ) : (
@@ -5175,8 +5192,6 @@ export function CreatorProfilePage({
                                     <img
                                       src={thumbnail}
                                       alt={clip.title}
-                                      loading="lazy"
-                                      decoding="async"
                                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                   ) : (
@@ -5244,7 +5259,7 @@ export function CreatorProfilePage({
         </section>
       </div>
 
-      {profile && liveDropsOpen ? (
+      {profile ? (
         <LiveDropsModal
           open={liveDropsOpen}
           onClose={() => setLiveDropsOpen(false)}
@@ -5254,6 +5269,21 @@ export function CreatorProfilePage({
           isLive={Boolean(liveDropsPlatform.status?.isLive)}
           viewerCount={liveDropsPlatform.status?.viewerCount || 0}
           liveTitle={liveDropsPlatform.status?.title || null}
+        />
+      ) : null}
+
+      {profile ? (
+        <CreatorStatsModal
+          open={creatorStatsOpen}
+          onClose={() => setCreatorStatsOpen(false)}
+          creatorName={profile.nickname || profile.username}
+          stats={stats}
+          collectionStats={collectionStats}
+          liveStatus={liveStatus}
+          externalReach={externalReach}
+          cardLevel={cardLevel}
+          profileXp={Number((profile as any)?.profile_xp || 0)}
+          dropsCount={0}
         />
       ) : null}
 
@@ -5393,8 +5423,6 @@ export function CreatorProfilePage({
                       <img
                         src={channel.thumbnail}
                         alt={channel.title}
-                        loading="lazy"
-                        decoding="async"
                         className="h-12 w-12 shrink-0 rounded-xl object-cover"
                       />
                     ) : (
@@ -5605,6 +5633,292 @@ export function CreatorProfilePage({
               </div>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {profile && canManageProfile && profileEditModalOpen && editDraft ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6">
+          <button
+            type="button"
+            aria-label="Fechar edição de perfil"
+            onClick={handleCloseProfileEditModal}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md"
+          />
+
+          <section className="relative z-10 flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[#05070d]/95 shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-200/70">
+                  Painel do Criador
+                </p>
+                <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
+                  Editar perfil
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-white/55">
+                  Atualize somente as informações públicas que aparecem no Cardpoc.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseProfileEditModal}
+                disabled={isSavingProfile}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xl font-black text-white/70 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-5 [scrollbar-width:none] [-ms-overflow-style:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Nome público
+                  </span>
+                  <input
+                    value={editDraft.nickname}
+                    onChange={(event) =>
+                      handleEditDraftChange("nickname", event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="Nome do criador"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Título
+                  </span>
+                  <input
+                    value={editDraft.title}
+                    onChange={(event) =>
+                      handleEditDraftChange("title", event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="Streamer, criador, guild leader..."
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Categoria
+                  </span>
+                  <input
+                    value={editDraft.category}
+                    onChange={(event) =>
+                      handleEditDraftChange("category", event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="Black Desert, MMORPG, Lives..."
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Avatar URL
+                  </span>
+                  <input
+                    value={editDraft.avatarUrl}
+                    onChange={(event) =>
+                      handleEditDraftChange("avatarUrl", event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="https://..."
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Bio curta
+                  </span>
+                  <textarea
+                    value={editDraft.bio}
+                    onChange={(event) =>
+                      handleEditDraftChange("bio", event.target.value)
+                    }
+                    rows={4}
+                    className="min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="Resumo curto para o topo do perfil."
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Tags
+                  </span>
+                  <textarea
+                    value={editDraft.tagsText}
+                    onChange={(event) =>
+                      handleEditDraftChange("tagsText", event.target.value)
+                    }
+                    rows={4}
+                    className="min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                    placeholder="Streamer, MMORPG, Black Desert"
+                  />
+                  <p className="text-xs text-white/40">Separe as tags por vírgula.</p>
+                </label>
+              </div>
+
+              <label className="mt-4 block space-y-2">
+                <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                  Descrição completa
+                </span>
+                <textarea
+                  value={editDraft.description}
+                  onChange={(event) =>
+                    handleEditDraftChange("description", event.target.value)
+                  }
+                  rows={5}
+                  className="min-h-[150px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+                  placeholder="Conte mais sobre o criador, comunidade, conteúdo e objetivos."
+                />
+              </label>
+
+              <div ref={popupEffectDropdownRef} className="relative mt-5">
+                <button
+                  type="button"
+                  onClick={() => setPopupEffectDropdownOpen((current) => !current)}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em] text-cyan-100 shadow-lg shadow-cyan-500/10 transition hover:border-cyan-300/45 hover:bg-cyan-300/15"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Efeitos de apresentação
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 transition ${
+                      popupEffectDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {popupEffectDropdownOpen ? (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-3 max-h-[280px] overflow-y-auto rounded-[1.5rem] border border-cyan-300/20 bg-[#05070d]/98 p-2 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {CREATOR_POPUP_IMAGE_EFFECT_STYLES.map((effectStyle) => {
+                      const isSelected =
+                        (editDraft.popupAnimationStyle || "none") ===
+                        effectStyle.value;
+
+                      return (
+                        <button
+                          key={effectStyle.value}
+                          type="button"
+                          onClick={() => {
+                            handleEditDraftChange(
+                              "popupAnimationStyle",
+                              effectStyle.value,
+                            );
+                            setPopupEffectDropdownOpen(false);
+                          }}
+                          className={`w-full rounded-[1rem] border px-3 py-2.5 text-left transition ${
+                            isSelected
+                              ? "border-cyan-300/55 bg-cyan-300/15 shadow-lg shadow-cyan-500/10"
+                              : "border-white/10 bg-white/[0.03] hover:border-cyan-300/30 hover:bg-cyan-300/[0.07]"
+                          }`}
+                        >
+                          <span className="block text-xs font-black uppercase tracking-[0.18em] text-white/85">
+                            {translateExisting(t, effectStyle.labelKey, effectStyle.fallback)}
+                          </span>
+                          <span className="mt-1 block text-xs leading-5 text-white/45">
+                            {translateExisting(t, effectStyle.descriptionKey, effectStyle.descriptionFallback)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">Redes sociais</p>
+                    <p className="mt-1 text-xs leading-5 text-white/45">
+                      Adicione links públicos que aparecem no perfil.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddEditSocialLink}
+                    className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/20"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Adicionar
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  {getEditSocialLinkRows(editDraft.socialLinksText).map(
+                    (social, index) => (
+                      <div
+                        key={`${social.platform}-${index}`}
+                        className="grid gap-2 rounded-2xl border border-white/10 bg-black/25 p-3 sm:grid-cols-[160px_minmax(0,1fr)_auto]"
+                      >
+                        <input
+                          value={social.platform}
+                          onChange={(event) =>
+                            handleEditSocialLinkChange(
+                              index,
+                              "platform",
+                              event.target.value,
+                            )
+                          }
+                          className="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-300/50"
+                          placeholder="twitch"
+                        />
+                        <input
+                          value={social.url}
+                          onChange={(event) =>
+                            handleEditSocialLinkChange(
+                              index,
+                              "url",
+                              event.target.value,
+                            )
+                          }
+                          className="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-300/50"
+                          placeholder="https://..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditSocialLink(index)}
+                          className="inline-flex items-center justify-center rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-red-100 transition hover:bg-red-300/20"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              {profileSaveError ? (
+                <p className="mt-4 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-bold text-red-100">
+                  {profileSaveError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-white/10 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <button
+                type="button"
+                onClick={handleCloseProfileEditModal}
+                disabled={isSavingProfile}
+                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white/70 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProfileEdit}
+                disabled={isSavingProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-5 py-3 text-sm font-black text-cyan-50 shadow-lg shadow-cyan-500/10 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Salvar alterações
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
 
