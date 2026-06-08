@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   Archive,
   CheckCircle2,
@@ -17,56 +16,13 @@ import {
 import { AnimatePresence } from "framer-motion";
 
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
+import { CollectionModal } from "@/components/collection/CollectionModal";
+import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
+import { UserProfileModal } from "@/components/account/UserProfileModal";
+import { MissionsModal } from "@/components/missions/MissionsModal";
+import { PacksModal } from "@/components/packs/PacksModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
-
-const AdminPanelModal = dynamic(
-  () =>
-    import("@/components/admin/AdminPanelModal").then(
-      (module) => module.AdminPanelModal,
-    ),
-  { ssr: false },
-);
-
-const CollectionModal = dynamic(
-  () =>
-    import("@/components/collection/CollectionModal").then(
-      (module) => module.CollectionModal,
-    ),
-  { ssr: false },
-);
-
-const CreatorRequestModal = dynamic(
-  () =>
-    import("@/components/creator-request/CreatorRequestModal").then(
-      (module) => module.CreatorRequestModal,
-    ),
-  { ssr: false },
-);
-
-const UserProfileModal = dynamic(
-  () =>
-    import("@/components/account/UserProfileModal").then(
-      (module) => module.UserProfileModal,
-    ),
-  { ssr: false },
-);
-
-const MissionsModal = dynamic(
-  () =>
-    import("@/components/missions/MissionsModal").then(
-      (module) => module.MissionsModal,
-    ),
-  { ssr: false },
-);
-
-const PacksModal = dynamic(
-  () =>
-    import("@/components/packs/PacksModal").then(
-      (module) => module.PacksModal,
-    ),
-  { ssr: false },
-);
 
 type AccountProfile = {
   display_name: string | null;
@@ -141,7 +97,6 @@ export function AccountModal({
   onLogout,
 }: AccountModalProps) {
   const [requestOpen, setRequestOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
@@ -209,7 +164,6 @@ export function AccountModal({
         event instanceof CustomEvent && event.detail ? event.detail : {};
 
       setRequestOpen(false);
-      setAdminOpen(false);
       setProfileOpen(false);
       setMissionsOpen(false);
       setPacksOpen(false);
@@ -331,8 +285,6 @@ export function AccountModal({
                       <img
                         src={profile.avatar_url}
                         alt={profile.display_name || "Avatar"}
-                        loading="lazy"
-                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -406,16 +358,6 @@ export function AccountModal({
               </div>
             </div>
 
-            {profile?.is_admin && (
-              <button
-                type="button"
-                onClick={() => setAdminOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-3 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 lg:mt-6 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:py-2.5"
-              >
-                <ShieldCheck size={18} />
-                {translate(t, "adminPanel", "Painel Admin")}
-              </button>
-            )}
 
             <div className="mt-5 space-y-4 lg:mt-6 [@media(max-height:760px)]:mt-4">
               <section>
@@ -558,44 +500,30 @@ export function AccountModal({
         )}
       </AnimatePresence>
 
-      {requestOpen && (
-        <CreatorRequestModal
-          open={requestOpen}
-          email={email}
-          onClose={() => setRequestOpen(false)}
-        />
-      )}
+      <CreatorRequestModal
+        open={requestOpen}
+        email={email}
+        onClose={() => setRequestOpen(false)}
+      />
 
-      {adminOpen && (
-        <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
-      )}
+      <UserProfileModal
+        open={profileOpen}
+        email={email}
+        profile={profile}
+        onClose={() => setProfileOpen(false)}
+      />
 
-      {profileOpen && (
-        <UserProfileModal
-          open={profileOpen}
-          email={email}
-          profile={profile}
-          onClose={() => setProfileOpen(false)}
-        />
-      )}
+      <CollectionModal
+        open={collectionOpen}
+        onClose={() => setCollectionOpen(false)}
+      />
 
-      {collectionOpen && (
-        <CollectionModal
-          open={collectionOpen}
-          onClose={() => setCollectionOpen(false)}
-        />
-      )}
+      <MissionsModal
+        open={missionsOpen}
+        onClose={() => setMissionsOpen(false)}
+      />
 
-      {missionsOpen && (
-        <MissionsModal
-          open={missionsOpen}
-          onClose={() => setMissionsOpen(false)}
-        />
-      )}
-
-      {packsOpen && (
-        <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
-      )}
+      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
 
       <AnimatePresence>
         {linkedAccountsOpen && (

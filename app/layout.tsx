@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { AdminFloatingButton } from "@/components/admin/AdminFloatingButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,22 +18,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.cardpoc.com"),
+
   title: {
     default: "Cardpoc",
     template: "%s | Cardpoc",
   },
-  icons: {
-    icon: [
-      {
-        url: "/icon.png?v=2",
-        type: "image/png",
-      },
-    ],
-    shortcut: "/icon.png?v=2",
-    apple: "/icon.png?v=2",
-  },
+
   description:
     "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings, reputação, conquistas e métricas exclusivas.",
+
   keywords: [
     "Cardpoc",
     "criadores de conteúdo",
@@ -47,6 +41,7 @@ export const metadata: Metadata = {
     "youtube",
     "kick",
   ],
+
   openGraph: {
     type: "website",
     locale: "pt_BR",
@@ -64,6 +59,7 @@ export const metadata: Metadata = {
       },
     ],
   },
+
   twitter: {
     card: "summary_large_image",
     title: "Cardpoc",
@@ -71,6 +67,7 @@ export const metadata: Metadata = {
       "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais.",
     images: ["/og-image.jpg"],
   },
+
   alternates: {
     canonical: "https://www.cardpoc.com",
   },
@@ -90,8 +87,8 @@ export default function RootLayout({
         <LanguageProvider>
           <SiteHeader />
           {children}
+          <AdminFloatingButton />
         </LanguageProvider>
-        <Analytics />
       </body>
     </html>
   );
