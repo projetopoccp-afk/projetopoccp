@@ -252,7 +252,7 @@ export function CreatorStatsModal({
           </button>
         </div>
 
-        <div className="relative max-h-[calc(min(92dvh,860px)-104px)] overflow-y-auto px-4 py-4 sm:px-7 sm:py-5 [scrollbar-width:thin] [scrollbar-color:rgba(34,211,238,0.35)_transparent]">
+        <div className="relative max-h-[calc(min(92dvh,860px)-104px)] overflow-y-auto overscroll-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4 sm:px-7 sm:pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(34,211,238,0.35)_transparent]">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={<Eye className="h-4 w-4" />}
