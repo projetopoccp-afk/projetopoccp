@@ -5299,7 +5299,7 @@ export function CreatorProfilePage({
           liveStatus={liveStatus}
           externalReach={externalReach}
           cardLevel={cardLevel}
-          profileXp={Number(profile.profile_xp || 0)}
+          profileXp={Number((profile as any)?.profile_xp || 0)}
           dropsCount={0}
         />
       ) : null}
