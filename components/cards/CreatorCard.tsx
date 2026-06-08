@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { rarityStyles } from "@/lib/rarity";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,6 +11,7 @@ import { TiltCard } from "./TiltCard";
 type CreatorCardProps = {
   creator: Creator;
   onClick: (creator: Creator) => void;
+  hoverOnlyEffects?: boolean;
 };
 
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
@@ -1141,8 +1142,14 @@ function getTranslatedRarityLabel(
   return translate(t, "creatorCardRarityCommon", "Common");
 }
 
-export function CreatorCard({ creator, onClick }: CreatorCardProps) {
+export function CreatorCard({
+  creator,
+  onClick,
+  hoverOnlyEffects = false,
+}: CreatorCardProps) {
   const { t } = useLanguage();
+  const [isPointerActive, setIsPointerActive] = useState(false);
+  const shouldRenderMotionEffects = !hoverOnlyEffects || isPointerActive;
   const internalRarity = normalizeRarity(creator.rarity);
   const rarity =
     internalRarity === "mythic"
@@ -1164,12 +1171,20 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
         <button
           onClick={() => onClick(creator)}
           style={createRarityStyle(config)}
-          className={`creator-card-shell ${config.className} group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border bg-black text-left transition duration-500`}
+          className={`creator-card-shell ${config.className} ${
+            hoverOnlyEffects ? "creator-card-hover-only-effects" : ""
+          } group relative h-[360px] w-[240px] overflow-hidden rounded-[24px] border bg-black text-left transition duration-500`}
           aria-label={`${translate(t, "creatorCardOpenAria", "Open card for")} ${creator.nickname}`}
+          onMouseEnter={() => setIsPointerActive(true)}
+          onMouseLeave={() => setIsPointerActive(false)}
+          onFocus={() => setIsPointerActive(true)}
+          onBlur={() => setIsPointerActive(false)}
         >
           <img
             src={creator.avatarUrl}
             alt={creator.nickname}
+            loading="lazy"
+            decoding="async"
             className="creator-card-image absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]"
           />
 
@@ -1180,31 +1195,33 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
           <div className="creator-card-art-depth pointer-events-none absolute inset-0" />
           <div className="creator-card-holographic pointer-events-none absolute inset-0" />
 
-          <div className="creator-particle-layer pointer-events-none absolute inset-0">
-            {config.particles.map((particle, index) => (
-              <span
-                key={`${internalRarity}-${particle.shape || config.particleShape}-${index}`}
-                className={`creator-particle absolute ${particleShapeClass(
-                  particle.shape || config.particleShape,
-                )}`}
-                style={
-                  {
-                    left: particle.left,
-                    top: particle.top,
-                    width: particle.size,
-                    height: particle.size,
-                    opacity: particle.opacity ?? 0.7,
-                    "--particle-opacity": `${particle.opacity ?? 0.7}`,
-                    "--particle-x": particle.tx,
-                    "--particle-y": particle.ty,
-                    "--particle-rotate": particle.rotate,
-                    animationDelay: `${particle.delay}s`,
-                    animationDuration: `${particle.duration}s`,
-                  } as CSSProperties
-                }
-              />
-            ))}
-          </div>
+          {shouldRenderMotionEffects && (
+            <div className="creator-particle-layer pointer-events-none absolute inset-0">
+              {config.particles.map((particle, index) => (
+                <span
+                  key={`${internalRarity}-${particle.shape || config.particleShape}-${index}`}
+                  className={`creator-particle absolute ${particleShapeClass(
+                    particle.shape || config.particleShape,
+                  )}`}
+                  style={
+                    {
+                      left: particle.left,
+                      top: particle.top,
+                      width: particle.size,
+                      height: particle.size,
+                      opacity: particle.opacity ?? 0.7,
+                      "--particle-opacity": `${particle.opacity ?? 0.7}`,
+                      "--particle-x": particle.tx,
+                      "--particle-y": particle.ty,
+                      "--particle-rotate": particle.rotate,
+                      animationDelay: `${particle.delay}s`,
+                      animationDuration: `${particle.duration}s`,
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          )}
 
           {internalRarity === "mythic" && (
             <>
@@ -1259,6 +1276,55 @@ export function CreatorCard({ creator, onClick }: CreatorCardProps) {
                 0 12px 28px rgba(0, 0, 0, 0.62);
               transform: translateZ(0);
               backface-visibility: hidden;
+            }
+
+            .creator-card-hover-only-effects .creator-effect-texture,
+            .creator-card-hover-only-effects .creator-effect-aura,
+            .creator-card-hover-only-effects .creator-effect-special,
+            .creator-card-hover-only-effects .creator-card-holographic,
+            .creator-card-hover-only-effects .creator-mythic-halo,
+            .creator-card-hover-only-effects .creator-mythic-sakura-seal,
+            .creator-card-hover-only-effects .creator-mythic-pearl-frame {
+              opacity: 0;
+              animation-play-state: paused;
+              transition: opacity 240ms ease;
+            }
+
+            .creator-card-hover-only-effects:hover .creator-effect-texture,
+            .creator-card-hover-only-effects:hover .creator-effect-aura,
+            .creator-card-hover-only-effects:hover .creator-effect-special,
+            .creator-card-hover-only-effects:hover .creator-card-holographic,
+            .creator-card-hover-only-effects:hover .creator-mythic-halo,
+            .creator-card-hover-only-effects:hover .creator-mythic-sakura-seal,
+            .creator-card-hover-only-effects:hover .creator-mythic-pearl-frame,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-texture,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-aura,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-special,
+            .creator-card-hover-only-effects:focus-visible .creator-card-holographic,
+            .creator-card-hover-only-effects:focus-visible .creator-mythic-halo,
+            .creator-card-hover-only-effects:focus-visible .creator-mythic-sakura-seal,
+            .creator-card-hover-only-effects:focus-visible .creator-mythic-pearl-frame {
+              animation-play-state: running;
+            }
+
+            .creator-card-hover-only-effects:hover .creator-effect-texture,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-texture {
+              opacity: 0.46;
+            }
+
+            .creator-card-hover-only-effects:hover .creator-effect-aura,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-aura {
+              opacity: 0.5;
+            }
+
+            .creator-card-hover-only-effects:hover .creator-effect-special,
+            .creator-card-hover-only-effects:focus-visible .creator-effect-special {
+              opacity: 0.42;
+            }
+
+            .creator-card-hover-only-effects:hover .creator-card-holographic,
+            .creator-card-hover-only-effects:focus-visible .creator-card-holographic {
+              opacity: 0.12;
             }
 
             .creator-card-shell:hover {

@@ -572,12 +572,15 @@ function AnimatedRarityCreatorCard({
   const [incomingRarityIndex, setIncomingRarityIndex] = useState<number | null>(
     null
   );
+  const [isHovered, setIsHovered] = useState(false);
 
   const activeRarityIndexRef = useRef(initialRarityIndex);
   const isTransitioningRef = useRef(false);
   const transitionTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (compact) return;
+
     function beginCardStackTransition() {
       if (isTransitioningRef.current) return;
 
@@ -622,11 +625,15 @@ function AnimatedRarityCreatorCard({
         window.clearTimeout(transitionTimeoutRef.current);
       }
     };
-  }, [index]);
+  }, [compact, index]);
 
-  const activeShowcase = RARITY_SHOWCASE_CYCLE[activeRarityIndex];
+  const hoverRarityIndex =
+    (initialRarityIndex + 1) % RARITY_SHOWCASE_CYCLE.length;
+  const compactRarityIndex = isHovered ? hoverRarityIndex : initialRarityIndex;
+  const effectiveRarityIndex = compact ? compactRarityIndex : activeRarityIndex;
+  const activeShowcase = RARITY_SHOWCASE_CYCLE[effectiveRarityIndex];
   const incomingShowcase =
-    incomingRarityIndex !== null
+    !compact && incomingRarityIndex !== null
       ? RARITY_SHOWCASE_CYCLE[incomingRarityIndex]
       : null;
 
@@ -651,6 +658,10 @@ function AnimatedRarityCreatorCard({
           ? "relative h-[252px] w-[168px] overflow-visible [perspective:1200px]"
           : "relative h-[360px] w-[240px] overflow-visible [perspective:1200px]"
       }
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
     >
       <div
         className={
@@ -660,7 +671,11 @@ function AnimatedRarityCreatorCard({
         }
       >
         <div className="relative z-10 h-full w-full">
-          <CreatorCard creator={activeCreator} onClick={onClick} />
+          <CreatorCard
+            creator={activeCreator}
+            onClick={onClick}
+            hoverOnlyEffects={compact}
+          />
         </div>
 
         {incomingCreator && (
