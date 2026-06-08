@@ -570,12 +570,14 @@ export function AccountModal({
         <AdminPanelModal open={adminOpen} onClose={() => setAdminOpen(false)} />
       )}
 
-      <UserProfileModal
-        open={profileOpen}
-        email={email}
-        profile={profile}
-        onClose={() => setProfileOpen(false)}
-      />
+      {profileOpen && (
+        <UserProfileModal
+          open={profileOpen}
+          email={email}
+          profile={profile}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
 
       {collectionOpen && (
         <CollectionModal
