@@ -598,6 +598,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   >([]);
   const [selectedDetectedKickCreators, setSelectedDetectedKickCreators] =
     useState<Record<string, boolean>>({});
+  const [linkingDetectedCreatorKey, setLinkingDetectedCreatorKey] =
+    useState<string | null>(null);
   const [claimSearch, setClaimSearch] = useState("");
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
@@ -1564,7 +1566,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     }
   }
 
-  function getCreatorDetectorPlatformLabel(platform = creatorDetectorPlatform) {
+  function getCreatorDetectorPlatformLabel(
+    platform: CreatorDetectorPlatform = creatorDetectorPlatform,
+  ) {
     return platform === "twitch" ? "Twitch" : "Kick";
   }
 
@@ -1572,6 +1576,82 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     return `${creator.platform || creatorDetectorPlatform}:${String(
       creator.slug || creator.username || creator.id || "",
     ).toLowerCase()}`;
+  }
+
+  function normalizeDetectorCompare(value: unknown) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/^@/, "")
+      .replace(/[^a-z0-9]/g, "")
+      .replace(/(tv|live|oficial|official)$/g, "");
+  }
+
+  function getNameSimilarity(first: string, second: string) {
+    if (!first || !second) return 0;
+    if (first === second) return 1;
+
+    const shorter = first.length <= second.length ? first : second;
+    const longer = first.length > second.length ? first : second;
+
+    if (shorter.length >= 5 && longer.startsWith(shorter)) return 0.94;
+    if (shorter.length >= 5 && longer.includes(shorter)) return 0.88;
+
+    const distances = Array.from({ length: shorter.length + 1 }, (_, index) =>
+      index,
+    );
+
+    for (let i = 1; i <= longer.length; i += 1) {
+      let previous = i;
+      for (let j = 1; j <= shorter.length; j += 1) {
+        const current = distances[j];
+        distances[j] =
+          longer[i - 1] === shorter[j - 1]
+            ? previous
+            : Math.min(previous, distances[j], distances[j - 1]) + 1;
+        previous = current;
+      }
+      distances[0] = i;
+    }
+
+    return 1 - distances[shorter.length] / Math.max(first.length, second.length);
+  }
+
+  function getPossibleCreatorMatches(creator: DetectedKickCreator) {
+    const detectedNames = [
+      creator.slug,
+      creator.username,
+      creator.display_name,
+    ]
+      .map(normalizeDetectorCompare)
+      .filter(Boolean);
+
+    if (detectedNames.length === 0) return [];
+
+    return creators
+      .map((existingCreator) => {
+        const existingNames = [
+          existingCreator.username,
+          existingCreator.nickname,
+        ]
+          .map(normalizeDetectorCompare)
+          .filter(Boolean);
+
+        const score = Math.max(
+          0,
+          ...detectedNames.flatMap((detectedName) =>
+            existingNames.map((existingName) =>
+              getNameSimilarity(detectedName, existingName),
+            ),
+          ),
+        );
+
+        return { creator: existingCreator, score };
+      })
+      .filter((match) => match.score >= 0.78)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
   }
 
   function toggleDetectedKickCreator(creator: DetectedKickCreator) {
@@ -1585,7 +1665,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }
 
   async function detectKickCreators() {
-    const platform = creatorDetectorPlatform;
     setActionLoading("detect-kick-creators");
 
     try {
@@ -1605,49 +1684,97 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         return;
       }
 
-      const response = await fetch(
-        platform === "twitch"
-          ? "/api/admin/detect-twitch-creators"
-          : "/api/admin/detect-kick-creators",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${detectorSession.access_token}`,
-          },
-          body: JSON.stringify({
-            category: kickDetectorCategory.trim(),
-            language: kickDetectorLanguage.trim() || null,
-            minViewers: Number(kickDetectorMinViewers || 0),
-            limit: Number(kickDetectorLimit || 50),
-          }),
-        },
+      const requestBody = JSON.stringify({
+        category: kickDetectorCategory.trim(),
+        language: kickDetectorLanguage.trim() || null,
+        minViewers: Number(kickDetectorMinViewers || 0),
+        limit: Number(kickDetectorLimit || 50),
+      });
+
+      const endpoints: {
+        platform: CreatorDetectorPlatform;
+        url: string;
+      }[] = [
+        { platform: "kick", url: "/api/admin/detect-kick-creators" },
+        { platform: "twitch", url: "/api/admin/detect-twitch-creators" },
+      ];
+
+      const responses = await Promise.all(
+        endpoints.map(async (endpoint) => {
+          const response = await fetch(endpoint.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${detectorSession.access_token}`,
+            },
+            body: requestBody,
+          });
+
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            return {
+              platform: endpoint.platform,
+              error:
+                result?.error ||
+                translate(
+                  t,
+                  "adminCreatorDetectorDetectionError",
+                  "Não foi possível detectar criadores agora.",
+                ),
+              creators: [] as DetectedKickCreator[],
+            };
+          }
+
+          return {
+            platform: endpoint.platform,
+            error: null,
+            creators: Array.isArray(result?.creators)
+              ? (result.creators as DetectedKickCreator[])
+              : [],
+          };
+        }),
       );
 
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          result?.error ||
-            translate(
-              t,
-              "adminCreatorDetectorDetectionError",
-              "Não foi possível detectar criadores agora.",
-            ),
-        );
-      }
-
-      const creatorsResult = Array.isArray(result?.creators)
-        ? result.creators
-        : [];
-
-      setDetectedKickCreators(
-        (creatorsResult as DetectedKickCreator[]).map((creator) => ({
+      const creatorsResult = responses.flatMap((response) =>
+        response.creators.map((creator) => ({
           ...creator,
-          platform: creator.platform || platform,
+          platform: creator.platform || response.platform,
         })),
       );
+
+      const uniqueCreators = Array.from(
+        new Map(
+          creatorsResult.map((creator) => [
+            getDetectedKickKey(creator),
+            creator,
+          ]),
+        ).values(),
+      ).sort(
+        (first, second) =>
+          Number(second.viewer_count || 0) - Number(first.viewer_count || 0),
+      );
+
+      setDetectedKickCreators(uniqueCreators);
       setSelectedDetectedKickCreators({});
+
+      const failedPlatforms = responses.filter((response) => response.error);
+
+      if (failedPlatforms.length > 0 && uniqueCreators.length === 0) {
+        throw new Error(failedPlatforms.map((item) => item.error).join(" | "));
+      }
+
+      if (failedPlatforms.length > 0) {
+        alert(
+          `${translate(
+            t,
+            "adminCreatorDetectorPartialDetection",
+            "Busca parcial concluída. Uma plataforma retornou erro:",
+          )} ${failedPlatforms
+            .map((item) => `${getCreatorDetectorPlatformLabel(item.platform)}: ${item.error}`)
+            .join(" | ")}`,
+        );
+      }
 
       showAdminSuccess(
         translate(
@@ -1672,7 +1799,6 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }
 
   async function importSelectedKickCreators() {
-    const platform = creatorDetectorPlatform;
     const selectedCreators = detectedKickCreators.filter(
       (creator) =>
         selectedDetectedKickCreators[getDetectedKickKey(creator)] &&
@@ -1700,37 +1826,67 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
         return;
       }
 
-      const response = await fetch(
-        platform === "twitch"
-          ? "/api/admin/import-twitch-creators"
-          : "/api/admin/import-kick-creators",
+      const creatorsByPlatform = selectedCreators.reduce(
+        (groups, creator) => {
+          const platform = creator.platform || "kick";
+          groups[platform].push({
+            ...creator,
+            platform,
+          });
+          return groups;
+        },
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${detectorSession.access_token}`,
-          },
-          body: JSON.stringify({
-            creators: selectedCreators.map((creator) => ({
-              ...creator,
-              platform: creator.platform || platform,
-            })),
-          }),
+          kick: [] as DetectedKickCreator[],
+          twitch: [] as DetectedKickCreator[],
         },
       );
 
-      const result = await response.json().catch(() => null);
+      const importEndpoints: {
+        platform: CreatorDetectorPlatform;
+        url: string;
+        creators: DetectedKickCreator[];
+      }[] = [
+        {
+          platform: "kick",
+          url: "/api/admin/import-kick-creators",
+          creators: creatorsByPlatform.kick,
+        },
+        {
+          platform: "twitch",
+          url: "/api/admin/import-twitch-creators",
+          creators: creatorsByPlatform.twitch,
+        },
+      ].filter((endpoint) => endpoint.creators.length > 0);
 
-      if (!response.ok) {
-        throw new Error(
-          result?.error ||
-            translate(
-              t,
-              "adminCreatorDetectorImportError",
-              "Não foi possível importar os criadores selecionados.",
-            ),
-        );
-      }
+      const responses = await Promise.all(
+        importEndpoints.map(async (endpoint) => {
+          const response = await fetch(endpoint.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${detectorSession.access_token}`,
+            },
+            body: JSON.stringify({
+              creators: endpoint.creators,
+            }),
+          });
+
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            throw new Error(
+              result?.error ||
+                `${getCreatorDetectorPlatformLabel(endpoint.platform)}: ${translate(
+                  t,
+                  "adminCreatorDetectorImportError",
+                  "Não foi possível importar os criadores selecionados.",
+                )}`,
+            );
+          }
+
+          return result;
+        }),
+      );
 
       await loadCreators();
       await loadLogs();
@@ -1750,6 +1906,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           "Criadores importados como rascunho.",
         ),
       );
+
+      return responses;
     } catch (error) {
       alert(
         error instanceof Error
@@ -1762,6 +1920,100 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
       );
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function linkDetectedCreatorToExisting(
+    detectedCreator: DetectedKickCreator,
+    existingCreator: CreatorProfile,
+  ) {
+    const key = getDetectedKickKey(detectedCreator);
+    const platform = detectedCreator.platform || creatorDetectorPlatform;
+
+    setLinkingDetectedCreatorKey(`${key}:${existingCreator.id}`);
+
+    try {
+      const {
+        data: { session: detectorSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !detectorSession?.access_token) {
+        alert(
+          translate(
+            t,
+            "adminCreatorDetectorInvalidSession",
+            "Sessão inválida. Faça login novamente.",
+          ),
+        );
+        return;
+      }
+
+      const response = await fetch("/api/admin/link-detected-creator", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${detectorSession.access_token}`,
+        },
+        body: JSON.stringify({
+          creator_id: existingCreator.id,
+          platform,
+          slug: detectedCreator.slug || detectedCreator.username,
+          url:
+            detectedCreator.url ||
+            (platform === "twitch"
+              ? `https://www.twitch.tv/${detectedCreator.slug}`
+              : `https://kick.com/${detectedCreator.slug}`),
+          followers_count: detectedCreator.followers_count ?? null,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ||
+            translate(
+              t,
+              "adminCreatorDetectorLinkError",
+              "Não foi possível vincular a rede social ao perfil existente.",
+            ),
+        );
+      }
+
+      setSelectedDetectedKickCreators((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+
+      setDetectedKickCreators((current) =>
+        current.map((creator) =>
+          getDetectedKickKey(creator) === key
+            ? { ...creator, already_exists: true }
+            : creator,
+        ),
+      );
+
+      showAdminSuccess(
+        translate(
+          t,
+          "adminCreatorDetectorLinkSuccess",
+          "Rede social vinculada ao perfil existente.",
+        ),
+      );
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : translate(
+              t,
+              "adminCreatorDetectorLinkError",
+              "Não foi possível vincular a rede social ao perfil existente.",
+            ),
+      );
+    } finally {
+      setLinkingDetectedCreatorKey(null);
     }
   }
 
@@ -3429,7 +3681,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       {translate(
                         t,
                         "adminCreatorDetectorBadge",
-                        `${getCreatorDetectorPlatformLabel()} Detector`,
+                        "Detector Kick + Twitch",
                       )}
                     </div>
 
@@ -3445,7 +3697,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       {translate(
                         t,
                         "adminCreatorDetectorDescription",
-                        "Busque criadores ao vivo por plataforma e categoria, revise os resultados e importe apenas os selecionados como rascunho.",
+                        "Busque criadores ao vivo na Kick e na Twitch ao mesmo tempo, revise os resultados e importe apenas os selecionados como rascunho.",
                       )}
                     </p>
                   </div>
@@ -3463,35 +3715,15 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           "adminCreatorDetectorDetecting",
                           "Detectando...",
                         )
-                      : `${translate(
+                      : translate(
                           t,
                           "adminCreatorDetectorDetectButton",
-                          "Detectar na",
-                        )} ${getCreatorDetectorPlatformLabel()}`}
+                          "Detectar Kick + Twitch",
+                        )}
                   </button>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-5">
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                      {translate(t, "adminCreatorDetectorPlatform", "Plataforma")}
-                    </span>
-                    <select
-                      value={creatorDetectorPlatform}
-                      onChange={(event) => {
-                        setCreatorDetectorPlatform(
-                          event.target.value as CreatorDetectorPlatform,
-                        );
-                        setDetectedKickCreators([]);
-                        setSelectedDetectedKickCreators({});
-                      }}
-                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/40"
-                    >
-                      <option value="kick">Kick</option>
-                      <option value="twitch">Twitch</option>
-                    </select>
-                  </label>
-
+                <div className="mt-5 grid gap-3 md:grid-cols-4">
                   <label className="block md:col-span-2">
                     <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
                       {translate(t, "adminCreatorDetectorCategory", "Categoria")}
@@ -3605,7 +3837,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                     text={translate(
                       t,
                       "adminNoCreatorsDetectedByPlatform",
-                      "Nenhum criador detectado ainda. Escolha uma plataforma/categoria e clique em detectar.",
+                      "Nenhum criador detectado ainda. Escolha uma categoria e clique em detectar Kick + Twitch.",
                     )}
                   />
                 )}
@@ -3622,6 +3854,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                     (creatorPlatform === "twitch"
                       ? `https://www.twitch.tv/${creator.slug}`
                       : `https://kick.com/${creator.slug}`);
+                  const possibleMatches = creator.already_exists
+                    ? []
+                    : getPossibleCreatorMatches(creator);
 
                   return (
                     <div
@@ -3734,6 +3969,54 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           </a>
                         </div>
                       </div>
+
+                      {possibleMatches.length > 0 && (
+                        <div className="border-t border-white/10 bg-black/20 px-5 py-4">
+                          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+                            <Handshake size={15} />
+                            {translate(
+                              t,
+                              "adminCreatorDetectorPossibleDuplicate",
+                              "Possível duplicado",
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {possibleMatches.map((match) => {
+                              const linkKey = `${key}:${match.creator.id}`;
+                              const confidence = Math.round(match.score * 100);
+
+                              return (
+                                <button
+                                  key={match.creator.id}
+                                  type="button"
+                                  onClick={() =>
+                                    linkDetectedCreatorToExisting(
+                                      creator,
+                                      match.creator,
+                                    )
+                                  }
+                                  disabled={linkingDetectedCreatorKey === linkKey}
+                                  className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-xs font-black text-amber-100 transition hover:bg-amber-300/20 disabled:opacity-40"
+                                >
+                                  <Link size={14} />
+                                  {linkingDetectedCreatorKey === linkKey
+                                    ? translate(
+                                        t,
+                                        "adminCreatorDetectorLinking",
+                                        "Vinculando...",
+                                      )
+                                    : `${translate(
+                                        t,
+                                        "adminCreatorDetectorLinkToExisting",
+                                        "Vincular ao existente",
+                                      )}: ${match.creator.nickname} (${confidence}%)`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

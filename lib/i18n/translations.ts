@@ -383,8 +383,8 @@ export const translations = {
     adminCreatorDetectorBadge: "Detector de Criadores",
     adminCreatorDetectorCategory: "Categoria",
     adminCreatorDetectorDescription:
-      "Busque criadores ao vivo por plataforma e categoria, revise os resultados e importe apenas os selecionados como rascunho.",
-    adminCreatorDetectorDetectButton: "Detectar na",
+      "Busque criadores ao vivo na Kick e na Twitch ao mesmo tempo, revise os resultados e importe apenas os selecionados como rascunho.",
+    adminCreatorDetectorDetectButton: "Detectar Kick + Twitch",
     adminCreatorDetectorDetecting: "Detectando...",
     adminCreatorDetectorDetectionError:
       "Não foi possível detectar criadores agora.",
@@ -396,6 +396,15 @@ export const translations = {
     adminCreatorDetectorImportSuccess: "Criadores importados como rascunho.",
     adminCreatorDetectorImporting: "Importando...",
     adminCreatorDetectorInvalidSession: "Sessão inválida. Faça login novamente.",
+    adminCreatorDetectorLinkError:
+      "Não foi possível vincular a rede social ao perfil existente.",
+    adminCreatorDetectorLinkSuccess:
+      "Rede social vinculada ao perfil existente.",
+    adminCreatorDetectorLinkToExisting: "Vincular ao existente",
+    adminCreatorDetectorLinking: "Vinculando...",
+    adminCreatorDetectorPartialDetection:
+      "Busca parcial concluída. Uma plataforma retornou erro:",
+    adminCreatorDetectorPossibleDuplicate: "Possível duplicado",
     adminCreatorDetectorLanguage: "Idioma",
     adminCreatorDetectorMinViewers: "Viewers mín.",
     adminCreatorDetectorPlatform: "Plataforma",
@@ -404,7 +413,7 @@ export const translations = {
     adminCreatorDetectorShowingRegistered: "Mostrando cadastrados",
     adminCreatorDetectorTitle: "Detectar Criadores",
     adminNoCreatorsDetectedByPlatform:
-      "Nenhum criador detectado ainda. Escolha uma plataforma/categoria e clique em detectar.",
+      "Nenhum criador detectado ainda. Escolha uma categoria e clique em detectar Kick + Twitch.",
     adminSearchCreatorDetectorPlaceholder:
       "Buscar por criador, categoria, título ou idioma...",
     adminCreateCreatorProfileError: "Erro ao criar o perfil do criador.",
@@ -1732,8 +1741,8 @@ export const translations = {
     adminCreatorDetectorBadge: "Creator Detector",
     adminCreatorDetectorCategory: "Category",
     adminCreatorDetectorDescription:
-      "Find live creators by platform and category, review the results, and import only the selected ones as drafts.",
-    adminCreatorDetectorDetectButton: "Detect on",
+      "Find live creators on Kick and Twitch at the same time, review the results, and import only the selected ones as drafts.",
+    adminCreatorDetectorDetectButton: "Detect Kick + Twitch",
     adminCreatorDetectorDetecting: "Detecting...",
     adminCreatorDetectorDetectionError:
       "Could not detect creators right now.",
@@ -1745,6 +1754,15 @@ export const translations = {
     adminCreatorDetectorImportSuccess: "Creators imported as drafts.",
     adminCreatorDetectorImporting: "Importing...",
     adminCreatorDetectorInvalidSession: "Invalid session. Please sign in again.",
+    adminCreatorDetectorLinkError:
+      "Could not link the social account to the existing profile.",
+    adminCreatorDetectorLinkSuccess:
+      "Social account linked to the existing profile.",
+    adminCreatorDetectorLinkToExisting: "Link to existing",
+    adminCreatorDetectorLinking: "Linking...",
+    adminCreatorDetectorPartialDetection:
+      "Partial search completed. One platform returned an error:",
+    adminCreatorDetectorPossibleDuplicate: "Possible duplicate",
     adminCreatorDetectorLanguage: "Language",
     adminCreatorDetectorMinViewers: "Min. viewers",
     adminCreatorDetectorPlatform: "Platform",
@@ -1753,7 +1771,7 @@ export const translations = {
     adminCreatorDetectorShowingRegistered: "Showing registered",
     adminCreatorDetectorTitle: "Detect Creators",
     adminNoCreatorsDetectedByPlatform:
-      "No creators detected yet. Choose a platform/category and click detect.",
+      "No creators detected yet. Choose a category and click Detect Kick + Twitch.",
     adminSearchCreatorDetectorPlaceholder:
       "Search by creator, category, title or language...",
     adminCreateCreatorProfileError: "Error creating creator profile.",
@@ -3079,8 +3097,8 @@ export const translations = {
     adminCreatorDetectorBadge: "Detector de Creadores",
     adminCreatorDetectorCategory: "Categoría",
     adminCreatorDetectorDescription:
-      "Busca creadores en vivo por plataforma y categoría, revisa los resultados e importa solo los seleccionados como borrador.",
-    adminCreatorDetectorDetectButton: "Detectar en",
+      "Busca creadores en vivo en Kick y Twitch al mismo tiempo, revisa los resultados e importa solo los seleccionados como borrador.",
+    adminCreatorDetectorDetectButton: "Detectar Kick + Twitch",
     adminCreatorDetectorDetecting: "Detectando...",
     adminCreatorDetectorDetectionError:
       "No fue posible detectar creadores ahora.",
@@ -3092,6 +3110,15 @@ export const translations = {
     adminCreatorDetectorImportSuccess: "Creadores importados como borrador.",
     adminCreatorDetectorImporting: "Importando...",
     adminCreatorDetectorInvalidSession: "Sesión inválida. Inicia sesión nuevamente.",
+    adminCreatorDetectorLinkError:
+      "No fue posible vincular la red social al perfil existente.",
+    adminCreatorDetectorLinkSuccess:
+      "Red social vinculada al perfil existente.",
+    adminCreatorDetectorLinkToExisting: "Vincular al existente",
+    adminCreatorDetectorLinking: "Vinculando...",
+    adminCreatorDetectorPartialDetection:
+      "Búsqueda parcial completada. Una plataforma devolvió un error:",
+    adminCreatorDetectorPossibleDuplicate: "Posible duplicado",
     adminCreatorDetectorLanguage: "Idioma",
     adminCreatorDetectorMinViewers: "Viewers mín.",
     adminCreatorDetectorPlatform: "Plataforma",
@@ -3100,7 +3127,7 @@ export const translations = {
     adminCreatorDetectorShowingRegistered: "Mostrando registrados",
     adminCreatorDetectorTitle: "Detectar Creadores",
     adminNoCreatorsDetectedByPlatform:
-      "Aún no se detectó ningún creador. Elige una plataforma/categoría y haz clic en detectar.",
+      "Aún no se detectó ningún creador. Elige una categoría y haz clic en Detectar Kick + Twitch.",
     adminSearchCreatorDetectorPlaceholder:
       "Buscar por creador, categoría, título o idioma...",
     adminCreateCreatorProfileError: "Error al crear el perfil del creador.",
