@@ -5,10 +5,13 @@ import {
   BarChart3,
   ExternalLink,
   Eye,
+  Gauge,
   Globe2,
   Layers3,
   Share2,
   Sparkles,
+  TrendingUp,
+  Trophy,
   Users,
   X,
 } from "lucide-react";
@@ -91,6 +94,45 @@ function getExternalCount(status: CreatorLiveStatusSummary | undefined) {
   );
 }
 
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function getProfileStrengthScore(params: {
+  views: number;
+  followers: number;
+  shares: number;
+  collectionTotal: number;
+  collectors: number;
+  externalReach: number;
+  dropsCount: number;
+}) {
+  const viewsScore = Math.min(params.views / 1000, 1) * 18;
+  const followersScore = Math.min(params.followers / 300, 1) * 16;
+  const sharesScore = Math.min(params.shares / 150, 1) * 12;
+  const collectionScore = Math.min(params.collectionTotal / 500, 1) * 18;
+  const collectorsScore = Math.min(params.collectors / 120, 1) * 16;
+  const externalScore = Math.min(params.externalReach / 10000, 1) * 12;
+  const dropsScore = Math.min(params.dropsCount / 20, 1) * 8;
+
+  return clampScore(
+    viewsScore +
+      followersScore +
+      sharesScore +
+      collectionScore +
+      collectorsScore +
+      externalScore +
+      dropsScore,
+  );
+}
+
+function getProfileStrengthLabel(score: number) {
+  if (score >= 80) return "Perfil forte";
+  if (score >= 55) return "Em crescimento";
+  if (score >= 30) return "Potencial ativo";
+  return "Base inicial";
+}
+
 export function CreatorStatsModal({
   open,
   onClose,
@@ -120,35 +162,59 @@ export function CreatorStatsModal({
     .sort((a, b) => b.count + b.liveViewers - (a.count + a.liveViewers));
 
   const rarityRows = [
-  {
-    label: "Comum",
-    value: collectionStats.common,
-    className: "from-white/12 to-white/5 text-white/80",
-  },
-  {
-    label: "Raro",
-    value: collectionStats.rare,
-    className: "from-cyan-300/18 to-blue-500/8 text-cyan-100",
-  },
-  {
-    label: "Épico",
-    value: collectionStats.epic,
-    className: "from-fuchsia-300/18 to-purple-500/8 text-fuchsia-100",
-  },
-  {
-    label: "Lendário",
-    value: collectionStats.legendary,
-    className: "from-amber-300/20 to-yellow-600/8 text-amber-100",
-  },
-];
+    {
+      label: "Comum",
+      value: collectionStats.common,
+      className: "from-white/12 to-white/5 text-white/80",
+    },
+    {
+      label: "Raro",
+      value: collectionStats.rare,
+      className: "from-cyan-300/18 to-blue-500/8 text-cyan-100",
+    },
+    {
+      label: "Épico",
+      value: collectionStats.epic,
+      className: "from-fuchsia-300/18 to-purple-500/8 text-fuchsia-100",
+    },
+    {
+      label: "Lendário",
+      value: collectionStats.legendary,
+      className: "from-amber-300/20 to-yellow-600/8 text-amber-100",
+    },
+  ];
 
   const cardsPerCollector =
     collectionStats.uniqueCollectors > 0
       ? collectionStats.total / collectionStats.uniqueCollectors
       : 0;
 
+  const liveViewersNow = platformRows.reduce(
+    (total, row) => total + row.liveViewers,
+    0,
+  );
+
+  const cardpocEngagement =
+    stats.views > 0
+      ? ((stats.followers + stats.shares + collectionStats.uniqueCollectors) /
+          stats.views) *
+        100
+      : 0;
+
+  const profileStrengthScore = getProfileStrengthScore({
+    views: stats.views,
+    followers: stats.followers,
+    shares: stats.shares,
+    collectionTotal: collectionStats.total,
+    collectors: collectionStats.uniqueCollectors,
+    externalReach,
+    dropsCount,
+  });
+
+  const profileStrengthLabel = getProfileStrengthLabel(profileStrengthScore);
+
   return (
-    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/78 px-4 py-6 backdrop-blur-sm sm:px-6">
+    <div className="fixed inset-0 z-[160] flex min-h-dvh items-center justify-center overflow-hidden bg-black/78 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-6">
       <button
         type="button"
         className="absolute inset-0"
@@ -156,7 +222,7 @@ export function CreatorStatsModal({
         aria-label={"Fechar estatísticas"}
       />
 
-      <section className="relative z-10 max-h-[min(88vh,820px)] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-[#090b13]/96 shadow-2xl shadow-cyan-500/10">
+      <section className="relative z-10 max-h-[min(92dvh,860px)] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-[#090b13]/96 shadow-2xl shadow-cyan-500/10">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.18),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(217,70,239,0.16),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_34%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.04)_1px,transparent_1px)] bg-[size:34px_34px] opacity-70" />
 
@@ -170,7 +236,9 @@ export function CreatorStatsModal({
               {creatorName}
             </h2>
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-white/55">
-              {"Resumo de crescimento, coleção e alcance do criador dentro e fora do Cardpoc."}
+              {
+                "Resumo de crescimento, coleção e alcance do criador dentro e fora do Cardpoc."
+              }
             </p>
           </div>
 
@@ -184,7 +252,7 @@ export function CreatorStatsModal({
           </button>
         </div>
 
-        <div className="relative max-h-[calc(min(88vh,820px)-104px)] overflow-y-auto px-5 py-5 sm:px-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="relative max-h-[calc(min(92dvh,860px)-104px)] overflow-y-auto px-4 py-4 sm:px-7 sm:py-5 [scrollbar-width:thin] [scrollbar-color:rgba(34,211,238,0.35)_transparent]">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={<Eye className="h-4 w-4" />}
@@ -194,22 +262,113 @@ export function CreatorStatsModal({
             />
             <StatCard
               icon={<Users className="h-4 w-4" />}
-              label={translate(t, "creatorProfileCardpocReach", "Alcance Cardpoc")}
+              label={translate(
+                t,
+                "creatorProfileCardpocReach",
+                "Alcance Cardpoc",
+              )}
               value={formatNumber(stats.followers)}
               tone="fuchsia"
             />
             <StatCard
               icon={<Globe2 className="h-4 w-4" />}
-              label={translate(t, "creatorProfileGlobalReach", "Alcance global")}
+              label={translate(
+                t,
+                "creatorProfileGlobalReach",
+                "Alcance global",
+              )}
               value={formatNumber(externalReach)}
               tone="white"
             />
             <StatCard
               icon={<Share2 className="h-4 w-4" />}
-              label={translate(t, "creatorProfileSharedImpact", "Compartilhamentos")}
+              label={translate(
+                t,
+                "creatorProfileSharedImpact",
+                "Compartilhamentos",
+              )}
               value={formatNumber(stats.shares)}
               tone="white"
             />
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-[1.6rem] border border-emerald-300/15 bg-emerald-300/[0.045] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-100/65">
+                    {"Saúde do perfil"}
+                  </p>
+                  <h3 className="mt-1 text-lg font-black text-white">
+                    {profileStrengthLabel}
+                  </h3>
+                </div>
+                <div className="rounded-full border border-emerald-300/20 bg-emerald-300/10 p-3 text-emerald-100">
+                  <Gauge className="h-5 w-5" />
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-end gap-3">
+                <p className="text-5xl font-black text-white">
+                  {profileStrengthScore}
+                </p>
+                <p className="pb-2 text-sm font-black uppercase tracking-[0.18em] text-emerald-100/55">
+                  {"/ 100"}
+                </p>
+              </div>
+
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/35">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-300"
+                  style={{ width: `${profileStrengthScore}%` }}
+                />
+              </div>
+
+              <p className="mt-4 text-sm font-semibold leading-6 text-white/50">
+                {
+                  "Pontuação estimada usando visitas, seguidores, compartilhamentos, coleção, drops e alcance externo já disponíveis no Cardpoc."
+                }
+              </p>
+            </div>
+
+            <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+                    {"Leitura rápida"}
+                  </p>
+                  <h3 className="mt-1 text-lg font-black text-white">
+                    {"Resumo de impacto"}
+                  </h3>
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.06] p-3 text-white/70">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <MiniMetric
+                  label={"Engajamento"}
+                  value={`${cardpocEngagement.toFixed(1)}%`}
+                />
+                <MiniMetric
+                  label={"Média por fã"}
+                  value={
+                    cardsPerCollector > 0 ? cardsPerCollector.toFixed(1) : "0"
+                  }
+                />
+                <MiniMetric
+                  label={"Ao vivo agora"}
+                  value={formatNumber(liveViewersNow)}
+                />
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/24 p-4 text-sm font-semibold leading-6 text-white/55">
+                {
+                  "Use estes números para entender se o criador está atraindo visitas, convertendo seguidores e gerando coleção dentro da comunidade."
+                }
+              </div>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
@@ -239,7 +398,9 @@ export function CreatorStatsModal({
                 />
                 <MiniMetric
                   label={"Média"}
-                  value={cardsPerCollector > 0 ? cardsPerCollector.toFixed(1) : "0"}
+                  value={
+                    cardsPerCollector > 0 ? cardsPerCollector.toFixed(1) : "0"
+                  }
                 />
               </div>
 
@@ -291,28 +452,19 @@ export function CreatorStatsModal({
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <MiniMetric
-                  label={"Nível"}
-                  value={formatNumber(cardLevel)}
-                />
-                <MiniMetric
-                  label={"XP"}
-                  value={formatNumber(profileXp)}
-                />
-                <MiniMetric
-                  label={"Drops"}
-                  value={formatNumber(dropsCount)}
-                />
+                <MiniMetric label={"Nível"} value={formatNumber(cardLevel)} />
+                <MiniMetric label={"XP"} value={formatNumber(profileXp)} />
+                <MiniMetric label={"Drops"} value={formatNumber(dropsCount)} />
                 <MiniMetric
                   label={"Ao vivo agora"}
-                  value={formatNumber(
-                    platformRows.reduce((total, row) => total + row.liveViewers, 0),
-                  )}
+                  value={formatNumber(liveViewersNow)}
                 />
               </div>
 
               <p className="mt-5 rounded-2xl border border-white/10 bg-black/24 p-4 text-sm font-semibold leading-6 text-white/55">
-                {"Quanto mais o perfil é visitado, seguido, compartilhado, coletado e usado em drops, maior tende a ser o crescimento dentro do Cardpoc."}
+                {
+                  "Quanto mais o perfil é visitado, seguido, compartilhado, coletado e usado em drops, maior tende a ser o crescimento dentro do Cardpoc."
+                }
               </p>
             </div>
           </div>
@@ -333,19 +485,19 @@ export function CreatorStatsModal({
             </div>
 
             {platformRows.length > 0 ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-5 grid gap-3 lg:grid-cols-2">
                 {platformRows.map((row) => (
                   <div
                     key={row.key}
-                    className="rounded-2xl border border-white/10 bg-black/22 p-4"
+                    className="rounded-2xl border border-white/10 bg-black/22 p-4 transition hover:border-cyan-300/25 hover:bg-white/[0.045]"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-black text-white">{row.platform}</p>
+                        <p className="text-sm font-black text-white">
+                          {row.platform}
+                        </p>
                         <p className="mt-1 text-xs font-semibold text-white/45">
-                          {row.isLive
-                            ? "Ao vivo"
-                            : "Métrica externa"}
+                          {row.isLive ? "Ao vivo" : "Métrica externa"}
                         </p>
                       </div>
                       {row.url ? (
@@ -378,6 +530,50 @@ export function CreatorStatsModal({
                 {"Ainda não há métricas externas disponíveis para este perfil."}
               </p>
             )}
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.4rem] border border-amber-300/15 bg-amber-300/[0.045] p-4">
+              <div className="flex items-center gap-2 text-amber-100/75">
+                <Trophy className="h-4 w-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  {"Potencial"}
+                </p>
+              </div>
+              <p className="mt-3 text-sm font-semibold leading-6 text-white/55">
+                {collectionStats.uniqueCollectors > 0
+                  ? "Este perfil já possui colecionadores ativos dentro do Cardpoc."
+                  : "Este perfil ainda está começando sua base de colecionadores."}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/[0.045] p-4">
+              <div className="flex items-center gap-2 text-cyan-100/75">
+                <Users className="h-4 w-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  {"Comunidade"}
+                </p>
+              </div>
+              <p className="mt-3 text-sm font-semibold leading-6 text-white/55">
+                {stats.followers > 0
+                  ? "Seguidores no Cardpoc ajudam o criador a ganhar relevância interna."
+                  : "Reivindicar e divulgar o perfil ajuda a ativar os primeiros seguidores."}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.045] p-4">
+              <div className="flex items-center gap-2 text-fuchsia-100/75">
+                <Sparkles className="h-4 w-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  {"Próximo passo"}
+                </p>
+              </div>
+              <p className="mt-3 text-sm font-semibold leading-6 text-white/55">
+                {dropsCount > 0
+                  ? "Continue usando drops para transformar espectadores em participantes."
+                  : "Ativar drops em lives pode acelerar coleção, interação e retorno ao perfil."}
+              </p>
+            </div>
           </div>
         </div>
       </section>
