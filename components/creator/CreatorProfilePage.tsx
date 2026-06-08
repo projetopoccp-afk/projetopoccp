@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -52,14 +51,6 @@ const LiveDropsModal = dynamic(
   () =>
     import("@/components/modals/LiveDropsModal").then(
       (module) => module.LiveDropsModal,
-    ),
-  { ssr: false },
-);
-
-const CreatorStatsModal = dynamic(
-  () =>
-    import("@/components/creator/CreatorStatsModal").then(
-      (module) => module.CreatorStatsModal,
     ),
   { ssr: false },
 );
@@ -1637,7 +1628,6 @@ export function CreatorProfilePage({
   const [showcaseRarityIndex, setShowcaseRarityIndex] = useState(0);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
   const [liveDropsOpen, setLiveDropsOpen] = useState(false);
-  const [creatorStatsOpen, setCreatorStatsOpen] = useState(false);
   const [creatorPanelOpen, setCreatorPanelOpen] = useState(false);
   const creatorPanelDropdownRef = useRef<HTMLDivElement | null>(null);
   const [battleCandidates, setBattleCandidates] = useState<CreatorBattleCandidate[]>([]);
@@ -3611,28 +3601,6 @@ export function CreatorProfilePage({
                     type="button"
                     onClick={() => {
                       setCreatorPanelOpen(false);
-                      setCreatorStatsOpen(true);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-emerald-100 transition hover:bg-emerald-300/10"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-300/10">
-                      <BarChart3 className="h-4 w-4" />
-                    </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span className="uppercase tracking-[0.18em]">
-                        {translateExisting(
-                          t,
-                          "creatorProfileStatsButton",
-                          "Estatísticas",
-                        )}
-                      </span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCreatorPanelOpen(false);
                       setSupportChatOpen(true);
                     }}
                     className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/10"
@@ -5286,21 +5254,6 @@ export function CreatorProfilePage({
           isLive={Boolean(liveDropsPlatform.status?.isLive)}
           viewerCount={liveDropsPlatform.status?.viewerCount || 0}
           liveTitle={liveDropsPlatform.status?.title || null}
-        />
-      ) : null}
-
-      {profile && creatorStatsOpen ? (
-        <CreatorStatsModal
-          open={creatorStatsOpen}
-          onClose={() => setCreatorStatsOpen(false)}
-          creatorName={profile.nickname || profile.username}
-          stats={stats}
-          collectionStats={collectionStats}
-          liveStatus={liveStatus}
-          externalReach={externalReach}
-          cardLevel={cardLevel}
-          profileXp={Number((profile as any)?.profile_xp || 0)}
-          dropsCount={0}
         />
       ) : null}
 
