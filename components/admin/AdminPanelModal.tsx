@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -655,6 +655,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     useState<CreatorProfile | null>(null);
   const [imageEditorUrl, setImageEditorUrl] = useState("");
   const [imageEditorFile, setImageEditorFile] = useState<File | null>(null);
+  const [imageEditorObjectUrl, setImageEditorObjectUrl] = useState<string | null>(
+    null,
+  );
 
   async function getCurrentUserId() {
     const {
@@ -931,19 +934,41 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }, [open]);
 
   useEffect(() => {
+    if (!imageEditorFile) {
+      setImageEditorObjectUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(imageEditorFile);
+    setImageEditorObjectUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [imageEditorFile]);
+
+  useEffect(() => {
     if (open && activeTab === "conversations") {
       loadSupportMessages(selectedConversationId);
     }
   }, [open, activeTab, selectedConversationId]);
 
+  const usersById = useMemo(() => {
+    return new Map(users.map((user) => [user.id, user]));
+  }, [users]);
+
+  const creatorsById = useMemo(() => {
+    return new Map(creators.map((creator) => [creator.id, creator]));
+  }, [creators]);
+
   function getOwner(userId: string | null) {
     if (!userId) return null;
-    return users.find((user) => user.id === userId) || null;
+    return usersById.get(userId) || null;
   }
 
   function getCreator(creatorId: string | null) {
     if (!creatorId) return null;
-    return creators.find((creator) => creator.id === creatorId) || null;
+    return creatorsById.get(creatorId) || null;
   }
 
   async function approveRequest(request: CreatorRequest) {
@@ -3906,6 +3931,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
                             {creator.avatar_url ? (
                               <img
+                                loading="lazy"
+                                decoding="async"
                                 src={creator.avatar_url}
                                 alt={creator.display_name || creator.slug}
                                 className="h-full w-full object-cover"
@@ -4582,6 +4609,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
                             {creator?.avatar_url ? (
                               <img
+                                loading="lazy"
+                                decoding="async"
                                 src={creator.avatar_url}
                                 alt={creator.nickname}
                                 className="h-full w-full object-cover"
@@ -5697,6 +5726,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
                         {partnershipApprovalDraft.brandLogoUrl ? (
                           <img
+                            loading="lazy"
+                            decoding="async"
                             src={partnershipApprovalDraft.brandLogoUrl}
                             alt={partnershipApprovalDraft.brandName}
                             className="h-full w-full object-contain p-4"
@@ -5996,6 +6027,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         {partnershipApprovalDraft.partnership
                           .source_thumbnail ? (
                           <img
+                            loading="lazy"
+                            decoding="async"
                             src={
                               partnershipApprovalDraft.partnership
                                 .source_thumbnail
@@ -6208,9 +6241,11 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
 
                   <div className="grid gap-5 p-6 md:grid-cols-[180px_1fr]">
                     <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/40">
-                      {imageEditorFile ? (
+                      {imageEditorObjectUrl ? (
                         <img
-                          src={URL.createObjectURL(imageEditorFile)}
+                          loading="lazy"
+                          decoding="async"
+                          src={imageEditorObjectUrl}
                           alt={translate(
                             t,
                             "adminCreatorImagePreview",
@@ -6220,6 +6255,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         />
                       ) : imageEditorUrl.trim() ? (
                         <img
+                          loading="lazy"
+                          decoding="async"
                           src={imageEditorUrl.trim()}
                           alt={translate(
                             t,
@@ -6230,6 +6267,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                         />
                       ) : imageEditorCreator.avatar_url ? (
                         <img
+                          loading="lazy"
+                          decoding="async"
                           src={imageEditorCreator.avatar_url}
                           alt={translate(
                             t,
@@ -6409,6 +6448,8 @@ function UserInfo({
       <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
         {profile.avatar_url ? (
           <img
+            loading="lazy"
+            decoding="async"
             src={profile.avatar_url}
             alt={profile.display_name || translate(t, "avatar", "Avatar")}
             className="h-full w-full object-cover"
