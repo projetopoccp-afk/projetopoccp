@@ -36,19 +36,6 @@ export default function HomePage() {
   const [faqFeedback, setFaqFeedback] = useState("");
 
   useEffect(() => {
-    function handleCreatorSearch(event: Event) {
-      const customEvent = event as CustomEvent<{ value?: string }>;
-      setSearch(customEvent.detail?.value ?? "");
-    }
-
-    window.addEventListener("cardpoc:creator-search", handleCreatorSearch);
-
-    return () => {
-      window.removeEventListener("cardpoc:creator-search", handleCreatorSearch);
-    };
-  }, []);
-
-  useEffect(() => {
     const hasSeenLoading = sessionStorage.getItem(
       "cardpoc-initial-loading"
     );
@@ -307,8 +294,8 @@ export default function HomePage() {
       <GlowBackground />
       <ParticleBackground />
 
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-8">
-        <div className="relative flex flex-col items-center text-center">
+      <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
+        <div className="mx-auto flex flex-col items-center text-center">
           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
             {translate(t, "homePageBadge", "Conheça e colecione criadores")}
           </div>
@@ -321,37 +308,99 @@ export default function HomePage() {
             )}
           </p>
 
-          <div className="mt-4 flex w-full flex-col items-center justify-center gap-4 lg:flex-row lg:gap-6">
-            <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarLives", "Lives")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarClips", "Clips")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarStats", "Estatísticas")}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-                {translate(t, "homePagePillarCards", "Cartas Digitais")}
-              </span>
-            </div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+              {translate(t, "homePagePillarLives", "Lives")}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+              {translate(t, "homePagePillarClips", "Clips")}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+              {translate(t, "homePagePillarStats", "Estatísticas")}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+              {translate(t, "homePagePillarCards", "Cartas Digitais")}
+            </span>
+          </div>
 
+          <div className="mt-7 grid w-full max-w-5xl gap-3 text-left sm:grid-cols-3">
+            <article className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 shadow-[0_0_26px_rgba(34,211,238,0.08)] backdrop-blur-xl">
+              <span className="text-lg">🎴</span>
+              <h2 className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
+                {translate(t, "homePageSeoCollectTitle", "Colecione criadores")}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                {translate(
+                  t,
+                  "homePageSeoCollectDescription",
+                  "Ganhe cartas digitais de criadores de conteúdo, streamers e influenciadores favoritos."
+                )}
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-amber-300/15 bg-amber-300/[0.045] p-4 shadow-[0_0_26px_rgba(251,191,36,0.07)] backdrop-blur-xl">
+              <span className="text-lg">🎁</span>
+              <h2 className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+                {translate(t, "homePageSeoDropsTitle", "Participe de drops")}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                {translate(
+                  t,
+                  "homePageSeoDropsDescription",
+                  "Entre em drops ao vivo na Kick e Twitch, concorra a packs e fortaleça sua coleção."
+                )}
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-purple-300/15 bg-purple-400/[0.045] p-4 shadow-[0_0_26px_rgba(168,85,247,0.07)] backdrop-blur-xl">
+              <span className="text-lg">🏆</span>
+              <h2 className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-purple-100">
+                {translate(t, "homePageSeoRankingsTitle", "Descubra rankings")}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                {translate(
+                  t,
+                  "homePageSeoRankingsDescription",
+                  "Acompanhe estatísticas, rankings e criadores em alta na Twitch, Kick e YouTube."
+                )}
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/album"
-              className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)] lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:hover:-translate-y-[calc(50%+0.125rem)]"
+              className="group relative overflow-hidden rounded-2xl border border-cyan-300/30 bg-cyan-300 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-black shadow-[0_0_28px_rgba(34,211,238,0.18)] transition hover:-translate-y-0.5 hover:bg-cyan-200"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
-              <span className="relative flex items-center gap-2">
-                <span className="text-sm">▣</span>
-                {translate(t, "homePageAlbumButton", "Álbum")}
-              </span>
+              {translate(t, "homePageStartCollectionCta", "Começar minha coleção")}
             </Link>
+
+            <a
+              href="#criadores"
+              className="rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white/70 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/35 hover:text-white"
+            >
+              {translate(t, "homePageDiscoverCreatorsCta", "Descobrir criadores")}
+            </a>
           </div>
         </div>
       </section>
 
-      <CreatorGrid search={search} />
+      <div className="relative z-10 mx-auto mt-6 flex max-w-7xl justify-end px-6">
+        <Link
+          href="/album"
+          className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)]"
+        >
+          <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
+          <span className="relative flex items-center gap-2">
+            <span className="text-sm">▣</span>
+            {translate(t, "homePageAlbumButton", "Álbum")}
+          </span>
+        </Link>
+      </div>
+
+      <div id="criadores">
+        <CreatorGrid search={search} />
+      </div>
 
       <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
         {!hasSeenCardpocGuide && (

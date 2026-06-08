@@ -20,26 +20,36 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.cardpoc.com"),
 
   title: {
-    default: "Cardpoc",
+    default:
+      "Cardpoc | Colecione Criadores, Streamers, Cartas Digitais e Rankings",
     template: "%s | Cardpoc",
   },
 
   description:
-    "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings, reputação, conquistas e métricas exclusivas.",
+    "Colecione criadores de conteúdo, streamers e influenciadores através de cartas digitais. Descubra rankings, estatísticas, drops ao vivo, packs colecionáveis e acompanhe Twitch, Kick e YouTube em um só lugar.",
 
   keywords: [
     "Cardpoc",
     "criadores de conteúdo",
+    "criadores digitais",
+    "influenciadores",
     "streamers",
+    "ranking de streamers",
     "youtubers",
     "cartas digitais",
     "colecionáveis",
+    "packs colecionáveis",
+    "drops ao vivo",
     "ranking de criadores",
+    "estatísticas de criadores",
     "creator economy",
     "gaming",
     "twitch",
+    "twitch streamer",
     "youtube",
+    "youtube creator",
     "kick",
+    "kick streamer",
   ],
 
   openGraph: {
@@ -47,9 +57,10 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: "https://www.cardpoc.com",
     siteName: "Cardpoc",
-    title: "Cardpoc",
+    title:
+      "Cardpoc | Colecione Criadores, Streamers, Cartas Digitais e Rankings",
     description:
-      "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings e reputação.",
+      "Colecione criadores de conteúdo, streamers e influenciadores através de cartas digitais. Descubra rankings, estatísticas, drops ao vivo, packs colecionáveis e acompanhe Twitch, Kick e YouTube em um só lugar.",
     images: [
       {
         url: "/og-image.jpg",
@@ -62,9 +73,10 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Cardpoc",
+    title:
+      "Cardpoc | Colecione Criadores, Streamers, Cartas Digitais e Rankings",
     description:
-      "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais.",
+      "Colecione criadores de conteúdo, streamers e influenciadores através de cartas digitais, rankings, drops e packs colecionáveis.",
     images: ["/og-image.jpg"],
   },
 

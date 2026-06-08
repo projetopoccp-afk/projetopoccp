@@ -820,6 +820,17 @@ export const translations = {
     homePagePillarClips: "Clips",
     homePagePillarStats: "Estatísticas",
     homePagePillarCards: "Cartas Digitais",
+    homePageSeoCollectTitle: "Colecione criadores",
+    homePageSeoCollectDescription:
+      "Ganhe cartas digitais de criadores de conteúdo, streamers e influenciadores favoritos.",
+    homePageSeoDropsTitle: "Participe de drops",
+    homePageSeoDropsDescription:
+      "Entre em drops ao vivo na Kick e Twitch, concorra a packs e fortaleça sua coleção.",
+    homePageSeoRankingsTitle: "Descubra rankings",
+    homePageSeoRankingsDescription:
+      "Acompanhe estatísticas, rankings e criadores em alta na Twitch, Kick e YouTube.",
+    homePageStartCollectionCta: "Começar minha coleção",
+    homePageDiscoverCreatorsCta: "Descobrir criadores",
     homePageGuideOpenAria: "Entender o Cardpoc",
     homePageGuideTooltip: "O que é o Cardpoc?",
     homePageGuideBubble: "Dúvidas?",
@@ -2176,6 +2187,17 @@ export const translations = {
     homePagePillarClips: "Clips",
     homePagePillarStats: "Stats",
     homePagePillarCards: "Digital Cards",
+    homePageSeoCollectTitle: "Collect creators",
+    homePageSeoCollectDescription:
+      "Earn digital cards from your favorite content creators, streamers and influencers.",
+    homePageSeoDropsTitle: "Join live drops",
+    homePageSeoDropsDescription:
+      "Join live drops on Kick and Twitch, win packs and strengthen your collection.",
+    homePageSeoRankingsTitle: "Discover rankings",
+    homePageSeoRankingsDescription:
+      "Follow stats, rankings and trending creators on Twitch, Kick and YouTube.",
+    homePageStartCollectionCta: "Start my collection",
+    homePageDiscoverCreatorsCta: "Discover creators",
     homePageGuideOpenAria: "Understand Cardpoc",
     homePageGuideTooltip: "What is Cardpoc?",
     homePageGuideBubble: "Questions?",
@@ -3523,6 +3545,17 @@ export const translations = {
     homePagePillarClips: "Clips",
     homePagePillarStats: "Estadísticas",
     homePagePillarCards: "Cartas Digitales",
+    homePageSeoCollectTitle: "Colecciona creadores",
+    homePageSeoCollectDescription:
+      "Gana cartas digitales de tus creadores de contenido, streamers e influencers favoritos.",
+    homePageSeoDropsTitle: "Participa en drops",
+    homePageSeoDropsDescription:
+      "Participa en drops en vivo en Kick y Twitch, gana packs y fortalece tu colección.",
+    homePageSeoRankingsTitle: "Descubre rankings",
+    homePageSeoRankingsDescription:
+      "Sigue estadísticas, rankings y creadores en tendencia en Twitch, Kick y YouTube.",
+    homePageStartCollectionCta: "Empezar mi colección",
+    homePageDiscoverCreatorsCta: "Descubrir creadores",
     homePageGuideOpenAria: "Entender Cardpoc",
     homePageGuideTooltip: "¿Qué es Cardpoc?",
     homePageGuideBubble: "¿Dudas?",
