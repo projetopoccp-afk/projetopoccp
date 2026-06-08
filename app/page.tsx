@@ -307,8 +307,8 @@ export default function HomePage() {
       <GlowBackground />
       <ParticleBackground />
 
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-10">
-        <div className="mx-auto flex flex-col items-center text-center">
+      <section className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-8">
+        <div className="relative flex flex-col items-center text-center">
           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100 backdrop-blur">
             {translate(t, "homePageBadge", "Conheça e colecione criadores")}
           </div>
@@ -321,35 +321,35 @@ export default function HomePage() {
             )}
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-              {translate(t, "homePagePillarLives", "Lives")}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-              {translate(t, "homePagePillarClips", "Clips")}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-              {translate(t, "homePagePillarStats", "Estatísticas")}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
-              {translate(t, "homePagePillarCards", "Cartas Digitais")}
-            </span>
+          <div className="mt-4 flex w-full flex-col items-center justify-center gap-4 lg:flex-row lg:gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+                {translate(t, "homePagePillarLives", "Lives")}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+                {translate(t, "homePagePillarClips", "Clips")}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+                {translate(t, "homePagePillarStats", "Estatísticas")}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+                {translate(t, "homePagePillarCards", "Cartas Digitais")}
+              </span>
+            </div>
+
+            <Link
+              href="/album"
+              className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)] lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:hover:-translate-y-[calc(50%+0.125rem)]"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
+              <span className="relative flex items-center gap-2">
+                <span className="text-sm">▣</span>
+                {translate(t, "homePageAlbumButton", "Álbum")}
+              </span>
+            </Link>
           </div>
         </div>
       </section>
-
-      <div className="relative z-10 mx-auto mt-8 flex max-w-7xl justify-end px-6">
-        <Link
-          href="/album"
-          className="group relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-black/55 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-purple-300/45 hover:text-white hover:shadow-[0_0_34px_rgba(168,85,247,0.22)]"
-        >
-          <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
-          <span className="relative flex items-center gap-2">
-            <span className="text-sm">▣</span>
-            {translate(t, "homePageAlbumButton", "Álbum")}
-          </span>
-        </Link>
-      </div>
 
       <CreatorGrid search={search} />
 
