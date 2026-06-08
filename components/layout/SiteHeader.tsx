@@ -461,7 +461,23 @@ function isCardNotification(notification: UserNotification) {
 export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const [internalSearch, setInternalSearch] = useState("");
   const effectiveSearch = search ?? internalSearch;
-  const handleSearchChange = onSearchChange ?? setInternalSearch;
+
+  function handleSearchChange(value: string) {
+    if (onSearchChange) {
+      onSearchChange(value);
+      return;
+    }
+
+    setInternalSearch(value);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("cardpoc:creator-search", {
+          detail: { value },
+        })
+      );
+    }
+  }
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);

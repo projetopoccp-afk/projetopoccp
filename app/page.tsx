@@ -36,6 +36,19 @@ export default function HomePage() {
   const [faqFeedback, setFaqFeedback] = useState("");
 
   useEffect(() => {
+    function handleCreatorSearch(event: Event) {
+      const customEvent = event as CustomEvent<{ value?: string }>;
+      setSearch(customEvent.detail?.value ?? "");
+    }
+
+    window.addEventListener("cardpoc:creator-search", handleCreatorSearch);
+
+    return () => {
+      window.removeEventListener("cardpoc:creator-search", handleCreatorSearch);
+    };
+  }, []);
+
+  useEffect(() => {
     const hasSeenLoading = sessionStorage.getItem(
       "cardpoc-initial-loading"
     );
