@@ -680,7 +680,11 @@ function CollectionCard({
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
-        <CreatorCard creator={creator} onClick={() => onClick()} />
+        <CreatorCard
+          creator={creator}
+          onClick={() => onClick()}
+          effectsOnHoverOnly
+        />
         <CollectionCardOverlay card={card} compact />
         <CollectionCardObtainedDate
           obtainedAt={card.obtained_at}

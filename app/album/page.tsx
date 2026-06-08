@@ -867,7 +867,11 @@ function MythicCardStage({
       <span className="pointer-events-none absolute -inset-3 rounded-[30px] bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.42),transparent_30%),radial-gradient(circle_at_50%_58%,rgba(251,207,232,0.3),transparent_44%),radial-gradient(circle_at_50%_90%,rgba(244,114,182,0.22),transparent_42%)] blur-xl" />
       <span className="pointer-events-none absolute inset-3 rounded-[28px] border border-pink-100/24 shadow-[inset_0_0_24px_rgba(255,255,255,0.1),0_0_30px_rgba(244,114,182,0.16)]" />
       <div className="relative z-10 origin-center scale-[0.94]">
-        <CreatorCard creator={creator} onClick={() => onClick()} />
+        <CreatorCard
+          creator={creator}
+          onClick={() => onClick()}
+          effectsOnHoverOnly
+        />
       </div>
     </div>
   );
