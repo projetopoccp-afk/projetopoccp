@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Gift, Info, Package, Plus, Sparkles, Star, Zap } from "lucide-react";
 import { CreatorCard } from "@/components/cards/CreatorCard";
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
@@ -42,6 +42,9 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
     null,
   );
 
+  const revealTimeoutRef = useRef<number | null>(null);
+  const refreshTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!open) return;
 
@@ -57,8 +60,34 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
     };
   }, [open]);
 
+  const clearOpeningTimers = useCallback(() => {
+    if (revealTimeoutRef.current) {
+      window.clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+
+    if (refreshTimeoutRef.current) {
+      window.clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
+  }, []);
+
+  const loadPacks = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const data = await getUserPacks();
+      setPacks(data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      clearOpeningTimers();
+      return;
+    }
 
     loadPacks();
 
@@ -69,44 +98,43 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
     window.addEventListener("creator-nexus:packs-updated", handlePacksUpdated);
 
     return () => {
+      clearOpeningTimers();
       window.removeEventListener(
         "creator-nexus:packs-updated",
         handlePacksUpdated,
       );
     };
-  }, [open]);
+  }, [clearOpeningTimers, loadPacks, open]);
 
-  async function loadPacks() {
-    setLoading(true);
-    const data = await getUserPacks();
-    setPacks(data);
-    setLoading(false);
-  }
+  const handleOpenPack = useCallback(
+    async (pack: UserPack) => {
+      if (openingStep === "opening") return;
 
-  async function handleOpenPack(pack: UserPack) {
-    if (openingStep === "opening") return;
+      clearOpeningTimers();
+      setSelectedPack(pack);
+      setOpeningResult(null);
+      setOpeningStep("opening");
 
-    setSelectedPack(pack);
-    setOpeningResult(null);
-    setOpeningStep("opening");
+      const result = await openUserPack(pack.id);
 
-    const result = await openUserPack(pack.id);
+      revealTimeoutRef.current = window.setTimeout(() => {
+        setOpeningResult(result);
+        setOpeningStep("revealed");
 
-    setTimeout(() => {
-      setOpeningResult(result);
-      setOpeningStep("revealed");
+        if (result) {
+          setPacks((current) => current.filter((item) => item.id !== pack.id));
 
-      if (result) {
-        setPacks((current) => current.filter((item) => item.id !== pack.id));
-
-        window.setTimeout(() => {
-          loadPacks();
-        }, 900);
-      }
-    }, 2600);
-  }
+          refreshTimeoutRef.current = window.setTimeout(() => {
+            loadPacks();
+          }, 900);
+        }
+      }, 2600);
+    },
+    [clearOpeningTimers, loadPacks, openingStep],
+  );
 
   function resetOpening() {
+    clearOpeningTimers();
     setSelectedPack(null);
     setOpeningResult(null);
     setOpeningStep("idle");
@@ -127,6 +155,14 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
       "{count} packs available",
     ).replace("{count}", String(packs.length));
   }, [packs.length, t]);
+
+  const inventoryPacks = useMemo(() => {
+    if (openingStep === "opening" && selectedPack) {
+      return [selectedPack];
+    }
+
+    return packs;
+  }, [openingStep, packs, selectedPack]);
 
   return (
     <AnimatePresence>
@@ -192,7 +228,10 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
                       </span>
                     </div>
 
-                    <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div
+                        aria-busy={openingStep === "opening"}
+                        className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      >
                       {loading && (
                         <div className="rounded-3xl border border-white/10 bg-black/25 p-5 text-sm text-white/45">
                           {translate(
@@ -215,7 +254,7 @@ export function PacksModal({ open, onClose }: PacksModalProps) {
 
                       {!loading && packs.length > 0 && (
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-                          {packs.map((pack) => (
+                          {inventoryPacks.map((pack) => (
                             <PackInventoryItem
                               key={pack.id}
                               pack={pack}
@@ -292,9 +331,9 @@ function PackInventoryItem({
       }`}
       aria-label={`${translate(t, "packsModalOpenPackAria", "Open pack")}: ${getTranslatedPackName(t, pack)}`}
     >
-      <div className="pointer-events-none absolute inset-0 opacity-70 transition duration-500 group-hover:opacity-100">
-        <div className={`absolute -right-10 -top-12 h-28 w-28 rounded-full blur-3xl ${theme.glow}`} />
-        <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-cyan-300/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 opacity-35 transition duration-500 group-hover:opacity-100 md:opacity-55">
+        <div className={`absolute -right-10 -top-12 h-24 w-24 rounded-full blur-2xl md:h-28 md:w-28 md:blur-3xl ${theme.glow}`} />
+        <div className="absolute -bottom-10 -left-10 h-20 w-20 rounded-full bg-cyan-300/10 blur-2xl md:h-24 md:w-24 md:blur-3xl" />
       </div>
 
       <div className="relative flex h-full flex-col items-center justify-between gap-3">
@@ -488,20 +527,38 @@ function PackOpeningStage({
 }
 
 function IdlePack() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="relative h-72 w-52">
       <motion.div
-        animate={{ y: [0, -10, 0], rotate: [-1, 1, -1] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        animate={
+          shouldReduceMotion
+            ? { y: 0, rotate: 0 }
+            : { y: [0, -10, 0], rotate: [-1, 1, -1] }
+        }
+        transition={
+          shouldReduceMotion
+            ? { duration: 0 }
+            : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+        }
         className="absolute inset-0"
       >
         <HolographicPack rarity="random" />
       </motion.div>
 
       <motion.div
-        animate={{ opacity: [0.22, 0.75, 0.22], scale: [0.9, 1.08, 0.9] }}
-        transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 rounded-[36px] bg-purple-300/25 blur-3xl"
+        animate={
+          shouldReduceMotion
+            ? { opacity: 0.28, scale: 1 }
+            : { opacity: [0.22, 0.75, 0.22], scale: [0.9, 1.08, 0.9] }
+        }
+        transition={
+          shouldReduceMotion
+            ? { duration: 0 }
+            : { duration: 1.9, repeat: Infinity, ease: "easeInOut" }
+        }
+        className="absolute inset-0 rounded-[36px] bg-purple-300/20 blur-2xl md:bg-purple-300/25 md:blur-3xl"
       />
     </div>
   );
@@ -509,7 +566,9 @@ function IdlePack() {
 
 function TearingPack({ packName, rarity }: { packName: string; rarity: string }) {
   const { t } = useLanguage();
+  const shouldReduceMotion = useReducedMotion();
   const theme = getRarityTheme(rarity);
+  const particleCount = shouldReduceMotion ? 8 : 18;
 
   return (
     <div className="relative h-80 w-64">
@@ -517,7 +576,7 @@ function TearingPack({ packName, rarity }: { packName: string; rarity: string })
         initial={{ opacity: 0.1, scale: 0.72 }}
         animate={{ opacity: [0.14, 0.95, 0.25], scale: [0.75, 1.45, 1.9] }}
         transition={{ duration: 1.8, ease: "easeInOut" }}
-        className={`absolute inset-0 rounded-full blur-3xl ${theme.glow}`}
+        className={`absolute inset-0 rounded-full blur-2xl md:blur-3xl ${theme.glow}`}
       />
 
       <motion.div
@@ -551,7 +610,7 @@ function TearingPack({ packName, rarity }: { packName: string; rarity: string })
         <div className="absolute inset-0 bg-gradient-to-l from-white/10 to-transparent" />
       </motion.div>
 
-      {Array.from({ length: 18 }).map((_, index) => (
+      {Array.from({ length: particleCount }).map((_, index) => (
         <motion.span
           key={index}
           initial={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
