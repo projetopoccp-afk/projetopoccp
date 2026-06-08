@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -2307,6 +2307,32 @@ function ViewPanel({
     .filter(Boolean);
   const [youtubeChannelsOpen, setYoutubeChannelsOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const socialLinksDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!socialLinksOpen) return;
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+
+      if (
+        target instanceof Node &&
+        socialLinksDropdownRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setSocialLinksOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [socialLinksOpen]);
 
   const visibleYoutubeChannels = getNormalizedYoutubeChannels(youtubeChannels);
 
@@ -2423,10 +2449,11 @@ function ViewPanel({
       )}
 
       {socialLinkEntries.length > 0 && (
-        <div className="mt-6">
+        <div ref={socialLinksDropdownRef} className="relative z-30 mt-6">
           <button
             type="button"
             onClick={() => setSocialLinksOpen((current) => !current)}
+            aria-expanded={socialLinksOpen}
             className="flex w-full items-center justify-between rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.07] px-5 py-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
           >
             <span className="inline-flex items-center gap-2 font-black text-cyan-100">
@@ -2440,9 +2467,16 @@ function ViewPanel({
             />
           </button>
 
-          {socialLinksOpen && (
-            <div className="mt-3 overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.04] p-3">
-              <div className="grid gap-2 sm:grid-cols-2">
+          <AnimatePresence>
+            {socialLinksOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-[26px] border border-cyan-300/15 bg-zinc-950/95 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.72)] backdrop-blur-xl"
+              >
+                <div className="grid max-h-[320px] gap-2 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] sm:grid-cols-2 [&::-webkit-scrollbar]:hidden">
                 {socialLinkEntries.map(([platform, url]) => {
                   const normalizedPlatform = platform.toLowerCase();
                   const platformLiveStatus = getPlatformLiveStatus(
@@ -2570,9 +2604,10 @@ function ViewPanel({
                     </a>
                   );
                 })}
-              </div>
-            </div>
-          )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -2654,6 +2689,8 @@ function ViewPanel({
                       <img
                         src={channel.thumbnail}
                         alt={channel.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-12 w-12 shrink-0 rounded-xl object-cover"
                       />
                     ) : (
