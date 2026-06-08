@@ -124,12 +124,8 @@ export async function POST(request: NextRequest) {
 
     const creatorId = cleanText(body?.creator_id);
     const platform = normalizePlatform(body?.platform);
-    const slug = normalizeSlug(body?.slug);
+    const slug = normalizeSlug(body?.slug || body?.username || body?.display_name);
     const explicitUrl = cleanText(body?.url);
-    const followersCount =
-      body?.followers_count === null || typeof body?.followers_count === "undefined"
-        ? null
-        : Number(body.followers_count);
 
     if (!creatorId) {
       return NextResponse.json(
@@ -179,43 +175,51 @@ export async function POST(request: NextRequest) {
       .eq("platform", platform);
 
     if (deleteError) {
-      throw deleteError;
+      console.error("link-detected-creator deleteError:", {
+        message: deleteError.message,
+        details: deleteError.details,
+        hint: deleteError.hint,
+        code: deleteError.code,
+      });
+
+      return NextResponse.json(
+        {
+          error: deleteError.message,
+          details: deleteError.details,
+          hint: deleteError.hint,
+          code: deleteError.code,
+        },
+        { status: 500 },
+      );
     }
 
-    const baseRow = {
-      creator_id: creatorId,
-      platform,
-      url,
-      updated_at: new Date().toISOString(),
-    };
-
-    const rowWithFollowers = {
-      ...baseRow,
-      followers_count:
-        Number.isFinite(followersCount) && followersCount !== null
-          ? followersCount
-          : null,
-    };
-
-    let insertResult = await admin.supabaseAdmin
+    const insertResult = await admin.supabaseAdmin
       .from("creator_social_links")
-      .insert(rowWithFollowers)
+      .insert({
+        creator_id: creatorId,
+        platform,
+        url,
+      })
       .select("id, creator_id, platform, url")
       .maybeSingle();
 
-    if (
-      insertResult.error &&
-      insertResult.error.message.toLowerCase().includes("followers_count")
-    ) {
-      insertResult = await admin.supabaseAdmin
-        .from("creator_social_links")
-        .insert(baseRow)
-        .select("id, creator_id, platform, url")
-        .maybeSingle();
-    }
-
     if (insertResult.error) {
-      throw insertResult.error;
+      console.error("link-detected-creator insertError:", {
+        message: insertResult.error.message,
+        details: insertResult.error.details,
+        hint: insertResult.error.hint,
+        code: insertResult.error.code,
+      });
+
+      return NextResponse.json(
+        {
+          error: insertResult.error.message,
+          details: insertResult.error.details,
+          hint: insertResult.error.hint,
+          code: insertResult.error.code,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
