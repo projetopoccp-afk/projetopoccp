@@ -588,9 +588,9 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [hideRegisteredDetectorCreators, setHideRegisteredDetectorCreators] =
     useState(true);
   const [kickDetectorCategory, setKickDetectorCategory] =
-    useState("Black Desert");
+    useState("");
   const [kickDetectorLanguage, setKickDetectorLanguage] = useState("pt");
-  const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState(0);
+  const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState();
   const [kickDetectorLimit, setKickDetectorLimit] = useState(50);
   const [kickDetectorSearch, setKickDetectorSearch] = useState("");
   const [detectedKickCreators, setDetectedKickCreators] = useState<
