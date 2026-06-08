@@ -114,7 +114,7 @@ async function assertAdmin(request: NextRequest) {
 
 function buildDescription(creator: DetectedKickCreator) {
   const parts = [
-    "Criador detectado automaticamente pela integração Kick do Cardpoc.",
+    "Criador detectado automaticamente pelo Cardpoc.",
   ];
 
   if (creator.stream_title) {
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
           request_id: null,
           nickname: displayName,
           username: slug,
-          title: "Criador Kick detectado",
+          title: "Criador de Conteúdo",
           faction: "Kick",
           category,
           status: "offline",
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
             cleanText(source.banner_url) ||
             cleanText(source.thumbnail_url) ||
             null,
-          bio: `Criador da Kick detectado pelo Cardpoc. Aguardando curadoria e criação da carta oficial.`,
+          bio: `Criador da Kick detectado pelo Cardpoc.`,
           description: buildDescription({
             ...source,
             url: source.url || `https://kick.com/${slug}`,
@@ -295,11 +295,59 @@ export async function POST(request: NextRequest) {
   );
 }
 
+    const insertedCreators = inserted || [];
+
+    const socialRows = insertedCreators
+      .map((creator) => {
+        const username = normalizeSlug(creator.username);
+
+        if (!creator.id || !username) {
+          return null;
+        }
+
+        return {
+          creator_id: creator.id,
+          platform: "kick",
+          url: `https://kick.com/${username}`,
+        };
+      })
+      .filter(Boolean) as {
+      creator_id: string;
+      platform: "kick";
+      url: string;
+    }[];
+
+    if (socialRows.length > 0) {
+      const { error: socialError } = await admin.supabaseAdmin
+        .from("creator_social_links")
+        .insert(socialRows);
+
+      if (socialError) {
+        console.error("Kick detector socialLinksError:", {
+          message: socialError.message,
+          details: socialError.details,
+          hint: socialError.hint,
+          code: socialError.code,
+        });
+
+        return NextResponse.json(
+          {
+            error: socialError.message,
+            details: socialError.details,
+            hint: socialError.hint,
+            code: socialError.code,
+          },
+          { status: 500 },
+        );
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      imported: inserted?.length || 0,
-      skipped: normalizedCreators.length - (inserted?.length || 0),
-      creators: inserted || [],
+      imported: insertedCreators.length,
+      skipped: normalizedCreators.length - insertedCreators.length,
+      social_links_imported: socialRows.length,
+      creators: insertedCreators,
     });
   } catch (error) {
     return NextResponse.json(
