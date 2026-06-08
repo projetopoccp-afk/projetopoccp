@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     shortcut: "/icon.png",
     apple: "/icon.png",
   },
-};
+},
 
   description:
     "Descubra, acompanhe e colecione criadores de conteúdo através de cartas digitais, rankings, reputação, conquistas e métricas exclusivas.",
