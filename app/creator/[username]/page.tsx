@@ -37,7 +37,7 @@ export async function generateMetadata({
   const description = getCreatorDescription(username);
 
   return {
-    title: `${username} | ${SITE_NAME}`,
+    title: username,
     description,
 
     metadataBase: new URL(siteUrl),
