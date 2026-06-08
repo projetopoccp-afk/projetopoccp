@@ -103,6 +103,7 @@ export const translations = {
     creatorProfileEditSocialLinks: "Links sociais",
     creatorProfileEditAddSocialLink: "Adicionar link",
     creatorProfileEditRemoveSocialLink: "Remover link",
+    creatorProfileStatsButton: "Estatísticas",
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
@@ -1470,6 +1471,7 @@ export const translations = {
     creatorProfileEditSocialLinks: "Social links",
     creatorProfileEditAddSocialLink: "Add link",
     creatorProfileEditRemoveSocialLink: "Remove link",
+    creatorProfileStatsButton: "Statistics",
 
     rankings: "Rankings",
     openRankings: "Open rankings",
@@ -2823,6 +2825,7 @@ export const translations = {
     creatorProfileEditSocialLinks: "Enlaces sociales",
     creatorProfileEditAddSocialLink: "Agregar enlace",
     creatorProfileEditRemoveSocialLink: "Eliminar enlace",
+    creatorProfileStatsButton: "Estadísticas",
 
     rankings: "Rankings",
     openRankings: "Abrir rankings",
