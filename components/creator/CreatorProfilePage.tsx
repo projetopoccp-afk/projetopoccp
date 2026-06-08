@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -35,7 +36,6 @@ import { CREATOR_POPUP_IMAGE_EFFECT_STYLES } from "@/components/creator/CreatorP
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
-import { CreatorStatsModal } from "@/components/creator/CreatorStatsModal";
 import { translate } from "@/lib/i18n/translate";
 import { getRarityLabel } from "@/lib/rarity";
 import { supabase } from "@/lib/supabase/client";
@@ -48,6 +48,15 @@ import type {
   CreatorStatus,
   SocialPlatform,
 } from "@/types/creator";
+
+
+const CreatorStatsModal = dynamic(
+  () =>
+    import("@/components/creator/CreatorStatsModal").then(
+      (mod) => mod.CreatorStatsModal,
+    ),
+  { ssr: false },
+);
 
 function translateExisting(t: unknown, key: string, fallback: string) {
   const value = (t as Record<string, string | undefined>)[key];
@@ -1657,14 +1666,40 @@ export function CreatorProfilePage({
   }, [decodedUsername, profile?.id, username]);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setShowcaseRarityIndex(
-        (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length,
-      );
-    }, RARITY_SHOWCASE_INTERVAL);
+    let intervalId: number | null = null;
+
+    const startRotation = () => {
+      if (intervalId !== null) return;
+
+      intervalId = window.setInterval(() => {
+        setShowcaseRarityIndex(
+          (current) => (current + 1) % RARITY_SHOWCASE_CYCLE.length,
+        );
+      }, RARITY_SHOWCASE_INTERVAL);
+    };
+
+    const stopRotation = () => {
+      if (intervalId === null) return;
+
+      window.clearInterval(intervalId);
+      intervalId = null;
+    };
+
+    const syncRotationWithVisibility = () => {
+      if (document.hidden) {
+        stopRotation();
+        return;
+      }
+
+      startRotation();
+    };
+
+    syncRotationWithVisibility();
+    document.addEventListener("visibilitychange", syncRotationWithVisibility);
 
     return () => {
-      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", syncRotationWithVisibility);
+      stopRotation();
     };
   }, []);
 
@@ -2570,18 +2605,46 @@ export function CreatorProfilePage({
 
     setRevealedBattleRows(0);
 
-    const interval = window.setInterval(() => {
-      setRevealedBattleRows((current) => {
-        if (current >= battleRows.length) {
-          window.clearInterval(interval);
-          return current;
-        }
+    let interval: number | null = null;
 
-        return current + 1;
-      });
-    }, 620);
+    const stopBattleAnimation = () => {
+      if (interval === null) return;
 
-    return () => window.clearInterval(interval);
+      window.clearInterval(interval);
+      interval = null;
+    };
+
+    const startBattleAnimation = () => {
+      if (interval !== null) return;
+
+      interval = window.setInterval(() => {
+        setRevealedBattleRows((current) => {
+          if (current >= battleRows.length) {
+            stopBattleAnimation();
+            return current;
+          }
+
+          return current + 1;
+        });
+      }, 620);
+    };
+
+    const syncBattleAnimationWithVisibility = () => {
+      if (document.hidden) {
+        stopBattleAnimation();
+        return;
+      }
+
+      startBattleAnimation();
+    };
+
+    syncBattleAnimationWithVisibility();
+    document.addEventListener("visibilitychange", syncBattleAnimationWithVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncBattleAnimationWithVisibility);
+      stopBattleAnimation();
+    };
   }, [battleModalOpen, battleStarted, battleRows.length]);
 
   const visibleBattleRows = battleStarted
@@ -4305,7 +4368,13 @@ export function CreatorProfilePage({
                                 <span className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-white/10">
                                   {candidate.avatar_url ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={candidate.avatar_url} alt="" className="h-full w-full object-cover" />
+                                    <img
+                                      src={candidate.avatar_url}
+                                      alt=""
+                                      loading="lazy"
+                                      decoding="async"
+                                      className="h-full w-full object-cover"
+                                    />
                                   ) : null}
                                 </span>
                                 <span className="min-w-0 flex-1">
@@ -4638,6 +4707,8 @@ export function CreatorProfilePage({
                               <img
                                 src={logo}
                                 alt={brandName}
+                                loading="lazy"
+                                decoding="async"
                                 className="h-full w-full object-contain p-2"
                               />
                             ) : (
@@ -5192,6 +5263,8 @@ export function CreatorProfilePage({
                                     <img
                                       src={thumbnail}
                                       alt={clip.title}
+                                      loading="lazy"
+                                      decoding="async"
                                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                   ) : (
@@ -5272,7 +5345,7 @@ export function CreatorProfilePage({
         />
       ) : null}
 
-      {profile ? (
+      {creatorStatsOpen && profile ? (
         <CreatorStatsModal
           open={creatorStatsOpen}
           onClose={() => setCreatorStatsOpen(false)}
@@ -5423,6 +5496,8 @@ export function CreatorProfilePage({
                       <img
                         src={channel.thumbnail}
                         alt={channel.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-12 w-12 shrink-0 rounded-xl object-cover"
                       />
                     ) : (
