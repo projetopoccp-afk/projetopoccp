@@ -361,8 +361,11 @@ type CreatorProfile = {
   followers_count?: number;
 };
 
+type CreatorDetectorPlatform = "kick" | "twitch";
+
 type DetectedKickCreator = {
   id?: string | number | null;
+  platform?: CreatorDetectorPlatform;
   slug: string;
   username?: string | null;
   display_name?: string | null;
@@ -580,14 +583,16 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [userSearch, setUserSearch] = useState("");
   const [requestSearch, setRequestSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
+  const [creatorDetectorPlatform, setCreatorDetectorPlatform] =
+    useState<CreatorDetectorPlatform>("kick");
+  const [hideRegisteredDetectorCreators, setHideRegisteredDetectorCreators] =
+    useState(true);
   const [kickDetectorCategory, setKickDetectorCategory] =
     useState("Black Desert");
   const [kickDetectorLanguage, setKickDetectorLanguage] = useState("pt");
   const [kickDetectorMinViewers, setKickDetectorMinViewers] = useState(0);
   const [kickDetectorLimit, setKickDetectorLimit] = useState(50);
   const [kickDetectorSearch, setKickDetectorSearch] = useState("");
-  const [showExistingKickCreators, setShowExistingKickCreators] =
-    useState(false);
   const [detectedKickCreators, setDetectedKickCreators] = useState<
     DetectedKickCreator[]
   >([]);
@@ -1559,42 +1564,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     }
   }
 
-  function getDetectedKickKey(creator: DetectedKickCreator) {
-    return String(
-      creator.slug || creator.username || creator.id || "",
-    ).toLowerCase();
+  function getCreatorDetectorPlatformLabel(platform = creatorDetectorPlatform) {
+    return platform === "twitch" ? "Twitch" : "Kick";
   }
 
-  function getDetectedKickAvatar(creator: DetectedKickCreator) {
-    const rawCreator = creator as DetectedKickCreator & {
-      profile_picture?: string | null;
-      profile_pic?: string | null;
-      avatar?: string | null;
-      channel?: {
-        profile_picture?: string | null;
-        profile_pic?: string | null;
-        avatar_url?: string | null;
-      } | null;
-      user?: {
-        profile_picture?: string | null;
-        profile_pic?: string | null;
-        avatar_url?: string | null;
-      } | null;
-    };
-
-    return (
-      rawCreator.avatar_url ||
-      rawCreator.profile_picture ||
-      rawCreator.profile_pic ||
-      rawCreator.avatar ||
-      rawCreator.channel?.profile_picture ||
-      rawCreator.channel?.profile_pic ||
-      rawCreator.channel?.avatar_url ||
-      rawCreator.user?.profile_picture ||
-      rawCreator.user?.profile_pic ||
-      rawCreator.user?.avatar_url ||
-      null
-    );
+  function getDetectedKickKey(creator: DetectedKickCreator) {
+    return `${creator.platform || creatorDetectorPlatform}:${String(
+      creator.slug || creator.username || creator.id || "",
+    ).toLowerCase()}`;
   }
 
   function toggleDetectedKickCreator(creator: DetectedKickCreator) {
@@ -1608,36 +1585,44 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   }
 
   async function detectKickCreators() {
+    const platform = creatorDetectorPlatform;
     setActionLoading("detect-kick-creators");
 
     try {
       const {
-        data: { session },
+        data: { session: detectorSession },
+        error: sessionError,
       } = await supabase.auth.getSession();
 
-      const {
-  data: { session: detectorSession },
-  error: sessionError,
-} = await supabase.auth.getSession();
+      if (sessionError || !detectorSession?.access_token) {
+        alert(
+          translate(
+            t,
+            "adminCreatorDetectorInvalidSession",
+            "Sessão inválida. Faça login novamente.",
+          ),
+        );
+        return;
+      }
 
-if (sessionError || !session?.access_token) {
-  alert("Sessão inválida. Faça login novamente.");
-  return;
-}
-
-const response = await fetch("/api/admin/detect-kick-creators", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${session.access_token}`,
-  },
-  body: JSON.stringify({
-    category: kickDetectorCategory.trim(),
-    language: kickDetectorLanguage.trim() || null,
-    minViewers: Number(kickDetectorMinViewers || 0),
-    limit: Number(kickDetectorLimit || 50),
-  }),
-});
+      const response = await fetch(
+        platform === "twitch"
+          ? "/api/admin/detect-twitch-creators"
+          : "/api/admin/detect-kick-creators",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${detectorSession.access_token}`,
+          },
+          body: JSON.stringify({
+            category: kickDetectorCategory.trim(),
+            language: kickDetectorLanguage.trim() || null,
+            minViewers: Number(kickDetectorMinViewers || 0),
+            limit: Number(kickDetectorLimit || 50),
+          }),
+        },
+      );
 
       const result = await response.json().catch(() => null);
 
@@ -1646,8 +1631,8 @@ const response = await fetch("/api/admin/detect-kick-creators", {
           result?.error ||
             translate(
               t,
-              "adminKickCreatorDetectionError",
-              "Não foi possível detectar criadores da Kick agora.",
+              "adminCreatorDetectorDetectionError",
+              "Não foi possível detectar criadores agora.",
             ),
         );
       }
@@ -1656,14 +1641,19 @@ const response = await fetch("/api/admin/detect-kick-creators", {
         ? result.creators
         : [];
 
-      setDetectedKickCreators(creatorsResult as DetectedKickCreator[]);
+      setDetectedKickCreators(
+        (creatorsResult as DetectedKickCreator[]).map((creator) => ({
+          ...creator,
+          platform: creator.platform || platform,
+        })),
+      );
       setSelectedDetectedKickCreators({});
 
       showAdminSuccess(
         translate(
           t,
-          "adminKickCreatorDetectionSuccess",
-          "Detecção da Kick concluída.",
+          "adminCreatorDetectorDetectionSuccess",
+          "Detecção concluída.",
         ),
       );
     } catch (error) {
@@ -1672,8 +1662,8 @@ const response = await fetch("/api/admin/detect-kick-creators", {
           ? error.message
           : translate(
               t,
-              "adminKickCreatorDetectionError",
-              "Não foi possível detectar criadores da Kick agora.",
+              "adminCreatorDetectorDetectionError",
+              "Não foi possível detectar criadores agora.",
             ),
       );
     } finally {
@@ -1682,6 +1672,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
   }
 
   async function importSelectedKickCreators() {
+    const platform = creatorDetectorPlatform;
     const selectedCreators = detectedKickCreators.filter(
       (creator) =>
         selectedDetectedKickCreators[getDetectedKickKey(creator)] &&
@@ -1694,17 +1685,39 @@ const response = await fetch("/api/admin/detect-kick-creators", {
 
     try {
       const {
-        data: { session },
+        data: { session: detectorSession },
+        error: sessionError,
       } = await supabase.auth.getSession();
 
-      const response = await fetch("/api/admin/import-kick-creators", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? ""}`,
+      if (sessionError || !detectorSession?.access_token) {
+        alert(
+          translate(
+            t,
+            "adminCreatorDetectorInvalidSession",
+            "Sessão inválida. Faça login novamente.",
+          ),
+        );
+        return;
+      }
+
+      const response = await fetch(
+        platform === "twitch"
+          ? "/api/admin/import-twitch-creators"
+          : "/api/admin/import-kick-creators",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${detectorSession.access_token}`,
+          },
+          body: JSON.stringify({
+            creators: selectedCreators.map((creator) => ({
+              ...creator,
+              platform: creator.platform || platform,
+            })),
+          }),
         },
-        body: JSON.stringify({ creators: selectedCreators }),
-      });
+      );
 
       const result = await response.json().catch(() => null);
 
@@ -1713,7 +1726,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
           result?.error ||
             translate(
               t,
-              "adminKickCreatorImportError",
+              "adminCreatorDetectorImportError",
               "Não foi possível importar os criadores selecionados.",
             ),
         );
@@ -1722,12 +1735,19 @@ const response = await fetch("/api/admin/detect-kick-creators", {
       await loadCreators();
       await loadLogs();
       setSelectedDetectedKickCreators({});
+      setDetectedKickCreators((current) =>
+        current.map((creator) =>
+          selectedDetectedKickCreators[getDetectedKickKey(creator)]
+            ? { ...creator, already_exists: true }
+            : creator,
+        ),
+      );
 
       showAdminSuccess(
         translate(
           t,
-          "adminKickCreatorImportSuccess",
-          "Criadores da Kick importados como rascunho.",
+          "adminCreatorDetectorImportSuccess",
+          "Criadores importados como rascunho.",
         ),
       );
     } catch (error) {
@@ -1736,7 +1756,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
           ? error.message
           : translate(
               t,
-              "adminKickCreatorImportError",
+              "adminCreatorDetectorImportError",
               "Não foi possível importar os criadores selecionados.",
             ),
       );
@@ -2507,13 +2527,14 @@ const response = await fetch("/api/admin/detect-kick-creators", {
 
   const filteredDetectedKickCreators = detectedKickCreators.filter(
     (creator) => {
-      if (creator.already_exists && !showExistingKickCreators) {
+      if (hideRegisteredDetectorCreators && creator.already_exists) {
         return false;
       }
 
       const search = kickDetectorSearch.toLowerCase().trim();
 
       const searchableText = [
+        creator.platform,
         creator.slug,
         creator.username,
         creator.display_name,
@@ -3407,15 +3428,15 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                       <Search size={14} />
                       {translate(
                         t,
-                        "adminKickCreatorDetectorBadge",
-                        "Kick Detector",
+                        "adminCreatorDetectorBadge",
+                        `${getCreatorDetectorPlatformLabel()} Detector`,
                       )}
                     </div>
 
                     <h3 className="mt-4 text-2xl font-black text-white">
                       {translate(
                         t,
-                        "adminKickCreatorDetectorTitle",
+                        "adminCreatorDetectorTitle",
                         "Detectar Criadores",
                       )}
                     </h3>
@@ -3423,8 +3444,8 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                     <p className="mt-2 max-w-2xl text-sm text-white/50">
                       {translate(
                         t,
-                        "adminKickCreatorDetectorDescription",
-                        "Busque criadores ao vivo na Kick por categoria, revise os resultados e importe apenas os selecionados como rascunho.",
+                        "adminCreatorDetectorDescription",
+                        "Busque criadores ao vivo por plataforma e categoria, revise os resultados e importe apenas os selecionados como rascunho.",
                       )}
                     </p>
                   </div>
@@ -3439,21 +3460,41 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                     {actionLoading === "detect-kick-creators"
                       ? translate(
                           t,
-                          "adminKickCreatorDetecting",
+                          "adminCreatorDetectorDetecting",
                           "Detectando...",
                         )
-                      : translate(
+                      : `${translate(
                           t,
-                          "adminKickCreatorDetectButton",
-                          "Detectar na Kick",
-                        )}
+                          "adminCreatorDetectorDetectButton",
+                          "Detectar na",
+                        )} ${getCreatorDetectorPlatformLabel()}`}
                   </button>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-4">
+                <div className="mt-5 grid gap-3 md:grid-cols-5">
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                      {translate(t, "adminCreatorDetectorPlatform", "Plataforma")}
+                    </span>
+                    <select
+                      value={creatorDetectorPlatform}
+                      onChange={(event) => {
+                        setCreatorDetectorPlatform(
+                          event.target.value as CreatorDetectorPlatform,
+                        );
+                        setDetectedKickCreators([]);
+                        setSelectedDetectedKickCreators({});
+                      }}
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/40"
+                    >
+                      <option value="kick">Kick</option>
+                      <option value="twitch">Twitch</option>
+                    </select>
+                  </label>
+
                   <label className="block md:col-span-2">
                     <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                      {translate(t, "adminKickCreatorCategory", "Categoria")}
+                      {translate(t, "adminCreatorDetectorCategory", "Categoria")}
                     </span>
                     <input
                       value={kickDetectorCategory}
@@ -3467,7 +3508,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
 
                   <label className="block">
                     <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                      {translate(t, "adminKickCreatorLanguage", "Idioma")}
+                      {translate(t, "adminCreatorDetectorLanguage", "Idioma")}
                     </span>
                     <input
                       value={kickDetectorLanguage}
@@ -3483,7 +3524,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                     <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-white/35">
                       {translate(
                         t,
-                        "adminKickCreatorMinViewers",
+                        "adminCreatorDetectorMinViewers",
                         "Viewers mín.",
                       )}
                     </span>
@@ -3502,13 +3543,13 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+              <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto_auto]">
                 <SearchInput
                   value={kickDetectorSearch}
                   onChange={setKickDetectorSearch}
                   placeholder={translate(
                     t,
-                    "adminSearchKickCreatorPlaceholder",
+                    "adminSearchCreatorDetectorPlaceholder",
                     "Buscar por criador, categoria, título ou idioma...",
                   )}
                 />
@@ -3516,29 +3557,25 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                 <button
                   type="button"
                   onClick={() =>
-                    setShowExistingKickCreators((current) => !current)
+                    setHideRegisteredDetectorCreators((current) => !current)
                   }
-                  className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-black transition hover:scale-105 ${
-                    showExistingKickCreators
-                      ? "border-yellow-300/25 bg-yellow-300/[0.08] text-yellow-100"
-                      : "border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-100"
-                  }`}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
                 >
-                  {showExistingKickCreators ? (
-                    <Eye size={16} />
-                  ) : (
+                  {hideRegisteredDetectorCreators ? (
                     <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
                   )}
-                  {showExistingKickCreators
+                  {hideRegisteredDetectorCreators
                     ? translate(
                         t,
-                        "adminKickCreatorShowingExisting",
-                        "Mostrando cadastrados",
+                        "adminCreatorDetectorHidingRegistered",
+                        "Ocultando cadastrados",
                       )
                     : translate(
                         t,
-                        "adminKickCreatorHidingExisting",
-                        "Ocultando cadastrados",
+                        "adminCreatorDetectorShowingRegistered",
+                        "Mostrando cadastrados",
                       )}
                 </button>
 
@@ -3553,10 +3590,10 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                 >
                   <Check size={16} />
                   {actionLoading === "import-kick-creators"
-                    ? translate(t, "adminKickCreatorImporting", "Importando...")
+                    ? translate(t, "adminCreatorDetectorImporting", "Importando...")
                     : `${translate(
                         t,
-                        "adminKickCreatorImportSelected",
+                        "adminCreatorDetectorImportSelected",
                         "Importar selecionados",
                       )} (${selectedKickCreatorsCount})`}
                 </button>
@@ -3565,28 +3602,26 @@ const response = await fetch("/api/admin/detect-kick-creators", {
               <div className="mt-5 grid gap-4">
                 {filteredDetectedKickCreators.length === 0 && (
                   <EmptyBox
-                    text={
-                      detectedKickCreators.length > 0
-                        ? translate(
-                            t,
-                            "adminOnlyExistingKickCreatorsHidden",
-                            "Os criadores encontrados já estão cadastrados ou não correspondem ao filtro. Ative Mostrar cadastrados para revisar.",
-                          )
-                        : translate(
-                            t,
-                            "adminNoKickCreatorsDetected",
-                            "Nenhum criador detectado ainda. Escolha uma categoria e clique em Detectar na Kick.",
-                          )
-                    }
+                    text={translate(
+                      t,
+                      "adminNoCreatorsDetectedByPlatform",
+                      "Nenhum criador detectado ainda. Escolha uma plataforma/categoria e clique em detectar.",
+                    )}
                   />
                 )}
 
                 {filteredDetectedKickCreators.map((creator) => {
                   const key = getDetectedKickKey(creator);
                   const selected = !!selectedDetectedKickCreators[key];
+                  const creatorPlatform =
+                    creator.platform || creatorDetectorPlatform;
+                  const creatorPlatformLabel =
+                    getCreatorDetectorPlatformLabel(creatorPlatform);
                   const creatorUrl =
-                    creator.url || `https://kick.com/${creator.slug}`;
-                  const creatorAvatarUrl = getDetectedKickAvatar(creator);
+                    creator.url ||
+                    (creatorPlatform === "twitch"
+                      ? `https://www.twitch.tv/${creator.slug}`
+                      : `https://kick.com/${creator.slug}`);
 
                   return (
                     <div
@@ -3603,70 +3638,40 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                             type="button"
                             onClick={() => toggleDetectedKickCreator(creator)}
                             disabled={creator.already_exists}
-                            aria-pressed={selected}
-                            title={
-                              creator.already_exists
-                                ? translate(
-                                    t,
-                                    "adminKickCreatorAlreadyExists",
-                                    "Já existe",
-                                  )
-                                : selected
-                                  ? translate(
-                                      t,
-                                      "adminKickCreatorSelected",
-                                      "Selecionado",
-                                    )
-                                  : translate(
-                                      t,
-                                      "adminKickCreatorSelect",
-                                      "Selecionar",
-                                    )
-                            }
-                            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-xs font-black uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                            className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black uppercase tracking-[0.12em] transition disabled:opacity-40 ${
                               selected
-                                ? "border-emerald-300/40 bg-emerald-300 text-black shadow-[0_0_22px_rgba(110,231,183,0.22)]"
-                                : "border-cyan-300/20 bg-black/30 text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-300/[0.08]"
+                                ? "border-emerald-300/30 bg-emerald-300 text-black"
+                                : "border-cyan-300/25 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
                             }`}
                           >
                             <span
                               className={`flex h-5 w-5 items-center justify-center rounded-md border ${
                                 selected
-                                  ? "border-black/20 bg-black/10"
-                                  : "border-cyan-100/30 bg-white/[0.03]"
+                                  ? "border-black/30 bg-black/10"
+                                  : "border-cyan-100/35 bg-black/20"
                               }`}
                             >
                               {selected && <Check size={14} />}
                             </span>
-                            <span className="hidden sm:inline">
-                              {selected
-                                ? translate(
-                                    t,
-                                    "adminKickCreatorSelected",
-                                    "Selecionado",
-                                  )
-                                : translate(
-                                    t,
-                                    "adminKickCreatorSelect",
-                                    "Selecionar",
-                                  )}
-                            </span>
+                            {selected
+                              ? translate(
+                                  t,
+                                  "adminCreatorDetectorSelected",
+                                  "Selecionado",
+                                )
+                              : translate(
+                                  t,
+                                  "adminCreatorDetectorSelect",
+                                  "Selecionar",
+                                )}
                           </button>
 
                           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                            {creatorAvatarUrl ? (
+                            {creator.avatar_url ? (
                               <img
-                                src={creatorAvatarUrl}
+                                src={creator.avatar_url}
                                 alt={creator.display_name || creator.slug}
                                 className="h-full w-full object-cover"
-                                loading="lazy"
-                                referrerPolicy="no-referrer"
-                                onError={(event) => {
-                                  event.currentTarget.style.display = "none";
-                                  event.currentTarget.parentElement?.classList.add(
-                                    "kick-avatar-fallback",
-                                  );
-                                }}
                               />
                             ) : (
                               <UserCog className="text-white/35" />
@@ -3699,7 +3704,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                             <StatusPill
                               label={translate(
                                 t,
-                                "adminKickCreatorAlreadyExists",
+                                "adminCreatorDetectorAlreadyExists",
                                 "Já existe",
                               )}
                               tone="yellow"
@@ -3725,7 +3730,7 @@ const response = await fetch("/api/admin/detect-kick-creators", {
                             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-white/[0.08]"
                           >
                             <ExternalLink size={16} />
-                            Kick
+                            {creatorPlatformLabel}
                           </a>
                         </div>
                       </div>
