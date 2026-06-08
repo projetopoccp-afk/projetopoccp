@@ -63,6 +63,132 @@ function normalizeUsernameForCompare(value: unknown) {
     .replace(/[^a-z0-9_.-]/g, "");
 }
 
+const COMMON_CREATOR_SUFFIXES = [
+  "tv",
+  "live",
+  "oficial",
+  "official",
+  "gaming",
+  "games",
+  "game",
+  "stream",
+  "streams",
+  "yt",
+  "youtube",
+  "kick",
+  "twitch",
+  "br",
+  "real",
+];
+
+function normalizeIdentity(value: unknown) {
+  return String(value || "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/https?:\/\//g, "")
+    .replace(/^www\./, "")
+    .replace(/^(kick\.com|twitch\.tv|youtube\.com|youtu\.be)\//, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function stripCommonCreatorSuffix(value: unknown) {
+  let normalized = normalizeIdentity(value);
+
+  for (const suffix of COMMON_CREATOR_SUFFIXES) {
+    if (normalized.length > suffix.length + 3 && normalized.endsWith(suffix)) {
+      normalized = normalized.slice(0, -suffix.length);
+      break;
+    }
+  }
+
+  return normalized;
+}
+
+function extractUsernameFromSocialUrl(value: unknown) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  try {
+    const url = text.startsWith("http") ? new URL(text) : new URL(`https://${text}`);
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    const segments = url.pathname.split("/").filter(Boolean);
+
+    if (hostname.includes("kick.com") || hostname.includes("twitch.tv")) {
+      return segments[0] || "";
+    }
+
+    if (hostname.includes("youtube.com")) {
+      if (segments[0]?.startsWith("@")) return segments[0];
+      if (["c", "channel", "user"].includes(segments[0] || "")) return segments[1] || "";
+    }
+
+    return segments[0] || "";
+  } catch {
+    return text;
+  }
+}
+
+function addIdentity(set: Set<string>, value: unknown) {
+  const normalized = normalizeIdentity(value);
+  const stripped = stripCommonCreatorSuffix(value);
+
+  if (normalized) set.add(normalized);
+  if (stripped) set.add(stripped);
+}
+
+async function buildExistingCreatorIdentitySet(supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>) {
+  const existingSet = new Set<string>();
+
+  const { data: existingCreators, error: existingCreatorsError } =
+    await supabaseAdmin.from("creator_profiles").select("username, nickname");
+
+  if (existingCreatorsError) {
+    throw existingCreatorsError;
+  }
+
+  for (const creator of existingCreators || []) {
+    addIdentity(existingSet, creator.username);
+    addIdentity(existingSet, creator.nickname);
+  }
+
+  const { data: socialLinks, error: socialLinksError } = await supabaseAdmin
+    .from("creator_social_links")
+    .select("url");
+
+  if (socialLinksError) {
+    throw socialLinksError;
+  }
+
+  for (const link of socialLinks || []) {
+    addIdentity(existingSet, link.url);
+    addIdentity(existingSet, extractUsernameFromSocialUrl(link.url));
+  }
+
+  return existingSet;
+}
+
+function creatorMatchesExistingIdentity(
+  existingSet: Set<string>,
+  values: unknown[],
+) {
+  for (const value of values) {
+    const normalized = normalizeIdentity(value);
+    const stripped = stripCommonCreatorSuffix(value);
+
+    if (normalized && existingSet.has(normalized)) return true;
+    if (stripped && existingSet.has(stripped)) return true;
+  }
+
+  return false;
+}
+
+
 function getNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
@@ -401,44 +527,30 @@ export async function POST(request: NextRequest) {
 
     const detected = Array.from(detectedMap.values());
 
+    let creators = detected;
+
     if (detected.length > 0) {
-      const { data: existingCreators, error: existingCreatorsError } =
-        await admin.supabaseAdmin
-          .from("creator_profiles")
-          .select("username, nickname");
-
-      if (existingCreatorsError) {
-        throw existingCreatorsError;
-      }
-
-      const existingSet = new Set<string>();
-
-      for (const creator of existingCreators || []) {
-        const username = normalizeUsernameForCompare(creator.username);
-        const nickname = normalizeUsernameForCompare(creator.nickname);
-
-        if (username) existingSet.add(username);
-        if (nickname) existingSet.add(nickname);
-      }
+      const existingSet = await buildExistingCreatorIdentitySet(admin.supabaseAdmin);
 
       for (const creator of detected) {
-        const slug = normalizeUsernameForCompare(creator.slug);
-        const username = normalizeUsernameForCompare(creator.username);
-        const displayName = normalizeUsernameForCompare(creator.display_name);
-
-        creator.already_exists =
-          Boolean(slug && existingSet.has(slug)) ||
-          Boolean(username && existingSet.has(username)) ||
-          Boolean(displayName && existingSet.has(displayName));
+        creator.already_exists = creatorMatchesExistingIdentity(existingSet, [
+          creator.slug,
+          creator.username,
+          creator.display_name,
+          creator.url,
+        ]);
       }
+
+      creators = detected.filter((creator) => !creator.already_exists);
     }
 
-    detected.sort((a, b) => Number(b.viewer_count || 0) - Number(a.viewer_count || 0));
+    creators.sort((a, b) => Number(b.viewer_count || 0) - Number(a.viewer_count || 0));
 
     return NextResponse.json({
       ok: true,
       category: categoryMatch,
-      creators: detected,
+      creators,
+      hidden_existing: detected.length - creators.length,
     });
   } catch (error) {
     return NextResponse.json(

@@ -55,6 +55,148 @@ function normalizeSlug(value: unknown) {
     .replace(/[^a-z0-9_.-]/g, "");
 }
 
+const COMMON_CREATOR_SUFFIXES = [
+  "tv",
+  "live",
+  "oficial",
+  "official",
+  "gaming",
+  "games",
+  "game",
+  "stream",
+  "streams",
+  "yt",
+  "youtube",
+  "kick",
+  "twitch",
+  "br",
+  "real",
+];
+
+function normalizeIdentity(value: unknown) {
+  return String(value || "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/https?:\/\//g, "")
+    .replace(/^www\./, "")
+    .replace(/^(kick\.com|twitch\.tv|youtube\.com|youtu\.be)\//, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function stripCommonCreatorSuffix(value: unknown) {
+  let normalized = normalizeIdentity(value);
+
+  for (const suffix of COMMON_CREATOR_SUFFIXES) {
+    if (normalized.length > suffix.length + 3 && normalized.endsWith(suffix)) {
+      normalized = normalized.slice(0, -suffix.length);
+      break;
+    }
+  }
+
+  return normalized;
+}
+
+function extractUsernameFromSocialUrl(value: unknown) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  try {
+    const url = text.startsWith("http") ? new URL(text) : new URL(`https://${text}`);
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    const segments = url.pathname.split("/").filter(Boolean);
+
+    if (hostname.includes("kick.com") || hostname.includes("twitch.tv")) {
+      return segments[0] || "";
+    }
+
+    if (hostname.includes("youtube.com")) {
+      if (segments[0]?.startsWith("@")) return segments[0];
+      if (["c", "channel", "user"].includes(segments[0] || "")) return segments[1] || "";
+    }
+
+    return segments[0] || "";
+  } catch {
+    return text;
+  }
+}
+
+function addIdentity(set: Set<string>, value: unknown) {
+  const normalized = normalizeIdentity(value);
+  const stripped = stripCommonCreatorSuffix(value);
+
+  if (normalized) set.add(normalized);
+  if (stripped) set.add(stripped);
+}
+
+async function buildExistingCreatorIdentitySet(supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>) {
+  const existingSet = new Set<string>();
+
+  const { data: existingCreators, error: existingCreatorsError } =
+    await supabaseAdmin.from("creator_profiles").select("username, nickname");
+
+  if (existingCreatorsError) {
+    throw existingCreatorsError;
+  }
+
+  for (const creator of existingCreators || []) {
+    addIdentity(existingSet, creator.username);
+    addIdentity(existingSet, creator.nickname);
+  }
+
+  const { data: socialLinks, error: socialLinksError } = await supabaseAdmin
+    .from("creator_social_links")
+    .select("url");
+
+  if (socialLinksError) {
+    throw socialLinksError;
+  }
+
+  for (const link of socialLinks || []) {
+    addIdentity(existingSet, link.url);
+    addIdentity(existingSet, extractUsernameFromSocialUrl(link.url));
+  }
+
+  return existingSet;
+}
+
+function creatorMatchesExistingIdentity(
+  existingSet: Set<string>,
+  values: unknown[],
+) {
+  for (const value of values) {
+    const normalized = normalizeIdentity(value);
+    const stripped = stripCommonCreatorSuffix(value);
+
+    if (normalized && existingSet.has(normalized)) return true;
+    if (stripped && existingSet.has(stripped)) return true;
+  }
+
+  return false;
+}
+
+function dedupeNormalizedCreators<T extends { slug: string; displayName: string; source: { url?: string | null } }>(creators: T[]) {
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+
+  for (const creator of creators) {
+    const key = normalizeIdentity(creator.slug) || normalizeIdentity(creator.displayName) || normalizeIdentity(creator.source.url);
+
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    deduped.push(creator);
+  }
+
+  return deduped;
+}
+
+
 async function assertAdmin(request: NextRequest) {
   const authHeader = request.headers.get("authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -192,28 +334,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const usernames = Array.from(
-      new Set(normalizedCreators.map((creator) => creator.slug)),
-    );
+    const dedupedCreators = dedupeNormalizedCreators(normalizedCreators);
+    const existingSet = await buildExistingCreatorIdentitySet(admin.supabaseAdmin);
 
-    const { data: existingCreators, error: existingError } =
-      await admin.supabaseAdmin
-        .from("creator_profiles")
-        .select("username")
-        .in("username", usernames);
-
-    if (existingError) {
-      throw existingError;
-    }
-
-    const existingSet = new Set(
-      (existingCreators || []).map((creator) =>
-        String(creator.username || "").toLowerCase(),
-      ),
-    );
-
-    const rows = normalizedCreators
-      .filter((creator) => !existingSet.has(creator.slug.toLowerCase()))
+    const rows = dedupedCreators
+      .filter((creator) => !creatorMatchesExistingIdentity(existingSet, [
+        creator.slug,
+        creator.displayName,
+        creator.source.username,
+        creator.source.display_name,
+        creator.source.url,
+      ]))
       .map(({ source, slug, displayName, category }) => {
         const tags = Array.from(
           new Set(
@@ -266,8 +397,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ok: true,
         imported: 0,
-        skipped: normalizedCreators.length,
-        message: "Todos os criadores selecionados já existem.",
+        skipped: dedupedCreators.length,
+        message: "Todos os criadores selecionados já existem ou já possuem link social cadastrado.",
       });
     }
 
@@ -318,9 +449,30 @@ export async function POST(request: NextRequest) {
     }[];
 
     if (socialRows.length > 0) {
-      const { error: socialError } = await admin.supabaseAdmin
+      const { data: existingSocialRows, error: existingSocialRowsError } = await admin.supabaseAdmin
         .from("creator_social_links")
-        .insert(socialRows);
+        .select("creator_id, platform, url");
+
+      if (existingSocialRowsError) {
+        throw existingSocialRowsError;
+      }
+
+      const existingSocialSet = new Set(
+        (existingSocialRows || []).map((row) =>
+          `${row.creator_id}:${normalizeIdentity(row.platform)}:${normalizeIdentity(row.url)}`,
+        ),
+      );
+
+      const socialRowsToInsert = socialRows.filter(
+        (row) =>
+          !existingSocialSet.has(
+            `${row.creator_id}:${normalizeIdentity(row.platform)}:${normalizeIdentity(row.url)}`,
+          ),
+      );
+
+      const { error: socialError } = socialRowsToInsert.length > 0
+        ? await admin.supabaseAdmin.from("creator_social_links").insert(socialRowsToInsert)
+        : { error: null };
 
       if (socialError) {
         console.error("Kick detector socialLinksError:", {
@@ -345,7 +497,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       imported: insertedCreators.length,
-      skipped: normalizedCreators.length - insertedCreators.length,
+      skipped: dedupedCreators.length - insertedCreators.length,
       social_links_imported: socialRows.length,
       creators: insertedCreators,
     });
