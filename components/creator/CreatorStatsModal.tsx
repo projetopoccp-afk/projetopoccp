@@ -153,7 +153,7 @@ export function CreatorStatsModal({
         type="button"
         className="absolute inset-0"
         onClick={onClose}
-        aria-label={translate(t, "creatorStatsClose", "Fechar estatísticas")}
+        aria-label={"Fechar estatísticas"}
       />
 
       <section className="relative z-10 max-h-[min(88vh,820px)] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-[#090b13]/96 shadow-2xl shadow-cyan-500/10">
@@ -164,17 +164,13 @@ export function CreatorStatsModal({
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
               <BarChart3 className="h-3.5 w-3.5" />
-              {translate(t, "creatorStatsBadge", "Estatísticas")}
+              {"Estatísticas"}
             </div>
             <h2 className="mt-3 truncate text-2xl font-black tracking-tight text-white sm:text-3xl">
               {creatorName}
             </h2>
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-white/55">
-              {translate(
-                t,
-                "creatorStatsDescription",
-                "Resumo de crescimento, coleção e alcance do criador dentro e fora do Cardpoc.",
-              )}
+              {"Resumo de crescimento, coleção e alcance do criador dentro e fora do Cardpoc."}
             </p>
           </div>
 
@@ -182,7 +178,7 @@ export function CreatorStatsModal({
             type="button"
             onClick={onClose}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white/10 hover:text-white"
-            aria-label={translate(t, "creatorStatsClose", "Fechar estatísticas")}
+            aria-label={"Fechar estatísticas"}
           >
             <X className="h-5 w-5" />
           </button>
@@ -221,10 +217,10 @@ export function CreatorStatsModal({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100/65">
-                    {translate(t, "creatorStatsCollectionTitle", "Coleção")}
+                    {"Coleção"}
                   </p>
                   <h3 className="mt-1 text-lg font-black text-white">
-                    {translate(t, "creatorStatsCollectedCards", "Cartas coletadas")}
+                    {"Cartas coletadas"}
                   </h3>
                 </div>
                 <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 p-3 text-cyan-100">
@@ -234,15 +230,15 @@ export function CreatorStatsModal({
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <MiniMetric
-                  label={translate(t, "creatorStatsTotalCards", "Total")}
+                  label={"Total"}
                   value={formatNumber(collectionStats.total)}
                 />
                 <MiniMetric
-                  label={translate(t, "creatorStatsCollectors", "Colecionadores")}
+                  label={"Colecionadores"}
                   value={formatNumber(collectionStats.uniqueCollectors)}
                 />
                 <MiniMetric
-                  label={translate(t, "creatorStatsCardsPerCollector", "Média")}
+                  label={"Média"}
                   value={cardsPerCollector > 0 ? cardsPerCollector.toFixed(1) : "0"}
                 />
               </div>
@@ -283,10 +279,10 @@ export function CreatorStatsModal({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-fuchsia-100/65">
-                    {translate(t, "creatorStatsProgressTitle", "Crescimento")}
+                    {"Crescimento"}
                   </p>
                   <h3 className="mt-1 text-lg font-black text-white">
-                    {translate(t, "creatorStatsCardpocProgress", "Progresso no Cardpoc")}
+                    {"Progresso no Cardpoc"}
                   </h3>
                 </div>
                 <div className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 p-3 text-fuchsia-100">
@@ -296,19 +292,19 @@ export function CreatorStatsModal({
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <MiniMetric
-                  label={translate(t, "creatorStatsLevel", "Nível")}
+                  label={"Nível"}
                   value={formatNumber(cardLevel)}
                 />
                 <MiniMetric
-                  label={translate(t, "creatorStatsXp", "XP")}
+                  label={"XP"}
                   value={formatNumber(profileXp)}
                 />
                 <MiniMetric
-                  label={translate(t, "creatorStatsDrops", "Drops")}
+                  label={"Drops"}
                   value={formatNumber(dropsCount)}
                 />
                 <MiniMetric
-                  label={translate(t, "creatorStatsLiveNow", "Ao vivo agora")}
+                  label={"Ao vivo agora"}
                   value={formatNumber(
                     platformRows.reduce((total, row) => total + row.liveViewers, 0),
                   )}
@@ -316,11 +312,7 @@ export function CreatorStatsModal({
               </div>
 
               <p className="mt-5 rounded-2xl border border-white/10 bg-black/24 p-4 text-sm font-semibold leading-6 text-white/55">
-                {translate(
-                  t,
-                  "creatorStatsGrowthHint",
-                  "Quanto mais o perfil é visitado, seguido, compartilhado, coletado e usado em drops, maior tende a ser o crescimento dentro do Cardpoc.",
-                )}
+                {"Quanto mais o perfil é visitado, seguido, compartilhado, coletado e usado em drops, maior tende a ser o crescimento dentro do Cardpoc."}
               </p>
             </div>
           </div>
@@ -329,10 +321,10 @@ export function CreatorStatsModal({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
-                  {translate(t, "creatorStatsExternalTitle", "Redes externas")}
+                  {"Redes externas"}
                 </p>
                 <h3 className="mt-1 text-lg font-black text-white">
-                  {translate(t, "creatorStatsExternalGrowth", "Alcance fora da plataforma")}
+                  {"Alcance fora da plataforma"}
                 </h3>
               </div>
               <div className="rounded-full border border-white/10 bg-white/[0.06] p-3 text-white/70">
@@ -352,8 +344,8 @@ export function CreatorStatsModal({
                         <p className="text-sm font-black text-white">{row.platform}</p>
                         <p className="mt-1 text-xs font-semibold text-white/45">
                           {row.isLive
-                            ? translate(t, "creatorStatsCurrentlyLive", "Ao vivo")
-                            : translate(t, "creatorStatsExternalMetric", "Métrica externa")}
+                            ? "Ao vivo"
+                            : "Métrica externa"}
                         </p>
                       </div>
                       {row.url ? (
@@ -370,11 +362,11 @@ export function CreatorStatsModal({
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <MiniMetric
-                        label={translate(t, "creatorStatsReach", "Alcance")}
+                        label={"Alcance"}
                         value={formatNumber(row.count)}
                       />
                       <MiniMetric
-                        label={translate(t, "creatorStatsViewers", "Viewers")}
+                        label={"Viewers"}
                         value={formatNumber(row.liveViewers)}
                       />
                     </div>
@@ -383,11 +375,7 @@ export function CreatorStatsModal({
               </div>
             ) : (
               <p className="mt-5 rounded-2xl border border-white/10 bg-black/22 p-4 text-sm font-semibold text-white/45">
-                {translate(
-                  t,
-                  "creatorStatsNoExternalData",
-                  "Ainda não há métricas externas disponíveis para este perfil.",
-                )}
+                {"Ainda não há métricas externas disponíveis para este perfil."}
               </p>
             )}
           </div>
