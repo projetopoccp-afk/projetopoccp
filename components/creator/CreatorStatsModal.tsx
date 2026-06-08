@@ -120,27 +120,27 @@ export function CreatorStatsModal({
     .sort((a, b) => b.count + b.liveViewers - (a.count + a.liveViewers));
 
   const rarityRows = [
-    {
-      label: translate(t, "rarityCommon", "Comum"),
-      value: collectionStats.common,
-      className: "from-white/12 to-white/5 text-white/80",
-    },
-    {
-      label: translate(t, "rarityRare", "Raro"),
-      value: collectionStats.rare,
-      className: "from-cyan-300/18 to-blue-500/8 text-cyan-100",
-    },
-    {
-      label: translate(t, "rarityEpic", "Épico"),
-      value: collectionStats.epic,
-      className: "from-fuchsia-300/18 to-purple-500/8 text-fuchsia-100",
-    },
-    {
-      label: translate(t, "rarityLegendary", "Lendário"),
-      value: collectionStats.legendary,
-      className: "from-amber-300/20 to-yellow-600/8 text-amber-100",
-    },
-  ];
+  {
+    label: "Comum",
+    value: collectionStats.common,
+    className: "from-white/12 to-white/5 text-white/80",
+  },
+  {
+    label: "Raro",
+    value: collectionStats.rare,
+    className: "from-cyan-300/18 to-blue-500/8 text-cyan-100",
+  },
+  {
+    label: "Épico",
+    value: collectionStats.epic,
+    className: "from-fuchsia-300/18 to-purple-500/8 text-fuchsia-100",
+  },
+  {
+    label: "Lendário",
+    value: collectionStats.legendary,
+    className: "from-amber-300/20 to-yellow-600/8 text-amber-100",
+  },
+];
 
   const cardsPerCollector =
     collectionStats.uniqueCollectors > 0
