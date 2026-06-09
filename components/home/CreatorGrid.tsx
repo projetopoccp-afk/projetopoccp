@@ -34,6 +34,8 @@ const RARITY_SHOWCASE_CYCLE = [
 ] as const;
 
 const RARITY_SHOWCASE_INTERVAL = 9800;
+const HOME_SHOWCASE_LIMIT = 32;
+const HOME_SHOWCASE_ROTATION_INTERVAL = 30000;
 const RARITY_STACK_TRANSITION = {
   duration: 0.72,
   ease: [0.22, 1, 0.36, 1],
@@ -72,6 +74,32 @@ function normalizeCreatorTags(tags: unknown): string[] {
 }
 
 
+function getRotatingCreatorScore(creator: CreatorWithMeta, seed: number) {
+  const source = `${creator.id}:${creator.username}:${seed}`;
+  let hash = 2166136261;
+
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function getRotatingCreators(creators: CreatorWithMeta[], seed: number) {
+  return [...creators]
+    .sort((a, b) => {
+      const scoreDifference =
+        getRotatingCreatorScore(a, seed) - getRotatingCreatorScore(b, seed);
+
+      if (scoreDifference !== 0) return scoreDifference;
+
+      return b.trendingScore - a.trendingScore;
+    })
+    .slice(0, HOME_SHOWCASE_LIMIT);
+}
+
+
 function getCreatorUsernameFromPath() {
   if (typeof window === "undefined") return null;
 
@@ -89,6 +117,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   const [creators, setCreators] = useState<CreatorWithMeta[]>([]);
   const [activeDrops, setActiveDrops] = useState<ActiveDrop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [homeShowcaseSeed, setHomeShowcaseSeed] = useState(0);
 
   useEffect(() => {
     async function loadCreators() {
@@ -215,17 +244,24 @@ export function CreatorGrid({ search }: CreatorGridProps) {
       });
 
       setCreators(mappedCreators);
-
-      // A Home não deve consultar "live_drops" diretamente.
-      // Essa tabela não existe no schema atual e gerava 404 no console em toda visita,
-      // podendo interferir no carregamento/filtro da vitrine de criadores.
-      // O sistema de Drops continua isolado no LiveDropsModal/fluxo próprio.
       setActiveDrops([]);
       setLoading(false);
     }
 
     loadCreators();
   }, [t]);
+
+  useEffect(() => {
+    if (creators.length <= HOME_SHOWCASE_LIMIT) return;
+
+    const intervalId = window.setInterval(() => {
+      setHomeShowcaseSeed((currentSeed) => currentSeed + 1);
+    }, HOME_SHOWCASE_ROTATION_INTERVAL);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [creators.length]);
 
   useEffect(() => {
     function syncPopupWithUrl() {
@@ -310,16 +346,18 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     return searchableText.includes(normalizedSearch);
   });
 
-  const featuredCreators = useMemo(() => {
-    return [...creators]
-      .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, 8);
-  }, [creators]);
+  const homeShowcaseCreators = useMemo(() => {
+    if (creators.length <= HOME_SHOWCASE_LIMIT) {
+      return [...creators].sort((a, b) => b.trendingScore - a.trendingScore);
+    }
+
+    return getRotatingCreators(creators, homeShowcaseSeed);
+  }, [creators, homeShowcaseSeed]);
 
 
   return (
     <>
-      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-20 pt-10">
+      <section className="relative z-10 mx-auto max-w-[1760px] px-4 pb-20 pt-10 sm:px-6">
         {loading && (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
             {translate(t, "creatorGridLoading", "Carregando creators...")}
@@ -349,9 +387,10 @@ export function CreatorGrid({ search }: CreatorGridProps) {
             <CreatorSection
               title=""
               description=""
-              creators={featuredCreators}
+              creators={homeShowcaseCreators}
               onOpenCreator={handleOpenCreator}
               hideHeader
+              compact
             />
           </div>
         )}
@@ -447,6 +486,7 @@ function CreatorSection({
   creators,
   onOpenCreator,
   hideHeader = false,
+  compact = false,
 }: {
   eyebrow?: string;
   title: string;
@@ -454,6 +494,7 @@ function CreatorSection({
   creators: CreatorWithMeta[];
   onOpenCreator: (creator: Creator) => void;
   hideHeader?: boolean;
+  compact?: boolean;
 }) {
   if (creators.length === 0) return null;
 
@@ -480,13 +521,20 @@ function CreatorSection({
         </div>
       )}
 
-      <div className="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        className={
+          compact
+            ? "grid grid-cols-2 justify-items-center gap-x-5 gap-y-9 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8"
+            : "grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        }
+      >
         {creators.map((creator, index) => (
           <AnimatedRarityCreatorCard
             key={`creator-${creator.id}`}
             creator={creator}
             index={index}
             onClick={onOpenCreator}
+            compact={compact}
           />
         ))}
       </div>
@@ -498,10 +546,12 @@ function AnimatedRarityCreatorCard({
   creator,
   index,
   onClick,
+  compact = false,
 }: {
   creator: CreatorWithMeta;
   index: number;
   onClick: (creator: Creator) => void;
+  compact?: boolean;
 }) {
   const initialRarityIndex = index % RARITY_SHOWCASE_CYCLE.length;
   const [activeRarityIndex, setActiveRarityIndex] = useState(initialRarityIndex);
@@ -581,40 +631,54 @@ function AnimatedRarityCreatorCard({
     : null;
 
   return (
-    <div className="relative h-[360px] w-[240px] overflow-visible [perspective:1200px]">
-      <div className="relative z-10 h-full w-full">
-        <CreatorCard creator={activeCreator} onClick={onClick} />
-      </div>
+    <div
+      className={
+        compact
+          ? "relative h-[252px] w-[168px] overflow-visible [perspective:1200px]"
+          : "relative h-[360px] w-[240px] overflow-visible [perspective:1200px]"
+      }
+    >
+      <div
+        className={
+          compact
+            ? "absolute left-0 top-0 h-[360px] w-[240px] origin-top-left scale-[0.7]"
+            : "relative h-full w-full"
+        }
+      >
+        <div className="relative z-10 h-full w-full">
+          <CreatorCard creator={activeCreator} onClick={onClick} />
+        </div>
 
-      {incomingCreator && (
-        <motion.div
-          key={`${creator.id}-${incomingCreator.rarity}-incoming`}
-          className="pointer-events-none absolute inset-0 z-20 will-change-transform"
-          initial={{
-            x: 34,
-            y: 18,
-            rotateZ: 4.25,
-            rotateY: -6,
-            scale: 0.985,
-            opacity: 0.94,
-          }}
-          animate={{
-            x: 0,
-            y: 0,
-            rotateZ: 0,
-            rotateY: 0,
-            scale: 1,
-            opacity: 1,
-            transition: RARITY_STACK_TRANSITION,
-          }}
-          style={{
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-          }}
-        >
-          <CreatorCard creator={incomingCreator} onClick={onClick} />
-        </motion.div>
-      )}
+        {incomingCreator && (
+          <motion.div
+            key={`${creator.id}-${incomingCreator.rarity}-incoming`}
+            className="pointer-events-none absolute inset-0 z-20 will-change-transform"
+            initial={{
+              x: 34,
+              y: 18,
+              rotateZ: 4.25,
+              rotateY: -6,
+              scale: 0.985,
+              opacity: 0.94,
+            }}
+            animate={{
+              x: 0,
+              y: 0,
+              rotateZ: 0,
+              rotateY: 0,
+              scale: 1,
+              opacity: 1,
+              transition: RARITY_STACK_TRANSITION,
+            }}
+            style={{
+              transformStyle: "preserve-3d",
+              backfaceVisibility: "hidden",
+            }}
+          >
+            <CreatorCard creator={incomingCreator} onClick={onClick} />
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
