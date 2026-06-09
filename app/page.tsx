@@ -67,6 +67,20 @@ export default function HomePage() {
 
 
   useEffect(() => {
+    function handleCreatorSearch(event: Event) {
+      const customEvent = event as CustomEvent<{ value?: string }>;
+      setSearch(customEvent.detail?.value ?? "");
+    }
+
+    window.addEventListener("cardpoc:creator-search", handleCreatorSearch);
+
+    return () => {
+      window.removeEventListener("cardpoc:creator-search", handleCreatorSearch);
+    };
+  }, []);
+
+
+  useEffect(() => {
     let mounted = true;
 
     async function loadGuideData() {
