@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronRight,
+  Gift,
   Globe2,
   LogOut,
   Package,
@@ -20,6 +21,7 @@ import { CreatorSearch } from "@/components/home/CreatorSearch";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivityRewardPing } from "@/components/rewards/useActivityRewardPing";
 
 
 const AccountModal = dynamic(
@@ -42,6 +44,14 @@ const LoginModal = dynamic(
 
 const PacksModal = dynamic(
   () => import("@/components/packs/PacksModal").then((mod) => mod.PacksModal),
+  { ssr: false },
+);
+
+const RewardsModal = dynamic(
+  () =>
+    import("@/components/rewards/RewardsModal").then(
+      (mod) => mod.RewardsModal,
+    ),
   { ssr: false },
 );
 
@@ -534,6 +544,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -560,6 +571,16 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   const notificationBellPulseTimeoutRef = useRef<number | null>(null);
 
   const { language, setLanguage, t } = useLanguage();
+
+  useActivityRewardPing({
+    enabled: Boolean(user?.id),
+    onReward: () => {
+      if (user?.id) {
+        refreshProfile(user.id);
+        loadNotifications(user.id);
+      }
+    },
+  });
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
@@ -975,6 +996,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
 
     setAccountOpen(false);
     setPacksOpen(false);
+    setRewardsOpen(false);
     setCollectionInitialCardId(cardId);
     setCollectionInitialCreatorId(creatorId);
     setCollectionOpen(true);
@@ -1004,6 +1026,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   function openPacksFromNotification() {
     setAccountOpen(false);
     setCollectionOpen(false);
+    setRewardsOpen(false);
     clearCollectionInitialState();
     setPacksOpen(true);
 
@@ -1017,6 +1040,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
   function openMissionsFromNotification(notification: UserNotification) {
   setCollectionOpen(false);
   setPacksOpen(false);
+  setRewardsOpen(false);
   setAccountOpen(false);
   clearCollectionInitialState();
 
@@ -1063,6 +1087,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
       clearCollectionInitialState();
       setCollectionOpen(false);
       setPacksOpen(false);
+      setRewardsOpen(false);
       setAccountOpen(true);
       return;
     }
@@ -1077,6 +1102,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     if (notification.type === "level_up") {
       setCollectionOpen(false);
       setPacksOpen(false);
+      setRewardsOpen(false);
       setAccountOpen(true);
 
       window.dispatchEvent(
@@ -1128,6 +1154,7 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
     setAccountOpen(false);
     setCollectionOpen(false);
     setPacksOpen(false);
+    setRewardsOpen(false);
     setLogoutConfirmOpen(false);
     clearCollectionInitialState();
     activeNotificationActionRef.current = null;
@@ -1230,6 +1257,22 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
                     onNotificationClick={handleNotificationClick}
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountOpen(false);
+                    setCollectionOpen(false);
+                    setPacksOpen(false);
+                    setRewardsOpen(true);
+                  }}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-yellow-300/20 bg-yellow-300/10 text-yellow-100 shadow-[0_0_18px_rgba(250,204,21,0.12)] transition hover:border-yellow-200/45 hover:bg-yellow-300/20"
+                  aria-label={translate(t, "openRewards", "Abrir recompensas")}
+                  title={translate(t, "rewards", "Recompensas")}
+                >
+                  <Gift size={17} />
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
+                </button>
 
                 <button
                   onClick={() => setAccountOpen(true)}
@@ -1348,6 +1391,24 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
               </div>
 
               <button
+                type="button"
+                onClick={() => {
+                  setAccountOpen(false);
+                  setCollectionOpen(false);
+                  setPacksOpen(false);
+                  setRewardsOpen(true);
+                }}
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-yellow-300/20 bg-yellow-300/[0.07] px-4 py-3 text-sm font-black text-yellow-100 shadow-[0_0_22px_rgba(250,204,21,0.08)] transition hover:-translate-y-0.5 hover:border-yellow-200/45 hover:bg-yellow-300/[0.12]"
+                aria-label={translate(t, "openRewards", "Abrir recompensas")}
+                title={translate(t, "rewards", "Recompensas")}
+              >
+                <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_20%,rgba(250,204,21,0.20),transparent_34%),radial-gradient(circle_at_82%_80%,rgba(34,211,238,0.12),transparent_42%)] opacity-75 transition group-hover:opacity-100" />
+                <Gift size={17} className="relative drop-shadow-[0_0_12px_rgba(250,204,21,0.65)]" />
+                <span className="relative">{translate(t, "rewards", "Recompensas")}</span>
+                <span className="relative h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
+              </button>
+
+              <button
                 onClick={() => setAccountOpen(true)}
                 className="group inline-flex max-w-[190px] items-center gap-3 rounded-2xl border border-white/0 px-2.5 py-2 text-left transition hover:border-cyan-300/15 hover:bg-white/[0.04]"
                 title={translate(t, "openPanel", "Abrir painel")}
@@ -1439,6 +1500,17 @@ export function SiteHeader({ search, onSearchChange }: SiteHeaderProps = {}) {
           open={logoutConfirmOpen}
           onClose={() => setLogoutConfirmOpen(false)}
           onConfirm={handleLogout}
+        />
+      ) : null}
+
+      {rewardsOpen ? (
+        <RewardsModal
+          open={rewardsOpen}
+          onClose={() => setRewardsOpen(false)}
+          onOpenPacks={() => {
+            setRewardsOpen(false);
+            setPacksOpen(true);
+          }}
         />
       ) : null}
 
