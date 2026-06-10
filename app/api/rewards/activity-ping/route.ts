@@ -65,10 +65,10 @@ export async function POST(request: Request) {
       const activityStatus = await getActivityStatus(adminClient, user.id, rewardDate);
 
       return NextResponse.json({
+        ...activityStatus,
         ok: true,
         counted: false,
         xpGranted: 0,
-        ...activityStatus,
       });
     }
 
@@ -81,10 +81,10 @@ export async function POST(request: Request) {
       const activityStatus = await getActivityStatus(adminClient, user.id, rewardDate);
 
       return NextResponse.json({
+        ...activityStatus,
         ok: true,
         counted: false,
         xpGranted: 0,
-        ...activityStatus,
       });
     }
 
@@ -168,10 +168,10 @@ export async function POST(request: Request) {
     const activityStatus = await getActivityStatus(adminClient, user.id, rewardDate);
 
     return NextResponse.json({
+      ...activityStatus,
       ok: true,
       counted: true,
       xpGranted,
-      ...activityStatus,
     });
   } catch (error) {
     console.error("Erro em /api/rewards/activity-ping:", error);
