@@ -21,7 +21,7 @@ type LiveStatusResponse = {
   externalCount?: number;
   memberCount?: number;
   onlineMemberCount?: number;
-  debug?: unknown;
+  debug?: Record<string, unknown>;
 };
 
 async function getTwitchAccessToken() {
@@ -182,6 +182,17 @@ function readNumberFromPaths(payload: any, paths: string[]) {
   return 0;
 }
 
+function readStringFromPaths(payload: any, paths: string[]) {
+  for (const path of paths) {
+    const value = readNestedValue(payload, path);
+
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+
+  return undefined;
+}
+
 function readBooleanFromPaths(payload: any, paths: string[]) {
   for (const path of paths) {
     const value = readNestedValue(payload, path);
@@ -190,7 +201,7 @@ function readBooleanFromPaths(payload: any, paths: string[]) {
     if (typeof value === "number") return value > 0;
     if (typeof value === "string") {
       const normalized = value.trim().toLowerCase();
-      if (["true", "1", "yes", "live"].includes(normalized)) return true;
+      if (["true", "1", "yes", "live", "online"].includes(normalized)) return true;
       if (["false", "0", "no", "offline"].includes(normalized)) return false;
     }
   }
@@ -204,104 +215,129 @@ type KickFetchDebug = {
   ok: boolean;
   contentType: string;
   bodyPreview?: string;
-  error?: string;
 };
 
-async function fetchKickJsonDetailed(url: string): Promise<{
-  data: any;
+type KickFetchResult<T = any> = {
+  data: T | null;
   debug: KickFetchDebug;
-}> {
+};
+
+async function fetchJsonWithDebug<T = any>(
+  url: string,
+  init?: RequestInit,
+): Promise<KickFetchResult<T>> {
+  const response = await fetch(url, {
+    ...init,
+    cache: "no-store",
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  const debug: KickFetchDebug = {
+    url,
+    status: response.status,
+    ok: response.ok,
+    contentType,
+    bodyPreview: text.slice(0, 500),
+  };
+
+  if (!response.ok || !contentType.includes("application/json")) {
+    return { data: null, debug };
+  }
+
   try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        Referer: "https://kick.com/",
-        Origin: "https://kick.com",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-      },
-      cache: "no-store",
-    });
-
-    const contentType = response.headers.get("content-type") || "";
-    const bodyText = await response.text();
-    const debug: KickFetchDebug = {
-      url,
-      status: response.status,
-      ok: response.ok,
-      contentType,
-      bodyPreview: bodyText.slice(0, 1200),
-    };
-
-    if (!response.ok || !contentType.includes("application/json")) {
-      return { data: null, debug };
-    }
-
-    try {
-      return { data: JSON.parse(bodyText), debug };
-    } catch (error) {
-      return {
-        data: null,
-        debug: {
-          ...debug,
-          error: error instanceof Error ? error.message : "JSON inválido",
-        },
-      };
-    }
-  } catch (error) {
-    return {
-      data: null,
-      debug: {
-        url,
-        status: 0,
-        ok: false,
-        contentType: "",
-        error: error instanceof Error ? error.message : "Erro desconhecido no fetch da Kick",
-      },
-    };
+    return { data: JSON.parse(text) as T, debug };
+  } catch {
+    return { data: null, debug };
   }
 }
 
-async function fetchKickJson(url: string) {
-  const { data } = await fetchKickJsonDetailed(url);
-  return data;
+let cachedKickAppToken: {
+  accessToken: string;
+  expiresAt: number;
+} | null = null;
+
+async function getKickAppAccessToken() {
+  const clientId = process.env.KICK_CLIENT_ID;
+  const clientSecret = process.env.KICK_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) return null;
+
+  const now = Date.now();
+
+  if (cachedKickAppToken && cachedKickAppToken.expiresAt > now + 60_000) {
+    return cachedKickAppToken.accessToken;
+  }
+
+  const { data, debug } = await fetchJsonWithDebug<{
+    access_token?: string;
+    expires_in?: number;
+  }>("https://id.kick.com/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  });
+
+  if (!data?.access_token) {
+    console.error("Erro Kick OAuth app token:", debug);
+    return null;
+  }
+
+  cachedKickAppToken = {
+    accessToken: data.access_token,
+    expiresAt: now + Number(data.expires_in ?? 3600) * 1000,
+  };
+
+  return cachedKickAppToken.accessToken;
 }
 
-function summarizeKickPayload(payload: any) {
-  if (!payload || typeof payload !== "object") return payload ?? null;
+async function fetchKickOfficialJson<T = any>(
+  path: string,
+  accessToken: string,
+): Promise<KickFetchResult<T>> {
+  return fetchJsonWithDebug<T>(`https://api.kick.com/public/v1${path}`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
 
-  return {
-    topLevelKeys: Object.keys(payload),
-    id: payload.id ?? payload.channel_id ?? payload?.data?.id ?? null,
-    slug: payload.slug ?? payload.username ?? payload?.data?.slug ?? null,
-    hasLivestream: Boolean(payload.livestream || payload.recent_livestream || payload?.data?.livestream),
-    followerCandidates: {
-      followers_count: payload.followers_count,
-      follower_count: payload.follower_count,
-      followersCount: payload.followersCount,
-      followers: payload.followers,
-      user_followers_count: payload?.user?.followers_count,
-      stats_followers: payload?.stats?.followers,
-      streamer_channel_followers_count: payload?.streamer_channel?.followers_count,
+async function fetchKickLegacyJson<T = any>(url: string) {
+  return fetchJsonWithDebug<T>(url, {
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+      Referer: "https://kick.com/",
+      Origin: "https://kick.com",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
     },
-    liveCandidates: {
-      is_live: payload.is_live,
-      isLive: payload.isLive,
-      livestream_is_live: payload?.livestream?.is_live,
-      recent_livestream_is_live: payload?.recent_livestream?.is_live,
-      data_is_live: payload?.data?.is_live,
-    },
-  };
+  });
+}
+
+function extractFirstDataItem(payload: any) {
+  if (Array.isArray(payload?.data)) return payload.data[0] ?? null;
+  if (payload?.data && typeof payload.data === "object") return payload.data;
+  if (Array.isArray(payload)) return payload[0] ?? null;
+  return payload ?? null;
 }
 
 function getKickLivestream(channel: any, livestreamPayload: any) {
+  const livestreamData = extractFirstDataItem(livestreamPayload);
+
   return (
     channel?.livestream ||
     channel?.recent_livestream ||
-    livestreamPayload?.livestream ||
-    livestreamPayload?.data ||
-    livestreamPayload ||
+    livestreamData?.livestream ||
+    livestreamData ||
     null
   );
 }
@@ -319,6 +355,19 @@ function getKickFollowerCount(channel: any) {
     "stats.followers",
     "stats.followers_count",
     "streamer_channel.followers_count",
+    "broadcaster.followers_count",
+  ]);
+}
+
+function getKickChannelId(channel: any) {
+  return readStringFromPaths(channel, [
+    "broadcaster_user_id",
+    "user_id",
+    "id",
+    "channel_id",
+    "streamer_channel.id",
+    "user.id",
+    "broadcaster.id",
   ]);
 }
 
@@ -328,6 +377,7 @@ function getKickLiveFlag(channel: any, livestream: any) {
     [
       "channel.is_live",
       "channel.isLive",
+      "channel.live",
       "channel.livestream.is_live",
       "channel.livestream.isLive",
       "channel.recent_livestream.is_live",
@@ -335,6 +385,7 @@ function getKickLiveFlag(channel: any, livestream: any) {
       "livestream.is_live",
       "livestream.isLive",
       "livestream.live",
+      "livestream.is_active",
     ],
   );
 
@@ -344,22 +395,51 @@ function getKickLiveFlag(channel: any, livestream: any) {
     livestream &&
       (livestream.id ||
         livestream.session_title ||
+        livestream.title ||
         livestream.slug ||
         livestream.start_time ||
-        livestream.viewer_count !== undefined),
+        livestream.started_at ||
+        livestream.viewer_count !== undefined ||
+        livestream.viewers_count !== undefined),
   );
 }
 
-async function getKickFollowerCountByChannelId(channel: any) {
-  const channelId = channel?.id || channel?.channel_id || channel?.streamer_channel?.id;
+async function getKickFollowerCountByChannelId(channel: any, accessToken?: string | null) {
+  const channelId = getKickChannelId(channel);
 
   if (!channelId) return 0;
 
-  const payload = await fetchKickJson(
+  if (accessToken) {
+    const officialCandidates = [
+      `/channels/${encodeURIComponent(String(channelId))}/followers-count`,
+      `/channels/${encodeURIComponent(String(channelId))}/followers`,
+    ];
+
+    for (const candidate of officialCandidates) {
+      const { data } = await fetchKickOfficialJson(candidate, accessToken).catch(() => ({
+        data: null,
+        debug: { url: candidate, status: 0, ok: false, contentType: "" },
+      }));
+
+      const count = readNumberFromPaths(data, [
+        "count",
+        "followers_count",
+        "follower_count",
+        "followersCount",
+        "followers",
+        "data.count",
+        "data.followers_count",
+      ]);
+
+      if (count > 0) return count;
+    }
+  }
+
+  const { data } = await fetchKickLegacyJson(
     `https://api.kick.com/channels/${encodeURIComponent(String(channelId))}/followers-count`,
   );
 
-  return readNumberFromPaths(payload, [
+  return readNumberFromPaths(data, [
     "count",
     "followers_count",
     "follower_count",
@@ -370,11 +450,87 @@ async function getKickFollowerCountByChannelId(channel: any) {
   ]);
 }
 
+function buildKickStatusFromPayloads(
+  username: string,
+  channel: any,
+  livestreamPayload: any,
+  followerCount: number,
+): LiveStatusResponse {
+  const livestream = getKickLivestream(channel, livestreamPayload);
+  const isLive = getKickLiveFlag(channel, livestream);
+
+  const thumbnail =
+    readStringFromPaths(livestream, [
+      "thumbnail.url",
+      "thumbnail",
+      "thumbnail_url",
+      "category.banner.url",
+      "categories.0.banner.url",
+    ]) ||
+    readStringFromPaths(channel, [
+      "thumbnail.url",
+      "thumbnail",
+      "thumbnail_url",
+      "banner_image.url",
+      "offline_banner_image.url",
+      "user.profile_pic",
+      "user.profilepic",
+    ]);
+
+  if (!isLive) {
+    return {
+      platform: "kick",
+      username,
+      isLive: false,
+      followerCount,
+      externalCount: followerCount,
+      thumbnail,
+      url: `https://kick.com/${username}`,
+    };
+  }
+
+  return {
+    platform: "kick",
+    username,
+    isLive: true,
+    title:
+      readStringFromPaths(livestream, ["session_title", "title", "slug"]) ||
+      readStringFromPaths(channel, ["session_title", "title"]),
+    viewerCount: readNumberFromPaths(livestream, [
+      "viewer_count",
+      "viewers_count",
+      "viewersCount",
+      "viewers",
+    ]),
+    gameName: readStringFromPaths(livestream, [
+      "categories.0.name",
+      "category.name",
+      "subcategory.name",
+      "category",
+    ]),
+    startedAt: readStringFromPaths(livestream, [
+      "start_time",
+      "created_at",
+      "started_at",
+    ]),
+    thumbnail,
+    followerCount,
+    externalCount: followerCount,
+    url: `https://kick.com/${username}`,
+  };
+}
+
 async function getKickLiveStatus(
   username: string,
-  debugMode = false,
+  includeDebug = false,
 ): Promise<LiveStatusResponse> {
   const cleanUsername = normalizeKickUsername(username);
+  const debug: Record<string, unknown> = {
+    cleanUsername,
+    mode: "official-first",
+    hasKickClientId: Boolean(process.env.KICK_CLIENT_ID),
+    hasKickClientSecret: Boolean(process.env.KICK_CLIENT_SECRET),
+  };
 
   if (!cleanUsername) {
     return {
@@ -384,16 +540,71 @@ async function getKickLiveStatus(
       followerCount: 0,
       externalCount: 0,
       url: "https://kick.com",
+      ...(includeDebug ? { debug } : {}),
     };
   }
 
-  const channelUrl = `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`;
-  const livestreamUrl = `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`;
-  const { data: channel, debug: channelDebug } = await fetchKickJsonDetailed(channelUrl);
+  const accessToken = await getKickAppAccessToken();
 
-  if (!channel) {
-    console.error("Erro Kick: canal não retornou JSON válido", cleanUsername, channelDebug);
+  if (accessToken) {
+    const channelResult = await fetchKickOfficialJson(
+      `/channels?slug=${encodeURIComponent(cleanUsername)}`,
+      accessToken,
+    );
+    debug.officialChannelRequest = channelResult.debug;
 
+    const officialChannel = extractFirstDataItem(channelResult.data);
+
+    if (officialChannel) {
+      const channelId = getKickChannelId(officialChannel);
+      const livestreamCandidates = [
+        `/livestreams?broadcaster_user_id=${encodeURIComponent(String(channelId || ""))}`,
+        `/livestreams?slug=${encodeURIComponent(cleanUsername)}`,
+      ];
+
+      let officialLivestreamPayload: any = null;
+      const officialLivestreamDebug: KickFetchDebug[] = [];
+
+      for (const candidate of livestreamCandidates) {
+        if (candidate.includes("broadcaster_user_id=") && !channelId) continue;
+
+        const result = await fetchKickOfficialJson(candidate, accessToken);
+        officialLivestreamDebug.push(result.debug);
+
+        if (extractFirstDataItem(result.data)) {
+          officialLivestreamPayload = result.data;
+          break;
+        }
+      }
+
+      debug.officialLivestreamRequests = officialLivestreamDebug;
+
+      const apiFollowerCount = getKickFollowerCount(officialChannel);
+      const followerCount =
+        apiFollowerCount ||
+        (await getKickFollowerCountByChannelId(officialChannel, accessToken).catch(
+          () => 0,
+        ));
+
+      const status = buildKickStatusFromPayloads(
+        cleanUsername,
+        officialChannel,
+        officialLivestreamPayload,
+        followerCount,
+      );
+
+      return includeDebug ? { ...status, debug } : status;
+    }
+  }
+
+  const legacyChannelResult = await fetchKickLegacyJson(
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
+  );
+  debug.legacyChannelRequest = legacyChannelResult.debug;
+
+  const legacyChannel = legacyChannelResult.data;
+
+  if (!legacyChannel) {
     return {
       platform: "kick",
       username: cleanUsername,
@@ -401,92 +612,28 @@ async function getKickLiveStatus(
       followerCount: 0,
       externalCount: 0,
       url: `https://kick.com/${cleanUsername}`,
-      ...(debugMode
-        ? {
-            debug: {
-              cleanUsername,
-              channelRequest: channelDebug,
-            },
-          }
-        : {}),
+      ...(includeDebug ? { debug } : {}),
     };
   }
 
-  const { data: livestreamPayload, debug: livestreamDebug } =
-    await fetchKickJsonDetailed(livestreamUrl);
+  const legacyLivestreamResult = await fetchKickLegacyJson(
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`,
+  );
+  debug.legacyLivestreamRequest = legacyLivestreamResult.debug;
 
-  const livestream = getKickLivestream(channel, livestreamPayload);
-  const apiFollowerCount = getKickFollowerCount(channel);
-  const fallbackFollowerCount = apiFollowerCount
-    ? 0
-    : await getKickFollowerCountByChannelId(channel).catch(() => 0);
-  const followerCount = apiFollowerCount || fallbackFollowerCount;
-  const isLive = getKickLiveFlag(channel, livestream);
-  const kickDebugPayload = debugMode
-    ? {
-        cleanUsername,
-        channelRequest: channelDebug,
-        livestreamRequest: livestreamDebug,
-        channelSummary: summarizeKickPayload(channel),
-        livestreamSummary: summarizeKickPayload(livestreamPayload),
-        selectedLivestreamSummary: summarizeKickPayload(livestream),
-        computed: {
-          apiFollowerCount,
-          fallbackFollowerCount,
-          followerCount,
-          isLive,
-        },
-      }
-    : undefined;
+  const apiFollowerCount = getKickFollowerCount(legacyChannel);
+  const followerCount =
+    apiFollowerCount ||
+    (await getKickFollowerCountByChannelId(legacyChannel, accessToken).catch(() => 0));
 
-  if (!isLive) {
-    return {
-      platform: "kick",
-      username: cleanUsername,
-      isLive: false,
-      followerCount,
-      externalCount: followerCount,
-      thumbnail:
-        channel?.user?.profile_pic ||
-        channel?.user?.profilepic ||
-        channel?.banner_image?.url ||
-        channel?.offline_banner_image?.url,
-      url: `https://kick.com/${cleanUsername}`,
-      ...(kickDebugPayload ? { debug: kickDebugPayload } : {}),
-    };
-  }
-
-  return {
-    platform: "kick",
-    username: cleanUsername,
-    isLive: true,
-    title: livestream?.session_title || livestream?.slug || channel?.session_title,
-    viewerCount: readNumberFromPaths(livestream, [
-      "viewer_count",
-      "viewers_count",
-      "viewersCount",
-      "viewers",
-    ]),
-    gameName:
-      livestream?.categories?.[0]?.name ||
-      livestream?.category?.name ||
-      livestream?.subcategory?.name,
-    startedAt:
-      livestream?.start_time || livestream?.created_at || livestream?.started_at,
-    thumbnail:
-      livestream?.thumbnail?.url ||
-      livestream?.thumbnail ||
-      livestream?.categories?.[0]?.banner?.url ||
-      livestream?.category?.banner?.url ||
-      channel?.banner_image?.url ||
-      channel?.offline_banner_image?.url ||
-      channel?.user?.profile_pic ||
-      channel?.user?.profilepic,
+  const status = buildKickStatusFromPayloads(
+    cleanUsername,
+    legacyChannel,
+    legacyLivestreamResult.data,
     followerCount,
-    externalCount: followerCount,
-    url: `https://kick.com/${cleanUsername}`,
-    ...(kickDebugPayload ? { debug: kickDebugPayload } : {}),
-  };
+  );
+
+  return includeDebug ? { ...status, debug } : status;
 }
 
 function normalizeYouTubeUsername(username: string) {
@@ -978,11 +1125,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (platform === "kick") {
-      const debugMode =
-        request.nextUrl.searchParams.get("debug") === "1" ||
-        process.env.KICK_DEBUG === "true";
-      const status = await getKickLiveStatus(username, debugMode);
-      await upsertCreatorLiveStatus(creatorId, status);
+      const debug = request.nextUrl.searchParams.get("debug") === "1";
+      const status = await getKickLiveStatus(username, debug);
+      if (!debug) {
+        await upsertCreatorLiveStatus(creatorId, status);
+      }
       return NextResponse.json(status);
     }
 
