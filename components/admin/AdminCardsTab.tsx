@@ -373,7 +373,7 @@ export function AdminCardsTab({ ctx }: AdminTabProps) {
                               />
                             )}
 
-                            {filteredCardCreators.map((creator) => {
+                            {filteredCardCreators.map((creator: any) => {
                               const selected = selectedCardCreatorId === creator.id;
                               const owner = getOwner(creator.user_id);
 
@@ -434,7 +434,7 @@ export function AdminCardsTab({ ctx }: AdminTabProps) {
 
                         {adminRewardType === "card" ? (
                           <div className="mt-4 grid grid-cols-2 gap-3">
-                            {GRANT_RARITIES.map((rarityOption) => {
+                            {GRANT_RARITIES.map((rarityOption: any) => {
                               const selected =
                                 selectedGrantRarity === rarityOption.id;
 
@@ -471,7 +471,7 @@ export function AdminCardsTab({ ctx }: AdminTabProps) {
                           </div>
                         ) : (
                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {ADMIN_PACK_TYPES.map((packOption) => {
+                            {ADMIN_PACK_TYPES.map((packOption: any) => {
                               const selected =
                                 selectedAdminPackType === packOption.id;
 
@@ -632,7 +632,7 @@ export function AdminCardsTab({ ctx }: AdminTabProps) {
                                 />
                               )}
 
-                              {filteredCardUsers.map((profile) => {
+                              {filteredCardUsers.map((profile: any) => {
                                 const selected = selectedCardUserId === profile.id;
 
                                 return (

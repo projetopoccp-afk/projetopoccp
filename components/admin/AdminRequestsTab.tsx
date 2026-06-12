@@ -283,7 +283,7 @@ export function AdminRequestsTab({ ctx }: AdminTabProps) {
                       />
                     )}
 
-                    {filteredRequests.map((request) => {
+                    {filteredRequests.map((request: any) => {
                       const isExpanded = expandedRequests[request.id] ?? false;
 
                       return (

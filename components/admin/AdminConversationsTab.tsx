@@ -317,7 +317,7 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                       />
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {SUPPORT_STATUS_FILTERS.map((filter) => {
+                        {SUPPORT_STATUS_FILTERS.map((filter: any) => {
                           const selected = conversationStatusFilter === filter.id;
                           const count = conversationStatusCounts[filter.id];
 
@@ -362,7 +362,7 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                           />
                         )}
 
-                        {filteredSupportConversations.map((conversation) => {
+                        {filteredSupportConversations.map((conversation: any) => {
                           const owner = getOwner(conversation.user_id);
                           const creator = getCreator(conversation.creator_id);
                           const selected =
@@ -520,8 +520,8 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                                 className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold text-white outline-none transition focus:border-cyan-300/50"
                               >
                                 {SUPPORT_STATUS_FILTERS.filter(
-                                  (filter) => filter.id !== "all",
-                                ).map((filter) => (
+                                  (filter: any) => filter.id !== "all",
+                                ).map((filter: any) => (
                                   <option
                                     key={filter.id}
                                     value={filter.id}
@@ -549,7 +549,7 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                               />
                             )}
 
-                            {supportMessages.map((message) => {
+                            {supportMessages.map((message: any) => {
                               const isAdminMessage =
                                 message.sender_role === "admin";
                               const isSystemMessage =

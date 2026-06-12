@@ -283,7 +283,7 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
                       />
                     )}
 
-                    {filteredUsers.map((profile) => (
+                    {filteredUsers.map((profile: any) => (
                       <div
                         key={profile.id}
                         className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"

@@ -283,7 +283,7 @@ export function AdminLogsTab({ ctx }: AdminTabProps) {
                       />
                     )}
 
-                    {filteredLogs.map((log) => {
+                    {filteredLogs.map((log: any) => {
                       const isExpanded = expandedLogs[log.id] ?? false;
 
                       return (
