@@ -217,7 +217,7 @@ async function getKickLiveStatus(username: string): Promise<LiveStatusResponse> 
 }
 
 async function upsertCreatorLiveStatus(
-  adminSupabase: ReturnType<typeof createClient>,
+  adminSupabase: any,
   creatorId: string,
   status: LiveStatusResponse,
 ) {
@@ -251,7 +251,7 @@ async function upsertCreatorLiveStatus(
 }
 
 async function loadKnownLiveStatusRows(
-  adminSupabase: ReturnType<typeof createClient>,
+  adminSupabase: any,
 ) {
   const rows: LiveStatusRow[] = [];
   let from = 0;
@@ -259,7 +259,7 @@ async function loadKnownLiveStatusRows(
   while (true) {
     const to = from + REVALIDATE_PAGE_SIZE - 1;
 
-    const { data, error } = await adminSupabase
+    const { data, error } = await (adminSupabase as any)
       .from("creator_live_status")
       .select("creator_id,platform,platform_username")
       .in("platform", ["twitch", "kick"])
@@ -270,9 +270,11 @@ async function loadKnownLiveStatusRows(
       throw new Error(error.message);
     }
 
-    rows.push(...((data || []) as LiveStatusRow[]));
+    const pageRows = (Array.isArray(data) ? data : []) as LiveStatusRow[];
 
-    if (!data || data.length < REVALIDATE_PAGE_SIZE) break;
+    rows.push(...pageRows);
+
+    if (pageRows.length < REVALIDATE_PAGE_SIZE) break;
 
     from += REVALIDATE_PAGE_SIZE;
   }
