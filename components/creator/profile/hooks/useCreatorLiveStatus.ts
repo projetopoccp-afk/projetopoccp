@@ -65,6 +65,66 @@ function buildLiveStatusTargets(socialLinks: SocialLink[]): LiveStatusTarget[] {
   ];
 }
 
+
+function toPositiveInteger(value: unknown) {
+  if (value === null || value === undefined || value === "") return undefined;
+
+  if (typeof value === "string") {
+    const normalized = value.replace(/[^\d]/g, "");
+    if (!normalized) return undefined;
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
+}
+
+type KickFollowerGoal = {
+  type?: string | null;
+  current_value?: number | string | null;
+};
+
+function extractKickFollowerCountFromGoals(payload: unknown) {
+  const goals = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)
+      ? ((payload as { data: unknown[] }).data)
+      : [];
+
+  const followerGoal = goals.find((goal): goal is KickFollowerGoal => {
+    if (!goal || typeof goal !== "object") return false;
+
+    return String((goal as KickFollowerGoal).type || "").toLowerCase().trim() === "followers";
+  });
+
+  return toPositiveInteger(followerGoal?.current_value);
+}
+
+async function fetchKickFollowerCountFromBrowser(username: string) {
+  const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
+
+  if (!cleanUsername || typeof window === "undefined") return undefined;
+
+  try {
+    const response = await fetch(
+      `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/goals`,
+      {
+        cache: "no-store",
+        credentials: "omit",
+      },
+    );
+
+    if (!response.ok) return undefined;
+
+    const payload: unknown = await response.json();
+    return extractKickFollowerCountFromGoals(payload);
+  } catch {
+    return undefined;
+  }
+}
+
 function mergeLiveStatusResults(
   currentLiveStatus: LiveStatusMap,
   results: Array<{
@@ -154,12 +214,18 @@ export function useCreatorLiveStatus(
               }
 
               const data: LiveStatus = await response.json();
+              const kickFollowerCount =
+                platform === "kick"
+                  ? await fetchKickFollowerCountFromBrowser(targetUsername)
+                  : undefined;
 
               return {
                 platform,
                 index,
                 status: {
                   ...data,
+                  followerCount: kickFollowerCount ?? data.followerCount,
+                  externalCount: kickFollowerCount ?? data.externalCount,
                   url:
                     data.url || getPlatformFallbackUrl(platform, targetUsername),
                 },
