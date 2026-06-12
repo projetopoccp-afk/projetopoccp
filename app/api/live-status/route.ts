@@ -127,25 +127,195 @@ async function getTwitchLiveStatus(
   };
 }
 
+
+function normalizeKickUsername(username: string) {
+  const value = username.trim();
+
+  if (!value) return "";
+
+  try {
+    const url = value.startsWith("http")
+      ? new URL(value)
+      : new URL(`https://${value}`);
+
+    if (url.hostname.includes("kick.com")) {
+      const slug = url.pathname.split("/").filter(Boolean)[0];
+      return (slug || "").replace(/^@/, "").toLowerCase();
+    }
+  } catch {
+    // Continua com normalização manual abaixo.
+  }
+
+  return value
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/^kick\.com\//i, "")
+    .replace(/^@/, "")
+    .split("?")[0]
+    .split("#")[0]
+    .split("/")[0]
+    .trim()
+    .toLowerCase();
+}
+
+function readNestedValue(payload: any, path: string) {
+  return path.split(".").reduce<any>((current, key) => {
+    if (current == null) return undefined;
+    return current[key];
+  }, payload);
+}
+
+function readNumberFromPaths(payload: any, paths: string[]) {
+  for (const path of paths) {
+    const value = readNestedValue(payload, path);
+
+    if (value === null || value === undefined || value === "") continue;
+
+    const numericValue = Number(value);
+
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return 0;
+}
+
+function readBooleanFromPaths(payload: any, paths: string[]) {
+  for (const path of paths) {
+    const value = readNestedValue(payload, path);
+
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value > 0;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "yes", "live"].includes(normalized)) return true;
+      if (["false", "0", "no", "offline"].includes(normalized)) return false;
+    }
+  }
+
+  return undefined;
+}
+
+async function fetchKickJson(url: string) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+      Referer: "https://kick.com/",
+      Origin: "https://kick.com",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    },
+    cache: "no-store",
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!response.ok || !contentType.includes("application/json")) {
+    return null;
+  }
+
+  return response.json();
+}
+
+function getKickLivestream(channel: any, livestreamPayload: any) {
+  return (
+    channel?.livestream ||
+    channel?.recent_livestream ||
+    livestreamPayload?.livestream ||
+    livestreamPayload?.data ||
+    livestreamPayload ||
+    null
+  );
+}
+
+function getKickFollowerCount(channel: any) {
+  return readNumberFromPaths(channel, [
+    "followers_count",
+    "follower_count",
+    "followersCount",
+    "followers",
+    "followers.total",
+    "user.followers_count",
+    "user.follower_count",
+    "user.followersCount",
+    "stats.followers",
+    "stats.followers_count",
+    "streamer_channel.followers_count",
+  ]);
+}
+
+function getKickLiveFlag(channel: any, livestream: any) {
+  const explicit = readBooleanFromPaths(
+    { channel, livestream },
+    [
+      "channel.is_live",
+      "channel.isLive",
+      "channel.livestream.is_live",
+      "channel.livestream.isLive",
+      "channel.recent_livestream.is_live",
+      "channel.recent_livestream.isLive",
+      "livestream.is_live",
+      "livestream.isLive",
+      "livestream.live",
+    ],
+  );
+
+  if (explicit !== undefined) return explicit;
+
+  return Boolean(
+    livestream &&
+      (livestream.id ||
+        livestream.session_title ||
+        livestream.slug ||
+        livestream.start_time ||
+        livestream.viewer_count !== undefined),
+  );
+}
+
+async function getKickFollowerCountByChannelId(channel: any) {
+  const channelId = channel?.id || channel?.channel_id || channel?.streamer_channel?.id;
+
+  if (!channelId) return 0;
+
+  const payload = await fetchKickJson(
+    `https://api.kick.com/channels/${encodeURIComponent(String(channelId))}/followers-count`,
+  );
+
+  return readNumberFromPaths(payload, [
+    "count",
+    "followers_count",
+    "follower_count",
+    "followersCount",
+    "followers",
+    "data.count",
+    "data.followers_count",
+  ]);
+}
+
 async function getKickLiveStatus(
   username: string,
 ): Promise<LiveStatusResponse> {
-  const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
+  const cleanUsername = normalizeKickUsername(username);
 
-  const kickResponse = await fetch(
+  if (!cleanUsername) {
+    return {
+      platform: "kick",
+      username: "",
+      isLive: false,
+      followerCount: 0,
+      externalCount: 0,
+      url: "https://kick.com",
+    };
+  }
+
+  const channel = await fetchKickJson(
     `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
-    {
-      headers: {
-        Accept: "application/json",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-      },
-      cache: "no-store",
-    },
   );
 
-  if (!kickResponse.ok) {
-    console.error("Erro Kick V2:", kickResponse.status);
+  if (!channel) {
+    console.error("Erro Kick: canal não retornou JSON válido", cleanUsername);
 
     return {
       platform: "kick",
@@ -157,19 +327,30 @@ async function getKickLiveStatus(
     };
   }
 
-  const channel = await kickResponse.json();
+  const livestreamPayload = await fetchKickJson(
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`,
+  );
 
-  const livestream = channel?.livestream;
-  const followerCount = getKickFollowerCount(channel);
+  const livestream = getKickLivestream(channel, livestreamPayload);
+  const apiFollowerCount = getKickFollowerCount(channel);
+  const fallbackFollowerCount = apiFollowerCount
+    ? 0
+    : await getKickFollowerCountByChannelId(channel).catch(() => 0);
+  const followerCount = apiFollowerCount || fallbackFollowerCount;
+  const isLive = getKickLiveFlag(channel, livestream);
 
-  if (!livestream?.is_live) {
+  if (!isLive) {
     return {
       platform: "kick",
       username: cleanUsername,
       isLive: false,
       followerCount,
       externalCount: followerCount,
-      thumbnail: channel?.user?.profile_pic || channel?.banner_image?.url,
+      thumbnail:
+        channel?.user?.profile_pic ||
+        channel?.user?.profilepic ||
+        channel?.banner_image?.url ||
+        channel?.offline_banner_image?.url,
       url: `https://kick.com/${cleanUsername}`,
     };
   }
@@ -178,48 +359,33 @@ async function getKickLiveStatus(
     platform: "kick",
     username: cleanUsername,
     isLive: true,
-    title: livestream?.session_title,
-    viewerCount: Number(livestream?.viewer_count ?? 0),
-    gameName: livestream?.categories?.[0]?.name,
-    startedAt: livestream?.start_time,
+    title: livestream?.session_title || livestream?.slug || channel?.session_title,
+    viewerCount: readNumberFromPaths(livestream, [
+      "viewer_count",
+      "viewers_count",
+      "viewersCount",
+      "viewers",
+    ]),
+    gameName:
+      livestream?.categories?.[0]?.name ||
+      livestream?.category?.name ||
+      livestream?.subcategory?.name,
+    startedAt:
+      livestream?.start_time || livestream?.created_at || livestream?.started_at,
     thumbnail:
+      livestream?.thumbnail?.url ||
+      livestream?.thumbnail ||
       livestream?.categories?.[0]?.banner?.url ||
+      livestream?.category?.banner?.url ||
       channel?.banner_image?.url ||
-      channel?.user?.profile_pic,
+      channel?.offline_banner_image?.url ||
+      channel?.user?.profile_pic ||
+      channel?.user?.profilepic,
     followerCount,
     externalCount: followerCount,
     url: `https://kick.com/${cleanUsername}`,
   };
 }
-
-
-function toSafeNumber(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-
-  if (typeof value === "string") {
-    const normalized = value.replace(/[^\d.-]/g, "");
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  return 0;
-}
-
-function getKickFollowerCount(channel: any) {
-  return Math.max(
-    toSafeNumber(channel?.followers_count),
-    toSafeNumber(channel?.follower_count),
-    toSafeNumber(channel?.followersCount),
-    toSafeNumber(channel?.followers),
-    toSafeNumber(channel?.user?.followers_count),
-    toSafeNumber(channel?.user?.follower_count),
-    toSafeNumber(channel?.user?.followersCount),
-    toSafeNumber(channel?.user?.followers),
-    toSafeNumber(channel?.stats?.followers_count),
-    toSafeNumber(channel?.stats?.followers),
-  );
-}
-
 
 function normalizeYouTubeUsername(username: string) {
   const value = username.trim();
