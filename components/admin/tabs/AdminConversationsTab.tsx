@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminPanelContext, SupportConversationStatus } from "../hooks/useAdminPanelController";
+import type { AdminPanelContext, SupportConversationStatus, SupportFilter, SupportConversation, SupportMessage } from "../hooks/useAdminPanelController";
 
 type AdminConversationsTabProps = {
   ctx: AdminPanelContext;
@@ -320,7 +320,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                   />
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {SUPPORT_STATUS_FILTERS.map((filter: any) => {
+                    {SUPPORT_STATUS_FILTERS.map((filter: { id: SupportFilter; labelKey: string; fallback: string }) => {
                       const selected = conversationStatusFilter === filter.id;
                       const count = conversationStatusCounts[filter.id];
 
@@ -365,7 +365,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                       />
                     )}
 
-                    {filteredSupportConversations.map((conversation: any) => {
+                    {filteredSupportConversations.map((conversation: SupportConversation) => {
                       const owner = getOwner(conversation.user_id);
                       const creator = getCreator(conversation.creator_id);
                       const selected =
@@ -524,7 +524,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                           >
                             {SUPPORT_STATUS_FILTERS.filter(
                               (filter) => filter.id !== "all",
-                            ).map((filter: any) => (
+                            ).map((filter: { id: SupportFilter; labelKey: string; fallback: string }) => (
                               <option
                                 key={filter.id}
                                 value={filter.id}
@@ -552,7 +552,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                           />
                         )}
 
-                        {supportMessages.map((message: any) => {
+                        {supportMessages.map((message: SupportMessage) => {
                           const isAdminMessage =
                             message.sender_role === "admin";
                           const isSystemMessage =
