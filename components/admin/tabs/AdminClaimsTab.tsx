@@ -286,7 +286,7 @@ export default function AdminClaimsTab({ ctx }: AdminClaimsTabProps) {
                   />
                 )}
 
-                {filteredClaims.map((claim) => {
+                {filteredClaims.map((claim: any) => {
                   const creator = getCreator(claim.creator_id);
                   const claimant = getOwner(claim.user_id);
                   const isExpanded = expandedClaims[claim.id] ?? false;

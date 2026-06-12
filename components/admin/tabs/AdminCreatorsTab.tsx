@@ -569,7 +569,7 @@ export default function AdminCreatorsTab({ ctx }: AdminCreatorsTabProps) {
                   />
                 )}
 
-                {filteredCreators.map((creator) => {
+                {filteredCreators.map((creator: any) => {
                   const owner = getOwner(creator.user_id);
                   const selectedOwnerId =
                     selectedOwners[creator.id] ?? creator.user_id ?? "";
@@ -726,7 +726,7 @@ export default function AdminCreatorsTab({ ctx }: AdminCreatorsTabProps) {
                                   {translate(t, "noOwner", "Sem dono")}
                                 </option>
 
-                                {users.map((user) => (
+                                {users.map((user: any) => (
                                   <option key={user.id} value={user.id}>
                                     {user.email || user.display_name || user.id}
                                   </option>

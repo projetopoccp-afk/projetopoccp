@@ -286,7 +286,7 @@ export default function AdminRequestsTab({ ctx }: AdminRequestsTabProps) {
                   />
                 )}
 
-                {filteredRequests.map((request) => {
+                {filteredRequests.map((request: any) => {
                   const isExpanded = expandedRequests[request.id] ?? false;
 
                   return (

@@ -434,7 +434,7 @@ export default function AdminCreatorDetectorTab({ ctx }: AdminCreatorDetectorTab
                   />
                 )}
 
-                {filteredDetectedKickCreators.map((creator) => {
+                {filteredDetectedKickCreators.map((creator: any) => {
                   const key = getDetectedKickKey(creator);
                   const selected = !!selectedDetectedKickCreators[key];
                   const creatorPlatform =
@@ -576,7 +576,7 @@ export default function AdminCreatorDetectorTab({ ctx }: AdminCreatorDetectorTab
                           </div>
 
                           <div className="flex flex-wrap gap-2">
-                            {possibleMatches.map((match) => {
+                            {possibleMatches.map((match: any) => {
                               const linkKey = `${key}:${match.creator.id}`;
                               const confidence = Math.round(match.score * 100);
 

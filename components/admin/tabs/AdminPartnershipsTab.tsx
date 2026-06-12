@@ -338,7 +338,7 @@ export default function AdminPartnershipsTab({ ctx }: AdminPartnershipsTabProps)
                   />
                 )}
 
-                {filteredPartnerships.map((partnership) => {
+                {filteredPartnerships.map((partnership: any) => {
                   const creator = getCreator(partnership.creator_id);
                   const isExpanded =
                     expandedPartnerships[partnership.id] ?? false;

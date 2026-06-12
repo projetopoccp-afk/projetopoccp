@@ -279,7 +279,7 @@ export function createSlug(value: string) {
 }
 
 export function getPartnershipTypeLabel(type: string, t: TranslateFunction) {
-  const option = PARTNERSHIP_TYPE_OPTIONS.find((item) => item.id === type);
+  const option = PARTNERSHIP_TYPE_OPTIONS.find((item: any) => item.id === type);
 
   if (!option) return type;
 
@@ -290,7 +290,7 @@ export function getGrantRarityLabel(
   rarity: GrantRarity | string,
   t: TranslateFunction,
 ) {
-  const rarityOption = GRANT_RARITIES.find((item) => item.id === rarity);
+  const rarityOption = GRANT_RARITIES.find((item: any) => item.id === rarity);
 
   if (!rarityOption) return rarity;
 
@@ -305,7 +305,7 @@ export function getAdminPackLabel(
   packType: AdminPackType | string,
   t: TranslateFunction,
 ) {
-  const packOption = ADMIN_PACK_TYPES.find((item) => item.id === packType);
+  const packOption = ADMIN_PACK_TYPES.find((item: any) => item.id === packType);
 
   if (!packOption) return packType;
 
@@ -846,7 +846,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
 
   async function sendSupportReply() {
     const conversation =
-      supportConversations.find((item) => item.id === selectedConversationId) ||
+      supportConversations.find((item: any) => item.id === selectedConversationId) ||
       null;
     const adminId = await getCurrentUserId();
 
@@ -975,11 +975,11 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   }, [open, activeTab, selectedConversationId]);
 
   const usersById = useMemo(() => {
-    return new Map(users.map((user) => [user.id, user]));
+    return new Map(users.map((user: any) => [user.id, user]));
   }, [users]);
 
   const creatorsById = useMemo(() => {
-    return new Map(creators.map((creator) => [creator.id, creator]));
+    return new Map(creators.map((creator: any) => [creator.id, creator]));
   }, [creators]);
 
   function getOwner(userId: string | null) {
@@ -1676,7 +1676,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     if (detectedNames.length === 0) return [];
 
     return creators
-      .map((existingCreator) => {
+      .map((existingCreator: any) => {
         const existingNames = [
           existingCreator.username,
           existingCreator.nickname,
@@ -1687,7 +1687,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
         const score = Math.max(
           0,
           ...detectedNames.flatMap((detectedName) =>
-            existingNames.map((existingName) =>
+            existingNames.map((existingName: any) =>
               getNameSimilarity(detectedName, existingName),
             ),
           ),
@@ -1695,8 +1695,8 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
 
         return { creator: existingCreator, score };
       })
-      .filter((match) => match.score >= 0.78)
-      .sort((a, b) => b.score - a.score)
+      .filter((match: any) => match.score >= 0.78)
+      .sort((a: any, b: any) => b.score - a.score)
       .slice(0, 3);
   }
 
@@ -1783,7 +1783,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       );
 
       const creatorsResult = responses.flatMap((response) =>
-        response.creators.map((creator) => ({
+        response.creators.map((creator: any) => ({
           ...creator,
           platform: creator.platform || response.platform,
         })),
@@ -1791,7 +1791,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
 
       const uniqueCreators = Array.from(
         new Map(
-          creatorsResult.map((creator) => [
+          creatorsResult.map((creator: any) => [
             getDetectedKickKey(creator),
             creator,
           ]),
@@ -1804,10 +1804,10 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       setDetectedKickCreators(uniqueCreators);
       setSelectedDetectedKickCreators({});
 
-      const failedPlatforms = responses.filter((response) => response.error);
+      const failedPlatforms = responses.filter((response: any) => response.error);
 
       if (failedPlatforms.length > 0 && uniqueCreators.length === 0) {
-        throw new Error(failedPlatforms.map((item) => item.error).join(" | "));
+        throw new Error(failedPlatforms.map((item: any) => item.error).join(" | "));
       }
 
       if (failedPlatforms.length > 0) {
@@ -1817,7 +1817,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
             "adminCreatorDetectorPartialDetection",
             "Busca parcial concluída. Uma plataforma retornou erro:",
           )} ${failedPlatforms
-            .map((item) => `${getCreatorDetectorPlatformLabel(item.platform)}: ${item.error}`)
+            .map((item: any) => `${getCreatorDetectorPlatformLabel(item.platform)}: ${item.error}`)
             .join(" | ")}`,
         );
       }
@@ -1904,7 +1904,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
           url: string;
           creators: DetectedKickCreator[];
         }[]
-      ).filter((endpoint) => endpoint.creators.length > 0);
+      ).filter((endpoint: any) => endpoint.creators.length > 0);
 
       const responses = await Promise.all(
         importEndpoints.map(async (endpoint) => {
@@ -1940,7 +1940,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       await loadLogs();
       setSelectedDetectedKickCreators({});
       setDetectedKickCreators((current) =>
-        current.map((creator) =>
+        current.map((creator: any) =>
           selectedDetectedKickCreators[getDetectedKickKey(creator)]
             ? { ...creator, already_exists: true }
             : creator,
@@ -2036,7 +2036,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       });
 
       setDetectedKickCreators((current) =>
-        current.map((creator) =>
+        current.map((creator: any) =>
           getDetectedKickKey(creator) === key
             ? { ...creator, already_exists: true }
             : creator,
@@ -2215,7 +2215,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     action: string,
     successMessage: string,
   ) {
-    const targetCreators = filteredCreators.filter((creator) => {
+    const targetCreators = filteredCreators.filter((creator: any) => {
       if (
         typeof updates.is_public === "boolean" &&
         creator.is_public === updates.is_public
@@ -2261,7 +2261,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       .update(updates)
       .in(
         "id",
-        targetCreators.map((creator) => creator.id),
+        targetCreators.map((creator: any) => creator.id),
       );
 
     if (error) {
@@ -2277,7 +2277,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       metadata: {
         updates,
         affected_count: targetCreators.length,
-        affected_ids: targetCreators.map((creator) => creator.id),
+        affected_ids: targetCreators.map((creator: any) => creator.id),
         filters: {
           search: creatorSearch,
           visibility: creatorVisibilityFilter,
@@ -2428,7 +2428,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   async function changeCreatorOwner(creator: CreatorProfile, userId: string) {
     setActionLoading(creator.id);
 
-    const newOwner = users.find((user) => user.id === userId);
+    const newOwner = users.find((user: any) => user.id === userId);
 
     const { error } = await supabase
       .from("creator_profiles")
@@ -2472,10 +2472,10 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
 
   function getAdminRewardTargets() {
     if (adminRewardTarget === "all_users") {
-      return users.filter((user) => Boolean(user.id));
+      return users.filter((user: any) => Boolean(user.id));
     }
 
-    const selectedUser = users.find((user) => user.id === selectedCardUserId);
+    const selectedUser = users.find((user: any) => user.id === selectedCardUserId);
 
     return selectedUser ? [selectedUser] : [];
   }
@@ -2510,7 +2510,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     if (tabId === "claims") return claims.length;
     if (tabId === "partnerships") return partnerships.length;
     if (tabId === "conversations")
-      return supportConversations.filter((conversation) =>
+      return supportConversations.filter((conversation: any) =>
         ACTIVE_SUPPORT_STATUSES.includes(conversation.status),
       ).length;
     if (tabId === "logs") return activeTab === "logs" ? null : logs.length;
@@ -2863,7 +2863,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     );
   }
 
-  const filteredRequests = requests.filter((request) => {
+  const filteredRequests = requests.filter((request: any) => {
     const search = requestSearch.toLowerCase().trim();
 
     const searchableText = [
@@ -2881,7 +2881,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     return searchableText.includes(search);
   });
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = users.filter((user: any) => {
     const search = userSearch.toLowerCase().trim();
 
     const searchableText = [user.email, user.display_name, user.username]
@@ -2892,7 +2892,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   });
 
   const filteredCreators = creators
-    .filter((creator) => {
+    .filter((creator: any) => {
       const search = creatorSearch.toLowerCase().trim();
       const owner = getOwner(creator.user_id);
 
@@ -2938,7 +2938,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
 
       return searchableText.includes(search);
     })
-    .sort((first, second) => {
+    .sort((first: any, second: any) => {
       if (creatorSortFilter === "oldest") {
         return (
           new Date(first.created_at).getTime() -
@@ -2984,12 +2984,12 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   const creatorProfileStats = {
     total: creators.length,
     filtered: filteredCreators.length,
-    public: creators.filter((creator) => creator.is_public).length,
-    hidden: creators.filter((creator) => !creator.is_public).length,
-    verified: creators.filter((creator) => creator.is_verified).length,
-    notVerified: creators.filter((creator) => !creator.is_verified).length,
-    claimed: creators.filter((creator) => Boolean(creator.user_id)).length,
-    unclaimed: creators.filter((creator) => !creator.user_id).length,
+    public: creators.filter((creator: any) => creator.is_public).length,
+    hidden: creators.filter((creator: any) => !creator.is_public).length,
+    verified: creators.filter((creator: any) => creator.is_verified).length,
+    notVerified: creators.filter((creator: any) => !creator.is_verified).length,
+    claimed: creators.filter((creator: any) => Boolean(creator.user_id)).length,
+    unclaimed: creators.filter((creator: any) => !creator.user_id).length,
   };
 
   const hasCreatorProfileFilters =
@@ -3029,7 +3029,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       !creator.already_exists,
   ).length;
 
-  const filteredClaims = claims.filter((claim) => {
+  const filteredClaims = claims.filter((claim: any) => {
     const search = claimSearch.toLowerCase().trim();
     const creator = getCreator(claim.creator_id);
     const claimant = getOwner(claim.user_id);
@@ -3050,7 +3050,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     return searchableText.includes(search);
   });
 
-  const filteredPartnerships = partnerships.filter((partnership) => {
+  const filteredPartnerships = partnerships.filter((partnership: any) => {
     const search = partnershipSearch.toLowerCase().trim();
     const creator = getCreator(partnership.creator_id);
 
@@ -3070,7 +3070,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     return searchableText.includes(search);
   });
 
-  const filteredCardCreators = creators.filter((creator) => {
+  const filteredCardCreators = creators.filter((creator: any) => {
     const search = cardCreatorSearch.toLowerCase().trim();
     const owner = getOwner(creator.user_id);
 
@@ -3089,7 +3089,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     return searchableText.includes(search);
   });
 
-  const filteredCardUsers = users.filter((user) => {
+  const filteredCardUsers = users.filter((user: any) => {
     const search = cardUserSearch.toLowerCase().trim();
 
     const searchableText = [user.email, user.display_name, user.username]
@@ -3100,10 +3100,10 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   });
 
   const selectedCardCreator =
-    creators.find((creator) => creator.id === selectedCardCreatorId) || null;
+    creators.find((creator: any) => creator.id === selectedCardCreatorId) || null;
 
   const selectedCardUser =
-    users.find((user) => user.id === selectedCardUserId) || null;
+    users.find((user: any) => user.id === selectedCardUserId) || null;
 
   const conversationStatusCounts = supportConversations.reduce<
     Record<SupportFilter, number>
@@ -3188,7 +3188,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     supportConversations.length,
   ]);
 
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = logs.filter((log: any) => {
     const search = logSearch.toLowerCase().trim();
     const admin = getOwner(log.admin_id);
 

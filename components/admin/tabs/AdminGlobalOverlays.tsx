@@ -405,7 +405,7 @@ export default function AdminGlobalOverlays({ ctx }: AdminGlobalOverlaysProps) {
                           }
                           className="mt-2 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-300/40"
                         >
-                          {PARTNERSHIP_TYPE_OPTIONS.map((option) => (
+                          {PARTNERSHIP_TYPE_OPTIONS.map((option: any) => (
                             <option key={option.id} value={option.id}>
                               {translate(
                                 t,

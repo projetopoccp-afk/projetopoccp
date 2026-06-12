@@ -320,7 +320,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                   />
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {SUPPORT_STATUS_FILTERS.map((filter) => {
+                    {SUPPORT_STATUS_FILTERS.map((filter: any) => {
                       const selected = conversationStatusFilter === filter.id;
                       const count = conversationStatusCounts[filter.id];
 
@@ -365,7 +365,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                       />
                     )}
 
-                    {filteredSupportConversations.map((conversation) => {
+                    {filteredSupportConversations.map((conversation: any) => {
                       const owner = getOwner(conversation.user_id);
                       const creator = getCreator(conversation.creator_id);
                       const selected =
@@ -524,7 +524,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                           >
                             {SUPPORT_STATUS_FILTERS.filter(
                               (filter) => filter.id !== "all",
-                            ).map((filter) => (
+                            ).map((filter: any) => (
                               <option
                                 key={filter.id}
                                 value={filter.id}
@@ -552,7 +552,7 @@ export default function AdminConversationsTab({ ctx }: AdminConversationsTabProp
                           />
                         )}
 
-                        {supportMessages.map((message) => {
+                        {supportMessages.map((message: any) => {
                           const isAdminMessage =
                             message.sender_role === "admin";
                           const isSystemMessage =
