@@ -380,6 +380,63 @@ function getKickSubscriberCountForDebugOnly(channel: any) {
   );
 }
 
+
+function extractKickFollowerGoalCount(payload: any) {
+  const goals = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+
+  for (const goal of goals) {
+    const type = String(goal?.type || "").trim().toLowerCase();
+    const status = String(goal?.status || "").trim().toLowerCase();
+
+    if (type !== "followers") continue;
+    if (status && status !== "active") continue;
+
+    const value = Number(goal?.current_value ?? goal?.currentValue ?? goal?.value ?? 0);
+
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+async function getKickFollowerCountFromGoalsEndpoint(username: string) {
+  const cleanUsername = normalizeKickUsername(username);
+  const url = `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/goals`;
+
+  const result = await fetchJsonWithDebug<any>(url, {
+    headers: {
+      Accept: "application/json",
+      "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      Referer: `https://kick.com/${cleanUsername}`,
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
+      "sec-ch-ua": '"Microsoft Edge";v="149", "Chromium";v="149", "Not)A;Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0",
+    },
+  }).catch((error) => ({
+    data: null,
+    debug: {
+      url,
+      status: 0,
+      ok: false,
+      contentType: "",
+      bodyPreview: error instanceof Error ? error.message : String(error),
+    },
+  }));
+
+  return {
+    count: extractKickFollowerGoalCount(result.data),
+    debug: result.debug,
+    rawData: result.data,
+  };
+}
+
 async function getKickFollowerCountFromPublicPage(username: string) {
   const response = await fetch(`https://kick.com/${encodeURIComponent(username)}`, {
     cache: "no-store",
@@ -668,28 +725,40 @@ async function getKickLiveStatus(
       }
 
       const apiFollowerCount = getKickFollowerCount(officialChannel);
-      const channelFollowerCount = await getKickFollowerCountByChannelId(
-        officialChannel,
-        accessToken,
-      ).catch(() => undefined);
-      const pageFollowerResult = apiFollowerCount
+      const goalsFollowerResult = apiFollowerCount
         ? null
-        : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+        : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
+      const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
+        ? undefined
+        : await getKickFollowerCountByChannelId(
+            officialChannel,
+            accessToken,
+          ).catch(() => undefined);
+      const pageFollowerResult =
+        apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
+          ? null
+          : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
       const followerCount =
-        apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+        apiFollowerCount ||
+        goalsFollowerResult?.count ||
+        channelFollowerCount ||
+        pageFollowerResult?.count;
       const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
 
       if (includeDebug) {
         debug.kickFollowerLookup = {
           apiFollowerCount,
+          goalsFollowerCount: goalsFollowerResult?.count,
+          goalsRequest: goalsFollowerResult?.debug,
+          goalsRawData: goalsFollowerResult?.rawData,
           channelFollowerCount,
           publicPageFollowerCount: pageFollowerResult?.count,
           publicPageRequest: pageFollowerResult?.debug,
           subscriberCount,
           note:
             followerCount === undefined
-              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
-              : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+              ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
+              : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
         };
       }
 
@@ -727,28 +796,40 @@ async function getKickLiveStatus(
   debug.legacyLivestreamRequest = legacyLivestreamResult.debug;
 
   const apiFollowerCount = getKickFollowerCount(legacyChannel);
-  const channelFollowerCount = await getKickFollowerCountByChannelId(
-    legacyChannel,
-    accessToken,
-  ).catch(() => undefined);
-  const pageFollowerResult = apiFollowerCount
+  const goalsFollowerResult = apiFollowerCount
     ? null
-    : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+    : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
+  const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
+    ? undefined
+    : await getKickFollowerCountByChannelId(
+        legacyChannel,
+        accessToken,
+      ).catch(() => undefined);
+  const pageFollowerResult =
+    apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
+      ? null
+      : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
   const followerCount =
-    apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+    apiFollowerCount ||
+    goalsFollowerResult?.count ||
+    channelFollowerCount ||
+    pageFollowerResult?.count;
   const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
 
   if (includeDebug) {
     debug.kickFollowerLookup = {
       apiFollowerCount,
+      goalsFollowerCount: goalsFollowerResult?.count,
+      goalsRequest: goalsFollowerResult?.debug,
+      goalsRawData: goalsFollowerResult?.rawData,
       channelFollowerCount,
       publicPageFollowerCount: pageFollowerResult?.count,
       publicPageRequest: pageFollowerResult?.debug,
       subscriberCount,
       note:
         followerCount === undefined
-          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
-          : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+          ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
+          : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
     };
   }
 
