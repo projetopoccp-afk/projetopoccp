@@ -184,7 +184,7 @@ async function getKickLiveStatus(username: string): Promise<LiveStatusResponse> 
 
   const channel = await response.json();
   const livestream = channel?.livestream;
-  const followerCount = Number(channel?.followers_count ?? 0);
+  const followerCount = getKickFollowerCount(channel);
 
   if (!livestream?.is_live) {
     return {
@@ -215,6 +215,35 @@ async function getKickLiveStatus(username: string): Promise<LiveStatusResponse> 
     url: `https://kick.com/${cleanUsername}`,
   };
 }
+
+
+function toSafeNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  if (typeof value === "string") {
+    const normalized = value.replace(/[^\d.-]/g, "");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function getKickFollowerCount(channel: any) {
+  return Math.max(
+    toSafeNumber(channel?.followers_count),
+    toSafeNumber(channel?.follower_count),
+    toSafeNumber(channel?.followersCount),
+    toSafeNumber(channel?.followers),
+    toSafeNumber(channel?.user?.followers_count),
+    toSafeNumber(channel?.user?.follower_count),
+    toSafeNumber(channel?.user?.followersCount),
+    toSafeNumber(channel?.user?.followers),
+    toSafeNumber(channel?.stats?.followers_count),
+    toSafeNumber(channel?.stats?.followers),
+  );
+}
+
 
 async function upsertCreatorLiveStatus(
   adminSupabase: any,
