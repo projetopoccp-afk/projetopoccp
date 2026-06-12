@@ -1,62 +1,50 @@
 "use client";
 
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Gift,
-  Handshake,
-  History,
-  ImageIcon,
-  Link,
-  MessageCircle,
-  Send,
-  Ban,
-  BarChart3,
-  RotateCcw,
-  Package,
-  Search,
-  Upload,
-  ShieldCheck,
-  UserCog,
-  X,
-} from "lucide-react";
+import type { TranslationKey, CreatorProfileVisibilityFilter, CreatorProfileVerificationFilter, CreatorProfileOwnerFilter, CreatorProfileSortFilter, SupportConversationStatus } from "../hooks/useAdminPanelController";
 
-import {
-  ACTIVE_SUPPORT_STATUSES,
-  ADMIN_PACK_TYPES,
-  FINAL_SUPPORT_STATUSES,
-  GRANT_RARITIES,
-  PARTNERSHIP_TYPE_OPTIONS,
-  SUPPORT_STATUS_FILTERS,
-  EmptyBox,
-  InfoBox,
-  SearchInput,
-  SmallInfo,
-  StatCard,
-  StatusPill,
-  UserInfo,
-  getAdminPackLabel,
-  getGrantRarityLabel,
-  getPartnershipTypeLabel,
-  isSupportConversationFinal,
-  translate,
-  translateExisting,
-  getSupportStatusLabel,
-  getSupportTypeLabel,
-} from "./admin-panel-shared";
-import type { CreatorProfileOwnerFilter, CreatorProfileSortFilter, CreatorProfileVerificationFilter, CreatorProfileVisibilityFilter, SupportConversationStatus, TranslationKey } from "./admin-panel-shared";
-
-
-type AdminTabProps = {
+type AdminLogsTabProps = {
   ctx: Record<string, any>;
 };
 
-export function AdminUsersTab({ ctx }: AdminTabProps) {
+export default function AdminLogsTab({ ctx }: AdminLogsTabProps) {
   const {
+    ACTIVE_SUPPORT_STATUSES,
+    ADMIN_PACK_TYPES,
+    ADMIN_TABS,
+    AnimatePresence,
+    Ban,
+    BarChart3,
+    Check,
+    ChevronDown,
+    ChevronUp,
+    EmptyBox,
+    ExternalLink,
+    Eye,
+    EyeOff,
+    FINAL_SUPPORT_STATUSES,
+    GRANT_RARITIES,
+    Gift,
+    Handshake,
+    History,
+    ImageIcon,
+    InfoBox,
+    Link,
+    MessageCircle,
+    PARTNERSHIP_TYPE_OPTIONS,
+    Package,
+    RotateCcw,
+    SUPPORT_STATUS_FILTERS,
+    Search,
+    SearchInput,
+    Send,
+    ShieldCheck,
+    SmallInfo,
+    StatCard,
+    StatusPill,
+    Upload,
+    UserCog,
+    UserInfo,
+    X,
     actionLoading,
     activeSupportConversationCount,
     activeTab,
@@ -82,6 +70,7 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     conversationStatusCounts,
     conversationStatusFilter,
     createAdminLog,
+    createSlug,
     creatorDetectorPlatform,
     creatorOwnerFilter,
     creatorProfileStats,
@@ -111,17 +100,23 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     filteredRequests,
     filteredSupportConversations,
     filteredUsers,
+    getAdminPackLabel,
     getAdminRewardTargets,
     getCreator,
     getCreatorDetectorPlatformLabel,
     getCurrentUserId,
+    getDateLocale,
     getDetectedKickKey,
     getFriendlyLogTitle,
+    getGrantRarityLabel,
     getNameSimilarity,
     getOwner,
+    getPartnershipTypeLabel,
     getPossibleCreatorMatches,
     getProfileDisplayName,
     getSafeQuantity,
+    getSupportStatusLabel,
+    getSupportTypeLabel,
     getTabCounter,
     grantCardToUser,
     grantPackToUser,
@@ -132,6 +127,7 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     imageEditorObjectUrl,
     imageEditorUrl,
     importSelectedKickCreators,
+    isSupportConversationFinal,
     kickDetectorCategory,
     kickDetectorLanguage,
     kickDetectorLimit,
@@ -153,8 +149,10 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     loading,
     logSearch,
     logs,
+    motion,
     normalizeDetectorCompare,
     onClose,
+    open,
     openCreatorImageEditor,
     openPartnershipApproval,
     partnershipApprovalDraft,
@@ -166,6 +164,7 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     removeCreatorOwner,
     requestSearch,
     requests,
+    rollRandomRarity,
     saveCreatorImage,
     selectedAdminPackType,
     selectedCardCreator,
@@ -252,6 +251,8 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
     toggleCreatorVerified,
     toggleDetectedKickCreator,
     toggleUserBan,
+    translate,
+    translateExisting,
     updatePartnershipApprovalDraft,
     updateSupportConversationStatus,
     userCardsCount,
@@ -261,89 +262,109 @@ export function AdminUsersTab({ ctx }: AdminTabProps) {
   } = ctx;
 
   return (
-    <div className="mt-8">
-                  <SearchInput
-                    value={userSearch}
-                    onChange={setUserSearch}
-                    placeholder={translate(
+    <>
+          {!loading && activeTab === "logs" && (
+            <div className="mt-8">
+              <SearchInput
+                value={logSearch}
+                onChange={setLogSearch}
+                placeholder={translate(
+                  t,
+                  "adminSearchLogsPlaceholder",
+                  "Buscar logs por ação, usuário ou metadata...",
+                )}
+              />
+
+              <div className="mt-5 grid gap-3">
+                {filteredLogs.length === 0 && (
+                  <EmptyBox
+                    text={translate(
                       t,
-                      "adminSearchUserPlaceholder",
-                      "Buscar por nome, username ou email...",
+                      "adminNoLogsFound",
+                      "Nenhum log encontrado.",
                     )}
                   />
+                )}
 
-                  <div className="mt-5 grid gap-3">
-                    {filteredUsers.length === 0 && (
-                      <EmptyBox
-                        text={translate(
-                          t,
-                          "adminNoUsersFound",
-                          "Nenhum usuário encontrado.",
-                        )}
-                      />
-                    )}
+                {filteredLogs.map((log) => {
+                  const isExpanded = expandedLogs[log.id] ?? false;
 
-                    {filteredUsers.map((profile: any) => (
-                      <div
-                        key={profile.id}
-                        className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <UserInfo profile={profile} t={t} />
+                  return (
+                    <div
+                      key={log.id}
+                      className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"
+                    >
+                      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="flex items-center gap-2 font-bold text-white">
+                            <History size={16} />
+                            {getFriendlyLogTitle(log)}
+                          </p>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                          {profile.is_admin && (
-                            <StatusPill
-                              label={translate(t, "admin", "Admin")}
-                              tone="yellow"
-                            />
-                          )}
+                          <p className="mt-1 text-sm text-white/45">
+                            {translate(t, "adminActivityAction", "Ação")}:{" "}
+                            {log.action}
+                          </p>
 
-                          {profile.is_banned && (
-                            <StatusPill
-                              label={translate(t, "adminBanned", "Banido")}
-                              tone="red"
-                            />
-                          )}
+                          <p className="text-sm text-white/35">
+                            {translate(t, "target", "Target")}:{" "}
+                            {log.target_type}
+                          </p>
+                        </div>
 
-                          <button
-                            onClick={() => toggleAdmin(profile)}
-                            disabled={actionLoading === profile.id}
-                            className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
-                              profile.is_admin
-                                ? "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
-                                : "bg-cyan-300 text-black hover:scale-105"
-                            }`}
-                          >
-                            {profile.is_admin
-                              ? translate(t, "adminRemoveAdmin", "Remover Admin")
-                              : translate(t, "adminMakeAdmin", "Tornar Admin")}
-                          </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/50">
+                            {new Date(log.created_at).toLocaleString(
+                              dateLocale,
+                            )}
+                          </span>
 
                           <button
-                            onClick={() => toggleUserBan(profile)}
-                            disabled={actionLoading === profile.id}
-                            className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-40 ${
-                              profile.is_banned
-                                ? "border border-emerald-300/20 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
-                                : "border border-red-300/20 bg-red-300/10 text-red-100 hover:bg-red-300/20"
-                            }`}
+                            onClick={() =>
+                              setExpandedLogs((current) => ({
+                                ...current,
+                                [log.id]: !isExpanded,
+                              }))
+                            }
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white transition hover:bg-white/[0.08]"
                           >
-                            {profile.is_banned ? (
+                            {isExpanded ? (
                               <>
-                                <RotateCcw size={16} />
-                                {translate(t, "adminUnbanUser", "Desbanir")}
+                                <ChevronUp size={16} />
+                                {translate(t, "collapse", "Recolher")}
                               </>
                             ) : (
                               <>
-                                <Ban size={16} />
-                                {translate(t, "adminBanUser", "Banir")}
+                                <ChevronDown size={16} />
+                                {translate(t, "expand", "Expandir")}
                               </>
                             )}
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+
+                      {isExpanded && (
+                        <div className="border-t border-white/10 bg-black/20 p-5">
+                          <SmallInfo
+                            label="Target ID"
+                            value={
+                              log.target_id ||
+                              translate(t, "noTarget", "sem target")
+                            }
+                          />
+
+                          <pre className="no-scrollbar mt-4 max-h-48 overflow-y-auto rounded-2xl bg-black/30 p-3 text-xs text-white/45">
+                            {JSON.stringify(log.metadata || {}, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+    </>
   );
 }
