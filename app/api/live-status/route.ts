@@ -596,6 +596,14 @@ function buildKickStatusFromPayloads(
 ): LiveStatusResponse {
   const livestream = getKickLivestream(channel, livestreamPayload);
   const isLive = getKickLiveFlag(channel, livestream);
+  const safeFollowerCount = getPositiveCount(Number(followerCount ?? 0));
+
+  const followerPayload = safeFollowerCount
+    ? {
+        followerCount: safeFollowerCount,
+        externalCount: safeFollowerCount,
+      }
+    : {};
 
   const thumbnail =
     readStringFromPaths(livestream, [
@@ -620,8 +628,7 @@ function buildKickStatusFromPayloads(
       platform: "kick",
       username,
       isLive: false,
-      followerCount,
-      externalCount: followerCount,
+      ...followerPayload,
       thumbnail,
       url: `https://kick.com/${username}`,
     };
@@ -652,8 +659,7 @@ function buildKickStatusFromPayloads(
       "started_at",
     ]),
     thumbnail,
-    followerCount,
-    externalCount: followerCount,
+    ...followerPayload,
     url: `https://kick.com/${username}`,
   };
 }
@@ -725,40 +731,22 @@ async function getKickLiveStatus(
       }
 
       const apiFollowerCount = getKickFollowerCount(officialChannel);
-      const goalsFollowerResult = apiFollowerCount
-        ? null
-        : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
-      const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
+      const channelFollowerCount = apiFollowerCount
         ? undefined
         : await getKickFollowerCountByChannelId(
             officialChannel,
             accessToken,
           ).catch(() => undefined);
-      const pageFollowerResult =
-        apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
-          ? null
-          : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
-      const followerCount =
-        apiFollowerCount ||
-        goalsFollowerResult?.count ||
-        channelFollowerCount ||
-        pageFollowerResult?.count;
-      const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
+      const followerCount = apiFollowerCount || channelFollowerCount;
 
       if (includeDebug) {
         debug.kickFollowerLookup = {
           apiFollowerCount,
-          goalsFollowerCount: goalsFollowerResult?.count,
-          goalsRequest: goalsFollowerResult?.debug,
-          goalsRawData: goalsFollowerResult?.rawData,
           channelFollowerCount,
-          publicPageFollowerCount: pageFollowerResult?.count,
-          publicPageRequest: pageFollowerResult?.debug,
-          subscriberCount,
           note:
             followerCount === undefined
-              ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
-              : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
+              ? "A API oficial da Kick não retorna seguidores para este canal. O Cardpoc NÃO usa subscribers, Livecounts, goals bloqueado por Vercel ou cache do navegador como fallback."
+              : "Seguidores reais da Kick encontrados pela API oficial.",
         };
       }
 
@@ -796,40 +784,22 @@ async function getKickLiveStatus(
   debug.legacyLivestreamRequest = legacyLivestreamResult.debug;
 
   const apiFollowerCount = getKickFollowerCount(legacyChannel);
-  const goalsFollowerResult = apiFollowerCount
-    ? null
-    : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
-  const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
+  const channelFollowerCount = apiFollowerCount
     ? undefined
     : await getKickFollowerCountByChannelId(
         legacyChannel,
         accessToken,
       ).catch(() => undefined);
-  const pageFollowerResult =
-    apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
-      ? null
-      : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
-  const followerCount =
-    apiFollowerCount ||
-    goalsFollowerResult?.count ||
-    channelFollowerCount ||
-    pageFollowerResult?.count;
-  const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
+  const followerCount = apiFollowerCount || channelFollowerCount;
 
   if (includeDebug) {
     debug.kickFollowerLookup = {
       apiFollowerCount,
-      goalsFollowerCount: goalsFollowerResult?.count,
-      goalsRequest: goalsFollowerResult?.debug,
-      goalsRawData: goalsFollowerResult?.rawData,
       channelFollowerCount,
-      publicPageFollowerCount: pageFollowerResult?.count,
-      publicPageRequest: pageFollowerResult?.debug,
-      subscriberCount,
       note:
         followerCount === undefined
-          ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
-          : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
+          ? "A Kick não retornou seguidores por fonte confiável. O Cardpoc NÃO usa subscribers, Livecounts, goals bloqueado por Vercel ou cache do navegador como fallback."
+          : "Seguidores reais da Kick encontrados por fonte confiável.",
     };
   }
 
