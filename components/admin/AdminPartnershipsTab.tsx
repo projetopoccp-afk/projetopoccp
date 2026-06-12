@@ -396,7 +396,7 @@ export function AdminPartnershipsTab({ ctx }: AdminTabProps) {
 
                               <button
                                 onClick={() =>
-                                  setExpandedPartnerships((current) => ({
+                                  setExpandedPartnerships((current: Record<string, boolean>) => ({
                                     ...current,
                                     [partnership.id]: !isExpanded,
                                   }))

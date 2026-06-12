@@ -508,7 +508,7 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <select
                                 value={selectedSupportConversation.status}
-                                onChange={(event) =>
+                                onChange={(event: any) =>
                                   updateSupportConversationStatus(
                                     selectedSupportConversation.id,
                                     event.target.value as SupportConversationStatus,
@@ -621,7 +621,7 @@ export function AdminConversationsTab({ ctx }: AdminTabProps) {
                               <div className="flex flex-col gap-3 md:flex-row">
                                 <textarea
                                   value={conversationReply}
-                                  onChange={(event) =>
+                                  onChange={(event: any) =>
                                     setConversationReply(event.target.value)
                                   }
                                   rows={3}

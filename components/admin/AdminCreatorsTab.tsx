@@ -334,7 +334,7 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
                         </span>
                         <select
                           value={creatorVisibilityFilter}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setCreatorVisibilityFilter(
                               event.target.value as CreatorProfileVisibilityFilter,
                             )
@@ -367,7 +367,7 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
                         </span>
                         <select
                           value={creatorVerificationFilter}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setCreatorVerificationFilter(
                               event.target
                                 .value as CreatorProfileVerificationFilter,
@@ -397,7 +397,7 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
                         </span>
                         <select
                           value={creatorOwnerFilter}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setCreatorOwnerFilter(
                               event.target.value as CreatorProfileOwnerFilter,
                             )
@@ -422,7 +422,7 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
                         </span>
                         <select
                           value={creatorSortFilter}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setCreatorSortFilter(
                               event.target.value as CreatorProfileSortFilter,
                             )
@@ -667,7 +667,7 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
 
                               <button
                                 onClick={() =>
-                                  setExpandedCreators((current) => ({
+                                  setExpandedCreators((current: Record<string, boolean>) => ({
                                     ...current,
                                     [creator.id]: !isExpanded,
                                   }))
@@ -711,8 +711,8 @@ export function AdminCreatorsTab({ ctx }: AdminTabProps) {
 
                                   <select
                                     value={selectedOwnerId}
-                                    onChange={(event) =>
-                                      setSelectedOwners((current) => ({
+                                    onChange={(event: any) =>
+                                      setSelectedOwners((current: Record<string, string>) => ({
                                         ...current,
                                         [creator.id]: event.target.value,
                                       }))

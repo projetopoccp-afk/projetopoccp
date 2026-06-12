@@ -330,7 +330,7 @@ export function AdminRequestsTab({ ctx }: AdminTabProps) {
                             <div className="flex flex-wrap items-center gap-2 md:justify-end">
                               <button
                                 onClick={() =>
-                                  setExpandedRequests((current) => ({
+                                  setExpandedRequests((current: Record<string, boolean>) => ({
                                     ...current,
                                     [request.id]: !isExpanded,
                                   }))

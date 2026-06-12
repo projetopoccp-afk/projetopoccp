@@ -526,7 +526,7 @@ export function AdminCardsTab({ ctx }: AdminTabProps) {
                               ? adminCardQuantity
                               : adminPackQuantity
                           }
-                          onChange={(event) => {
+                          onChange={(event: any) => {
                             const value = getSafeQuantity(
                               Number(event.target.value),
                             );

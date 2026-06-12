@@ -319,7 +319,7 @@ export function AdminCreatorDetectorTab({ ctx }: AdminTabProps) {
                         </span>
                         <input
                           value={kickDetectorCategory}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setKickDetectorCategory(event.target.value)
                           }
                           placeholder="Black Desert"
@@ -333,7 +333,7 @@ export function AdminCreatorDetectorTab({ ctx }: AdminTabProps) {
                         </span>
                         <input
                           value={kickDetectorLanguage}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setKickDetectorLanguage(event.target.value)
                           }
                           placeholder="pt"
@@ -353,7 +353,7 @@ export function AdminCreatorDetectorTab({ ctx }: AdminTabProps) {
                           type="number"
                           min={0}
                           value={kickDetectorMinViewers}
-                          onChange={(event) =>
+                          onChange={(event: any) =>
                             setKickDetectorMinViewers(
                               Number(event.target.value || 0),
                             )
@@ -378,7 +378,7 @@ export function AdminCreatorDetectorTab({ ctx }: AdminTabProps) {
                     <button
                       type="button"
                       onClick={() =>
-                        setHideRegisteredDetectorCreators((current) => !current)
+                        setHideRegisteredDetectorCreators((current: boolean) => !current)
                       }
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
                     >

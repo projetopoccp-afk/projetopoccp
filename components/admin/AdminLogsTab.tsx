@@ -318,7 +318,7 @@ export function AdminLogsTab({ ctx }: AdminTabProps) {
 
                               <button
                                 onClick={() =>
-                                  setExpandedLogs((current) => ({
+                                  setExpandedLogs((current: Record<string, boolean>) => ({
                                     ...current,
                                     [log.id]: !isExpanded,
                                   }))

@@ -355,7 +355,7 @@ export function AdminClaimsTab({ ctx }: AdminTabProps) {
 
                               <button
                                 onClick={() =>
-                                  setExpandedClaims((current) => ({
+                                  setExpandedClaims((current: Record<string, boolean>) => ({
                                     ...current,
                                     [claim.id]: !isExpanded,
                                   }))
