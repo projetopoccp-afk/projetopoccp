@@ -292,11 +292,12 @@ function extractFirstDataItem(payload: any) {
 function getKickLivestream(_channel: any, livestreamPayload: any) {
   const livestreamData = extractFirstDataItem(livestreamPayload);
 
-  // IMPORTANTE: não usar channel.stream/channel.livestream como fonte de live.
-  // A API /channels da Kick pode devolver stream antigo, meta ou dado agregado
-  // que marca criadores offline como online. A única fonte confiável para
-  // status ao vivo é /public/v1/livestreams. Se ela não trouxer item, está offline.
-  return livestreamData?.livestream || livestreamData || null;
+  // Kick's channel payload can include a stale `stream`/`recent_livestream` object.
+  // That stale object is what was marking offline creators as live again after cron.
+  // Only the `/public/v1/livestreams` response is allowed to define the current live state.
+  if (!livestreamData) return null;
+
+  return livestreamData?.livestream || livestreamData;
 }
 
 function getKickFollowerCount(channel: any) {
@@ -328,10 +329,25 @@ function getKickChannelId(channel: any) {
   ]);
 }
 
-function getKickLiveFlag(_channel: any, livestream: any) {
-  if (!livestream) return false;
+function getKickLiveFlag(channel: any, livestream: any) {
+  // The Kick channel payload can keep stale stream metadata after a live ends.
+  // We use channel.stream.is_live only as a CURRENT confirmation flag and never as
+  // the livestream object itself.
+  const channelLiveFlag = readBooleanFromPaths(
+    { channel },
+    [
+      "channel.stream.is_live",
+      "channel.stream.isLive",
+      "channel.is_live",
+      "channel.isLive",
+      "channel.live",
+    ],
+  );
 
-  const explicit = readBooleanFromPaths(
+  if (channelLiveFlag === false) return false;
+  if (!livestream || typeof livestream !== "object") return false;
+
+  const livestreamExplicit = readBooleanFromPaths(
     { livestream },
     [
       "livestream.is_live",
@@ -341,20 +357,32 @@ function getKickLiveFlag(_channel: any, livestream: any) {
     ],
   );
 
-  if (explicit !== undefined) return explicit;
+  if (livestreamExplicit === false) return false;
 
-  // Para a API oficial /livestreams, a existência de um item com broadcaster/slug
-  // já significa live ativa. Nunca usar goal/follower/subscriber como indício.
-  return Boolean(
-    livestream.broadcaster_user_id ||
-      livestream.channel_id ||
-      livestream.id ||
-      livestream.stream_title ||
-      livestream.session_title ||
-      livestream.title ||
-      livestream.started_at ||
-      livestream.start_time,
+  const hasEnded = Boolean(
+    readStringFromPaths(livestream, ["ended_at", "end_time", "finished_at"]),
   );
+
+  if (hasEnded) return false;
+
+  const hasCurrentLiveIdentity = Boolean(
+    readStringFromPaths(livestream, [
+      "broadcaster_user_id",
+      "channel_id",
+      "slug",
+    ]),
+  );
+
+  const hasCurrentLiveStart = Boolean(
+    readStringFromPaths(livestream, ["started_at", "start_time"]),
+  );
+
+  // Final rule for Kick:
+  // - current channel flag must explicitly say live, OR livestream payload must explicitly say live;
+  // - and the livestream payload must look like a current live, not profile/goal metadata.
+  const confirmedLive = channelLiveFlag === true || livestreamExplicit === true;
+
+  return confirmedLive && hasCurrentLiveIdentity && hasCurrentLiveStart;
 }
 
 async function getKickFollowerCountByChannelId(channel: any, accessToken?: string | null) {
@@ -531,38 +559,16 @@ async function getKickLiveStatus(username: string): Promise<LiveStatusResponse> 
     }
   }
 
-  const legacyChannelResult = await fetchKickLegacyJson(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
-  );
-  const legacyChannel = legacyChannelResult.data;
-
-  if (!legacyChannel) {
-    return {
-      platform: "kick",
-      username: cleanUsername,
-      isLive: false,
-      followerCount: 0,
-      externalCount: 0,
-      url: `https://kick.com/${cleanUsername}`,
-    };
-  }
-
-  const legacyLivestreamResult = await fetchKickLegacyJson(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`,
-  );
-  const apiFollowerCount = getKickFollowerCount(legacyChannel);
-  const followerCount =
-    apiFollowerCount ||
-    (await getKickFollowerCountByChannelId(legacyChannel, accessToken).catch(() => 0));
-
-  const status = buildKickStatusFromPayloads(
-    cleanUsername,
-    legacyChannel,
-    legacyLivestreamResult.data,
-    followerCount,
-  );
-
-  return status;
+  // Do not fallback to legacy Kick endpoints during cron. They can be stale and
+  // were causing offline creators to be persisted as online.
+  return {
+    platform: "kick",
+    username: cleanUsername,
+    isLive: false,
+    followerCount: 0,
+    externalCount: 0,
+    url: `https://kick.com/${cleanUsername}`,
+  };
 }
 
 async function getTwitchAccessToken() {
