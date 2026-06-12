@@ -36,6 +36,7 @@ const RARITY_SHOWCASE_CYCLE = [
 const RARITY_SHOWCASE_INTERVAL = 9800;
 const HOME_SHOWCASE_LIMIT = 16;
 const HOME_SHOWCASE_ROTATION_INTERVAL = 30000;
+const LIVE_STATUS_FRESHNESS_MS = 10 * 60 * 1000;
 const RARITY_STACK_TRANSITION = {
   duration: 0.72,
   ease: [0.22, 1, 0.36, 1],
@@ -256,10 +257,15 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     let isMounted = true;
 
     async function loadLiveCreatorIds() {
+      const liveStatusFreshnessCutoff = new Date(
+        Date.now() - LIVE_STATUS_FRESHNESS_MS
+      );
+
       const { data, error } = await supabase
         .from("creator_live_status")
-        .select("creator_id")
-        .eq("is_live", true);
+        .select("creator_id,last_checked_at,updated_at")
+        .eq("is_live", true)
+        .gte("last_checked_at", liveStatusFreshnessCutoff.toISOString());
 
       if (!isMounted) return;
 
