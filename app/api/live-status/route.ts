@@ -21,6 +21,7 @@ type LiveStatusResponse = {
   externalCount?: number;
   memberCount?: number;
   onlineMemberCount?: number;
+  debug?: unknown;
 };
 
 async function getTwitchAccessToken() {
@@ -197,26 +198,101 @@ function readBooleanFromPaths(payload: any, paths: string[]) {
   return undefined;
 }
 
-async function fetchKickJson(url: string) {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-      Referer: "https://kick.com/",
-      Origin: "https://kick.com",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-    },
-    cache: "no-store",
-  });
+type KickFetchDebug = {
+  url: string;
+  status: number;
+  ok: boolean;
+  contentType: string;
+  bodyPreview?: string;
+  error?: string;
+};
 
-  const contentType = response.headers.get("content-type") || "";
+async function fetchKickJsonDetailed(url: string): Promise<{
+  data: any;
+  debug: KickFetchDebug;
+}> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        Referer: "https://kick.com/",
+        Origin: "https://kick.com",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+      },
+      cache: "no-store",
+    });
 
-  if (!response.ok || !contentType.includes("application/json")) {
-    return null;
+    const contentType = response.headers.get("content-type") || "";
+    const bodyText = await response.text();
+    const debug: KickFetchDebug = {
+      url,
+      status: response.status,
+      ok: response.ok,
+      contentType,
+      bodyPreview: bodyText.slice(0, 1200),
+    };
+
+    if (!response.ok || !contentType.includes("application/json")) {
+      return { data: null, debug };
+    }
+
+    try {
+      return { data: JSON.parse(bodyText), debug };
+    } catch (error) {
+      return {
+        data: null,
+        debug: {
+          ...debug,
+          error: error instanceof Error ? error.message : "JSON inválido",
+        },
+      };
+    }
+  } catch (error) {
+    return {
+      data: null,
+      debug: {
+        url,
+        status: 0,
+        ok: false,
+        contentType: "",
+        error: error instanceof Error ? error.message : "Erro desconhecido no fetch da Kick",
+      },
+    };
   }
+}
 
-  return response.json();
+async function fetchKickJson(url: string) {
+  const { data } = await fetchKickJsonDetailed(url);
+  return data;
+}
+
+function summarizeKickPayload(payload: any) {
+  if (!payload || typeof payload !== "object") return payload ?? null;
+
+  return {
+    topLevelKeys: Object.keys(payload),
+    id: payload.id ?? payload.channel_id ?? payload?.data?.id ?? null,
+    slug: payload.slug ?? payload.username ?? payload?.data?.slug ?? null,
+    hasLivestream: Boolean(payload.livestream || payload.recent_livestream || payload?.data?.livestream),
+    followerCandidates: {
+      followers_count: payload.followers_count,
+      follower_count: payload.follower_count,
+      followersCount: payload.followersCount,
+      followers: payload.followers,
+      user_followers_count: payload?.user?.followers_count,
+      stats_followers: payload?.stats?.followers,
+      streamer_channel_followers_count: payload?.streamer_channel?.followers_count,
+    },
+    liveCandidates: {
+      is_live: payload.is_live,
+      isLive: payload.isLive,
+      livestream_is_live: payload?.livestream?.is_live,
+      recent_livestream_is_live: payload?.recent_livestream?.is_live,
+      data_is_live: payload?.data?.is_live,
+    },
+  };
 }
 
 function getKickLivestream(channel: any, livestreamPayload: any) {
@@ -296,6 +372,7 @@ async function getKickFollowerCountByChannelId(channel: any) {
 
 async function getKickLiveStatus(
   username: string,
+  debugMode = false,
 ): Promise<LiveStatusResponse> {
   const cleanUsername = normalizeKickUsername(username);
 
@@ -310,12 +387,12 @@ async function getKickLiveStatus(
     };
   }
 
-  const channel = await fetchKickJson(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
-  );
+  const channelUrl = `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`;
+  const livestreamUrl = `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`;
+  const { data: channel, debug: channelDebug } = await fetchKickJsonDetailed(channelUrl);
 
   if (!channel) {
-    console.error("Erro Kick: canal não retornou JSON válido", cleanUsername);
+    console.error("Erro Kick: canal não retornou JSON válido", cleanUsername, channelDebug);
 
     return {
       platform: "kick",
@@ -324,12 +401,19 @@ async function getKickLiveStatus(
       followerCount: 0,
       externalCount: 0,
       url: `https://kick.com/${cleanUsername}`,
+      ...(debugMode
+        ? {
+            debug: {
+              cleanUsername,
+              channelRequest: channelDebug,
+            },
+          }
+        : {}),
     };
   }
 
-  const livestreamPayload = await fetchKickJson(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`,
-  );
+  const { data: livestreamPayload, debug: livestreamDebug } =
+    await fetchKickJsonDetailed(livestreamUrl);
 
   const livestream = getKickLivestream(channel, livestreamPayload);
   const apiFollowerCount = getKickFollowerCount(channel);
@@ -338,6 +422,22 @@ async function getKickLiveStatus(
     : await getKickFollowerCountByChannelId(channel).catch(() => 0);
   const followerCount = apiFollowerCount || fallbackFollowerCount;
   const isLive = getKickLiveFlag(channel, livestream);
+  const kickDebugPayload = debugMode
+    ? {
+        cleanUsername,
+        channelRequest: channelDebug,
+        livestreamRequest: livestreamDebug,
+        channelSummary: summarizeKickPayload(channel),
+        livestreamSummary: summarizeKickPayload(livestreamPayload),
+        selectedLivestreamSummary: summarizeKickPayload(livestream),
+        computed: {
+          apiFollowerCount,
+          fallbackFollowerCount,
+          followerCount,
+          isLive,
+        },
+      }
+    : undefined;
 
   if (!isLive) {
     return {
@@ -352,6 +452,7 @@ async function getKickLiveStatus(
         channel?.banner_image?.url ||
         channel?.offline_banner_image?.url,
       url: `https://kick.com/${cleanUsername}`,
+      ...(kickDebugPayload ? { debug: kickDebugPayload } : {}),
     };
   }
 
@@ -384,6 +485,7 @@ async function getKickLiveStatus(
     followerCount,
     externalCount: followerCount,
     url: `https://kick.com/${cleanUsername}`,
+    ...(kickDebugPayload ? { debug: kickDebugPayload } : {}),
   };
 }
 
@@ -876,7 +978,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (platform === "kick") {
-      const status = await getKickLiveStatus(username);
+      const debugMode =
+        request.nextUrl.searchParams.get("debug") === "1" ||
+        process.env.KICK_DEBUG === "true";
+      const status = await getKickLiveStatus(username, debugMode);
       await upsertCreatorLiveStatus(creatorId, status);
       return NextResponse.json(status);
     }
