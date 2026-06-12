@@ -289,16 +289,31 @@ function extractFirstDataItem(payload: any) {
   return payload ?? null;
 }
 
-function getKickLivestream(channel: any, livestreamPayload: any) {
+function getKickLivestream(
+  channel: any,
+  livestreamPayload: any,
+  options?: { allowChannelFallback?: boolean },
+) {
   const livestreamData = extractFirstDataItem(livestreamPayload);
 
-  return (
-    channel?.livestream ||
-    channel?.recent_livestream ||
-    livestreamData?.livestream ||
-    livestreamData ||
-    null
-  );
+  if (livestreamData) {
+    return livestreamData?.livestream || livestreamData;
+  }
+
+  // Importante:
+  // A API oficial /channels pode devolver um objeto "stream" mesmo quando o canal
+  // não está ao vivo de verdade. A fonte confiável para status ao vivo é
+  // /livestreams. Só usamos stream embutido quando explicitamente permitido.
+  if (options?.allowChannelFallback) {
+    return (
+      channel?.livestream ||
+      channel?.recent_livestream ||
+      channel?.stream ||
+      null
+    );
+  }
+
+  return null;
 }
 
 function getKickFollowerCount(channel: any) {
@@ -414,8 +429,9 @@ function buildKickStatusFromPayloads(
   channel: any,
   livestreamPayload: any,
   followerCount: number,
+  options?: { allowChannelFallback?: boolean },
 ): LiveStatusResponse {
-  const livestream = getKickLivestream(channel, livestreamPayload);
+  const livestream = getKickLivestream(channel, livestreamPayload, options);
   const isLive = getKickLiveFlag(channel, livestream);
 
   const thumbnail =
