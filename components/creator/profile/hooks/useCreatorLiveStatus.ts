@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -17,94 +17,6 @@ import type {
 } from "../core/creator-profile-shared";
 
 
-type KickFollowerBrowserCacheEntry = {
-  followerCount: number;
-  updatedAt: number;
-};
-
-function getPositiveFollowerCount(value: unknown) {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) return undefined;
-
-  const followerCount = Math.floor(numericValue);
-
-  if (followerCount <= 0 || followerCount > 500_000_000) return undefined;
-
-  return followerCount;
-}
-
-function extractKickFollowerGoalCount(payload: unknown) {
-  const goals = Array.isArray(payload)
-    ? payload
-    : Array.isArray((payload as { data?: unknown[] } | null)?.data)
-      ? ((payload as { data: unknown[] }).data)
-      : [];
-
-  const followerGoal = goals.find((goal) => {
-    if (!goal || typeof goal !== "object") return false;
-
-    const goalRecord = goal as Record<string, unknown>;
-    return String(goalRecord.type || "").toLowerCase() === "followers";
-  }) as Record<string, unknown> | undefined;
-
-  return getPositiveFollowerCount(followerGoal?.current_value);
-}
-
-async function fetchKickFollowerGoalFromBrowser(username: string) {
-  const response = await fetch(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(username)}/goals`,
-    {
-      cache: "no-store",
-      credentials: "omit",
-      headers: {
-        Accept: "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) return undefined;
-
-  const payload = await response.json().catch(() => null);
-  return extractKickFollowerGoalCount(payload);
-}
-
-async function cacheKickFollowerGoal(params: {
-  creatorId: string;
-  username: string;
-  followerCount: number;
-}) {
-  await fetch("/api/kick/followers-cache", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      creatorId: params.creatorId,
-      username: params.username,
-      followerCount: params.followerCount,
-      source: "kick_goals_browser",
-    }),
-  }).catch(() => null);
-}
-
-function mergeKickFollowerCount(
-  currentLiveStatus: LiveStatusMap,
-  followerCount: number,
-): LiveStatusMap {
-  const currentKickStatus = currentLiveStatus.kick;
-
-  if (!currentKickStatus) return currentLiveStatus;
-
-  return {
-    ...currentLiveStatus,
-    kick: {
-      ...currentKickStatus,
-      followerCount,
-      externalCount: followerCount,
-    },
-  };
-}
 
 type LiveStatusTarget = {
   platform: "twitch" | "kick" | "youtube" | "discord";
@@ -202,7 +114,6 @@ export function useCreatorLiveStatus(
 ) {
   const [liveStatus, setLiveStatus] = useState<LiveStatusMap>({});
   const [liveStatusLoading, setLiveStatusLoading] = useState(false);
-  const kickFollowerBrowserCache = useRef<Record<string, KickFollowerBrowserCacheEntry>>({});
 
   useEffect(() => {
     if (!profile) {
@@ -220,39 +131,6 @@ export function useCreatorLiveStatus(
 
     let cancelled = false;
 
-    async function refreshKickFollowerGoalFromBrowser(targetUsername: string) {
-      const cacheKey = targetUsername.toLowerCase();
-      const cachedEntry = kickFollowerBrowserCache.current[cacheKey];
-      const now = Date.now();
-
-      if (cachedEntry && now - cachedEntry.updatedAt < 5 * 60 * 1000) {
-        setLiveStatus((currentLiveStatus) =>
-          mergeKickFollowerCount(currentLiveStatus, cachedEntry.followerCount),
-        );
-        return;
-      }
-
-      const followerCount = await fetchKickFollowerGoalFromBrowser(
-        targetUsername,
-      ).catch(() => undefined);
-
-      if (!followerCount || cancelled) return;
-
-      kickFollowerBrowserCache.current[cacheKey] = {
-        followerCount,
-        updatedAt: now,
-      };
-
-      setLiveStatus((currentLiveStatus) =>
-        mergeKickFollowerCount(currentLiveStatus, followerCount),
-      );
-
-      await cacheKickFollowerGoal({
-        creatorId,
-        username: targetUsername,
-        followerCount,
-      });
-    }
 
     async function loadLiveStatuses() {
       setLiveStatusLoading(true);
@@ -306,13 +184,6 @@ export function useCreatorLiveStatus(
             mergeLiveStatusResults(currentLiveStatus, results),
           );
 
-          const kickTarget = targets.find(
-            (target) => target.platform === "kick" && target.username,
-          );
-
-          if (kickTarget) {
-            void refreshKickFollowerGoalFromBrowser(kickTarget.username);
-          }
         }
       } finally {
         if (!cancelled) {

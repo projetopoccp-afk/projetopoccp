@@ -1179,78 +1179,6 @@ async function getDiscordServerStatus(
   };
 }
 
-
-function getAdminSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function applyFollowerCountToKickStatus(
-  status: LiveStatusResponse,
-  followerCount?: number,
-): LiveStatusResponse {
-  const safeFollowerCount = getPositiveCount(Number(followerCount ?? 0));
-
-  if (status.platform !== "kick" || !safeFollowerCount) return status;
-
-  return {
-    ...status,
-    followerCount: safeFollowerCount,
-    externalCount: safeFollowerCount,
-  } as LiveStatusResponse;
-}
-
-function readFollowerCountFromCachedPayload(payload: any) {
-  return getPositiveCount(
-    readNumberFromPaths(payload, [
-      "followerCount",
-      "externalCount",
-      "kickFollowerCache.followerCount",
-      "kickFollowerCache.count",
-      "kickFollowerCache.currentValue",
-    ]),
-  );
-}
-
-async function getCachedKickFollowerCount(
-  creatorId: string | null,
-  username?: string | null,
-) {
-  const adminSupabase = getAdminSupabaseClient();
-
-  if (!adminSupabase) return undefined;
-
-  let query = adminSupabase
-    .from("creator_live_status")
-    .select("raw_payload, platform_username, updated_at, last_checked_at")
-    .eq("platform", "kick")
-    .order("updated_at", { ascending: false })
-    .limit(1);
-
-  if (creatorId) {
-    query = query.eq("creator_id", creatorId);
-  } else if (username) {
-    query = query.eq("platform_username", normalizeKickUsername(username));
-  } else {
-    return undefined;
-  }
-
-  const { data, error } = await query.maybeSingle();
-
-  if (error || !data) return undefined;
-
-  return readFollowerCountFromCachedPayload((data as any).raw_payload);
-}
-
 async function upsertCreatorLiveStatus(
   creatorId: string | null,
   status: LiveStatusResponse,
@@ -1259,37 +1187,36 @@ async function upsertCreatorLiveStatus(
 
   if (status.platform !== "twitch" && status.platform !== "kick") return;
 
-  const adminSupabase = getAdminSupabaseClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!adminSupabase) {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
     console.warn(
       "Supabase service role env missing. Skipping creator_live_status upsert.",
     );
     return;
   }
 
-  const cachedKickFollowerCount =
-    status.platform === "kick" && !status.followerCount
-      ? await getCachedKickFollowerCount(creatorId, status.username)
-      : undefined;
-  const statusToSave = applyFollowerCountToKickStatus(
-    status,
-    cachedKickFollowerCount,
-  );
+  const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 
   const { error } = await adminSupabase.from("creator_live_status").upsert(
     {
       creator_id: creatorId,
       platform: status.platform,
-      platform_username: statusToSave.username,
-      is_live: Boolean(statusToSave.isLive),
-      title: statusToSave.title ?? null,
-      viewer_count: Number(statusToSave.viewerCount ?? 0),
-      game_name: statusToSave.gameName ?? null,
-      started_at: statusToSave.startedAt ?? null,
-      thumbnail_url: statusToSave.thumbnail ?? null,
-      live_url: statusToSave.url ?? null,
-      raw_payload: statusToSave,
+      platform_username: status.username,
+      is_live: Boolean(status.isLive),
+      title: status.title ?? null,
+      viewer_count: Number(status.viewerCount ?? 0),
+      game_name: status.gameName ?? null,
+      started_at: status.startedAt ?? null,
+      thumbnail_url: status.thumbnail ?? null,
+      live_url: status.url ?? null,
+      raw_payload: status,
       last_checked_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -1326,27 +1253,10 @@ export async function GET(request: NextRequest) {
     if (platform === "kick") {
       const debug = request.nextUrl.searchParams.get("debug") === "1";
       const status = await getKickLiveStatus(username, debug);
-      const cachedFollowerCount = !status.followerCount
-        ? await getCachedKickFollowerCount(creatorId, status.username)
-        : undefined;
-      const statusWithCachedFollowers = applyFollowerCountToKickStatus(
-        status,
-        cachedFollowerCount,
-      );
-
-      if (debug && statusWithCachedFollowers.debug) {
-        statusWithCachedFollowers.debug.kickFollowerCache = {
-          cachedFollowerCount,
-          usedCachedFollowerCount: Boolean(
-            cachedFollowerCount && !status.followerCount,
-          ),
-        };
-      }
-
       if (!debug) {
-        await upsertCreatorLiveStatus(creatorId, statusWithCachedFollowers);
+        await upsertCreatorLiveStatus(creatorId, status);
       }
-      return NextResponse.json(statusWithCachedFollowers);
+      return NextResponse.json(status);
     }
 
     if (platform === "youtube") {
