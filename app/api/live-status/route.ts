@@ -368,7 +368,7 @@ function getKickFollowerCount(channel: any) {
   );
 }
 
-function getKickSubscriberCount(channel: any) {
+function getKickSubscriberCountForDebugOnly(channel: any) {
   return getPositiveCount(
     readNumberFromPaths(channel, [
       "active_subscribers_count",
@@ -536,7 +536,6 @@ function buildKickStatusFromPayloads(
   channel: any,
   livestreamPayload: any,
   followerCount?: number,
-  subscriberCount?: number,
 ): LiveStatusResponse {
   const livestream = getKickLivestream(channel, livestreamPayload);
   const isLive = getKickLiveFlag(channel, livestream);
@@ -565,7 +564,6 @@ function buildKickStatusFromPayloads(
       username,
       isLive: false,
       followerCount,
-      subscriberCount,
       externalCount: followerCount,
       thumbnail,
       url: `https://kick.com/${username}`,
@@ -598,7 +596,6 @@ function buildKickStatusFromPayloads(
     ]),
     thumbnail,
     followerCount,
-    subscriberCount,
     externalCount: followerCount,
     url: `https://kick.com/${username}`,
   };
@@ -680,7 +677,7 @@ async function getKickLiveStatus(
         : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
       const followerCount =
         apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
-      const subscriberCount = getKickSubscriberCount(officialChannel);
+      const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
 
       if (includeDebug) {
         debug.kickFollowerLookup = {
@@ -691,7 +688,7 @@ async function getKickLiveStatus(
           subscriberCount,
           note:
             followerCount === undefined
-              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc não usa inscritos como fallback para seguidores."
+              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
               : "Seguidores da Kick encontrados em uma das fontes consultadas.",
         };
       }
@@ -701,7 +698,6 @@ async function getKickLiveStatus(
         officialChannel,
         officialLivestreamPayload,
         followerCount,
-        subscriberCount,
       );
 
       return includeDebug ? { ...status, debug } : status;
@@ -740,7 +736,7 @@ async function getKickLiveStatus(
     : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
   const followerCount =
     apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
-  const subscriberCount = getKickSubscriberCount(legacyChannel);
+  const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
 
   if (includeDebug) {
     debug.kickFollowerLookup = {
@@ -751,7 +747,7 @@ async function getKickLiveStatus(
       subscriberCount,
       note:
         followerCount === undefined
-          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc não usa inscritos como fallback para seguidores."
+          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
           : "Seguidores da Kick encontrados em uma das fontes consultadas.",
     };
   }
@@ -761,7 +757,6 @@ async function getKickLiveStatus(
     legacyChannel,
     legacyLivestreamResult.data,
     followerCount,
-    subscriberCount,
   );
 
   return includeDebug ? { ...status, debug } : status;
