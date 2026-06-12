@@ -531,69 +531,6 @@ async function getKickFollowerCountByChannelId(
   );
 }
 
-
-async function getKickFollowerCountFromGoals(username: string) {
-  const normalizedUsername = normalizeKickUsername(username);
-
-  if (!normalizedUsername) {
-    return { count: undefined as number | undefined, debug: undefined as KickFetchDebug | undefined, goal: null as any };
-  }
-
-  const result = await fetchKickLegacyJson<any>(
-    `https://kick.com/api/v2/channels/${encodeURIComponent(normalizedUsername)}/goals`,
-  ).catch((error) => ({
-    data: null,
-    debug: {
-      url: `https://kick.com/api/v2/channels/${normalizedUsername}/goals`,
-      status: 0,
-      ok: false,
-      contentType: "",
-      bodyPreview: String(error?.message || error || "Erro ao buscar goals da Kick"),
-    } as KickFetchDebug,
-  }));
-
-  const goals = Array.isArray(result.data)
-    ? result.data
-    : Array.isArray(result.data?.data)
-      ? result.data.data
-      : [];
-
-  const followerGoal = goals.find((goal: any) => {
-    const type = String(goal?.type || goal?.goal_type || goal?.name || "").toLowerCase();
-    const status = String(goal?.status || "").toLowerCase();
-
-    return (
-      type.includes("follower") &&
-      (!status || status === "active" || status === "in_progress")
-    );
-  });
-
-  const count = getPositiveCount(
-    readNumberFromPaths(followerGoal, [
-      "current_value",
-      "currentValue",
-      "current",
-      "value",
-      "progress",
-      "count",
-    ]),
-  );
-
-  return {
-    count,
-    debug: result.debug,
-    goal: followerGoal
-      ? {
-          type: followerGoal.type,
-          status: followerGoal.status,
-          current_value: followerGoal.current_value,
-          target_value: followerGoal.target_value,
-          updated_at: followerGoal.updated_at,
-        }
-      : null,
-  };
-}
-
 function buildKickStatusFromPayloads(
   username: string,
   channel: any,
@@ -735,33 +672,24 @@ async function getKickLiveStatus(
         officialChannel,
         accessToken,
       ).catch(() => undefined);
-      const goalsFollowerResult = apiFollowerCount || channelFollowerCount
-        ? null
-        : await getKickFollowerCountFromGoals(cleanUsername).catch(() => null);
-      const pageFollowerResult = apiFollowerCount || channelFollowerCount || goalsFollowerResult?.count
+      const pageFollowerResult = apiFollowerCount
         ? null
         : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
       const followerCount =
-        apiFollowerCount ||
-        channelFollowerCount ||
-        goalsFollowerResult?.count ||
-        pageFollowerResult?.count;
+        apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
       const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
 
       if (includeDebug) {
         debug.kickFollowerLookup = {
           apiFollowerCount,
           channelFollowerCount,
-          goalsFollowerCount: goalsFollowerResult?.count,
-          goalsRequest: goalsFollowerResult?.debug,
-          goalsFollowerGoal: goalsFollowerResult?.goal,
           publicPageFollowerCount: pageFollowerResult?.count,
           publicPageRequest: pageFollowerResult?.debug,
           subscriberCount,
           note:
             followerCount === undefined
-              ? "A Kick oficial não retornou followers e o endpoint de goals não trouxe meta de seguidores. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
-              : "Seguidores reais da Kick encontrados, priorizando o endpoint /goals quando disponível.",
+              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
+              : "Seguidores da Kick encontrados em uma das fontes consultadas.",
         };
       }
 
@@ -803,33 +731,24 @@ async function getKickLiveStatus(
     legacyChannel,
     accessToken,
   ).catch(() => undefined);
-  const goalsFollowerResult = apiFollowerCount || channelFollowerCount
-    ? null
-    : await getKickFollowerCountFromGoals(cleanUsername).catch(() => null);
-  const pageFollowerResult = apiFollowerCount || channelFollowerCount || goalsFollowerResult?.count
+  const pageFollowerResult = apiFollowerCount
     ? null
     : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
   const followerCount =
-    apiFollowerCount ||
-    channelFollowerCount ||
-    goalsFollowerResult?.count ||
-    pageFollowerResult?.count;
+    apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
   const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
 
   if (includeDebug) {
     debug.kickFollowerLookup = {
       apiFollowerCount,
       channelFollowerCount,
-      goalsFollowerCount: goalsFollowerResult?.count,
-      goalsRequest: goalsFollowerResult?.debug,
-      goalsFollowerGoal: goalsFollowerResult?.goal,
       publicPageFollowerCount: pageFollowerResult?.count,
       publicPageRequest: pageFollowerResult?.debug,
       subscriberCount,
       note:
         followerCount === undefined
-          ? "A Kick oficial não retornou followers e o endpoint de goals não trouxe meta de seguidores. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
-          : "Seguidores reais da Kick encontrados, priorizando o endpoint /goals quando disponível.",
+          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
+          : "Seguidores da Kick encontrados em uma das fontes consultadas.",
     };
   }
 
@@ -1260,6 +1179,78 @@ async function getDiscordServerStatus(
   };
 }
 
+
+function getAdminSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+function applyFollowerCountToKickStatus(
+  status: LiveStatusResponse,
+  followerCount?: number,
+): LiveStatusResponse {
+  const safeFollowerCount = getPositiveCount(Number(followerCount ?? 0));
+
+  if (status.platform !== "kick" || !safeFollowerCount) return status;
+
+  return {
+    ...status,
+    followerCount: safeFollowerCount,
+    externalCount: safeFollowerCount,
+  } as LiveStatusResponse;
+}
+
+function readFollowerCountFromCachedPayload(payload: any) {
+  return getPositiveCount(
+    readNumberFromPaths(payload, [
+      "followerCount",
+      "externalCount",
+      "kickFollowerCache.followerCount",
+      "kickFollowerCache.count",
+      "kickFollowerCache.currentValue",
+    ]),
+  );
+}
+
+async function getCachedKickFollowerCount(
+  creatorId: string | null,
+  username?: string | null,
+) {
+  const adminSupabase = getAdminSupabaseClient();
+
+  if (!adminSupabase) return undefined;
+
+  let query = adminSupabase
+    .from("creator_live_status")
+    .select("raw_payload, platform_username, updated_at, last_checked_at")
+    .eq("platform", "kick")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (creatorId) {
+    query = query.eq("creator_id", creatorId);
+  } else if (username) {
+    query = query.eq("platform_username", normalizeKickUsername(username));
+  } else {
+    return undefined;
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error || !data) return undefined;
+
+  return readFollowerCountFromCachedPayload((data as any).raw_payload);
+}
+
 async function upsertCreatorLiveStatus(
   creatorId: string | null,
   status: LiveStatusResponse,
@@ -1268,36 +1259,37 @@ async function upsertCreatorLiveStatus(
 
   if (status.platform !== "twitch" && status.platform !== "kick") return;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminSupabase = getAdminSupabaseClient();
 
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!adminSupabase) {
     console.warn(
       "Supabase service role env missing. Skipping creator_live_status upsert.",
     );
     return;
   }
 
-  const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  const cachedKickFollowerCount =
+    status.platform === "kick" && !status.followerCount
+      ? await getCachedKickFollowerCount(creatorId, status.username)
+      : undefined;
+  const statusToSave = applyFollowerCountToKickStatus(
+    status,
+    cachedKickFollowerCount,
+  );
 
   const { error } = await adminSupabase.from("creator_live_status").upsert(
     {
       creator_id: creatorId,
       platform: status.platform,
-      platform_username: status.username,
-      is_live: Boolean(status.isLive),
-      title: status.title ?? null,
-      viewer_count: Number(status.viewerCount ?? 0),
-      game_name: status.gameName ?? null,
-      started_at: status.startedAt ?? null,
-      thumbnail_url: status.thumbnail ?? null,
-      live_url: status.url ?? null,
-      raw_payload: status,
+      platform_username: statusToSave.username,
+      is_live: Boolean(statusToSave.isLive),
+      title: statusToSave.title ?? null,
+      viewer_count: Number(statusToSave.viewerCount ?? 0),
+      game_name: statusToSave.gameName ?? null,
+      started_at: statusToSave.startedAt ?? null,
+      thumbnail_url: statusToSave.thumbnail ?? null,
+      live_url: statusToSave.url ?? null,
+      raw_payload: statusToSave,
       last_checked_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -1334,10 +1326,27 @@ export async function GET(request: NextRequest) {
     if (platform === "kick") {
       const debug = request.nextUrl.searchParams.get("debug") === "1";
       const status = await getKickLiveStatus(username, debug);
-      if (!debug) {
-        await upsertCreatorLiveStatus(creatorId, status);
+      const cachedFollowerCount = !status.followerCount
+        ? await getCachedKickFollowerCount(creatorId, status.username)
+        : undefined;
+      const statusWithCachedFollowers = applyFollowerCountToKickStatus(
+        status,
+        cachedFollowerCount,
+      );
+
+      if (debug && statusWithCachedFollowers.debug) {
+        statusWithCachedFollowers.debug.kickFollowerCache = {
+          cachedFollowerCount,
+          usedCachedFollowerCount: Boolean(
+            cachedFollowerCount && !status.followerCount,
+          ),
+        };
       }
-      return NextResponse.json(status);
+
+      if (!debug) {
+        await upsertCreatorLiveStatus(creatorId, statusWithCachedFollowers);
+      }
+      return NextResponse.json(statusWithCachedFollowers);
     }
 
     if (platform === "youtube") {
