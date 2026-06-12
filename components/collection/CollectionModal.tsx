@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Archive,
   Crown,
@@ -329,10 +337,18 @@ export function CollectionModal({
       "creator-nexus:open-collection-card",
       handleOpenCardFromNotification,
     );
+    window.addEventListener(
+      "creator-nexus:focus-collection-card",
+      handleOpenCardFromNotification,
+    );
 
     return () => {
       window.removeEventListener(
         "creator-nexus:open-collection-card",
+        handleOpenCardFromNotification,
+      );
+      window.removeEventListener(
+        "creator-nexus:focus-collection-card",
         handleOpenCardFromNotification,
       );
     };
@@ -359,13 +375,25 @@ export function CollectionModal({
   }, [cards, loading, onInitialCardOpened, open, pendingNotificationCard]);
 
   const stats = useMemo(() => {
-    return {
-      total: cards.length,
-      common: cards.filter((card) => card.rarity === "common").length,
-      rare: cards.filter((card) => card.rarity === "rare").length,
-      epic: cards.filter((card) => card.rarity === "epic").length,
-      legendary: cards.filter((card) => card.rarity === "legendary").length,
-    };
+    return cards.reduce(
+      (currentStats, card) => {
+        currentStats.total += 1;
+
+        if (card.rarity === "common") currentStats.common += 1;
+        if (card.rarity === "rare") currentStats.rare += 1;
+        if (card.rarity === "epic") currentStats.epic += 1;
+        if (card.rarity === "legendary") currentStats.legendary += 1;
+
+        return currentStats;
+      },
+      {
+        total: 0,
+        common: 0,
+        rare: 0,
+        epic: 0,
+        legendary: 0,
+      },
+    );
   }, [cards]);
 
   const filteredCards = useMemo(() => {
@@ -393,7 +421,7 @@ export function CollectionModal({
     });
   }, [cards, searchTerm]);
 
-  async function markCardAsSeen(card: UserCard) {
+  const markCardAsSeen = useCallback(async function markCardAsSeen(card: UserCard) {
     if (card.seen_at) return;
 
     const seenAt = new Date().toISOString();
@@ -420,21 +448,21 @@ export function CollectionModal({
     if (error) {
       console.error("Erro ao marcar carta como vista:", error);
     }
-  }
+  }, []);
 
-  function handleSelectCard(card: UserCard) {
+  const handleSelectCard = useCallback(function handleSelectCard(card: UserCard) {
     setSelectedCard(card);
     void markCardAsSeen(card);
-  }
+  }, [markCardAsSeen]);
 
-  function handleOpenCreatorProfile(card: UserCard) {
+  const handleOpenCreatorProfile = useCallback(function handleOpenCreatorProfile(card: UserCard) {
     const creator = buildCreatorFromCard(card);
 
     if (!creator) return;
 
     setSelectedCard(null);
     setSelectedCreator(creator);
-  }
+  }, []);
 
   return (
     <>
@@ -535,7 +563,7 @@ export function CollectionModal({
                     <CollectionCard
                       key={card.id}
                       card={card}
-                      onClick={() => handleSelectCard(card)}
+                      onSelectCard={handleSelectCard}
                     />
                   ))}
                 </div>
@@ -620,7 +648,7 @@ function buildCreatorFromCard(card: UserCard): Creator | null {
   };
 }
 
-function StatCard({
+const StatCard = memo(function StatCard({
   icon,
   label,
   value,
@@ -639,9 +667,9 @@ function StatCard({
       <p className="mt-4 text-3xl font-black text-cyan-100">{value}</p>
     </div>
   );
-}
+});
 
-function EmptyCollection() {
+const EmptyCollection = memo(function EmptyCollection() {
   const { t } = useLanguage();
 
   return (
@@ -663,17 +691,18 @@ function EmptyCollection() {
       </p>
     </div>
   );
-}
+});
 
-function CollectionCard({
+const CollectionCard = memo(function CollectionCard({
   card,
-  onClick,
+  onSelectCard,
 }: {
   card: UserCard;
-  onClick: () => void;
+  onSelectCard: (card: UserCard) => void;
 }) {
   const { language } = useLanguage();
-  const creator = buildCreatorFromCard(card);
+  const creator = useMemo(() => buildCreatorFromCard(card), [card]);
+  const handleClick = useCallback(() => onSelectCard(card), [card, onSelectCard]);
 
   if (!creator) return null;
 
@@ -682,7 +711,7 @@ function CollectionCard({
       <div className="relative">
         <CreatorCard
           creator={creator}
-          onClick={() => onClick()}
+          onClick={handleClick}
           effectsOnHoverOnly
         />
         <CollectionCardOverlay card={card} compact />
@@ -694,9 +723,9 @@ function CollectionCard({
       </div>
     </div>
   );
-}
+});
 
-function CollectionCardOverlay({
+const CollectionCardOverlay = memo(function CollectionCardOverlay({
   card,
   compact = false,
 }: {
@@ -725,9 +754,9 @@ function CollectionCardOverlay({
       </span>
     </div>
   );
-}
+});
 
-function CollectionCardObtainedDate({
+const CollectionCardObtainedDate = memo(function CollectionCardObtainedDate({
   obtainedAt,
   locale,
   compact = false,
@@ -745,7 +774,7 @@ function CollectionCardObtainedDate({
       {new Date(obtainedAt).toLocaleDateString(locale)}
     </span>
   );
-}
+});
 
 function CollectionCardShowcase({
   card,

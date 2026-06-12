@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Archive,
   CheckCircle2,
@@ -16,13 +17,47 @@ import {
 import { AnimatePresence } from "framer-motion";
 
 import { CardpocModalShell } from "@/components/ui/CardpocModalShell";
-import { CollectionModal } from "@/components/collection/CollectionModal";
-import { CreatorRequestModal } from "@/components/creator-request/CreatorRequestModal";
-import { UserProfileModal } from "@/components/account/UserProfileModal";
-import { MissionsModal } from "@/components/missions/MissionsModal";
-import { PacksModal } from "@/components/packs/PacksModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase/client";
+
+const CollectionModal = dynamic(
+  () =>
+    import("@/components/collection/CollectionModal").then(
+      (mod) => mod.CollectionModal,
+    ),
+  { ssr: false },
+);
+
+const CreatorRequestModal = dynamic(
+  () =>
+    import("@/components/creator-request/CreatorRequestModal").then(
+      (mod) => mod.CreatorRequestModal,
+    ),
+  { ssr: false },
+);
+
+const UserProfileModal = dynamic(
+  () =>
+    import("@/components/account/UserProfileModal").then(
+      (mod) => mod.UserProfileModal,
+    ),
+  { ssr: false },
+);
+
+const MissionsModal = dynamic(
+  () =>
+    import("@/components/missions/MissionsModal").then(
+      (mod) => mod.MissionsModal,
+    ),
+  { ssr: false },
+);
+
+const PacksModal = dynamic(
+  () =>
+    import("@/components/packs/PacksModal").then((mod) => mod.PacksModal),
+  { ssr: false },
+);
+
 
 type AccountProfile = {
   display_name: string | null;
@@ -37,6 +72,13 @@ type AccountStats = {
   xp: number;
   level: number;
   cards: number;
+};
+
+type PendingCollectionCard = {
+  cardId?: string | null;
+  creatorId?: string | null;
+  card_id?: string | null;
+  creator_id?: string | null;
 };
 
 type LinkedSocialAccount = {
@@ -89,6 +131,47 @@ function getLevelProgress(xp: number, level: number) {
   };
 }
 
+
+const ACCOUNT_ACTION_CARD_STYLES = {
+  cyan: {
+    card: "border-cyan-300/15 bg-cyan-300/[0.04]",
+    icon: "border-cyan-300/20 bg-cyan-300/10 text-cyan-100",
+    button:
+      "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/15",
+  },
+  purple: {
+    card: "border-purple-300/15 bg-purple-300/[0.04]",
+    icon: "border-purple-300/20 bg-purple-300/10 text-purple-100",
+    button:
+      "border-purple-300/20 bg-purple-300/10 text-purple-100 hover:bg-purple-300/15",
+  },
+  yellow: {
+    card: "border-yellow-300/15 bg-yellow-300/[0.04]",
+    icon: "border-yellow-300/20 bg-yellow-300/10 text-yellow-100",
+    button:
+      "border-yellow-300/20 bg-yellow-300/10 text-yellow-100 hover:bg-yellow-300/15",
+  },
+  emerald: {
+    card: "border-emerald-300/15 bg-emerald-300/[0.04]",
+    icon: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
+    button:
+      "border-emerald-300/20 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/15",
+  },
+  pink: {
+    card: "border-pink-300/15 bg-pink-300/[0.04]",
+    icon: "border-pink-300/20 bg-pink-300/10 text-pink-100",
+    button:
+      "border-pink-300/20 bg-pink-300/10 text-pink-100 hover:bg-pink-300/15",
+  },
+} as const;
+
+function getPendingCollectionCardDetail(detail: PendingCollectionCard | null) {
+  return {
+    cardId: detail?.cardId || detail?.card_id || null,
+    creatorId: detail?.creatorId || detail?.creator_id || null,
+  };
+}
+
 export function AccountModal({
   open,
   email,
@@ -102,6 +185,8 @@ export function AccountModal({
   const [missionsOpen, setMissionsOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
   const [linkedAccountsOpen, setLinkedAccountsOpen] = useState(false);
+  const [pendingCollectionCard, setPendingCollectionCard] =
+    useState<PendingCollectionCard | null>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedSocialAccount[]>(
     [],
   );
@@ -119,7 +204,7 @@ export function AccountModal({
     [accountStats.level, accountStats.xp],
   );
 
-  async function loadLinkedAccounts() {
+  const loadLinkedAccounts = useCallback(async function loadLinkedAccounts() {
     setLinkedAccountsLoading(true);
 
     const {
@@ -151,39 +236,29 @@ export function AccountModal({
 
     setLinkedAccounts(data || []);
     setLinkedAccountsLoading(false);
-  }
+  }, []);
 
-  function openLinkedAccountsModal() {
+  const openLinkedAccountsModal = useCallback(function openLinkedAccountsModal() {
     setLinkedAccountsOpen(true);
     void loadLinkedAccounts();
-  }
+  }, [loadLinkedAccounts]);
 
   useEffect(() => {
     function handleOpenCollectionCard(event: Event) {
       const detail =
-        event instanceof CustomEvent && event.detail ? event.detail : {};
+        event instanceof CustomEvent && event.detail ? event.detail : null;
+      const pendingCard = getPendingCollectionCardDetail(detail);
 
       setRequestOpen(false);
       setProfileOpen(false);
       setMissionsOpen(false);
       setPacksOpen(false);
       setLinkedAccountsOpen(false);
+      setPendingCollectionCard(pendingCard);
       setCollectionOpen(true);
 
       window.setTimeout(() => {
         onClose();
-
-        window.dispatchEvent(
-          new CustomEvent("creator-nexus:focus-collection-card", {
-            detail,
-          }),
-        );
-
-        window.dispatchEvent(
-          new CustomEvent("creator-nexus:open-collection-card", {
-            detail,
-          }),
-        );
       }, 80);
     }
 
@@ -232,33 +307,49 @@ export function AccountModal({
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("xp, level")
-        .eq("id", user.id)
-        .maybeSingle();
+      const [profileResult, cardsResult] = await Promise.allSettled([
+        supabase
+          .from("profiles")
+          .select("xp, level")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("user_cards")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+      ]);
 
-      if (profileError) {
-        console.error("Erro ao buscar XP do perfil:", profileError);
+      const profileResponse =
+        profileResult.status === "fulfilled" ? profileResult.value : null;
+      const cardsResponse =
+        cardsResult.status === "fulfilled" ? cardsResult.value : null;
+
+      if (profileResult.status === "rejected" || profileResponse?.error) {
+        console.error(
+          "Erro ao buscar XP do perfil:",
+          profileResult.status === "rejected"
+            ? profileResult.reason
+            : profileResponse?.error,
+        );
       }
 
-      const { count, error: cardsError } = await supabase
-        .from("user_cards")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id);
-
-      if (cardsError) {
-        console.error("Erro ao contar cartas:", cardsError);
+      if (cardsResult.status === "rejected" || cardsResponse?.error) {
+        console.error(
+          "Erro ao contar cartas:",
+          cardsResult.status === "rejected"
+            ? cardsResult.reason
+            : cardsResponse?.error,
+        );
       }
 
       setAccountStats({
-        xp: profileData?.xp ?? profile?.xp ?? 0,
-        level: profileData?.level ?? profile?.level ?? 1,
-        cards: count ?? 0,
+        xp: profileResponse?.data?.xp ?? profile?.xp ?? 0,
+        level: profileResponse?.data?.level ?? profile?.level ?? 1,
+        cards: cardsResponse?.count ?? 0,
       });
     }
 
-    loadAccountStats();
+    void loadAccountStats();
   }, [open, profile?.level, profile?.xp]);
 
   return (
@@ -500,30 +591,46 @@ export function AccountModal({
         )}
       </AnimatePresence>
 
-      <CreatorRequestModal
-        open={requestOpen}
-        email={email}
-        onClose={() => setRequestOpen(false)}
-      />
+      {requestOpen && (
+        <CreatorRequestModal
+          open={requestOpen}
+          email={email}
+          onClose={() => setRequestOpen(false)}
+        />
+      )}
 
-      <UserProfileModal
-        open={profileOpen}
-        email={email}
-        profile={profile}
-        onClose={() => setProfileOpen(false)}
-      />
+      {profileOpen && (
+        <UserProfileModal
+          open={profileOpen}
+          email={email}
+          profile={profile}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
 
-      <CollectionModal
-        open={collectionOpen}
-        onClose={() => setCollectionOpen(false)}
-      />
+      {collectionOpen && (
+        <CollectionModal
+          open={collectionOpen}
+          initialCardId={pendingCollectionCard?.cardId || null}
+          initialCreatorId={pendingCollectionCard?.creatorId || null}
+          onInitialCardOpened={() => setPendingCollectionCard(null)}
+          onClose={() => {
+            setCollectionOpen(false);
+            setPendingCollectionCard(null);
+          }}
+        />
+      )}
 
-      <MissionsModal
-        open={missionsOpen}
-        onClose={() => setMissionsOpen(false)}
-      />
+      {missionsOpen && (
+        <MissionsModal
+          open={missionsOpen}
+          onClose={() => setMissionsOpen(false)}
+        />
+      )}
 
-      <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
+      {packsOpen && (
+        <PacksModal open={packsOpen} onClose={() => setPacksOpen(false)} />
+      )}
 
       <AnimatePresence>
         {linkedAccountsOpen && (
@@ -541,15 +648,19 @@ export function AccountModal({
   );
 }
 
-function AccountSectionTitle({ children }: { children: React.ReactNode }) {
+const AccountSectionTitle = memo(function AccountSectionTitle({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <p className="mb-2 text-xs font-black uppercase tracking-[0.28em] text-white/35">
       {children}
     </p>
   );
-}
+});
 
-function AccountActionCard({
+const AccountActionCard = memo(function AccountActionCard({
   icon,
   title,
   description,
@@ -570,38 +681,7 @@ function AccountActionCard({
   wide?: boolean;
   onClick?: () => void;
 }) {
-  const styles = {
-    cyan: {
-      card: "border-cyan-300/15 bg-cyan-300/[0.04]",
-      icon: "border-cyan-300/20 bg-cyan-300/10 text-cyan-100",
-      button:
-        "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/15",
-    },
-    purple: {
-      card: "border-purple-300/15 bg-purple-300/[0.04]",
-      icon: "border-purple-300/20 bg-purple-300/10 text-purple-100",
-      button:
-        "border-purple-300/20 bg-purple-300/10 text-purple-100 hover:bg-purple-300/15",
-    },
-    yellow: {
-      card: "border-yellow-300/15 bg-yellow-300/[0.04]",
-      icon: "border-yellow-300/20 bg-yellow-300/10 text-yellow-100",
-      button:
-        "border-yellow-300/20 bg-yellow-300/10 text-yellow-100 hover:bg-yellow-300/15",
-    },
-    emerald: {
-      card: "border-emerald-300/15 bg-emerald-300/[0.04]",
-      icon: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
-      button:
-        "border-emerald-300/20 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/15",
-    },
-    pink: {
-      card: "border-pink-300/15 bg-pink-300/[0.04]",
-      icon: "border-pink-300/20 bg-pink-300/10 text-pink-100",
-      button:
-        "border-pink-300/20 bg-pink-300/10 text-pink-100 hover:bg-pink-300/15",
-    },
-  }[variant];
+  const styles = ACCOUNT_ACTION_CARD_STYLES[variant];
 
   return (
     <div
@@ -631,7 +711,7 @@ function AccountActionCard({
       </button>
     </div>
   );
-}
+});
 
 function LinkedAccountsModal({
   accounts,
@@ -922,7 +1002,7 @@ function getPlatformStyles(platform: "kick" | "twitch") {
   };
 }
 
-function PlatformLinkedAccountCard({
+const PlatformLinkedAccountCard = memo(function PlatformLinkedAccountCard({
   account,
   loading,
   language,
@@ -1046,4 +1126,4 @@ function PlatformLinkedAccountCard({
       </div>
     </div>
   );
-}
+});
