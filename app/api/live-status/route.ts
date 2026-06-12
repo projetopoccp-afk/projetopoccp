@@ -380,6 +380,153 @@ function getKickSubscriberCountForDebugOnly(channel: any) {
   );
 }
 
+function looksLikeFollowerKey(key: string) {
+  const normalized = key.toLowerCase();
+
+  return (
+    normalized.includes("follower") &&
+    !normalized.includes("subscriber") &&
+    !normalized.includes("subscription")
+  );
+}
+
+function findKickFollowerCountDeep(payload: any, depth = 0): number | undefined {
+  if (payload == null || depth > 8) return undefined;
+
+  if (typeof payload === "number") {
+    return getPositiveCount(payload);
+  }
+
+  if (typeof payload === "string") {
+    const numericValue = Number(payload.replace(/[^0-9.]/g, ""));
+    return getPositiveCount(numericValue);
+  }
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const count = findKickFollowerCountDeep(item, depth + 1);
+      if (count) return count;
+    }
+
+    return undefined;
+  }
+
+  if (typeof payload !== "object") return undefined;
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (!looksLikeFollowerKey(key)) continue;
+
+    if (typeof value === "number" || typeof value === "string") {
+      const count = findKickFollowerCountDeep(value, depth + 1);
+      if (count) return count;
+    }
+
+    if (value && typeof value === "object") {
+      const count =
+        findKickFollowerCountDeep(readNestedValue(value, "count"), depth + 1) ||
+        findKickFollowerCountDeep(readNestedValue(value, "total"), depth + 1) ||
+        findKickFollowerCountDeep(value, depth + 1);
+
+      if (count) return count;
+    }
+  }
+
+  for (const value of Object.values(payload)) {
+    const count = findKickFollowerCountDeep(value, depth + 1);
+    if (count) return count;
+  }
+
+  return undefined;
+}
+
+function extractKickFollowerCountFromText(text: string) {
+  const patterns = [
+    /["\\']followers_count["\\']\s*:\s*(\d+)/i,
+    /["\\']follower_count["\\']\s*:\s*(\d+)/i,
+    /["\\']followersCount["\\']\s*:\s*(\d+)/i,
+    /["\\']followerCount["\\']\s*:\s*(\d+)/i,
+    /["\\']followers["\\']\s*:\s*\{[^}]*["\\']count["\\']\s*:\s*(\d+)/i,
+    /followers[_\s-]*count[^0-9]{0,80}(\d{2,})/i,
+    /follower[_\s-]*count[^0-9]{0,80}(\d{2,})/i,
+    /(\d{2,})\s*Followers/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const count = getPositiveCount(Number(match?.[1] ?? 0));
+
+    if (count) return count;
+  }
+
+  return undefined;
+}
+
+async function getKickFollowerCountFromLivecounts(username: string) {
+  const encodedUsername = encodeURIComponent(username);
+  const candidates = [
+    `https://api.livecounts.io/kick-live-follower-counter/stats/${encodedUsername}`,
+    `https://api.livecounts.io/kick-live-follower-counter/stats?username=${encodedUsername}`,
+    `https://api.livecounts.io/kick-live-follower-counter/stats?user=${encodedUsername}`,
+    `https://livecounts.io/api/kick-live-follower-counter/stats/${encodedUsername}`,
+    `https://livecounts.io/kick-live-follower-counter/${encodedUsername}`,
+    `https://livecounts.io/embed/kick-live-follower-counter/${encodedUsername}`,
+  ];
+
+  const attempts: Array<KickFetchDebug & { extractedCount?: number }> = [];
+
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        },
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      const body = await response.text();
+      let parsed: any = null;
+
+      if (contentType.includes("application/json")) {
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          parsed = null;
+        }
+      }
+
+      const extractedCount =
+        findKickFollowerCountDeep(parsed) || extractKickFollowerCountFromText(body);
+
+      attempts.push({
+        url,
+        status: response.status,
+        ok: response.ok,
+        contentType,
+        bodyPreview: body.slice(0, 500),
+        extractedCount,
+      });
+
+      if (response.ok && extractedCount) {
+        return { count: extractedCount, debug: attempts };
+      }
+    } catch (error) {
+      attempts.push({
+        url,
+        status: 0,
+        ok: false,
+        contentType: "",
+        bodyPreview: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return { count: undefined, debug: attempts };
+}
+
 async function getKickFollowerCountFromPublicPage(username: string) {
   const response = await fetch(`https://kick.com/${encodeURIComponent(username)}`, {
     cache: "no-store",
@@ -406,20 +553,10 @@ async function getKickFollowerCountFromPublicPage(username: string) {
     return { count: undefined, debug };
   }
 
-  const patterns = [
-    /"followers_count"\s*:\s*(\d+)/i,
-    /"follower_count"\s*:\s*(\d+)/i,
-    /"followersCount"\s*:\s*(\d+)/i,
-    /"followers"\s*:\s*\{[^}]*"count"\s*:\s*(\d+)/i,
-  ];
+  const count = extractKickFollowerCountFromText(html);
 
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    const count = getPositiveCount(Number(match?.[1] ?? 0));
-
-    if (count) {
-      return { count, debug };
-    }
+  if (count) {
+    return { count, debug };
   }
 
   return { count: undefined, debug };
@@ -675,8 +812,15 @@ async function getKickLiveStatus(
       const pageFollowerResult = apiFollowerCount
         ? null
         : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+      const livecountsFollowerResult =
+        apiFollowerCount || channelFollowerCount || pageFollowerResult?.count
+          ? null
+          : await getKickFollowerCountFromLivecounts(cleanUsername).catch(() => null);
       const followerCount =
-        apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+        apiFollowerCount ||
+        channelFollowerCount ||
+        pageFollowerResult?.count ||
+        livecountsFollowerResult?.count;
       const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
 
       if (includeDebug) {
@@ -685,11 +829,13 @@ async function getKickLiveStatus(
           channelFollowerCount,
           publicPageFollowerCount: pageFollowerResult?.count,
           publicPageRequest: pageFollowerResult?.debug,
+          livecountsFollowerCount: livecountsFollowerResult?.count,
+          livecountsRequests: livecountsFollowerResult?.debug,
           subscriberCount,
           note:
             followerCount === undefined
-              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
-              : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+              ? "Nenhuma fonte automática consultada retornou seguidores reais da Kick. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
+              : "Seguidores reais da Kick encontrados em uma das fontes automáticas consultadas.",
         };
       }
 
@@ -734,8 +880,15 @@ async function getKickLiveStatus(
   const pageFollowerResult = apiFollowerCount
     ? null
     : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+  const livecountsFollowerResult =
+    apiFollowerCount || channelFollowerCount || pageFollowerResult?.count
+      ? null
+      : await getKickFollowerCountFromLivecounts(cleanUsername).catch(() => null);
   const followerCount =
-    apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+    apiFollowerCount ||
+    channelFollowerCount ||
+    pageFollowerResult?.count ||
+    livecountsFollowerResult?.count;
   const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
 
   if (includeDebug) {
@@ -744,11 +897,13 @@ async function getKickLiveStatus(
       channelFollowerCount,
       publicPageFollowerCount: pageFollowerResult?.count,
       publicPageRequest: pageFollowerResult?.debug,
+      livecountsFollowerCount: livecountsFollowerResult?.count,
+      livecountsRequests: livecountsFollowerResult?.debug,
       subscriberCount,
       note:
         followerCount === undefined
-          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
-          : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+          ? "Nenhuma fonte automática consultada retornou seguidores reais da Kick. O Cardpoc NÃO usa inscritos como fallback para seguidores; subscriberCount é apenas debug."
+          : "Seguidores reais da Kick encontrados em uma das fontes automáticas consultadas.",
     };
   }
 
