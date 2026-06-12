@@ -289,31 +289,14 @@ function extractFirstDataItem(payload: any) {
   return payload ?? null;
 }
 
-function getKickLivestream(
-  channel: any,
-  livestreamPayload: any,
-  options?: { allowChannelFallback?: boolean },
-) {
+function getKickLivestream(_channel: any, livestreamPayload: any) {
   const livestreamData = extractFirstDataItem(livestreamPayload);
 
-  if (livestreamData) {
-    return livestreamData?.livestream || livestreamData;
-  }
-
-  // Importante:
-  // A API oficial /channels pode devolver um objeto "stream" mesmo quando o canal
-  // não está ao vivo de verdade. A fonte confiável para status ao vivo é
-  // /livestreams. Só usamos stream embutido quando explicitamente permitido.
-  if (options?.allowChannelFallback) {
-    return (
-      channel?.livestream ||
-      channel?.recent_livestream ||
-      channel?.stream ||
-      null
-    );
-  }
-
-  return null;
+  // IMPORTANTE: não usar channel.stream/channel.livestream como fonte de live.
+  // A API /channels da Kick pode devolver stream antigo, meta ou dado agregado
+  // que marca criadores offline como online. A única fonte confiável para
+  // status ao vivo é /public/v1/livestreams. Se ela não trouxer item, está offline.
+  return livestreamData?.livestream || livestreamData || null;
 }
 
 function getKickFollowerCount(channel: any) {
@@ -345,17 +328,12 @@ function getKickChannelId(channel: any) {
   ]);
 }
 
-function getKickLiveFlag(channel: any, livestream: any) {
+function getKickLiveFlag(_channel: any, livestream: any) {
+  if (!livestream) return false;
+
   const explicit = readBooleanFromPaths(
-    { channel, livestream },
+    { livestream },
     [
-      "channel.is_live",
-      "channel.isLive",
-      "channel.live",
-      "channel.livestream.is_live",
-      "channel.livestream.isLive",
-      "channel.recent_livestream.is_live",
-      "channel.recent_livestream.isLive",
       "livestream.is_live",
       "livestream.isLive",
       "livestream.live",
@@ -365,16 +343,17 @@ function getKickLiveFlag(channel: any, livestream: any) {
 
   if (explicit !== undefined) return explicit;
 
+  // Para a API oficial /livestreams, a existência de um item com broadcaster/slug
+  // já significa live ativa. Nunca usar goal/follower/subscriber como indício.
   return Boolean(
-    livestream &&
-      (livestream.id ||
-        livestream.session_title ||
-        livestream.title ||
-        livestream.slug ||
-        livestream.start_time ||
-        livestream.started_at ||
-        livestream.viewer_count !== undefined ||
-        livestream.viewers_count !== undefined),
+    livestream.broadcaster_user_id ||
+      livestream.channel_id ||
+      livestream.id ||
+      livestream.stream_title ||
+      livestream.session_title ||
+      livestream.title ||
+      livestream.started_at ||
+      livestream.start_time,
   );
 }
 
@@ -429,9 +408,8 @@ function buildKickStatusFromPayloads(
   channel: any,
   livestreamPayload: any,
   followerCount: number,
-  options?: { allowChannelFallback?: boolean },
 ): LiveStatusResponse {
-  const livestream = getKickLivestream(channel, livestreamPayload, options);
+  const livestream = getKickLivestream(channel, livestreamPayload);
   const isLive = getKickLiveFlag(channel, livestream);
 
   const thumbnail =
