@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminPanelContext } from "../hooks/useAdminPanelController";
+import type { AdminPanelContext, CreatorProfileVisibilityFilter, CreatorProfileVerificationFilter, CreatorProfileOwnerFilter, CreatorProfileSortFilter } from "../hooks/useAdminPanelController";
 
 type AdminCreatorsTabProps = {
   ctx: AdminPanelContext;

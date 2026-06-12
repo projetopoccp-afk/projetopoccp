@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminPanelContext } from "../hooks/useAdminPanelController";
+import type { AdminPanelContext, TranslationKey } from "../hooks/useAdminPanelController";
 
 type AdminCardsTabProps = {
   ctx: AdminPanelContext;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminPanelContext } from "../hooks/useAdminPanelController";
+import type { AdminPanelContext, SupportConversationStatus } from "../hooks/useAdminPanelController";
 
 type AdminConversationsTabProps = {
   ctx: AdminPanelContext;
