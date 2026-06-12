@@ -263,6 +263,43 @@ export default function AdminGlobalOverlays({ ctx }: AdminGlobalOverlaysProps) {
 
   return (
     <>
+      <AnimatePresence>
+        {successToast && (
+          <motion.div
+            key="admin-success-toast"
+            initial={{ opacity: 0, y: -18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -18, scale: 0.96 }}
+            transition={{ duration: 0.18 }}
+            className="fixed right-4 top-4 z-[180] w-[calc(100vw-2rem)] max-w-md rounded-3xl border border-emerald-300/25 bg-[#07120d]/95 p-4 text-white shadow-2xl shadow-emerald-500/15 backdrop-blur-xl sm:right-6 sm:top-6"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-300 text-black shadow-lg shadow-emerald-300/20">
+                <Check size={18} />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-100/80">
+                  {translate(t, "adminActionCompleted", "Ação concluída")}
+                </p>
+                <p className="mt-1 text-sm font-semibold leading-relaxed text-white/90">
+                  {successToast}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSuccessToast(null)}
+                className="rounded-full border border-white/10 bg-white/[0.04] p-2 text-white/50 transition hover:bg-white/[0.08] hover:text-white"
+                aria-label={translate(t, "close", "Fechar")}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
           <AnimatePresence>
             {partnershipApprovalDraft && (
               <motion.div
