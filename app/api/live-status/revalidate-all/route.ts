@@ -223,26 +223,27 @@ async function upsertCreatorLiveStatus(
 ) {
   const checkedAt = new Date().toISOString();
 
-  const { error } = await adminSupabase.from("creator_live_status").upsert(
-    {
-      creator_id: creatorId,
-      platform: status.platform,
-      platform_username: status.username,
-      is_live: Boolean(status.isLive),
-      title: status.title ?? null,
-      viewer_count: Number(status.viewerCount ?? 0),
-      game_name: status.gameName ?? null,
-      started_at: status.startedAt ?? null,
-      thumbnail_url: status.thumbnail ?? null,
-      live_url: status.url ?? null,
-      raw_payload: status,
-      last_checked_at: checkedAt,
-      updated_at: checkedAt,
-    },
-    {
+  const liveStatusPayload = {
+    creator_id: creatorId,
+    platform: status.platform,
+    platform_username: status.username,
+    is_live: Boolean(status.isLive),
+    title: status.title ?? null,
+    viewer_count: Number(status.viewerCount ?? 0),
+    game_name: status.gameName ?? null,
+    started_at: status.startedAt ?? null,
+    thumbnail_url: status.thumbnail ?? null,
+    live_url: status.url ?? null,
+    raw_payload: status,
+    last_checked_at: checkedAt,
+    updated_at: checkedAt,
+  };
+
+  const { error } = await (adminSupabase as any)
+    .from("creator_live_status")
+    .upsert(liveStatusPayload, {
       onConflict: "creator_id,platform",
-    },
-  );
+    });
 
   if (error) {
     throw new Error(error.message);
