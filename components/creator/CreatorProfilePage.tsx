@@ -28,6 +28,7 @@ import {
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CreatorCard } from "@/components/cards/CreatorCard";
+import { CREATOR_POPUP_IMAGE_EFFECT_STYLES } from "@/components/creator/CreatorPopupImageEffects";
 import { GlowBackground } from "@/components/effects/GlowBackground";
 import { ParticleBackground } from "@/components/effects/ParticleBackground";
 import { LiveDropsModal } from "@/components/modals/LiveDropsModal";
