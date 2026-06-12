@@ -118,6 +118,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   const [activeDrops, setActiveDrops] = useState<ActiveDrop[]>([]);
   const [loading, setLoading] = useState(true);
   const [homeShowcaseSeed, setHomeShowcaseSeed] = useState(0);
+  const [liveCreatorIds, setLiveCreatorIds] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadCreators() {
@@ -252,6 +253,57 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   }, [t]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadLiveCreatorIds() {
+      const { data, error } = await supabase
+        .from("creator_live_status")
+        .select("creator_id")
+        .eq("is_live", true);
+
+      if (!isMounted) return;
+
+      if (error || !data) {
+        setLiveCreatorIds([]);
+        return;
+      }
+
+      const uniqueLiveCreatorIds = Array.from(
+        new Set(
+          data
+            .map((item: any) => String(item.creator_id || ""))
+            .filter(Boolean)
+        )
+      );
+
+      setLiveCreatorIds(uniqueLiveCreatorIds);
+    }
+
+    loadLiveCreatorIds();
+
+    const channel = supabase
+      .channel("creator_live_status_home_showcase")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "creator_live_status",
+        },
+        () => {
+          loadLiveCreatorIds();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (liveCreatorIds.length > 0) return;
     if (creators.length <= HOME_SHOWCASE_LIMIT) return;
 
     const intervalId = window.setInterval(() => {
@@ -261,7 +313,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [creators.length]);
+  }, [creators.length, liveCreatorIds.length]);
 
   useEffect(() => {
     function syncPopupWithUrl() {
@@ -347,12 +399,21 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   });
 
   const homeShowcaseCreators = useMemo(() => {
+    const liveCreatorIdSet = new Set(liveCreatorIds);
+    const liveCreators = creators.filter((creator) =>
+      liveCreatorIdSet.has(creator.id)
+    );
+
+    if (liveCreators.length > 0) {
+      return liveCreators;
+    }
+
     if (creators.length <= HOME_SHOWCASE_LIMIT) {
       return [...creators].sort((a, b) => b.trendingScore - a.trendingScore);
     }
 
     return getRotatingCreators(creators, homeShowcaseSeed);
-  }, [creators, homeShowcaseSeed]);
+  }, [creators, homeShowcaseSeed, liveCreatorIds]);
 
 
   return (
@@ -558,7 +619,6 @@ function AnimatedRarityCreatorCard({
   const [incomingRarityIndex, setIncomingRarityIndex] = useState<number | null>(
     null
   );
-  const [isPointerActive, setIsPointerActive] = useState(false);
 
   const activeRarityIndexRef = useRef(initialRarityIndex);
   const isTransitioningRef = useRef(false);
@@ -587,34 +647,29 @@ function AnimatedRarityCreatorCard({
       }, 760);
     }
 
-    if (!isPointerActive) {
-      setIncomingRarityIndex(null);
-      isTransitioningRef.current = false;
+    const startDelay = index * 1100;
+    let intervalId: number | null = null;
 
-      if (transitionTimeoutRef.current !== null) {
-        window.clearTimeout(transitionTimeoutRef.current);
-        transitionTimeoutRef.current = null;
-      }
-
-      return;
-    }
-
-    const timeoutId = window.setTimeout(beginCardStackTransition, 700);
-    const intervalId = window.setInterval(
-      beginCardStackTransition,
-      RARITY_SHOWCASE_INTERVAL
-    );
+    const timeoutId = window.setTimeout(() => {
+      beginCardStackTransition();
+      intervalId = window.setInterval(
+        beginCardStackTransition,
+        RARITY_SHOWCASE_INTERVAL
+      );
+    }, startDelay);
 
     return () => {
       window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
+
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+      }
 
       if (transitionTimeoutRef.current !== null) {
         window.clearTimeout(transitionTimeoutRef.current);
-        transitionTimeoutRef.current = null;
       }
     };
-  }, [isPointerActive]);
+  }, [index]);
 
   const activeShowcase = RARITY_SHOWCASE_CYCLE[activeRarityIndex];
   const incomingShowcase =
@@ -643,10 +698,6 @@ function AnimatedRarityCreatorCard({
           ? "relative h-[252px] w-[168px] overflow-visible [perspective:1200px]"
           : "relative h-[360px] w-[240px] overflow-visible [perspective:1200px]"
       }
-      onMouseEnter={() => setIsPointerActive(true)}
-      onMouseLeave={() => setIsPointerActive(false)}
-      onFocusCapture={() => setIsPointerActive(true)}
-      onBlurCapture={() => setIsPointerActive(false)}
     >
       <div
         className={
@@ -656,7 +707,7 @@ function AnimatedRarityCreatorCard({
         }
       >
         <div className="relative z-10 h-full w-full">
-          <CreatorCard creator={activeCreator} onClick={onClick} hoverOnlyEffects />
+          <CreatorCard creator={activeCreator} onClick={onClick} />
         </div>
 
         {incomingCreator && (
@@ -685,7 +736,7 @@ function AnimatedRarityCreatorCard({
               backfaceVisibility: "hidden",
             }}
           >
-            <CreatorCard creator={incomingCreator} onClick={onClick} hoverOnlyEffects />
+            <CreatorCard creator={incomingCreator} onClick={onClick} />
           </motion.div>
         )}
       </div>
