@@ -345,7 +345,48 @@ function getPositiveCount(value: number) {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
+/*
+KICK FOLLOWERS — API OFICIAL ATIVA / FALLBACKS BLOQUEADOS
+
+Regra de produção:
+- Live/offline e viewerCount da Kick continuam vindo APENAS da API oficial:
+  https://api.kick.com/public/v1/channels
+  https://api.kick.com/public/v1/livestreams
+- Followers da Kick ficam "preparados" para a API oficial.
+  Se a Kick passar a retornar algum campo oficial de seguidores no payload
+  do canal, o Cardpoc já vai ler automaticamente e exibir.
+- Hoje a API oficial retorna live/viewers/categoria/thumbnail, mas não retorna
+  followers no payload testado.
+- NÃO usamos subscribers como followers.
+- NÃO usamos Livecounts.
+- NÃO usamos cache do navegador.
+- NÃO usamos /api/v2/channels/{username}/goals em produção porque:
+  navegador = 200 OK
+  Vercel/server = 403 Request blocked by security policy
+
+Endpoint interno identificado para investigação futura:
+https://kick.com/api/v2/channels/{username}/goals
+
+Campo correto quando esse endpoint estiver acessível no server:
+goal.type === "followers"
+goal.current_value
+
+Exemplo real:
+{
+  type: "followers",
+  current_value: 5244
+}
+
+IMPORTANTE:
+Não usar dados de goals, subscribers, target_value ou current_value para
+definir isLive ou viewerCount. Kick online deve ser confirmado somente por
+/public/v1/livestreams.
+*/
+
 function getKickFollowerCount(channel: any) {
+  // Deixar a API oficial da Kick preparada:
+  // se no futuro o payload oficial passar a trazer seguidores,
+  // estes campos serão lidos automaticamente sem mexer novamente no código.
   return getPositiveCount(
     readNumberFromPaths(channel, [
       "followers_count",
@@ -353,16 +394,37 @@ function getKickFollowerCount(channel: any) {
       "followersCount",
       "followers",
       "followers.total",
+      "followers.count",
+      "followers.value",
+      "followerCount",
+      "total_followers",
+      "totalFollowers",
+      "channel_followers",
+      "channelFollowers",
+      "metrics.followers",
+      "metrics.followers_count",
+      "metrics.follower_count",
+      "stats.followers",
+      "stats.followers_count",
+      "statistics.followers",
+      "statistics.followers_count",
       "user.followers_count",
       "user.follower_count",
       "user.followersCount",
-      "stats.followers",
-      "stats.followers_count",
+      "user.followers",
       "streamer_channel.followers_count",
+      "streamer_channel.follower_count",
+      "streamer_channel.followersCount",
       "broadcaster.followers_count",
+      "broadcaster.follower_count",
+      "broadcaster.followersCount",
       "channel.followers_count",
       "channel.follower_count",
       "channel.followersCount",
+      "data.followers_count",
+      "data.follower_count",
+      "data.followersCount",
+      "data.followers",
     ]),
   );
 }
@@ -767,7 +829,7 @@ async function getKickLiveStatus(
           channelFollowerCount,
           note:
             followerCount === undefined
-              ? "A API oficial da Kick não retorna seguidores para este canal. O Cardpoc NÃO usa subscribers, Livecounts, goals bloqueado por Vercel ou cache do navegador como fallback."
+              ? "A API oficial da Kick ainda não retornou seguidores para este canal. O Cardpoc está preparado para ler followers_count/follower_count/followers quando a API oficial passar a fornecer esse dado. Não usamos subscribers, Livecounts, goals bloqueado pela Vercel ou cache do navegador como fallback."
               : "Seguidores reais da Kick encontrados pela API oficial.",
         };
       }
