@@ -44,6 +44,10 @@ import type { Creator, CreatorRarity, CreatorStatus } from "@/types/creator";
 import { SupportChatModal } from "./profile/CreatorSupportChatModal";
 import { useCreatorClips } from "./profile/useCreatorClips";
 import { useCreatorLiveStatus } from "./profile/useCreatorLiveStatus";
+import { useCreatorClipSections } from "./profile/useCreatorClipSections";
+import { useCreatorPartnershipsView } from "./profile/useCreatorPartnershipsView";
+import { useCreatorLivePlatformItems } from "./profile/useCreatorLivePlatformItems";
+import { useCreatorSocialDropdownItems } from "./profile/useCreatorSocialDropdownItems";
 import {
   translateExisting,
   mapCreatorLiveStatusRowToLiveStatus,
@@ -59,7 +63,6 @@ import {
   getCreatorCard,
   formatNumber,
   formatProfileDate,
-  getPartnershipTimestamp,
   getPartnershipDisplayName,
   getPartnershipLogo,
   getPartnershipWebsite,
@@ -73,7 +76,6 @@ import {
   getTrustedLiveStatusExternalCount,
   getYoutubeExternalReachFromLiveStatus,
   getCreatorExternalReachFromLiveStatus,
-  getSocialUrl,
   normalizeCreatorStatus,
   normalizeCreatorRarity,
   normalizeCreatorRank,
@@ -100,8 +102,7 @@ import type {
   CreatorStats,
   CreatorCollectionStats,
   CreatorBattleCandidate,
-  CreatorBattleStats,
-  AutoClip
+  CreatorBattleStats
 } from "./profile/creator-profile-shared";
 
 
@@ -889,72 +890,18 @@ export function CreatorProfilePage({
         ? "opponent"
         : "draw";
 
-  const groupedClips = clips.reduce<Record<string, AutoClip[]>>(
-    (accumulator, clip) => {
-      const platform = String(clip.platform || "outros").toLowerCase();
-
-      if (!accumulator[platform]) {
-        accumulator[platform] = [];
-      }
-
-      accumulator[platform].push(clip);
-      return accumulator;
-    },
-    {},
-  );
-
-  const clipPlatformSections = (
-    Object.entries(groupedClips) as Array<[string, AutoClip[]]>
-  ).sort(([platformA], [platformB]) => {
-    const order = ["youtube", "twitch", "kick", "tiktok", "instagram"];
-    const indexA = order.indexOf(platformA);
-    const indexB = order.indexOf(platformB);
-
-    return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+  const {
+    clipPlatformSections,
+    selectedClipPlatform,
+    selectedPlatformClips,
+  } = useCreatorClipSections({
+    clips,
+    activeClipPlatform,
+    setActiveClipPlatform,
   });
 
-  const clipPlatformKey = clipPlatformSections
-    .map(([platform]) => platform)
-    .join("|");
-  const selectedClipPlatform =
-    activeClipPlatform && groupedClips[activeClipPlatform]
-      ? activeClipPlatform
-      : clipPlatformSections[0]?.[0] || "";
-  const selectedPlatformClips = selectedClipPlatform
-    ? groupedClips[selectedClipPlatform] || []
-    : [];
-
-  useEffect(() => {
-    if (!clipPlatformSections.length) {
-      if (activeClipPlatform) setActiveClipPlatform("");
-      return;
-    }
-
-    if (!activeClipPlatform || !groupedClips[activeClipPlatform]) {
-      setActiveClipPlatform(clipPlatformSections[0][0]);
-    }
-  }, [activeClipPlatform, clipPlatformKey]);
-
-  const visiblePartnerships = partnerships
-    .filter((partnership) =>
-      Boolean(
-        partnership.is_active !== false &&
-        ["verified", "manual"].includes(String(partnership.status || "")),
-      ),
-    )
-    .sort(
-      (partnershipA, partnershipB) =>
-        getPartnershipTimestamp(partnershipB) -
-        getPartnershipTimestamp(partnershipA),
-    )
-    .slice(0, 12);
-
-  const partnershipHistoryCount = partnerships.filter((partnership) =>
-    Boolean(
-      partnership.is_active !== false &&
-      ["verified", "manual"].includes(String(partnership.status || "")),
-    ),
-  ).length;
+  const { visiblePartnerships, partnershipHistoryCount } =
+    useCreatorPartnershipsView({ partnerships });
 
   async function refreshCreatorProfile() {
     if (!decodedUsername) return;
@@ -1648,55 +1595,22 @@ export function CreatorProfilePage({
     }
   }
 
-  const socialDropdownItems = [
-    ...socialLinks.filter(
-      (social) => social.platform.toLowerCase() !== "youtube",
-    ),
-    ...(visibleYoutubeChannels.length > 0
-      ? [
-          {
-            platform: "youtube",
-            url: visibleYoutubeChannels[0].url,
-          },
-        ]
-      : []),
-  ].filter((social) => social.url.trim().length > 0);
+  const socialDropdownItems = useCreatorSocialDropdownItems({
+    socialLinks,
+    visibleYoutubeChannels,
+  });
 
-  const twitchProfileUrl = getSocialUrl(socialLinks, "twitch");
-  const kickProfileUrl = getSocialUrl(socialLinks, "kick");
-
-  const livePlatformItems = [
-    {
-      key: "twitch" as const,
-      label: "Twitch",
-      status: twitchStatus,
-      fallbackUrl: twitchProfileUrl,
-    },
-    {
-      key: "kick" as const,
-      label: "Kick",
-      status: kickStatus,
-      fallbackUrl: kickProfileUrl,
-    },
-  ].filter((item) => item.status?.isLive);
-
-  const liveDropsPlatform =
-    livePlatformItems[0] ||
-    (twitchProfileUrl.trim().length > 0
-      ? {
-          key: "twitch" as const,
-          label: "Twitch",
-          status: twitchStatus,
-          fallbackUrl: twitchProfileUrl,
-        }
-      : {
-          key: "kick" as const,
-          label: "Kick",
-          status: kickStatus,
-          fallbackUrl: kickProfileUrl,
-        });
-
-  const heroLiveStatus = livePlatformItems[0]?.status || null;
+  const {
+    twitchProfileUrl,
+    kickProfileUrl,
+    livePlatformItems,
+    liveDropsPlatform,
+    heroLiveStatus,
+  } = useCreatorLivePlatformItems({
+    socialLinks,
+    twitchStatus,
+    kickStatus,
+  });
 
   const creatorForPopup: Creator | null = profile
     ? {
