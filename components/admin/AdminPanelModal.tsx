@@ -3134,7 +3134,8 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   );
 
   const activeSupportConversationCount = ACTIVE_SUPPORT_STATUSES.reduce(
-    (total: any, status: any) => total + conversationStatusCounts[status],
+    (total: number, status: SupportConversationStatus) =>
+      total + conversationStatusCounts[status],
     0,
   );
 
