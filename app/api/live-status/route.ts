@@ -342,21 +342,87 @@ function getKickLivestream(channel: any, livestreamPayload: any) {
   );
 }
 
+function getPositiveCount(value: number) {
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 function getKickFollowerCount(channel: any) {
-  return readNumberFromPaths(channel, [
-    "followers_count",
-    "follower_count",
-    "followersCount",
-    "followers",
-    "followers.total",
-    "user.followers_count",
-    "user.follower_count",
-    "user.followersCount",
-    "stats.followers",
-    "stats.followers_count",
-    "streamer_channel.followers_count",
-    "broadcaster.followers_count",
-  ]);
+  return getPositiveCount(
+    readNumberFromPaths(channel, [
+      "followers_count",
+      "follower_count",
+      "followersCount",
+      "followers",
+      "followers.total",
+      "user.followers_count",
+      "user.follower_count",
+      "user.followersCount",
+      "stats.followers",
+      "stats.followers_count",
+      "streamer_channel.followers_count",
+      "broadcaster.followers_count",
+      "channel.followers_count",
+      "channel.follower_count",
+      "channel.followersCount",
+    ]),
+  );
+}
+
+function getKickSubscriberCount(channel: any) {
+  return getPositiveCount(
+    readNumberFromPaths(channel, [
+      "active_subscribers_count",
+      "subscriber_count",
+      "subscribers_count",
+      "subscribersCount",
+      "subscribers",
+    ]),
+  );
+}
+
+async function getKickFollowerCountFromPublicPage(username: string) {
+  const response = await fetch(`https://kick.com/${encodeURIComponent(username)}`, {
+    cache: "no-store",
+    headers: {
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    },
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const html = await response.text();
+  const debug: KickFetchDebug = {
+    url: `https://kick.com/${username}`,
+    status: response.status,
+    ok: response.ok,
+    contentType,
+    bodyPreview: html.slice(0, 500),
+  };
+
+  if (!response.ok) {
+    return { count: undefined, debug };
+  }
+
+  const patterns = [
+    /"followers_count"\s*:\s*(\d+)/i,
+    /"follower_count"\s*:\s*(\d+)/i,
+    /"followersCount"\s*:\s*(\d+)/i,
+    /"followers"\s*:\s*\{[^}]*"count"\s*:\s*(\d+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const count = getPositiveCount(Number(match?.[1] ?? 0));
+
+    if (count) {
+      return { count, debug };
+    }
+  }
+
+  return { count: undefined, debug };
 }
 
 function getKickChannelId(channel: any) {
@@ -404,10 +470,13 @@ function getKickLiveFlag(channel: any, livestream: any) {
   );
 }
 
-async function getKickFollowerCountByChannelId(channel: any, accessToken?: string | null) {
+async function getKickFollowerCountByChannelId(
+  channel: any,
+  accessToken?: string | null,
+) {
   const channelId = getKickChannelId(channel);
 
-  if (!channelId) return 0;
+  if (!channelId) return undefined;
 
   if (accessToken) {
     const officialCandidates = [
@@ -416,45 +485,58 @@ async function getKickFollowerCountByChannelId(channel: any, accessToken?: strin
     ];
 
     for (const candidate of officialCandidates) {
-      const { data } = await fetchKickOfficialJson(candidate, accessToken).catch(() => ({
-        data: null,
-        debug: { url: candidate, status: 0, ok: false, contentType: "" },
-      }));
+      const { data } = await fetchKickOfficialJson(candidate, accessToken).catch(
+        () => ({
+          data: null,
+          debug: { url: candidate, status: 0, ok: false, contentType: "" },
+        }),
+      );
 
-      const count = readNumberFromPaths(data, [
-        "count",
-        "followers_count",
-        "follower_count",
-        "followersCount",
-        "followers",
-        "data.count",
-        "data.followers_count",
-      ]);
+      const count = getPositiveCount(
+        readNumberFromPaths(data, [
+          "count",
+          "followers_count",
+          "follower_count",
+          "followersCount",
+          "followers",
+          "data.count",
+          "data.followers_count",
+          "data.follower_count",
+          "data.followersCount",
+        ]),
+      );
 
-      if (count > 0) return count;
+      if (count) return count;
     }
   }
 
   const { data } = await fetchKickLegacyJson(
-    `https://api.kick.com/channels/${encodeURIComponent(String(channelId))}/followers-count`,
+    `https://api.kick.com/channels/${encodeURIComponent(
+      String(channelId),
+    )}/followers-count`,
   );
 
-  return readNumberFromPaths(data, [
-    "count",
-    "followers_count",
-    "follower_count",
-    "followersCount",
-    "followers",
-    "data.count",
-    "data.followers_count",
-  ]);
+  return getPositiveCount(
+    readNumberFromPaths(data, [
+      "count",
+      "followers_count",
+      "follower_count",
+      "followersCount",
+      "followers",
+      "data.count",
+      "data.followers_count",
+      "data.follower_count",
+      "data.followersCount",
+    ]),
+  );
 }
 
 function buildKickStatusFromPayloads(
   username: string,
   channel: any,
   livestreamPayload: any,
-  followerCount: number,
+  followerCount?: number,
+  subscriberCount?: number,
 ): LiveStatusResponse {
   const livestream = getKickLivestream(channel, livestreamPayload);
   const isLive = getKickLiveFlag(channel, livestream);
@@ -483,6 +565,7 @@ function buildKickStatusFromPayloads(
       username,
       isLive: false,
       followerCount,
+      subscriberCount,
       externalCount: followerCount,
       thumbnail,
       url: `https://kick.com/${username}`,
@@ -515,6 +598,7 @@ function buildKickStatusFromPayloads(
     ]),
     thumbnail,
     followerCount,
+    subscriberCount,
     externalCount: followerCount,
     url: `https://kick.com/${username}`,
   };
@@ -537,8 +621,6 @@ async function getKickLiveStatus(
       platform: "kick",
       username: "",
       isLive: false,
-      followerCount: 0,
-      externalCount: 0,
       url: "https://kick.com",
       ...(includeDebug ? { debug } : {}),
     };
@@ -589,17 +671,37 @@ async function getKickLiveStatus(
       }
 
       const apiFollowerCount = getKickFollowerCount(officialChannel);
+      const channelFollowerCount = await getKickFollowerCountByChannelId(
+        officialChannel,
+        accessToken,
+      ).catch(() => undefined);
+      const pageFollowerResult = apiFollowerCount
+        ? null
+        : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
       const followerCount =
-        apiFollowerCount ||
-        (await getKickFollowerCountByChannelId(officialChannel, accessToken).catch(
-          () => 0,
-        ));
+        apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+      const subscriberCount = getKickSubscriberCount(officialChannel);
+
+      if (includeDebug) {
+        debug.kickFollowerLookup = {
+          apiFollowerCount,
+          channelFollowerCount,
+          publicPageFollowerCount: pageFollowerResult?.count,
+          publicPageRequest: pageFollowerResult?.debug,
+          subscriberCount,
+          note:
+            followerCount === undefined
+              ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc não usa inscritos como fallback para seguidores."
+              : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+        };
+      }
 
       const status = buildKickStatusFromPayloads(
         cleanUsername,
         officialChannel,
         officialLivestreamPayload,
         followerCount,
+        subscriberCount,
       );
 
       return includeDebug ? { ...status, debug } : status;
@@ -618,8 +720,6 @@ async function getKickLiveStatus(
       platform: "kick",
       username: cleanUsername,
       isLive: false,
-      followerCount: 0,
-      externalCount: 0,
       url: `https://kick.com/${cleanUsername}`,
       ...(includeDebug ? { debug } : {}),
     };
@@ -631,15 +731,37 @@ async function getKickLiveStatus(
   debug.legacyLivestreamRequest = legacyLivestreamResult.debug;
 
   const apiFollowerCount = getKickFollowerCount(legacyChannel);
+  const channelFollowerCount = await getKickFollowerCountByChannelId(
+    legacyChannel,
+    accessToken,
+  ).catch(() => undefined);
+  const pageFollowerResult = apiFollowerCount
+    ? null
+    : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
   const followerCount =
-    apiFollowerCount ||
-    (await getKickFollowerCountByChannelId(legacyChannel, accessToken).catch(() => 0));
+    apiFollowerCount || channelFollowerCount || pageFollowerResult?.count;
+  const subscriberCount = getKickSubscriberCount(legacyChannel);
+
+  if (includeDebug) {
+    debug.kickFollowerLookup = {
+      apiFollowerCount,
+      channelFollowerCount,
+      publicPageFollowerCount: pageFollowerResult?.count,
+      publicPageRequest: pageFollowerResult?.debug,
+      subscriberCount,
+      note:
+        followerCount === undefined
+          ? "A API oficial da Kick não retornou seguidores para este canal. O Cardpoc não usa inscritos como fallback para seguidores."
+          : "Seguidores da Kick encontrados em uma das fontes consultadas.",
+    };
+  }
 
   const status = buildKickStatusFromPayloads(
     cleanUsername,
     legacyChannel,
     legacyLivestreamResult.data,
     followerCount,
+    subscriberCount,
   );
 
   return includeDebug ? { ...status, debug } : status;
