@@ -42,9 +42,10 @@ import { supabase } from "@/lib/supabase/client";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
 import type { Creator, CreatorRarity, CreatorStatus } from "@/types/creator";
 import { SupportChatModal } from "./profile/CreatorSupportChatModal";
+import { useCreatorClips } from "./profile/useCreatorClips";
+import { useCreatorLiveStatus } from "./profile/useCreatorLiveStatus";
 import {
   translateExisting,
-  mergeLiveStatusPreservingMetrics,
   mapCreatorLiveStatusRowToLiveStatus,
   SOCIAL_PLATFORM_OPTIONS,
   RARITY_SHOWCASE_CYCLE,
@@ -66,8 +67,6 @@ import {
   createBrandSlug,
   createEmptyManualPartnershipDraft,
   getPlatformLabel,
-  extractPlatformUsername,
-  getPlatformFallbackUrl,
   getPlatformLiveStatus,
   getNormalizedYoutubeChannels,
   getYoutubeChannelFallbackTitle,
@@ -94,10 +93,8 @@ import type {
   CreatorProfileRow,
   SocialLink,
   CreatorProfileEditDraft,
-  AutoClip,
   CreatorPartnershipRow,
   ManualPartnershipDraft,
-  LiveStatus,
   LiveStatusMap,
   CreatorLiveStatusRow,
   CreatorStats,
@@ -124,8 +121,6 @@ export function CreatorProfilePage({
 
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [clips, setClips] = useState<AutoClip[]>([]);
-  const [clipsLoading, setClipsLoading] = useState(false);
   const [partnerships, setPartnerships] = useState<CreatorPartnershipRow[]>([]);
   const [manualPartnershipDraft, setManualPartnershipDraft] =
     useState<ManualPartnershipDraft>(() => createEmptyManualPartnershipDraft());
@@ -140,8 +135,6 @@ export function CreatorProfilePage({
   });
   const [collectionStats, setCollectionStats] =
     useState<CreatorCollectionStats>(EMPTY_COLLECTION_STATS);
-  const [liveStatus, setLiveStatus] = useState<LiveStatusMap>({});
-  const [liveStatusLoading, setLiveStatusLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -182,6 +175,9 @@ export function CreatorProfilePage({
   const [battleStarted, setBattleStarted] = useState(false);
   const [revealedBattleRows, setRevealedBattleRows] = useState(0);
   const [battleSearchQuery, setBattleSearchQuery] = useState("");
+
+  const { liveStatus, liveStatusLoading } = useCreatorLiveStatus(profile, socialLinks);
+  const { clips, clipsLoading } = useCreatorClips(profile, socialLinks);
 
   const decodedUsername = useMemo(() => {
     return decodeURIComponent(username || "")
@@ -375,9 +371,7 @@ export function CreatorProfilePage({
       if (error || !data) {
         setProfile(null);
         setSocialLinks([]);
-        setClips([]);
         setPartnerships([]);
-        setLiveStatus({});
         setStats({
           views: 0,
           followers: 0,
@@ -528,326 +522,6 @@ export function CreatorProfilePage({
       cancelled = true;
     };
   }, [profile?.id, currentUserId]);
-
-  useEffect(() => {
-    if (!profile) {
-      setLiveStatus({});
-      return;
-    }
-
-    const creatorId = profile.id;
-
-    const youtubeChannels = socialLinks
-      .filter((social) => social.platform.toLowerCase() === "youtube")
-      .map((social) => social.url);
-
-    const targets: Array<{
-      platform: "twitch" | "kick" | "youtube" | "discord";
-      username: string;
-      index?: number;
-    }> = [
-      ...socialLinks
-        .map((social) => {
-          const platform = social.platform.toLowerCase();
-
-          if (
-            platform !== "twitch" &&
-            platform !== "kick" &&
-            platform !== "discord"
-          ) {
-            return null;
-          }
-
-          const platformUsername = extractPlatformUsername(
-            platform,
-            social.url,
-          );
-
-          return {
-            platform,
-            username: platformUsername,
-          };
-        })
-        .filter(
-          (
-            target,
-          ): target is {
-            platform: "twitch" | "kick" | "discord";
-            username: string;
-          } => Boolean(target && target.username.length > 0),
-        ),
-      ...getNormalizedYoutubeChannels(youtubeChannels).map((channel) => ({
-        platform: "youtube" as const,
-        username: channel.username,
-        index: channel.originalIndex,
-      })),
-    ];
-
-    if (targets.length === 0) {
-      setLiveStatus({});
-      return;
-    }
-
-    let cancelled = false;
-
-    function applyLiveStatusResults(
-      results: Array<{
-        platform: "twitch" | "kick" | "youtube" | "discord";
-        index?: number;
-        status: LiveStatus;
-      }>,
-    ) {
-      setLiveStatus((currentLiveStatus) =>
-        results.reduce<LiveStatusMap>(
-          (accumulator, result) => {
-            if (result.platform === "youtube") {
-              accumulator[`youtube:${result.index ?? 0}`] =
-                mergeLiveStatusPreservingMetrics(
-                  accumulator[`youtube:${result.index ?? 0}`],
-                  result.status,
-                );
-
-              const currentYoutube = accumulator.youtube;
-              const currentSubscriberCount =
-                currentYoutube?.subscriberCount ??
-                currentYoutube?.externalCount ??
-                0;
-              const nextSubscriberCount =
-                result.status.subscriberCount ??
-                result.status.externalCount ??
-                0;
-
-              accumulator.youtube = mergeLiveStatusPreservingMetrics(
-                currentYoutube,
-                nextSubscriberCount >= currentSubscriberCount
-                  ? result.status
-                  : currentYoutube || result.status,
-              );
-
-              return accumulator;
-            }
-
-            accumulator[result.platform] = mergeLiveStatusPreservingMetrics(
-              accumulator[result.platform],
-              result.status,
-            );
-            return accumulator;
-          },
-          { ...currentLiveStatus },
-        ),
-      );
-    }
-
-    async function loadLiveStatuses() {
-      setLiveStatusLoading(true);
-
-      try {
-        const results = await Promise.all(
-          targets.map(async ({ platform, username: targetUsername, index }) => {
-            try {
-              const params = new URLSearchParams({
-                platform,
-                username: targetUsername,
-                creatorId,
-              });
-
-              const response = await fetch(
-                `/api/live-status?${params.toString()}`,
-              );
-
-              if (!response.ok) {
-                throw new Error(`Unable to load ${platform} live status.`);
-              }
-
-              const data: LiveStatus = await response.json();
-
-              return {
-                platform,
-                index,
-                status: {
-                  ...data,
-                  url:
-                    data.url ||
-                    getPlatformFallbackUrl(platform, targetUsername),
-                },
-              };
-            } catch {
-              return {
-                platform,
-                index,
-                status: {
-                  platform,
-                  username: targetUsername,
-                  isLive: false,
-                  url: getPlatformFallbackUrl(platform, targetUsername),
-                },
-              };
-            }
-          }),
-        );
-
-        if (!cancelled) {
-          applyLiveStatusResults(results);
-        }
-      } finally {
-        if (!cancelled) {
-          setLiveStatusLoading(false);
-        }
-      }
-    }
-
-    async function loadCachedLiveStatuses() {
-      const { data, error } = await supabase
-        .from("creator_live_status")
-        .select(
-          "id, creator_id, platform, platform_username, is_live, title, viewer_count, game_name, started_at, thumbnail_url, live_url, raw_payload, last_checked_at, updated_at",
-        )
-        .eq("creator_id", creatorId)
-        .in("platform", ["twitch", "kick"]);
-
-      if (cancelled || error || !data) return;
-
-      setLiveStatus((currentLiveStatus) => {
-        const nextLiveStatus = { ...currentLiveStatus };
-
-        (data as CreatorLiveStatusRow[]).forEach((row) => {
-          nextLiveStatus[row.platform] = mergeLiveStatusPreservingMetrics(
-            nextLiveStatus[row.platform],
-            mapCreatorLiveStatusRowToLiveStatus(row),
-          );
-        });
-
-        return nextLiveStatus;
-      });
-    }
-
-    loadCachedLiveStatuses();
-    loadLiveStatuses();
-
-    const pollingInterval = window.setInterval(loadLiveStatuses, 30000);
-
-    const liveStatusChannel = supabase
-      .channel(`creator-live-status:${creatorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "creator_live_status",
-          filter: `creator_id=eq.${creatorId}`,
-        },
-        (payload) => {
-          if (cancelled) return;
-
-          if (payload.eventType === "DELETE") {
-            const oldRow = payload.old as Partial<CreatorLiveStatusRow>;
-            const deletedPlatform = oldRow.platform;
-
-            if (!deletedPlatform) return;
-
-            setLiveStatus((currentLiveStatus) => {
-              const nextLiveStatus = { ...currentLiveStatus };
-              delete nextLiveStatus[deletedPlatform];
-              return nextLiveStatus;
-            });
-
-            return;
-          }
-
-          const row = payload.new as CreatorLiveStatusRow;
-
-          if (row.platform !== "twitch" && row.platform !== "kick") return;
-
-          setLiveStatus((currentLiveStatus) => ({
-            ...currentLiveStatus,
-            [row.platform]: mergeLiveStatusPreservingMetrics(
-              currentLiveStatus[row.platform],
-              mapCreatorLiveStatusRowToLiveStatus(row),
-            ),
-          }));
-        },
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(pollingInterval);
-      void supabase.removeChannel(liveStatusChannel);
-    };
-  }, [profile, socialLinks]);
-
-  useEffect(() => {
-    if (!profile) {
-      setClips([]);
-      return;
-    }
-
-    const twitchUsername = extractPlatformUsername(
-      "twitch",
-      getSocialUrl(socialLinks, "twitch"),
-    );
-    const kickUsername = extractPlatformUsername(
-      "kick",
-      getSocialUrl(socialLinks, "kick"),
-    );
-    const youtubeUrls = socialLinks
-      .filter((social) => social.platform.toLowerCase() === "youtube")
-      .map((social) => social.url)
-      .filter(Boolean);
-
-    if (!twitchUsername && !kickUsername && youtubeUrls.length === 0) {
-      setClips([]);
-      return;
-    }
-
-    const params = new URLSearchParams();
-
-    if (twitchUsername) {
-      params.set("twitch", twitchUsername);
-    }
-
-    if (kickUsername) {
-      params.set("kick", kickUsername);
-    }
-
-    youtubeUrls.forEach((url) => {
-      params.append("youtube", url);
-    });
-
-    let cancelled = false;
-
-    async function loadAutoClips() {
-      setClipsLoading(true);
-
-      try {
-        const response = await fetch(`/api/creator-clips?${params.toString()}`);
-
-        if (!response.ok) {
-          throw new Error("Unable to load creator clips.");
-        }
-
-        const data = await response.json();
-
-        if (!cancelled) {
-          setClips(Array.isArray(data?.clips) ? data.clips : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setClips([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setClipsLoading(false);
-        }
-      }
-    }
-
-    loadAutoClips();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [profile, socialLinks]);
 
   const card = getCreatorCard(profile);
   const nickname =
