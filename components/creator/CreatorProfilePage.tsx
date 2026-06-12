@@ -100,7 +100,8 @@ import type {
   CreatorStats,
   CreatorCollectionStats,
   CreatorBattleCandidate,
-  CreatorBattleStats
+  CreatorBattleStats,
+  AutoClip
 } from "./profile/creator-profile-shared";
 
 
