@@ -64,6 +64,7 @@ import {
   formatNumber,
   formatProfileDate,
   getPartnershipDisplayName,
+  getPartnershipTimestamp,
   getPartnershipLogo,
   getPartnershipWebsite,
   getPartnershipTypeLabel,
