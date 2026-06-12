@@ -48,6 +48,9 @@ import { CreatorPartnershipsSection } from "./profile/CreatorPartnershipsSection
 import { CreatorClipsSection } from "./profile/CreatorClipsSection";
 import { CreatorLiveBanner, CreatorLivePlatformsModal } from "./profile/CreatorLivePanel";
 import { CreatorSocialDropdown } from "./profile/CreatorSocialDropdown";
+import { CreatorProfileHeroActions } from "./profile/CreatorProfileHeroActions";
+import { CreatorProfileStatsGrid } from "./profile/CreatorProfileStatsGrid";
+import { CreatorBattleCta } from "./profile/CreatorBattleCta";
 import {
   translateExisting,
   mapCreatorLiveStatusRowToLiveStatus,
@@ -2134,171 +2137,42 @@ export function CreatorProfilePage({
               </>
             )}
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleFollow}
-                disabled={followLoading}
-                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {followLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isFollowing ? (
-                  <UserCheck className="h-4 w-4" />
-                ) : (
-                  <UserPlus className="h-4 w-4" />
-                )}
-                {isFollowing
-                  ? translate(t, "creatorPopupFollowing", "Seguindo")
-                  : translate(t, "creatorPopupFollow", "Seguir")}
-              </button>
+            <CreatorProfileHeroActions
+              t={t}
+              isEditing={isEditing}
+              editDraft={editDraft}
+              visibleTags={visibleTags}
+              followLoading={followLoading}
+              isFollowing={isFollowing}
+              profileLinkCopied={profileLinkCopied}
+              isProfileClaimable={isProfileClaimable}
+              socialLinksDropdownRef={socialLinksDropdownRef}
+              socialLinksOpen={socialLinksOpen}
+              socialDropdownItems={socialDropdownItems}
+              liveStatus={liveStatus}
+              visibleYoutubeChannels={visibleYoutubeChannels}
+              youtubeExternalReach={youtubeExternalReach}
+              onFollow={handleFollow}
+              onCopyProfileLink={copyProfileLink}
+              onOpenClaimModal={handleOpenClaimModal}
+              onToggleSocialLinks={() => setSocialLinksOpen((current) => !current)}
+              onCloseSocialLinks={() => setSocialLinksOpen(false)}
+              onOpenYoutubeChannels={() => setYoutubeChannelsOpen(true)}
+              onEditDraftChange={handleEditDraftChange}
+            />
 
-              <button
-                type="button"
-                onClick={copyProfileLink}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white/70 transition hover:border-cyan-300/25 hover:text-cyan-100"
-              >
-                <Share2 className="h-4 w-4" />
-                {profileLinkCopied
-                  ? translate(
-                      t,
-                      "creatorProfileProfileLinkCopied",
-                      "Link copiado",
-                    )
-                  : translate(
-                      t,
-                      "creatorProfileCopyProfileLink",
-                      "Copiar link do perfil",
-                    )}
-              </button>
+            <CreatorProfileStatsGrid
+              t={t}
+              stats={stats}
+              externalReach={externalReach}
+              liveStatusLoading={liveStatusLoading}
+            />
 
-              {!isEditing && isProfileClaimable ? (
-                <button
-                  type="button"
-                  onClick={handleOpenClaimModal}
-                  className="inline-flex items-center gap-2 rounded-full border border-yellow-300/25 bg-yellow-300/10 px-5 py-3 text-sm font-black text-yellow-100 transition hover:bg-yellow-300/20"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  {translate(
-                    t,
-                    "creatorPopupClaimProfileBadge",
-                    "Reivindicar Perfil",
-                  )}
-                </button>
-              ) : null}
-
-              <CreatorSocialDropdown
-                t={t}
-                dropdownRef={socialLinksDropdownRef}
-                open={socialLinksOpen}
-                items={socialDropdownItems}
-                liveStatus={liveStatus}
-                visibleYoutubeChannels={visibleYoutubeChannels}
-                youtubeExternalReach={youtubeExternalReach}
-                onToggle={() => setSocialLinksOpen((current) => !current)}
-                onClose={() => setSocialLinksOpen(false)}
-                onOpenYoutubeChannels={() => setYoutubeChannelsOpen(true)}
-              />
-            </div>
-
-            {isEditing && editDraft ? (
-              <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl">
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100/70">
-                    {translate(t, "creatorProfileEditTags", "Tags")}
-                  </span>
-                  <input
-                    value={editDraft.tagsText}
-                    onChange={(event) =>
-                      handleEditDraftChange("tagsText", event.target.value)
-                    }
-                    placeholder="Streamer, MMORPG, Black Desert"
-                    className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-sm font-semibold text-cyan-100 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
-                  />
-                </label>
-              </div>
-            ) : visibleTags.length > 0 ? (
-              <div className="mt-7 flex flex-wrap gap-3">
-                {visibleTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100/85 backdrop-blur"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/[0.06] p-5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-cyan-100/55">
-                  <Eye className="h-4 w-4" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileViews", "Visualizações")}
-                  </p>
-                </div>
-                <p className="mt-3 text-3xl font-black">{formatNumber(stats.views)}</p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-fuchsia-300/15 bg-fuchsia-300/[0.06] p-5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-fuchsia-100/55">
-                  <Users className="h-4 w-4" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileCardpocReach", "Alcance Cardpoc")}
-                  </p>
-                </div>
-                <p className="mt-3 text-3xl font-black">{formatNumber(stats.followers)}</p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-white/40">
-                  <Globe2 className="h-4 w-4" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em]">
-                    {translate(t, "creatorProfileGlobalReach", "Alcance global")}
-                  </p>
-                </div>
-                <p className="mt-3 text-3xl font-black">
-                  {liveStatusLoading ? "..." : formatNumber(externalReach)}
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-white/40">
-                  <Share2 className="h-4 w-4" />
-                  <p className="text-[9px] font-black uppercase leading-tight tracking-[0.16em] [overflow-wrap:anywhere]">
-                    {translate(t, "creatorProfileSharedImpact", "Compartilhamentos")}
-                  </p>
-                </div>
-                <p className="mt-3 text-3xl font-black">{formatNumber(stats.shares)}</p>
-              </div>
-            </div>
-
-            <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-fuchsia-300/15 bg-[radial-gradient(circle_at_82%_50%,rgba(217,70,239,0.16),transparent_34%),linear-gradient(135deg,rgba(34,211,238,0.08),rgba(217,70,239,0.08),rgba(0,0,0,0.18))] p-5 shadow-2xl shadow-fuchsia-500/5 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-fuchsia-100/80">
-                    <Sparkles className="h-4 w-4" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em]">
-                      {translate(t, "creatorProfileBattleMode", "Batalha de criadores")}
-                    </p>
-                  </div>
-                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/55">
-                    {translate(t, "creatorProfileBattleModeDescription", "Desafie outro criador e veja a comparação em uma arena animada.")}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openBattleModal}
-                  disabled={battleCandidates.length === 0}
-                  className="inline-flex items-center justify-center gap-2 rounded-[1.15rem] border border-fuchsia-300/30 bg-fuchsia-400/15 px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-50 shadow-lg shadow-fuchsia-500/10 transition hover:bg-fuchsia-400/25 disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {translate(t, "creatorProfileBattleOpenArena", "Iniciar batalha")}
-                </button>
-              </div>
-            </div>
+            <CreatorBattleCta
+              t={t}
+              disabled={battleCandidates.length === 0}
+              onOpen={openBattleModal}
+            />
 
           </div>
         </section>
