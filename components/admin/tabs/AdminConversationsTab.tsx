@@ -1,9 +1,9 @@
 "use client";
 
-import type { TranslationKey, CreatorProfileVisibilityFilter, CreatorProfileVerificationFilter, CreatorProfileOwnerFilter, CreatorProfileSortFilter, SupportConversationStatus } from "../hooks/useAdminPanelController";
+import type { AdminPanelContext } from "../hooks/useAdminPanelController";
 
 type AdminConversationsTabProps = {
-  ctx: Record<string, any>;
+  ctx: AdminPanelContext;
 };
 
 export default function AdminConversationsTab({ ctx }: AdminConversationsTabProps) {

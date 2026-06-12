@@ -2984,12 +2984,12 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
   const creatorProfileStats = {
     total: creators.length,
     filtered: filteredCreators.length,
-    public: creators.filter((creator: any) => creator.is_public).length,
-    hidden: creators.filter((creator: any) => !creator.is_public).length,
-    verified: creators.filter((creator: any) => creator.is_verified).length,
-    notVerified: creators.filter((creator: any) => !creator.is_verified).length,
-    claimed: creators.filter((creator: any) => Boolean(creator.user_id)).length,
-    unclaimed: creators.filter((creator: any) => !creator.user_id).length,
+    public: creators.filter((creator: CreatorProfile) => creator.is_public).length,
+    hidden: creators.filter((creator: CreatorProfile) => !creator.is_public).length,
+    verified: creators.filter((creator: CreatorProfile) => creator.is_verified).length,
+    notVerified: creators.filter((creator: CreatorProfile) => !creator.is_verified).length,
+    claimed: creators.filter((creator: CreatorProfile) => Boolean(creator.user_id)).length,
+    unclaimed: creators.filter((creator: CreatorProfile) => !creator.user_id).length,
   };
 
   const hasCreatorProfileFilters =
@@ -3070,7 +3070,7 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
     return searchableText.includes(search);
   });
 
-  const filteredCardCreators = creators.filter((creator: any) => {
+  const filteredCardCreators = creators.filter((creator: CreatorProfile) => {
     const search = cardCreatorSearch.toLowerCase().trim();
     const owner = getOwner(creator.user_id);
 

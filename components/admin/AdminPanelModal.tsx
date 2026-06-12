@@ -11,6 +11,7 @@ import {
   translateExisting,
   useAdminPanelController,
   type AdminPanelModalProps,
+  type Tab,
 } from "./hooks/useAdminPanelController";
 
 const AdminRequestsTab = dynamic(() => import("./tabs/AdminRequestsTab"), { ssr: false });
@@ -54,7 +55,7 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-            {ADMIN_TABS.map((tab: any) => {
+            {ADMIN_TABS.map((tab: { id: Tab; labelKey: string; fallback: string }) => {
               const counter = getTabCounter(tab.id);
               return (
                 <button
