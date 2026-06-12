@@ -361,6 +361,18 @@ type CreatorProfile = {
   followers_count?: number;
 };
 
+type CreatorProfileVisibilityFilter = "all" | "public" | "hidden";
+type CreatorProfileVerificationFilter = "all" | "verified" | "not_verified";
+type CreatorProfileOwnerFilter = "all" | "claimed" | "unclaimed";
+type CreatorProfileSortFilter =
+  | "newest"
+  | "oldest"
+  | "name"
+  | "views"
+  | "followers"
+  | "shares"
+  | "trending";
+
 type CreatorDetectorPlatform = "kick" | "twitch";
 
 type DetectedKickCreator = {
@@ -583,6 +595,14 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
   const [userSearch, setUserSearch] = useState("");
   const [requestSearch, setRequestSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
+  const [creatorVisibilityFilter, setCreatorVisibilityFilter] =
+    useState<CreatorProfileVisibilityFilter>("all");
+  const [creatorVerificationFilter, setCreatorVerificationFilter] =
+    useState<CreatorProfileVerificationFilter>("all");
+  const [creatorOwnerFilter, setCreatorOwnerFilter] =
+    useState<CreatorProfileOwnerFilter>("all");
+  const [creatorSortFilter, setCreatorSortFilter] =
+    useState<CreatorProfileSortFilter>("newest");
   const [creatorDetectorPlatform, setCreatorDetectorPlatform] =
     useState<CreatorDetectorPlatform>("kick");
   const [hideRegisteredDetectorCreators, setHideRegisteredDetectorCreators] =
@@ -2187,6 +2207,92 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     await loadLogs();
   }
 
+  async function bulkUpdateFilteredCreators(
+    updates: Partial<
+      Pick<CreatorProfile, "is_public" | "is_verified">
+    >,
+    action: string,
+    successMessage: string,
+  ) {
+    const targetCreators = filteredCreators.filter((creator) => {
+      if (
+        typeof updates.is_public === "boolean" &&
+        creator.is_public === updates.is_public
+      ) {
+        return false;
+      }
+
+      if (
+        typeof updates.is_verified === "boolean" &&
+        creator.is_verified === updates.is_verified
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (targetCreators.length === 0) {
+      alert(
+        translate(
+          t,
+          "adminNoFilteredProfilesToUpdate",
+          "Nenhum perfil filtrado precisa dessa alteração.",
+        ),
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      translate(
+        t,
+        "adminConfirmBulkCreatorUpdate",
+        `Aplicar esta alteração em ${targetCreators.length} perfil(is) filtrado(s)?`,
+      ),
+    );
+
+    if (!confirmed) return;
+
+    setActionLoading(action);
+
+    const { error } = await supabase
+      .from("creator_profiles")
+      .update(updates)
+      .in(
+        "id",
+        targetCreators.map((creator) => creator.id),
+      );
+
+    if (error) {
+      setActionLoading(null);
+      alert(error.message);
+      return;
+    }
+
+    await createAdminLog({
+      action,
+      targetType: "creator_profile",
+      targetId: null,
+      metadata: {
+        updates,
+        affected_count: targetCreators.length,
+        affected_ids: targetCreators.map((creator) => creator.id),
+        filters: {
+          search: creatorSearch,
+          visibility: creatorVisibilityFilter,
+          verification: creatorVerificationFilter,
+          owner: creatorOwnerFilter,
+          sort: creatorSortFilter,
+        },
+      },
+    });
+
+    setActionLoading(null);
+    await loadCreators();
+    await loadLogs();
+    showAdminSuccess(successMessage);
+  }
+
   function openCreatorImageEditor(creator: CreatorProfile) {
     setImageEditorCreator(creator);
     setImageEditorUrl(creator.avatar_url || "");
@@ -2784,25 +2890,113 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
     return searchableText.includes(search);
   });
 
-  const filteredCreators = creators.filter((creator) => {
-    const search = creatorSearch.toLowerCase().trim();
-    const owner = getOwner(creator.user_id);
+  const filteredCreators = creators
+    .filter((creator) => {
+      const search = creatorSearch.toLowerCase().trim();
+      const owner = getOwner(creator.user_id);
 
-    const searchableText = [
-      creator.nickname,
-      creator.username,
-      creator.title,
-      creator.category,
-      creator.owner_status,
-      owner?.email,
-      owner?.display_name,
-      owner?.username,
-    ]
-      .join(" ")
-      .toLowerCase();
+      if (creatorVisibilityFilter === "public" && !creator.is_public) {
+        return false;
+      }
 
-    return searchableText.includes(search);
-  });
+      if (creatorVisibilityFilter === "hidden" && creator.is_public) {
+        return false;
+      }
+
+      if (creatorVerificationFilter === "verified" && !creator.is_verified) {
+        return false;
+      }
+
+      if (
+        creatorVerificationFilter === "not_verified" &&
+        creator.is_verified
+      ) {
+        return false;
+      }
+
+      if (creatorOwnerFilter === "claimed" && !creator.user_id) {
+        return false;
+      }
+
+      if (creatorOwnerFilter === "unclaimed" && creator.user_id) {
+        return false;
+      }
+
+      const searchableText = [
+        creator.nickname,
+        creator.username,
+        creator.title,
+        creator.category,
+        creator.owner_status,
+        owner?.email,
+        owner?.display_name,
+        owner?.username,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(search);
+    })
+    .sort((first, second) => {
+      if (creatorSortFilter === "oldest") {
+        return (
+          new Date(first.created_at).getTime() -
+          new Date(second.created_at).getTime()
+        );
+      }
+
+      if (creatorSortFilter === "name") {
+        return String(first.nickname || first.username || "").localeCompare(
+          String(second.nickname || second.username || ""),
+          dateLocale,
+        );
+      }
+
+      if (creatorSortFilter === "views") {
+        return Number(second.views_count || 0) - Number(first.views_count || 0);
+      }
+
+      if (creatorSortFilter === "followers") {
+        return (
+          Number(second.followers_count || 0) -
+          Number(first.followers_count || 0)
+        );
+      }
+
+      if (creatorSortFilter === "shares") {
+        return Number(second.share_count || 0) - Number(first.share_count || 0);
+      }
+
+      if (creatorSortFilter === "trending") {
+        return (
+          Number(second.trending_score || 0) -
+          Number(first.trending_score || 0)
+        );
+      }
+
+      return (
+        new Date(second.created_at).getTime() -
+        new Date(first.created_at).getTime()
+      );
+    });
+
+  const creatorProfileStats = {
+    total: creators.length,
+    filtered: filteredCreators.length,
+    public: creators.filter((creator) => creator.is_public).length,
+    hidden: creators.filter((creator) => !creator.is_public).length,
+    verified: creators.filter((creator) => creator.is_verified).length,
+    notVerified: creators.filter((creator) => !creator.is_verified).length,
+    claimed: creators.filter((creator) => Boolean(creator.user_id)).length,
+    unclaimed: creators.filter((creator) => !creator.user_id).length,
+  };
+
+  const hasCreatorProfileFilters =
+    creatorSearch.trim().length > 0 ||
+    creatorVisibilityFilter !== "all" ||
+    creatorVerificationFilter !== "all" ||
+    creatorOwnerFilter !== "all" ||
+    creatorSortFilter !== "newest";
 
   const filteredDetectedKickCreators = detectedKickCreators.filter(
     (creator) => {
@@ -3351,6 +3545,289 @@ export function AdminPanelModal({ open, onClose }: AdminPanelModalProps) {
                   "Buscar por creator, dono, email ou username...",
                 )}
               />
+
+              <div className="mt-5 rounded-[28px] border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-cyan-100">
+                      <Search size={14} />
+                      {translate(
+                        t,
+                        "adminCreatorAdvancedSearch",
+                        "Pesquisa avançada",
+                      )}
+                    </div>
+
+                    <p className="mt-3 text-sm text-white/50">
+                      {translate(
+                        t,
+                        "adminCreatorAdvancedSearchDescription",
+                        "Filtre perfis por visibilidade, verificação e dono. As ações em massa afetam apenas o resultado filtrado.",
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <StatusPill
+                      label={`${creatorProfileStats.filtered}/${creatorProfileStats.total} ${translate(
+                        t,
+                        "adminProfilesFiltered",
+                        "filtrados",
+                      )}`}
+                      tone="cyan"
+                    />
+                    <StatusPill
+                      label={`🌐 ${creatorProfileStats.public} ${translate(
+                        t,
+                        "public",
+                        "Públicos",
+                      )}`}
+                    />
+                    <StatusPill
+                      label={`🔒 ${creatorProfileStats.hidden} ${translate(
+                        t,
+                        "hidden",
+                        "Ocultos",
+                      )}`}
+                    />
+                    <StatusPill
+                      label={`✓ ${creatorProfileStats.verified} ${translate(
+                        t,
+                        "verified",
+                        "Verificados",
+                      )}`}
+                      tone="yellow"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                      {translate(t, "adminVisibilityFilter", "Visibilidade")}
+                    </span>
+                    <select
+                      value={creatorVisibilityFilter}
+                      onChange={(event) =>
+                        setCreatorVisibilityFilter(
+                          event.target.value as CreatorProfileVisibilityFilter,
+                        )
+                      }
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                    >
+                      <option value="all">
+                        {translate(t, "adminAllProfiles", "Todos os perfis")}
+                      </option>
+                      <option value="public">
+                        {translate(
+                          t,
+                          "adminOnlyPublicProfiles",
+                          "Apenas publicados",
+                        )}
+                      </option>
+                      <option value="hidden">
+                        {translate(
+                          t,
+                          "adminOnlyHiddenProfiles",
+                          "Apenas ocultos",
+                        )}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                      {translate(t, "adminVerificationFilter", "Verificação")}
+                    </span>
+                    <select
+                      value={creatorVerificationFilter}
+                      onChange={(event) =>
+                        setCreatorVerificationFilter(
+                          event.target
+                            .value as CreatorProfileVerificationFilter,
+                        )
+                      }
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                    >
+                      <option value="all">
+                        {translate(t, "adminAllVerification", "Todos")}
+                      </option>
+                      <option value="verified">
+                        {translate(t, "adminOnlyVerified", "Verificados")}
+                      </option>
+                      <option value="not_verified">
+                        {translate(
+                          t,
+                          "adminOnlyNotVerified",
+                          "Não verificados",
+                        )}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                      {translate(t, "adminOwnerFilter", "Dono")}
+                    </span>
+                    <select
+                      value={creatorOwnerFilter}
+                      onChange={(event) =>
+                        setCreatorOwnerFilter(
+                          event.target.value as CreatorProfileOwnerFilter,
+                        )
+                      }
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                    >
+                      <option value="all">
+                        {translate(t, "adminAllOwners", "Com ou sem dono")}
+                      </option>
+                      <option value="claimed">
+                        {translate(t, "adminOnlyClaimed", "Reivindicados")}
+                      </option>
+                      <option value="unclaimed">
+                        {translate(t, "adminOnlyUnclaimed", "Sem dono")}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                      {translate(t, "adminSortProfiles", "Ordenar")}
+                    </span>
+                    <select
+                      value={creatorSortFilter}
+                      onChange={(event) =>
+                        setCreatorSortFilter(
+                          event.target.value as CreatorProfileSortFilter,
+                        )
+                      }
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none"
+                    >
+                      <option value="newest">
+                        {translate(t, "adminSortNewest", "Mais recentes")}
+                      </option>
+                      <option value="oldest">
+                        {translate(t, "adminSortOldest", "Mais antigos")}
+                      </option>
+                      <option value="name">
+                        {translate(t, "adminSortName", "Nome")}
+                      </option>
+                      <option value="views">
+                        {translate(t, "adminSortViews", "Mais visualizações")}
+                      </option>
+                      <option value="followers">
+                        {translate(t, "adminSortFollowers", "Mais seguidores")}
+                      </option>
+                      <option value="shares">
+                        {translate(t, "adminSortShares", "Mais shares")}
+                      </option>
+                      <option value="trending">
+                        {translate(t, "adminSortTrending", "Trending")}
+                      </option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3 border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      bulkUpdateFilteredCreators(
+                        { is_public: true },
+                        "bulk_publish_creator_profiles",
+                        translate(
+                          t,
+                          "adminBulkPublishSuccess",
+                          "Perfis filtrados publicados com sucesso.",
+                        ),
+                      )
+                    }
+                    disabled={
+                      actionLoading === "bulk_publish_creator_profiles" ||
+                      filteredCreators.length === 0
+                    }
+                    className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black transition hover:scale-105 disabled:opacity-40"
+                  >
+                    <Eye size={16} />
+                    {translate(
+                      t,
+                      "adminPublishFilteredProfiles",
+                      "Publicar filtrados",
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      bulkUpdateFilteredCreators(
+                        { is_public: false },
+                        "bulk_hide_creator_profiles",
+                        translate(
+                          t,
+                          "adminBulkHideSuccess",
+                          "Perfis filtrados ocultados com sucesso.",
+                        ),
+                      )
+                    }
+                    disabled={
+                      actionLoading === "bulk_hide_creator_profiles" ||
+                      filteredCreators.length === 0
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-2 text-sm font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                  >
+                    <EyeOff size={16} />
+                    {translate(
+                      t,
+                      "adminHideFilteredProfiles",
+                      "Ocultar filtrados",
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      bulkUpdateFilteredCreators(
+                        { is_verified: true },
+                        "bulk_verify_creator_profiles",
+                        translate(
+                          t,
+                          "adminBulkVerifySuccess",
+                          "Perfis filtrados verificados com sucesso.",
+                        ),
+                      )
+                    }
+                    disabled={
+                      actionLoading === "bulk_verify_creator_profiles" ||
+                      filteredCreators.length === 0
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-5 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-300/20 disabled:opacity-40"
+                  >
+                    <ShieldCheck size={16} />
+                    {translate(
+                      t,
+                      "adminVerifyFilteredProfiles",
+                      "Verificar filtrados",
+                    )}
+                  </button>
+
+                  {hasCreatorProfileFilters && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreatorSearch("");
+                        setCreatorVisibilityFilter("all");
+                        setCreatorVerificationFilter("all");
+                        setCreatorOwnerFilter("all");
+                        setCreatorSortFilter("newest");
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-sm font-bold text-white transition hover:bg-white/[0.08]"
+                    >
+                      <RotateCcw size={16} />
+                      {translate(t, "adminClearProfileFilters", "Limpar filtros")}
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div className="mt-5 grid gap-4">
                 {filteredCreators.length === 0 && (
