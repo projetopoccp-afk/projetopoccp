@@ -303,7 +303,6 @@ export function CreatorGrid({ search }: CreatorGridProps) {
   }, []);
 
   useEffect(() => {
-    if (liveCreatorIds.length > 0) return;
     if (creators.length <= HOME_SHOWCASE_LIMIT) return;
 
     const intervalId = window.setInterval(() => {
@@ -313,7 +312,7 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [creators.length, liveCreatorIds.length]);
+  }, [creators.length]);
 
   useEffect(() => {
     function syncPopupWithUrl() {
@@ -405,7 +404,26 @@ export function CreatorGrid({ search }: CreatorGridProps) {
     );
 
     if (liveCreators.length > 0) {
-      return liveCreators;
+      if (liveCreators.length >= HOME_SHOWCASE_LIMIT) {
+        return getRotatingCreators(liveCreators, homeShowcaseSeed);
+      }
+
+      const liveCreatorIdLookup = new Set(liveCreators.map((creator) => creator.id));
+      const remainingCreators = creators.filter(
+        (creator) => !liveCreatorIdLookup.has(creator.id)
+      );
+      const remainingSlots = HOME_SHOWCASE_LIMIT - liveCreators.length;
+      const fillerCreators =
+        remainingCreators.length <= remainingSlots
+          ? [...remainingCreators].sort(
+              (a, b) => b.trendingScore - a.trendingScore
+            )
+          : getRotatingCreators(remainingCreators, homeShowcaseSeed).slice(
+              0,
+              remainingSlots
+            );
+
+      return [...liveCreators, ...fillerCreators];
     }
 
     if (creators.length <= HOME_SHOWCASE_LIMIT) {
@@ -619,6 +637,7 @@ function AnimatedRarityCreatorCard({
   const [incomingRarityIndex, setIncomingRarityIndex] = useState<number | null>(
     null
   );
+  const [isPointerActive, setIsPointerActive] = useState(false);
 
   const activeRarityIndexRef = useRef(initialRarityIndex);
   const isTransitioningRef = useRef(false);
@@ -647,29 +666,34 @@ function AnimatedRarityCreatorCard({
       }, 760);
     }
 
-    const startDelay = index * 1100;
-    let intervalId: number | null = null;
-
-    const timeoutId = window.setTimeout(() => {
-      beginCardStackTransition();
-      intervalId = window.setInterval(
-        beginCardStackTransition,
-        RARITY_SHOWCASE_INTERVAL
-      );
-    }, startDelay);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-
-      if (intervalId !== null) {
-        window.clearInterval(intervalId);
-      }
+    if (!isPointerActive) {
+      setIncomingRarityIndex(null);
+      isTransitioningRef.current = false;
 
       if (transitionTimeoutRef.current !== null) {
         window.clearTimeout(transitionTimeoutRef.current);
+        transitionTimeoutRef.current = null;
+      }
+
+      return;
+    }
+
+    const timeoutId = window.setTimeout(beginCardStackTransition, 700);
+    const intervalId = window.setInterval(
+      beginCardStackTransition,
+      RARITY_SHOWCASE_INTERVAL
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+        transitionTimeoutRef.current = null;
       }
     };
-  }, [index]);
+  }, [isPointerActive]);
 
   const activeShowcase = RARITY_SHOWCASE_CYCLE[activeRarityIndex];
   const incomingShowcase =
@@ -698,6 +722,10 @@ function AnimatedRarityCreatorCard({
           ? "relative h-[252px] w-[168px] overflow-visible [perspective:1200px]"
           : "relative h-[360px] w-[240px] overflow-visible [perspective:1200px]"
       }
+      onMouseEnter={() => setIsPointerActive(true)}
+      onMouseLeave={() => setIsPointerActive(false)}
+      onFocusCapture={() => setIsPointerActive(true)}
+      onBlurCapture={() => setIsPointerActive(false)}
     >
       <div
         className={
@@ -707,7 +735,7 @@ function AnimatedRarityCreatorCard({
         }
       >
         <div className="relative z-10 h-full w-full">
-          <CreatorCard creator={activeCreator} onClick={onClick} />
+          <CreatorCard creator={activeCreator} onClick={onClick} hoverOnlyEffects />
         </div>
 
         {incomingCreator && (
@@ -736,7 +764,7 @@ function AnimatedRarityCreatorCard({
               backfaceVisibility: "hidden",
             }}
           >
-            <CreatorCard creator={incomingCreator} onClick={onClick} />
+            <CreatorCard creator={incomingCreator} onClick={onClick} hoverOnlyEffects />
           </motion.div>
         )}
       </div>
