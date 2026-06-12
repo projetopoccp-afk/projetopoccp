@@ -555,6 +555,11 @@ async function getKickLiveStatus(
 
     const officialChannel = extractFirstDataItem(channelResult.data);
 
+    if (includeDebug) {
+      debug.officialChannelData = officialChannel;
+      debug.officialChannelRawData = channelResult.data;
+    }
+
     if (officialChannel) {
       const channelId = getKickChannelId(officialChannel);
       const livestreamCandidates = [
@@ -578,6 +583,10 @@ async function getKickLiveStatus(
       }
 
       debug.officialLivestreamRequests = officialLivestreamDebug;
+
+      if (includeDebug) {
+        debug.officialLivestreamData = officialLivestreamPayload;
+      }
 
       const apiFollowerCount = getKickFollowerCount(officialChannel);
       const followerCount =
