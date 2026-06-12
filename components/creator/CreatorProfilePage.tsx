@@ -34,25 +34,25 @@ import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 import { updateMissionProgress } from "@/lib/missions/user-missions";
 import type { Creator, CreatorRarity, CreatorStatus } from "@/types/creator";
-import { SupportChatModal } from "./profile/CreatorSupportChatModal";
-import { useCreatorClips } from "./profile/useCreatorClips";
-import { useCreatorLiveStatus } from "./profile/useCreatorLiveStatus";
-import { useCreatorClipSections } from "./profile/useCreatorClipSections";
-import { useCreatorPartnershipsView } from "./profile/useCreatorPartnershipsView";
-import { useCreatorLivePlatformItems } from "./profile/useCreatorLivePlatformItems";
-import { useCreatorSocialDropdownItems } from "./profile/useCreatorSocialDropdownItems";
-import { CreatorPartnershipsSection } from "./profile/CreatorPartnershipsSection";
-import { CreatorClipsSection } from "./profile/CreatorClipsSection";
-import { CreatorLiveBanner, CreatorLivePlatformsModal } from "./profile/CreatorLivePanel";
-import { CreatorSocialDropdown } from "./profile/CreatorSocialDropdown";
-import { CreatorProfileHeroActions } from "./profile/CreatorProfileHeroActions";
-import { CreatorProfileStatsGrid } from "./profile/CreatorProfileStatsGrid";
-import { CreatorBattleCta } from "./profile/CreatorBattleCta";
-import { CreatorCardPanel } from "./profile/CreatorCardPanel";
-import { CreatorEditProfileModal } from "./profile/CreatorEditProfileModal";
-import { CreatorEditFloatingSaveBar } from "./profile/CreatorEditFloatingSaveBar";
-import { CreatorBattleModal } from "./profile/CreatorBattleModal";
-import { CreatorClaimModal } from "./profile/CreatorClaimModal";
+import { SupportChatModal } from "./profile/modals/CreatorSupportChatModal";
+import { useCreatorClips } from "./profile/hooks/useCreatorClips";
+import { useCreatorLiveStatus } from "./profile/hooks/useCreatorLiveStatus";
+import { useCreatorClipSections } from "./profile/hooks/useCreatorClipSections";
+import { useCreatorPartnershipsView } from "./profile/hooks/useCreatorPartnershipsView";
+import { useCreatorLivePlatformItems } from "./profile/hooks/useCreatorLivePlatformItems";
+import { useCreatorSocialDropdownItems } from "./profile/hooks/useCreatorSocialDropdownItems";
+import { CreatorPartnershipsSection } from "./profile/sections/CreatorPartnershipsSection";
+import { CreatorClipsSection } from "./profile/sections/CreatorClipsSection";
+import { CreatorLiveBanner, CreatorLivePlatformsModal } from "./profile/sections/CreatorLivePanel";
+import { CreatorSocialDropdown } from "./profile/sections/CreatorSocialDropdown";
+import { CreatorProfileHeroActions } from "./profile/ui/CreatorProfileHeroActions";
+import { CreatorProfileStatsGrid } from "./profile/ui/CreatorProfileStatsGrid";
+import { CreatorBattleCta } from "./profile/ui/CreatorBattleCta";
+import { CreatorCardPanel } from "./profile/sections/CreatorCardPanel";
+import { CreatorEditProfileModal } from "./profile/modals/CreatorEditProfileModal";
+import { CreatorEditFloatingSaveBar } from "./profile/ui/CreatorEditFloatingSaveBar";
+import { CreatorBattleModal } from "./profile/modals/CreatorBattleModal";
+import { CreatorClaimModal } from "./profile/modals/CreatorClaimModal";
 import {
   translateExisting,
   mapCreatorLiveStatusRowToLiveStatus,
@@ -92,7 +92,7 @@ import {
   hasXpEvent,
   addXpAndNotifyLevelUp,
   createUserNotification
-} from "./profile/creator-profile-shared";
+} from "./profile/core/creator-profile-shared";
 import type {
   CreatorProfilePageProps,
   CreatorProfileRow,
@@ -106,7 +106,7 @@ import type {
   CreatorCollectionStats,
   CreatorBattleCandidate,
   CreatorBattleStats
-} from "./profile/creator-profile-shared";
+} from "./profile/core/creator-profile-shared";
 
 
 const CreatorStatsModal = dynamic(
