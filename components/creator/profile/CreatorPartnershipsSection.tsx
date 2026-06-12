@@ -1,5 +1,6 @@
 import { Loader2, Plus, ShieldCheck } from "lucide-react";
 
+import type { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
 import {
   formatProfileDate,
@@ -14,8 +15,10 @@ import type {
   ManualPartnershipDraft,
 } from "./creator-profile-shared";
 
+type TranslateFunction = ReturnType<typeof useLanguage>["t"];
+
 type CreatorPartnershipsSectionProps = {
-  t: unknown;
+  t: TranslateFunction;
   isEditing: boolean;
   editDraft: CreatorProfileEditDraft | null;
   visiblePartnerships: CreatorPartnershipRow[];
