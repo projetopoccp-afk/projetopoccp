@@ -8,6 +8,18 @@ import {
 } from "../core/creator-profile-shared";
 import type { CreatorProfileEditDraft, SocialLink } from "../core/creator-profile-shared";
 
+
+const SOCIAL_PLATFORM_OPTIONS = [
+  { value: "twitch", label: "Twitch" },
+  { value: "kick", label: "Kick" },
+  { value: "youtube", label: "YouTube" },
+  { value: "instagram", label: "Instagram" },
+  { value: "x", label: "X / Twitter" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "discord", label: "Discord" },
+  { value: "site", label: "Site" },
+];
+
 type CreatorEditProfileModalProps = {
   open: boolean;
   editDraft: CreatorProfileEditDraft | null;
@@ -252,17 +264,28 @@ export function CreatorEditProfileModal({
               {getEditSocialLinkRows(editDraft.socialLinksText).map(
                 (social, index) => (
                   <div
-                    key={`${social.platform}-${index}`}
+                    key={`social-link-${index}`}
                     className="grid gap-2 rounded-2xl border border-white/10 bg-black/25 p-3 sm:grid-cols-[160px_minmax(0,1fr)_auto]"
                   >
-                    <input
+                    <select
                       value={social.platform}
                       onChange={(event) =>
                         onSocialLinkChange(index, "platform", event.target.value)
                       }
                       className="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-300/50"
-                      placeholder="twitch"
-                    />
+                    >
+                      {!SOCIAL_PLATFORM_OPTIONS.some(
+                        (option) => option.value === social.platform,
+                      ) && social.platform ? (
+                        <option value={social.platform}>{social.platform}</option>
+                      ) : null}
+                      <option value="">Selecione a rede</option>
+                      {SOCIAL_PLATFORM_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       value={social.url}
                       onChange={(event) =>
