@@ -48,20 +48,43 @@ function getSupabaseAdminClient() {
   });
 }
 
-function isAuthorized(request: NextRequest) {
-  const configuredSecret =
-    process.env.LIVE_STATUS_CRON_SECRET ||
-    process.env.CRON_SECRET ||
-    DEFAULT_LIVE_STATUS_CRON_SECRET;
+function getAllowedCronSecrets() {
+  return [
+    process.env.LIVE_STATUS_CRON_SECRET,
+    process.env.CRON_SECRET,
+    DEFAULT_LIVE_STATUS_CRON_SECRET,
+  ].filter((secret): secret is string => Boolean(secret && secret.trim()));
+}
 
-  const receivedSecret =
-    request.nextUrl.searchParams.get("cron_secret") ||
-    request.headers.get("x-cron-secret") ||
-    "";
+function readBearerToken(authorizationHeader: string | null) {
+  if (!authorizationHeader) return "";
+
+  const value = authorizationHeader.trim();
+
+  if (value.toLowerCase().startsWith("bearer ")) {
+    return value.slice(7).trim();
+  }
+
+  return value;
+}
+
+function isAuthorized(request: NextRequest) {
+  const allowedSecrets = getAllowedCronSecrets();
+
+  const receivedSecrets = [
+    request.nextUrl.searchParams.get("cron_secret"),
+    request.headers.get("x-cron-secret"),
+    readBearerToken(request.headers.get("authorization")),
+  ].filter((secret): secret is string => Boolean(secret && secret.trim()));
 
   const vercelCronHeader = request.headers.get("x-vercel-cron");
 
-  return receivedSecret === configuredSecret || vercelCronHeader === "1";
+  return (
+    vercelCronHeader === "1" ||
+    receivedSecrets.some((receivedSecret) =>
+      allowedSecrets.includes(receivedSecret),
+    )
+  );
 }
 
 
