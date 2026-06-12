@@ -330,15 +330,16 @@ function extractFirstDataItem(payload: any) {
   return payload ?? null;
 }
 
-function getKickLivestream(_channel: any, livestreamPayload: any) {
+function getKickLivestream(channel: any, livestreamPayload: any) {
   const livestreamData = extractFirstDataItem(livestreamPayload);
 
-  // Kick's channel payload can include a stale `stream`/`recent_livestream` object.
-  // That stale object is what was marking offline creators as live again after cron.
-  // Only the `/public/v1/livestreams` response is allowed to define the current live state.
-  if (!livestreamData) return null;
-
-  return livestreamData?.livestream || livestreamData;
+  return (
+    channel?.livestream ||
+    channel?.recent_livestream ||
+    livestreamData?.livestream ||
+    livestreamData ||
+    null
+  );
 }
 
 function getPositiveCount(value: number) {
@@ -378,6 +379,35 @@ function getKickSubscriberCountForDebugOnly(channel: any) {
     ]),
   );
 }
+
+
+
+/*
+KICK FOLLOWERS (DOCUMENTADO)
+
+Endpoint identificado:
+https://kick.com/api/v2/channels/{username}/goals
+
+Campo correto:
+goal.type === "followers"
+goal.current_value
+
+Exemplo real:
+{
+  type: "followers",
+  current_value: 5244
+}
+
+Situação atual:
+- Navegador: 200 OK
+- Vercel/Server: 403 Request blocked by security policy
+
+Por enquanto NÃO usamos esse endpoint para exibir seguidores
+em produção. Mantemos apenas live/viewers pela API oficial da Kick.
+
+Quando a Kick liberar acesso server-side ou expor followers
+na API oficial, reativar a implementação.
+*/
 
 
 function extractKickFollowerGoalCount(payload: any) {
@@ -494,26 +524,16 @@ function getKickChannelId(channel: any) {
 }
 
 function getKickLiveFlag(channel: any, livestream: any) {
-  // The Kick channel payload can keep stale stream metadata after a live ends.
-  // We use channel.stream.is_live only as a CURRENT confirmation flag and never as
-  // the livestream object itself.
-  const channelLiveFlag = readBooleanFromPaths(
-    { channel },
+  const explicit = readBooleanFromPaths(
+    { channel, livestream },
     [
-      "channel.stream.is_live",
-      "channel.stream.isLive",
       "channel.is_live",
       "channel.isLive",
       "channel.live",
-    ],
-  );
-
-  if (channelLiveFlag === false) return false;
-  if (!livestream || typeof livestream !== "object") return false;
-
-  const livestreamExplicit = readBooleanFromPaths(
-    { livestream },
-    [
+      "channel.livestream.is_live",
+      "channel.livestream.isLive",
+      "channel.recent_livestream.is_live",
+      "channel.recent_livestream.isLive",
       "livestream.is_live",
       "livestream.isLive",
       "livestream.live",
@@ -521,32 +541,19 @@ function getKickLiveFlag(channel: any, livestream: any) {
     ],
   );
 
-  if (livestreamExplicit === false) return false;
+  if (explicit !== undefined) return explicit;
 
-  const hasEnded = Boolean(
-    readStringFromPaths(livestream, ["ended_at", "end_time", "finished_at"]),
+  return Boolean(
+    livestream &&
+      (livestream.id ||
+        livestream.session_title ||
+        livestream.title ||
+        livestream.slug ||
+        livestream.start_time ||
+        livestream.started_at ||
+        livestream.viewer_count !== undefined ||
+        livestream.viewers_count !== undefined),
   );
-
-  if (hasEnded) return false;
-
-  const hasCurrentLiveIdentity = Boolean(
-    readStringFromPaths(livestream, [
-      "broadcaster_user_id",
-      "channel_id",
-      "slug",
-    ]),
-  );
-
-  const hasCurrentLiveStart = Boolean(
-    readStringFromPaths(livestream, ["started_at", "start_time"]),
-  );
-
-  // Final rule for Kick:
-  // - current channel flag must explicitly say live, OR livestream payload must explicitly say live;
-  // - and the livestream payload must look like a current live, not profile/goal metadata.
-  const confirmedLive = channelLiveFlag === true || livestreamExplicit === true;
-
-  return confirmedLive && hasCurrentLiveIdentity && hasCurrentLiveStart;
 }
 
 async function getKickFollowerCountByChannelId(
@@ -618,14 +625,6 @@ function buildKickStatusFromPayloads(
 ): LiveStatusResponse {
   const livestream = getKickLivestream(channel, livestreamPayload);
   const isLive = getKickLiveFlag(channel, livestream);
-  const safeFollowerCount = getPositiveCount(Number(followerCount ?? 0));
-
-  const followerPayload = safeFollowerCount
-    ? {
-        followerCount: safeFollowerCount,
-        externalCount: safeFollowerCount,
-      }
-    : {};
 
   const thumbnail =
     readStringFromPaths(livestream, [
@@ -650,7 +649,8 @@ function buildKickStatusFromPayloads(
       platform: "kick",
       username,
       isLive: false,
-      ...followerPayload,
+      followerCount,
+      externalCount: followerCount,
       thumbnail,
       url: `https://kick.com/${username}`,
     };
@@ -681,7 +681,8 @@ function buildKickStatusFromPayloads(
       "started_at",
     ]),
     thumbnail,
-    ...followerPayload,
+    followerCount,
+    externalCount: followerCount,
     url: `https://kick.com/${username}`,
   };
 }
@@ -753,22 +754,40 @@ async function getKickLiveStatus(
       }
 
       const apiFollowerCount = getKickFollowerCount(officialChannel);
-      const channelFollowerCount = apiFollowerCount
+      const goalsFollowerResult = apiFollowerCount
+        ? null
+        : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
+      const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
         ? undefined
         : await getKickFollowerCountByChannelId(
             officialChannel,
             accessToken,
           ).catch(() => undefined);
-      const followerCount = apiFollowerCount || channelFollowerCount;
+      const pageFollowerResult =
+        apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
+          ? null
+          : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+      const followerCount =
+        apiFollowerCount ||
+        goalsFollowerResult?.count ||
+        channelFollowerCount ||
+        pageFollowerResult?.count;
+      const subscriberCount = getKickSubscriberCountForDebugOnly(officialChannel);
 
       if (includeDebug) {
         debug.kickFollowerLookup = {
           apiFollowerCount,
+          goalsFollowerCount: goalsFollowerResult?.count,
+          goalsRequest: goalsFollowerResult?.debug,
+          goalsRawData: goalsFollowerResult?.rawData,
           channelFollowerCount,
+          publicPageFollowerCount: pageFollowerResult?.count,
+          publicPageRequest: pageFollowerResult?.debug,
+          subscriberCount,
           note:
             followerCount === undefined
-              ? "A API oficial da Kick não retorna seguidores para este canal. O Cardpoc NÃO usa subscribers, Livecounts, goals bloqueado por Vercel ou cache do navegador como fallback."
-              : "Seguidores reais da Kick encontrados pela API oficial.",
+              ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
+              : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
         };
       }
 
@@ -783,15 +802,74 @@ async function getKickLiveStatus(
     }
   }
 
-  // Do not fallback to legacy Kick endpoints for live status. They are blocked on Vercel
-  // and can return stale objects that mark offline channels as online.
-  return {
-    platform: "kick",
-    username: cleanUsername,
-    isLive: false,
-    url: `https://kick.com/${cleanUsername}`,
-    ...(includeDebug ? { debug: { ...debug, note: "Kick oficial indisponível. Legacy desativado para evitar falso online." } } : {}),
-  };
+  const legacyChannelResult = await fetchKickLegacyJson(
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}`,
+  );
+  debug.legacyChannelRequest = legacyChannelResult.debug;
+
+  const legacyChannel = legacyChannelResult.data;
+
+  if (!legacyChannel) {
+    return {
+      platform: "kick",
+      username: cleanUsername,
+      isLive: false,
+      url: `https://kick.com/${cleanUsername}`,
+      ...(includeDebug ? { debug } : {}),
+    };
+  }
+
+  const legacyLivestreamResult = await fetchKickLegacyJson(
+    `https://kick.com/api/v2/channels/${encodeURIComponent(cleanUsername)}/livestream`,
+  );
+  debug.legacyLivestreamRequest = legacyLivestreamResult.debug;
+
+  const apiFollowerCount = getKickFollowerCount(legacyChannel);
+  const goalsFollowerResult = apiFollowerCount
+    ? null
+    : await getKickFollowerCountFromGoalsEndpoint(cleanUsername).catch(() => null);
+  const channelFollowerCount = apiFollowerCount || goalsFollowerResult?.count
+    ? undefined
+    : await getKickFollowerCountByChannelId(
+        legacyChannel,
+        accessToken,
+      ).catch(() => undefined);
+  const pageFollowerResult =
+    apiFollowerCount || goalsFollowerResult?.count || channelFollowerCount
+      ? null
+      : await getKickFollowerCountFromPublicPage(cleanUsername).catch(() => null);
+  const followerCount =
+    apiFollowerCount ||
+    goalsFollowerResult?.count ||
+    channelFollowerCount ||
+    pageFollowerResult?.count;
+  const subscriberCount = getKickSubscriberCountForDebugOnly(legacyChannel);
+
+  if (includeDebug) {
+    debug.kickFollowerLookup = {
+      apiFollowerCount,
+      goalsFollowerCount: goalsFollowerResult?.count,
+      goalsRequest: goalsFollowerResult?.debug,
+      goalsRawData: goalsFollowerResult?.rawData,
+      channelFollowerCount,
+      publicPageFollowerCount: pageFollowerResult?.count,
+      publicPageRequest: pageFollowerResult?.debug,
+      subscriberCount,
+      note:
+        followerCount === undefined
+          ? "A Kick oficial não retornou followers e o endpoint /goals foi bloqueado ou não retornou meta type=followers. O Cardpoc NÃO usa inscritos nem Livecounts como fallback."
+          : "Seguidores reais da Kick encontrados. Prioridade: API oficial > goals type=followers > fontes oficiais antigas.",
+    };
+  }
+
+  const status = buildKickStatusFromPayloads(
+    cleanUsername,
+    legacyChannel,
+    legacyLivestreamResult.data,
+    followerCount,
+  );
+
+  return includeDebug ? { ...status, debug } : status;
 }
 
 function normalizeYouTubeUsername(username: string) {
