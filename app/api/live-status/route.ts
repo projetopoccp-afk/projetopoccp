@@ -648,6 +648,7 @@ async function upsertCreatorLiveStatus(
       live_url: status.url ?? null,
       raw_payload: status,
       last_checked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
       onConflict: "creator_id,platform",

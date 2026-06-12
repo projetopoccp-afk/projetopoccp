@@ -7,6 +7,10 @@
     {
       "path": "/api/drops/auto-draw",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/live-status/revalidate-all?cron_secret=cardpoc_cron_live_status_2026_v1_9kL4mN72pQ",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
