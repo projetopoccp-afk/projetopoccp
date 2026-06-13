@@ -26,7 +26,18 @@ type UserCardProgress = {
   mythicSeenAt: string | null;
 };
 
+type AlbumFilter =
+  | "default"
+  | "all"
+  | "closest"
+  | "mythics"
+  | "ready"
+  | "incomplete"
+  | "complete";
+
 type AlbumCreator = CreatorWithMeta & {
+  ownedRarities: string[];
+  missingRarities: string[];
   ownedRarityCount: number;
   isComplete: boolean;
   hasMythic: boolean;
@@ -51,66 +62,133 @@ function hasCompletedBaseRarities(rarities: Set<string>) {
 }
 
 async function ensureMythicAlbumRewards({
-  userId,
+  accessToken,
   progressByCreator,
 }: {
-  userId: string;
+  accessToken: string;
   progressByCreator: Map<string, UserCardProgress>;
 }) {
-  const creatorsToReward = Array.from(progressByCreator.values()).filter(
-    (progress) =>
-      hasCompletedBaseRarities(progress.rarities) &&
-      !progress.rarities.has(MYTHIC_RARITY),
-  );
+  const completedCreatorIds = Array.from(progressByCreator.values())
+    .filter(
+      (progress) =>
+        hasCompletedBaseRarities(progress.rarities) &&
+        !progress.rarities.has(MYTHIC_RARITY),
+    )
+    .map((progress) => progress.creatorId);
 
-  if (creatorsToReward.length === 0) return progressByCreator;
+  if (completedCreatorIds.length === 0) return progressByCreator;
+
+  const response = await fetch("/api/album/mythic-rewards", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ completedCreatorIds }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to sync mythic album rewards");
+    return progressByCreator;
+  }
+
+  const payload = (await response.json()) as {
+    rewards?: Array<{ creator_id: string; id: string; seen_at: string | null }>;
+  };
 
   const nextProgress = new Map(progressByCreator);
 
-  for (const progress of creatorsToReward) {
-    const { data: existingMythic } = await supabase
-      .from("user_cards")
-      .select("id,seen_at")
-      .eq("user_id", userId)
-      .eq("creator_id", progress.creatorId)
-      .eq("rarity", MYTHIC_RARITY)
-      .maybeSingle();
-
-    let mythicCardId = existingMythic?.id ?? null;
-    let mythicSeenAt = existingMythic?.seen_at ?? null;
-
-    if (!existingMythic) {
-      const { data: insertedMythic, error } = await supabase
-        .from("user_cards")
-        .insert({
-          user_id: userId,
-          creator_id: progress.creatorId,
-          rarity: MYTHIC_RARITY,
-          source: "album_completion",
-        })
-        .select("id,seen_at")
-        .single();
-
-      if (error) {
-        console.error("Failed to unlock mythic album reward", error);
-        continue;
-      }
-
-      mythicCardId = insertedMythic?.id ?? null;
-      mythicSeenAt = insertedMythic?.seen_at ?? null;
-    }
+  for (const reward of payload.rewards ?? []) {
+    const creatorId = String(reward.creator_id || "");
+    if (!creatorId) continue;
 
     const current =
-      nextProgress.get(progress.creatorId) ??
-      createEmptyProgress(progress.creatorId);
-
+      nextProgress.get(creatorId) ?? createEmptyProgress(creatorId);
     current.rarities.add(MYTHIC_RARITY);
-    current.mythicCardId = mythicCardId;
-    current.mythicSeenAt = mythicSeenAt;
-    nextProgress.set(progress.creatorId, current);
+    current.mythicCardId = reward.id ?? current.mythicCardId;
+    current.mythicSeenAt = reward.seen_at ?? current.mythicSeenAt;
+    nextProgress.set(creatorId, current);
   }
 
   return nextProgress;
+}
+
+function getMissingRarities(rarities?: Set<string>) {
+  return REQUIRED_RARITIES.filter((rarity) => !rarities?.has(rarity));
+}
+
+function getRarityLabel(rarity: string) {
+  const labels: Record<string, string> = {
+    common: "Comum",
+    rare: "Rara",
+    epic: "Épica",
+    legendary: "Lendária",
+    mythic: "Mítica",
+  };
+
+  return labels[rarity] ?? rarity;
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function matchesAlbumSearch(creator: AlbumCreator, rawQuery: string) {
+  const query = normalizeSearchText(rawQuery);
+  if (!query) return true;
+
+  const searchable = [
+    creator.nickname,
+    creator.username,
+    creator.title,
+    creator.category,
+    creator.faction,
+    creator.isComplete ? "completo completa" : "incompleto incompleta",
+    creator.hasMythic
+      ? "mitica mythic mítica liberada"
+      : "sem mitica sem mítica",
+    creator.mythicSeenAt ? "revelada" : "nao revelada não revelada",
+    `${creator.ownedRarityCount}/4`,
+    ...creator.tags,
+    ...creator.ownedRarities.map(
+      (rarity) => `possui ${getRarityLabel(rarity)}`,
+    ),
+    ...creator.missingRarities.map(
+      (rarity) => `falta ${getRarityLabel(rarity)}`,
+    ),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return normalizeSearchText(searchable).includes(query);
+}
+
+function sortByClosestToMythic(a: AlbumCreator, b: AlbumCreator) {
+  if (b.ownedRarityCount !== a.ownedRarityCount) {
+    return b.ownedRarityCount - a.ownedRarityCount;
+  }
+
+  if (Number(b.isComplete) !== Number(a.isComplete)) {
+    return Number(b.isComplete) - Number(a.isComplete);
+  }
+
+  return a.nickname.localeCompare(b.nickname);
+}
+
+function sortMythicsFirst(a: AlbumCreator, b: AlbumCreator) {
+  const aReady = a.hasMythic && !a.mythicSeenAt;
+  const bReady = b.hasMythic && !b.mythicSeenAt;
+
+  if (Number(bReady) !== Number(aReady)) return Number(bReady) - Number(aReady);
+  if (Number(b.hasMythic) !== Number(a.hasMythic)) {
+    return Number(b.hasMythic) - Number(a.hasMythic);
+  }
+
+  return a.nickname.localeCompare(b.nickname);
 }
 
 function normalizeCreatorTags(tags: unknown): string[] {
@@ -161,6 +239,8 @@ export default function AlbumPage() {
   );
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [albumFilter, setAlbumFilter] = useState<AlbumFilter>("default");
+  const [albumSearch, setAlbumSearch] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -168,8 +248,9 @@ export default function AlbumPage() {
     async function loadAlbum() {
       setLoading(true);
 
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData.user;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
+      const user = session?.user ?? null;
 
       if (!mounted) return;
 
@@ -249,7 +330,10 @@ export default function AlbumPage() {
             category: item.category || "creator",
             status: item.status || "approved",
             mainPlatform:
-              item.main_platform || item.mainPlatform || item.platform || "cardpoc",
+              item.main_platform ||
+              item.mainPlatform ||
+              item.platform ||
+              "cardpoc",
             avatarUrl:
               item.avatar_url || item.banner_url || "/placeholder-card.png",
             bannerUrl:
@@ -362,7 +446,7 @@ export default function AlbumPage() {
 
       if (user) {
         nextProgress = await ensureMythicAlbumRewards({
-          userId: user.id,
+          accessToken: session.access_token,
           progressByCreator: nextProgress,
         });
       }
@@ -384,13 +468,19 @@ export default function AlbumPage() {
   const albumCreators = useMemo<AlbumCreator[]>(() => {
     return creators.map((creator) => {
       const progress = progressByCreator.get(creator.id);
-      const ownedRarityCount = REQUIRED_RARITIES.filter((rarity) =>
+      const ownedRarities = REQUIRED_RARITIES.filter((rarity) =>
         progress?.rarities.has(rarity),
-      ).length;
+      );
+      const missingRarities = REQUIRED_RARITIES.filter(
+        (rarity) => !progress?.rarities.has(rarity),
+      );
+      const ownedRarityCount = ownedRarities.length;
       const hasMythic = Boolean(progress?.rarities.has(MYTHIC_RARITY));
 
       return {
         ...creator,
+        ownedRarities,
+        missingRarities,
         ownedRarityCount,
         isComplete: ownedRarityCount === REQUIRED_RARITIES.length,
         hasMythic,
@@ -404,6 +494,69 @@ export default function AlbumPage() {
     (creator) => creator.isComplete,
   ).length;
   const totalCount = albumCreators.length;
+
+  const visibleAlbumCreators = useMemo(() => {
+    const searchedCreators = albumCreators.filter((creator) =>
+      matchesAlbumSearch(creator, albumSearch),
+    );
+
+    if (albumFilter === "all") {
+      return [...searchedCreators].sort((a, b) =>
+        a.nickname.localeCompare(b.nickname),
+      );
+    }
+
+    if (albumFilter === "mythics") {
+      return searchedCreators
+        .filter((creator) => creator.hasMythic)
+        .sort(sortMythicsFirst);
+    }
+
+    if (albumFilter === "ready") {
+      return searchedCreators
+        .filter((creator) => creator.hasMythic && !creator.mythicSeenAt)
+        .sort(sortMythicsFirst);
+    }
+
+    if (albumFilter === "incomplete") {
+      return searchedCreators
+        .filter((creator) => !creator.isComplete)
+        .sort(sortByClosestToMythic);
+    }
+
+    if (albumFilter === "complete") {
+      return searchedCreators
+        .filter((creator) => creator.isComplete)
+        .sort(sortByClosestToMythic);
+    }
+
+    if (albumFilter === "closest") {
+      return searchedCreators
+        .filter((creator) => !creator.hasMythic)
+        .sort(sortByClosestToMythic)
+        .slice(0, 10);
+    }
+
+    const mythicCreators = searchedCreators
+      .filter((creator) => creator.hasMythic)
+      .sort(sortMythicsFirst);
+    const closestCreators = searchedCreators
+      .filter((creator) => !creator.hasMythic)
+      .sort(sortByClosestToMythic)
+      .slice(0, 10);
+
+    return [...mythicCreators, ...closestCreators];
+  }, [albumCreators, albumFilter, albumSearch]);
+
+  const filterOptions: Array<{ id: AlbumFilter; label: string }> = [
+    { id: "default", label: "Destaques" },
+    { id: "closest", label: "Mais próximos" },
+    { id: "mythics", label: "Míticas" },
+    { id: "ready", label: "Revelar" },
+    { id: "incomplete", label: "Incompletos" },
+    { id: "complete", label: "Completos" },
+    { id: "all", label: "Todos" },
+  ];
 
   async function revealMythic(creator: AlbumCreator) {
     if (!creator.mythicCardId || creator.mythicSeenAt) return;
@@ -505,26 +658,83 @@ export default function AlbumPage() {
           </div>
         )}
 
+        {!loading && (
+          <div className="mb-8 rounded-[32px] border border-white/10 bg-white/[0.035] p-4 backdrop-blur-xl">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-[420px]">
+                <input
+                  value={albumSearch}
+                  onChange={(event) => setAlbumSearch(event.target.value)}
+                  placeholder="Buscar dentro do álbum..."
+                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-cyan-200/35 focus:bg-black/45"
+                />
+                {albumSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAlbumSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 transition hover:text-white"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAlbumFilter(option.id)}
+                    className={`rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition ${
+                      albumFilter === option.id
+                        ? "border-cyan-200/35 bg-cyan-200/[0.09] text-cyan-50 shadow-[0_0_18px_rgba(34,211,238,0.12)]"
+                        : "border-white/10 bg-white/[0.035] text-white/40 hover:border-white/18 hover:text-white/70"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs font-semibold text-white/36">
+              Exibindo {visibleAlbumCreators.length} de {albumCreators.length}{" "}
+              slots do seu álbum.
+            </p>
+          </div>
+        )}
+
         {loading ? (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-10 text-center text-white/60">
             {translate(t, "albumPageLoading", "Carregando álbum...")}
           </div>
         ) : (
           <div className="relative overflow-hidden rounded-[42px] border border-white/[0.045] bg-black/[0.08] px-3 py-6 sm:px-5 lg:px-6">
-            <SakuraVineField completedCount={completedCount} totalCount={totalCount} />
+            <SakuraVineField
+              completedCount={completedCount}
+              totalCount={totalCount}
+            />
 
-            <div className="relative z-10 grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-10 gap-y-14">
-              {albumCreators.map((creator, index) => (
-                <AlbumTile
-                  key={creator.id}
-                  creator={creator}
-                  index={index}
-                  isOpening={openingCreatorIds.has(creator.id)}
-                  onReveal={() => revealMythic(creator)}
-                  onOpenCreator={(nextCreator) => setSelectedCreator(nextCreator)}
-                />
-              ))}
-            </div>
+            {visibleAlbumCreators.length === 0 ? (
+              <div className="relative z-10 rounded-3xl border border-white/10 bg-black/35 px-8 py-10 text-center text-sm font-semibold text-white/45">
+                Nenhum slot encontrado com os filtros atuais.
+              </div>
+            ) : (
+              <div className="relative z-10 grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-10 gap-y-14">
+                {visibleAlbumCreators.map((creator, index) => (
+                  <AlbumTile
+                    key={creator.id}
+                    creator={creator}
+                    index={index}
+                    isOpening={openingCreatorIds.has(creator.id)}
+                    onReveal={() => revealMythic(creator)}
+                    onOpenCreator={(nextCreator) =>
+                      setSelectedCreator(nextCreator)
+                    }
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -555,7 +765,6 @@ export default function AlbumPage() {
     </main>
   );
 }
-
 
 function SakuraVineField({
   completedCount,
@@ -778,8 +987,10 @@ function LockedAlbumPack({
   progressPercentage: number;
   isReadyToReveal: boolean;
 }) {
+  const missingText = creator.missingRarities.map(getRarityLabel).join(", ");
+
   return (
-    <span className="relative flex h-full w-full items-center justify-center rounded-[26px] border border-white/10 bg-black/48">
+    <span className="relative flex h-full w-full items-center justify-center rounded-[26px] border border-white/10 bg-black/48 px-5 py-5">
       <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.075),transparent_28%),radial-gradient(circle_at_50%_78%,rgba(34,211,238,0.075),transparent_40%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.88))]" />
       <span className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_9px)] opacity-25" />
       <span className="absolute inset-x-6 top-6 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
@@ -789,7 +1000,7 @@ function LockedAlbumPack({
         <span className="absolute -inset-1 rounded-[28px] border border-pink-100/25 bg-[radial-gradient(circle_at_50%_40%,rgba(251,207,232,0.14),transparent_46%)] shadow-[0_0_34px_rgba(244,114,182,0.18)]" />
       ) : null}
 
-      <span className="relative z-10 flex flex-col items-center gap-3 text-center">
+      <span className="relative z-10 flex w-full flex-col items-center gap-4 text-center">
         <span
           className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-2xl shadow-[0_0_28px_rgba(0,0,0,0.65)] ${
             isReadyToReveal
@@ -799,9 +1010,47 @@ function LockedAlbumPack({
         >
           ✦
         </span>
-        {isReadyToReveal && (
-          <span className="rounded-full border border-pink-100/25 bg-black/40 px-4 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-pink-50/80">
-            Clique para revelar
+
+        {isReadyToReveal ? (
+          <span className="flex flex-col items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-pink-50/85">
+              Mítica desbloqueada
+            </span>
+            <span className="rounded-full border border-pink-100/25 bg-black/40 px-4 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-pink-50/80">
+              Clique para revelar
+            </span>
+          </span>
+        ) : (
+          <span className="w-full rounded-3xl border border-white/10 bg-black/35 p-4 text-left">
+            <span className="block text-center text-[10px] font-black uppercase tracking-[0.18em] text-white/36">
+              Progresso {creator.ownedRarityCount}/4
+            </span>
+
+            <span className="mt-4 grid gap-2">
+              {REQUIRED_RARITIES.map((rarity) => {
+                const hasRarity = creator.ownedRarities.includes(rarity);
+
+                return (
+                  <span
+                    key={rarity}
+                    className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] ${
+                      hasRarity
+                        ? "border-cyan-200/18 bg-cyan-200/[0.055] text-cyan-50/78"
+                        : "border-white/8 bg-white/[0.025] text-white/28"
+                    }`}
+                  >
+                    <span>{getRarityLabel(rarity)}</span>
+                    <span>{hasRarity ? "✓" : "—"}</span>
+                  </span>
+                );
+              })}
+            </span>
+
+            <span className="mt-4 block text-center text-[10px] font-bold leading-5 text-white/42">
+              {creator.ownedRarityCount === 0
+                ? "Você ainda não possui cartas deste criador."
+                : `Falta: ${missingText}`}
+            </span>
           </span>
         )}
       </span>
