@@ -10,6 +10,9 @@ type EndDropBody = {
   dropId?: string;
 };
 
+const DROP_SELECT =
+  "id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at";
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -100,6 +103,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "not_allowed" }, { status: 403 });
     }
 
+    const { data: existingDrop, error: existingDropError } = await supabaseAdmin
+      .from("creator_drops")
+      .select(DROP_SELECT)
+      .eq("id", dropId)
+      .eq("creator_id", creatorId)
+      .maybeSingle();
+
+    if (existingDropError) {
+      console.error("End drop read error:", existingDropError);
+      return NextResponse.json({ error: "drop_end_failed" }, { status: 500 });
+    }
+
+    if (!existingDrop) {
+      return NextResponse.json({ error: "drop_not_found" }, { status: 404 });
+    }
+
+    if (!existingDrop.is_active) {
+      return NextResponse.json({
+        drop: existingDrop,
+        alreadyEnded: true,
+      });
+    }
+
     const { data: drop, error: updateError } = await supabaseAdmin
       .from("creator_drops")
       .update({
@@ -108,7 +134,8 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", dropId)
       .eq("creator_id", creatorId)
-      .select("id,creator_id,platform,keyword,reward_type,viewer_count_at_start,drop_percentage,max_claims,current_claims,starts_at,ends_at,is_active,created_at")
+      .eq("is_active", true)
+      .select(DROP_SELECT)
       .maybeSingle();
 
     if (updateError) {
@@ -117,7 +144,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (!drop) {
-      return NextResponse.json({ error: "drop_not_found" }, { status: 404 });
+      const { data: latestDrop } = await supabaseAdmin
+        .from("creator_drops")
+        .select(DROP_SELECT)
+        .eq("id", dropId)
+        .eq("creator_id", creatorId)
+        .maybeSingle();
+
+      return NextResponse.json({
+        drop: latestDrop || existingDrop,
+        alreadyEnded: true,
+      });
     }
 
     return NextResponse.json({ drop });
