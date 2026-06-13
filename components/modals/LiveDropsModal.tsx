@@ -923,9 +923,9 @@ export function LiveDropsModal({
                     {translate(t, "liveDropsParticipants", "Participantes")}
                   </p>
 
-                  <div className="mt-3 h-[76px] overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3">
+                  <div className="mt-3 max-h-[112px] min-h-[76px] overflow-y-auto rounded-2xl border border-white/10 bg-black/10 p-3 pr-2">
                     {visibleFeaturedEntries.length > 0 ? (
-                      <div className="flex max-h-full flex-wrap content-start gap-2 overflow-hidden">
+                      <div className="flex flex-wrap content-start gap-2">
                         {visibleFeaturedEntries.map((entry) => (
                           <span
                             key={entry.id}
@@ -972,8 +972,8 @@ export function LiveDropsModal({
             ) : null}
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <section className="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
-                <div className="flex items-center justify-between gap-3">
+              <section className="rounded-[24px] border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-white/45">
                     <Gift className="h-4 w-4 text-emerald-100" />
                     {translate(t, "liveDropsActiveTitle", "Drops ativos")}
@@ -1008,8 +1008,8 @@ export function LiveDropsModal({
                         key={drop.id}
                         className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="min-w-0">
                             <p className="font-black text-emerald-50">
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
@@ -1069,7 +1069,7 @@ export function LiveDropsModal({
                         key={drop.id}
                         className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="font-black text-amber-50">
                               {getRewardLabel(t, drop.reward_type)}
@@ -1078,11 +1078,12 @@ export function LiveDropsModal({
                               {drop.keyword}
                             </p>
                             <p className="mt-2 text-sm font-bold text-amber-50/80">
-                              {formatNumber(drop.entries?.length || 0)} {translate(t, "liveDropsParticipants", "Participantes")}
+                              {formatNumber(drop.entries?.length || 0)}{" "}
+                              {translate(t, "liveDropsParticipants", "Participantes")}
                             </p>
                           </div>
 
-                          <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100">
+                          <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             {translate(
                               t,
@@ -1092,11 +1093,11 @@ export function LiveDropsModal({
                           </span>
                         </div>
 
-                        <p className="mt-3 text-xs leading-5 text-amber-100/65">
+                        <p className="mt-3 max-w-[34rem] text-xs leading-5 text-amber-100/65">
                           {translate(
                             t,
                             "liveDropsAwaitingWinnersDescription" as any,
-                            "O drop já acabou. O Cardpoc está aguardando o cron confirmar os vencedores.",
+                            "O drop já acabou. O Cardpoc está preparando a lista de vencedores.",
                           )}
                         </p>
                       </article>
@@ -1113,7 +1114,7 @@ export function LiveDropsModal({
                 </div>
               </section>
 
-              <section className="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
+              <section className="rounded-[24px] border border-white/10 bg-white/[0.035] p-4 sm:p-5">
                 <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-white/45">
                   <History className="h-4 w-4 text-cyan-100" />
                   {translate(t, "liveDropsHistoryTitle", "Últimos drops")}
@@ -1123,109 +1124,129 @@ export function LiveDropsModal({
                   {historyDrops.length > 0 ? (
                     historyDrops.slice(0, 3).map((drop) => {
                       const awaitingWinners = isDropAwaitingWinners(drop, nowTime);
-                      const endedWithoutParticipants = didDropEndWithoutParticipants(drop, nowTime);
+                      const endedWithoutParticipants = didDropEndWithoutParticipants(
+                        drop,
+                        nowTime,
+                      );
 
                       return (
-                      <article
-                        key={drop.id}
-                        className={
-                          awaitingWinners
-                            ? "rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
-                            : "rounded-2xl border border-white/10 bg-black/20 p-4"
-                        }
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className={awaitingWinners ? "font-black text-amber-50" : "font-black text-white/80"}>
-                              {getRewardLabel(t, drop.reward_type)}
-                            </p>
-                            <p className={awaitingWinners ? "mt-2 text-sm font-bold text-amber-50/80" : "mt-2 text-sm font-bold text-white/65"}>
-                              {formatNumber(drop.current_claims)} /{" "}
-                              {formatNumber(drop.max_claims)}{" "}
-                              {translate(
-                                t,
-                                "liveDropsClaimsLabel",
-                                "resgatados",
-                              )}
-                            </p>
-                            <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
-                              {translate(t, "liveDropsCreatedAt", "Criado")}: {" "}
-                              {formatDateTime(drop.created_at)}
-                            </p>
-                            {awaitingWinners ? (
-                              <p className="mt-2 text-xs leading-5 text-amber-100/65">
-                                {translate(
-                                  t,
-                                  "liveDropsAwaitingWinnersDescription" as any,
-                                  "O drop já acabou. O Cardpoc está aguardando o cron confirmar os vencedores.",
-                                )}
-                              </p>
-                            ) : endedWithoutParticipants ? (
-                              <p className="mt-2 text-xs leading-5 text-white/40">
-                                {translate(
-                                  t,
-                                  "liveDropsEndedWithoutParticipants" as any,
-                                  "Drop encerrado sem participantes.",
-                                )}
-                              </p>
-                            ) : null}
-                          </div>
-
-                          <div className="flex shrink-0 flex-col items-end gap-2">
-                            <span
-                              className={
-                                awaitingWinners
-                                  ? "inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100"
-                                  : "rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-100/70"
-                              }
-                            >
-                              {awaitingWinners ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : null}
-                              {awaitingWinners
-                                ? translate(
-                                    t,
-                                    "liveDropsAwaitingWinners" as any,
-                                    "Sorteio em andamento",
-                                  )
-                                : translate(
-                                    t,
-                                    "liveDropsCompletedStatus",
-                                    "Concluído",
-                                  )}
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (awaitingWinners) {
-                                  void loadDrops();
-                                  return;
+                        <article
+                          key={drop.id}
+                          className={
+                            awaitingWinners
+                              ? "rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
+                              : "rounded-2xl border border-white/10 bg-black/20 p-4"
+                          }
+                        >
+                          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                            <div className="min-w-0">
+                              <p
+                                className={
+                                  awaitingWinners
+                                    ? "font-black text-amber-50"
+                                    : "font-black text-white/80"
                                 }
+                              >
+                                {getRewardLabel(t, drop.reward_type)}
+                              </p>
 
-                                setSelectedWinnersDrop(drop);
-                              }}
-                              className={
-                                awaitingWinners
-                                  ? "rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-300/15"
-                                  : "rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/15"
-                              }
-                            >
-                              {awaitingWinners
-                                ? translate(
+                              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-bold">
+                                <span
+                                  className={
+                                    awaitingWinners
+                                      ? "text-amber-50/80"
+                                      : "text-white/65"
+                                  }
+                                >
+                                  {formatNumber(drop.current_claims)} /{" "}
+                                  {formatNumber(drop.max_claims)}{" "}
+                                  {translate(
                                     t,
-                                    "liveDropsRefreshResult" as any,
-                                    "Atualizar resultado",
-                                  )
-                                : translate(
-                                    t,
-                                    "liveDropsViewWinners",
-                                    "Ver vencedores",
+                                    "liveDropsClaimsLabel",
+                                    "resgatados",
                                   )}
-                            </button>
+                                </span>
+
+                                <span className="text-xs font-bold uppercase tracking-[0.16em] text-white/35">
+                                  {translate(t, "liveDropsCreatedAt", "Criado")}: {" "}
+                                  {formatDateTime(drop.created_at)}
+                                </span>
+                              </div>
+
+                              {awaitingWinners ? (
+                                <p className="mt-2 max-w-[28rem] text-xs leading-5 text-amber-100/65">
+                                  {translate(
+                                    t,
+                                    "liveDropsAwaitingWinnersDescription" as any,
+                                    "O drop já acabou. O Cardpoc está preparando a lista de vencedores.",
+                                  )}
+                                </p>
+                              ) : endedWithoutParticipants ? (
+                                <p className="mt-2 text-xs leading-5 text-white/40">
+                                  {translate(
+                                    t,
+                                    "liveDropsEndedWithoutParticipants" as any,
+                                    "Drop encerrado sem participantes.",
+                                  )}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="flex shrink-0 flex-wrap items-center gap-2 xl:justify-end">
+                              <span
+                                className={
+                                  awaitingWinners
+                                    ? "inline-flex w-fit items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100"
+                                    : "w-fit rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-100/70"
+                                }
+                              >
+                                {awaitingWinners ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : null}
+                                {awaitingWinners
+                                  ? translate(
+                                      t,
+                                      "liveDropsAwaitingWinners" as any,
+                                      "Sorteio em andamento",
+                                    )
+                                  : translate(
+                                      t,
+                                      "liveDropsCompletedStatus",
+                                      "Concluído",
+                                    )}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (awaitingWinners) {
+                                    void loadDrops();
+                                    return;
+                                  }
+
+                                  setSelectedWinnersDrop(drop);
+                                }}
+                                className={
+                                  awaitingWinners
+                                    ? "w-fit rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/15"
+                                    : "w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100 transition hover:bg-cyan-300/15"
+                                }
+                              >
+                                {awaitingWinners
+                                  ? translate(
+                                      t,
+                                      "liveDropsRefreshResult" as any,
+                                      "Atualizar resultado",
+                                    )
+                                  : translate(
+                                      t,
+                                      "liveDropsViewWinners",
+                                      "Ver vencedores",
+                                    )}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </article>
+                        </article>
                       );
                     })
                   ) : (
