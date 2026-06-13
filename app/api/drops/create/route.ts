@@ -110,14 +110,9 @@ export async function POST(request: NextRequest) {
     const keyword = sanitizeKeyword(body.keyword);
     const rewardType = sanitizeRewardType(body.rewardType);
     const durationMinutes = sanitizePositiveInteger(body.durationMinutes, 10);
-    const viewerCount = Math.max(
-      0,
-      Math.floor(Number(body.viewerCount) || 0),
-    );
-    const dropPercentage = sanitizePositiveInteger(
-      body.dropPercentage,
-      DEFAULT_DROP_PERCENTAGE,
-    );
+    // Segurança: o frontend pode enviar viewerCount/dropPercentage para exibição/compatibilidade,
+    // mas o backend sempre usa dados confiáveis do banco.
+    const dropPercentage = DEFAULT_DROP_PERCENTAGE;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -140,13 +135,6 @@ export async function POST(request: NextRequest) {
     if (!rewardType) {
       return NextResponse.json(
         { error: "unsupported_reward_type" },
-        { status: 400 },
-      );
-    }
-
-    if (viewerCount <= 0) {
-      return NextResponse.json(
-        { error: "invalid_viewer_count" },
         { status: 400 },
       );
     }
@@ -187,6 +175,71 @@ export async function POST(request: NextRequest) {
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "not_allowed" }, { status: 403 });
+    }
+
+    const { data: liveStatus, error: liveStatusError } = await supabaseAdmin
+      .from("creator_live_status")
+      .select("is_live,viewer_count,last_checked_at,platform")
+      .eq("creator_id", creatorId)
+      .eq("platform", platform)
+      .maybeSingle();
+
+    if (liveStatusError) {
+      console.error("Live status lookup error:", liveStatusError);
+
+      return NextResponse.json(
+        { error: "live_status_lookup_failed" },
+        { status: 500 },
+      );
+    }
+
+    if (!liveStatus?.is_live) {
+      return NextResponse.json(
+        { error: "creator_not_live" },
+        { status: 400 },
+      );
+    }
+
+    const viewerCount = Math.max(
+      0,
+      Math.floor(Number(liveStatus.viewer_count) || 0),
+    );
+
+    if (viewerCount <= 0) {
+      return NextResponse.json(
+        { error: "invalid_live_viewer_count" },
+        { status: 400 },
+      );
+    }
+
+    const { data: activeDrop, error: activeDropError } = await supabaseAdmin
+      .from("creator_drops")
+      .select("id,created_at,ends_at")
+      .eq("creator_id", creatorId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activeDropError) {
+      console.error("Active drop lookup error:", activeDropError);
+
+      return NextResponse.json(
+        { error: "active_drop_lookup_failed" },
+        { status: 500 },
+      );
+    }
+
+    if (activeDrop) {
+      return NextResponse.json(
+        {
+          error: "active_drop_already_exists",
+          activeDropId: activeDrop.id,
+          activeDropCreatedAt: activeDrop.created_at,
+          activeDropEndsAt: activeDrop.ends_at,
+        },
+        { status: 409 },
+      );
     }
 
     const now = new Date();
