@@ -10,11 +10,13 @@ import {
   Target,
   Trophy,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translate } from "@/lib/i18n/translate";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { supabase } from "@/lib/supabase/client";
 import { addUserXp } from "@/lib/xp/user-xp";
 import { createUserNotification } from "@/lib/notifications/user-notifications";
@@ -51,6 +53,13 @@ type MissionsModalProps = {
 type OpenMissionsEventDetail = {
   notificationId?: string | null;
   missionId?: string | null;
+};
+
+type MissionCategory = {
+  labelKey: TranslationKey;
+  fallback: string;
+  className: string;
+  Icon: LucideIcon;
 };
 
 function normalizeMissionText(value: string | null | undefined) {
@@ -141,7 +150,7 @@ function getMissionDescription(t: any, mission: Mission) {
   return translate(t, key, mission.description || "");
 }
 
-function getMissionCategory(mission: Mission) {
+function getMissionCategory(mission: Mission): MissionCategory {
   const title = normalizeMissionText(mission.title);
   const description = normalizeMissionText(mission.description);
   const missionType = normalizeMissionText(mission.mission_type);
