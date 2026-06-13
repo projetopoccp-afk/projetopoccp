@@ -407,7 +407,7 @@ export default function HomePage() {
           <span className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-500/10 opacity-80 transition group-hover:opacity-100" />
           <span className="relative flex items-center gap-2">
             <span className="text-sm">▣</span>
-            {translate(t, "homePageAlbumButton", "Álbum")}
+            {translate(t, "homePageAlbumButton", "Álbum Premium")}
           </span>
         </Link>
       </div>
