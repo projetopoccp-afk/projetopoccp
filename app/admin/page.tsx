@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Check, ExternalLink, ShieldCheck, X } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
 type CreatorRequest = {
@@ -22,6 +25,7 @@ type CreatorRequest = {
 };
 
 export default function AdminPage() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,7 +66,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    loadAdmin();
+    void Promise.resolve().then(loadAdmin);
   }, []);
 
   async function approveRequest(request: CreatorRequest) {
@@ -84,15 +88,23 @@ export default function AdminPage() {
         request_id: request.id,
         nickname: request.nickname,
         username: request.username,
-        title: "Criador de Conteúdo",
+        title: translate(t, "adminDefaultCreatorTitle", "Criador de Conteúdo"),
         faction: "Cardpoc",
-        category: request.category || "Creator",
+        category: request.category || translate(t, "creator", "Criador"),
         status: "offline",
         avatar_url: request.card_image_url,
         banner_url: request.card_image_url,
-        bio: "Novo criador aprovado na plataforma.",
+        bio: translate(
+          t,
+          "adminDefaultCreatorBio",
+          "Novo criador aprovado na plataforma.",
+        ),
         description:
-          "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
+          translate(
+            t,
+            "adminDefaultCreatorDescription",
+            "Este perfil foi aprovado e poderá ser personalizado pelo criador em breve.",
+          ),
         tags: [],
         is_public: true,
         is_verified: false,
@@ -102,7 +114,14 @@ export default function AdminPage() {
 
     if (profileError || !creatorProfile) {
       setActionLoading(null);
-      alert(profileError?.message || "Erro ao criar o perfil do criador.");
+      alert(
+        profileError?.message ||
+          translate(
+            t,
+            "adminCreateCreatorProfileError",
+            "Erro ao criar o perfil do criador.",
+          ),
+      );
       return;
     }
 
@@ -202,7 +221,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Carregando painel admin...
+        {translate(t, "adminPanelLoading", "Carregando painel...")}
       </main>
     );
   }
@@ -211,18 +230,24 @@ export default function AdminPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black px-6 text-white">
         <div className="max-w-md rounded-3xl border border-red-300/20 bg-red-300/10 p-8 text-center">
-          <h1 className="text-2xl font-black">Acesso negado</h1>
+          <h1 className="text-2xl font-black">
+            {translate(t, "adminPageAccessDeniedTitle", "Acesso negado")}
+          </h1>
 
           <p className="mt-3 text-white/60">
-            Esta área é restrita para administradores.
+            {translate(
+              t,
+              "adminPageAccessDeniedDescription",
+              "Esta área é restrita para administradores.",
+            )}
           </p>
 
-          <a
+          <Link
             href="/"
             className="mt-6 inline-block rounded-full bg-white px-5 py-2 text-sm font-bold text-black"
           >
-            Voltar para home
-          </a>
+            {translate(t, "accountPageBackHome", "Voltar para home")}
+          </Link>
         </div>
       </main>
     );
@@ -233,24 +258,34 @@ export default function AdminPage() {
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.16),transparent_35%)]" />
 
       <section className="relative z-10 mx-auto max-w-6xl">
-        <a href="/" className="text-sm text-cyan-200 hover:text-cyan-100">
-          ← Voltar para home
-        </a>
+        <Link href="/" className="text-sm text-cyan-200 hover:text-cyan-100">
+          ← {translate(t, "accountPageBackHome", "Voltar para home")}
+        </Link>
 
         <div className="mt-8 flex items-center gap-3">
           <ShieldCheck className="text-cyan-200" />
 
-          <h1 className="text-4xl font-black">Painel Admin</h1>
+          <h1 className="text-4xl font-black">
+            {translate(t, "adminPanelTitle", "Painel Admin")}
+          </h1>
         </div>
 
         <p className="mt-3 text-white/50">
-          Solicitações pendentes de aprovação.
+          {translate(
+            t,
+            "adminPagePendingRequestsDescription",
+            "Solicitações pendentes de aprovação.",
+          )}
         </p>
 
         <div className="mt-8 grid gap-5">
           {requests.length === 0 && (
             <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-white/60">
-              Nenhuma solicitação pendente.
+              {translate(
+                t,
+                "adminNoPendingRequests",
+                "Nenhuma solicitação pendente.",
+              )}
             </div>
           )}
 
@@ -268,7 +303,7 @@ export default function AdminPage() {
                   />
                 ) : (
                   <div className="flex h-64 items-center justify-center text-white/30">
-                    Sem imagem
+                    {translate(t, "noImage", "Sem imagem")}
                   </div>
                 )}
               </div>
@@ -298,15 +333,20 @@ export default function AdminPage() {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                    <p className="text-xs text-white/40">Plataforma</p>
+                    <p className="text-xs text-white/40">
+                      {translate(t, "platform", "Plataforma")}
+                    </p>
 
                     <p className="mt-1 font-bold">
-                      {request.verification_platform || "Não informado"}
+                      {request.verification_platform ||
+                        translate(t, "notInformed", "Não informado")}
                     </p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                    <p className="text-xs text-white/40">Código</p>
+                    <p className="text-xs text-white/40">
+                      {translate(t, "code", "Código")}
+                    </p>
 
                     <p className="mt-1 font-bold tracking-[0.2em] text-cyan-100">
                       {request.verification_code}
@@ -321,7 +361,11 @@ export default function AdminPage() {
                     className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 hover:bg-cyan-300/20"
                   >
                     <ExternalLink size={16} />
-                    Abrir canal/perfil
+                    {translate(
+                      t,
+                      "adminOpenChannelProfile",
+                      "Abrir canal/perfil",
+                    )}
                   </a>
                 )}
 
@@ -332,7 +376,9 @@ export default function AdminPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Check size={16} />
-                    {actionLoading === request.id ? "Aprovando..." : "Aprovar"}
+                    {actionLoading === request.id
+                      ? translate(t, "approving", "Aprovando...")
+                      : translate(t, "approve", "Aprovar")}
                   </button>
 
                   <button
@@ -342,8 +388,8 @@ export default function AdminPage() {
                   >
                     <X size={16} />
                     {actionLoading === request.id
-                      ? "Processando..."
-                      : "Rejeitar"}
+                      ? translate(t, "processing", "Processando...")
+                      : translate(t, "reject", "Rejeitar")}
                   </button>
                 </div>
               </div>

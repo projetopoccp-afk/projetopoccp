@@ -415,7 +415,7 @@ export function AccountModal({
                       {profile?.is_admin && (
                         <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
                           <ShieldCheck size={14} />
-                          Admin
+                          {translate(t, "admin", "Admin")}
                         </span>
                       )}
                     </div>

@@ -889,7 +889,7 @@ export default function AdminCreatorsTab({ ctx }: AdminCreatorsTabProps) {
                               ).toLocaleString(dateLocale)}
                             />
                             <SmallInfo
-                              label="Trending"
+                              label={translate(t, "adminSortTrending", "Trending")}
                               value={Number(
                                 creator.trending_score || 0,
                               ).toLocaleString(dateLocale)}

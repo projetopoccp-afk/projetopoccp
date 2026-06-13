@@ -65,7 +65,11 @@ export function CreatorEditProfileModal({
     <div className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6">
       <button
         type="button"
-        aria-label="Fechar edição de perfil"
+        aria-label={translateExisting(
+          t,
+          "creatorProfileEditCloseAria",
+          "Fechar edição de perfil",
+        )}
         onClick={onClose}
         className="absolute inset-0 bg-black/75 backdrop-blur-md"
       />
@@ -74,13 +78,21 @@ export function CreatorEditProfileModal({
         <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-200/70">
-              Painel do Criador
+              {translateExisting(
+                t,
+                "creatorProfileCreatorPanelButton",
+                "Painel do Criador",
+              )}
             </p>
             <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
-              Editar perfil
+              {translateExisting(t, "creatorProfileEditProfile", "Editar perfil")}
             </h2>
             <p className="mt-1 text-sm leading-6 text-white/55">
-              Atualize somente as informações públicas que aparecem no Cardpoc.
+              {translateExisting(
+                t,
+                "creatorProfileEditPublicInfoDescription",
+                "Atualize somente as informações públicas que aparecem no Cardpoc.",
+              )}
             </p>
           </div>
 
@@ -98,43 +110,63 @@ export function CreatorEditProfileModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Nome público
+                {translateExisting(
+                  t,
+                  "creatorProfileEditNickname",
+                  "Nome público",
+                )}
               </span>
               <input
                 value={editDraft.nickname}
                 onChange={(event) => onDraftChange("nickname", event.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-                placeholder="Nome do criador"
+                placeholder={translateExisting(
+                  t,
+                  "creatorProfileEditNicknamePlaceholder",
+                  "Nome do criador",
+                )}
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Título
+                {translateExisting(t, "creatorProfileEditTitle", "Título")}
               </span>
               <input
                 value={editDraft.title}
                 onChange={(event) => onDraftChange("title", event.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-                placeholder="Streamer, criador, guild leader..."
+                placeholder={translateExisting(
+                  t,
+                  "creatorProfileEditTitlePlaceholder",
+                  "Streamer, criador, guild leader...",
+                )}
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Categoria
+                {translateExisting(t, "creatorProfileEditCategory", "Categoria")}
               </span>
               <input
                 value={editDraft.category}
                 onChange={(event) => onDraftChange("category", event.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-                placeholder="Black Desert, MMORPG, Lives..."
+                placeholder={translateExisting(
+                  t,
+                  "creatorProfileEditCategoryPlaceholder",
+                  "Black Desert, MMORPG, Lives...",
+                )}
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Avatar URL
+                {translateExisting(
+                  t,
+                  "creatorProfileEditAvatarUrl",
+                  "Avatar URL",
+                )}
               </span>
               <input
                 value={editDraft.avatarUrl}
@@ -148,42 +180,64 @@ export function CreatorEditProfileModal({
           <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Bio curta
+                {translateExisting(t, "creatorProfileEditBio", "Bio curta")}
               </span>
               <textarea
                 value={editDraft.bio}
                 onChange={(event) => onDraftChange("bio", event.target.value)}
                 rows={4}
                 className="min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-                placeholder="Resumo curto para o topo do perfil."
+                placeholder={translateExisting(
+                  t,
+                  "creatorProfileEditBioPlaceholder",
+                  "Resumo curto para o topo do perfil.",
+                )}
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-                Tags
+                {translateExisting(t, "creatorProfileEditTags", "Tags")}
               </span>
               <textarea
                 value={editDraft.tagsText}
                 onChange={(event) => onDraftChange("tagsText", event.target.value)}
                 rows={4}
                 className="min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-                placeholder="Streamer, MMORPG, Black Desert"
+                placeholder={translateExisting(
+                  t,
+                  "creatorProfileEditTagsPlaceholder",
+                  "Streamer, MMORPG, Black Desert",
+                )}
               />
-              <p className="text-xs text-white/40">Separe as tags por vírgula.</p>
+              <p className="text-xs text-white/40">
+                {translateExisting(
+                  t,
+                  "creatorProfileEditTagsHelp",
+                  "Separe as tags por vírgula.",
+                )}
+              </p>
             </label>
           </div>
 
           <label className="mt-4 block space-y-2">
             <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
-              Descrição completa
+              {translateExisting(
+                t,
+                "creatorProfileEditDescription",
+                "Descrição completa",
+              )}
             </span>
             <textarea
               value={editDraft.description}
               onChange={(event) => onDraftChange("description", event.target.value)}
               rows={5}
               className="min-h-[150px] w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-              placeholder="Conte mais sobre o criador, comunidade, conteúdo e objetivos."
+              placeholder={translateExisting(
+                t,
+                "creatorProfileEditDescriptionPlaceholder",
+                "Conte mais sobre o criador, comunidade, conteúdo e objetivos.",
+              )}
             />
           </label>
 
@@ -195,7 +249,11 @@ export function CreatorEditProfileModal({
             >
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Efeitos de apresentação
+                {translateExisting(
+                  t,
+                  "creatorProfileEditPresentationEffects",
+                  "Efeitos de apresentação",
+                )}
               </span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 transition ${
@@ -245,9 +303,19 @@ export function CreatorEditProfileModal({
           <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black text-white">Redes sociais</p>
+                <p className="text-sm font-black text-white">
+                  {translateExisting(
+                    t,
+                    "creatorProfileSocialLinks",
+                    "Redes sociais",
+                  )}
+                </p>
                 <p className="mt-1 text-xs leading-5 text-white/45">
-                  Adicione links públicos que aparecem no perfil.
+                  {translateExisting(
+                    t,
+                    "creatorProfileEditSocialLinksDescription",
+                    "Adicione links públicos que aparecem no perfil.",
+                  )}
                 </p>
               </div>
               <button
@@ -256,7 +324,11 @@ export function CreatorEditProfileModal({
                 className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/20"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Adicionar
+                {translateExisting(
+                  t,
+                  "creatorProfileEditAddSocialLinkShort",
+                  "Adicionar",
+                )}
               </button>
             </div>
 
@@ -279,7 +351,13 @@ export function CreatorEditProfileModal({
                       ) && social.platform ? (
                         <option value={social.platform}>{social.platform}</option>
                       ) : null}
-                      <option value="">Selecione a rede</option>
+                      <option value="">
+                        {translateExisting(
+                          t,
+                          "creatorProfileEditSelectSocialNetwork",
+                          "Selecione a rede",
+                        )}
+                      </option>
                       {SOCIAL_PLATFORM_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
@@ -299,7 +377,11 @@ export function CreatorEditProfileModal({
                       onClick={() => onRemoveSocialLink(index)}
                       className="inline-flex items-center justify-center rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-red-100 transition hover:bg-red-300/20"
                     >
-                      Remover
+                      {translateExisting(
+                        t,
+                        "creatorProfileEditRemoveSocialLinkShort",
+                        "Remover",
+                      )}
                     </button>
                   </div>
                 ),
@@ -321,7 +403,7 @@ export function CreatorEditProfileModal({
             disabled={isSavingProfile}
             className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white/70 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancelar
+            {translateExisting(t, "creatorProfileCancelEdit", "Cancelar")}
           </button>
           <button
             type="button"
@@ -330,7 +412,11 @@ export function CreatorEditProfileModal({
             className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/15 px-5 py-3 text-sm font-black text-cyan-50 shadow-lg shadow-cyan-500/10 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Salvar alterações
+            {translateExisting(
+              t,
+              "creatorProfileSaveChanges",
+              "Salvar alterações",
+            )}
           </button>
         </div>
       </section>

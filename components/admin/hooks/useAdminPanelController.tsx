@@ -2248,8 +2248,8 @@ export function useAdminPanelController({ open, onClose }: AdminPanelModalProps)
       translate(
         t,
         "adminConfirmBulkCreatorUpdate",
-        `Aplicar esta alteração em ${targetCreators.length} perfil(is) filtrado(s)?`,
-      ),
+        "Aplicar esta alteração em {count} perfil(is) filtrado(s)?",
+      ).replace("{count}", String(targetCreators.length)),
     );
 
     if (!confirmed) return;

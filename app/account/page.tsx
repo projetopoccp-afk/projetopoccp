@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { LogOut, ShieldCheck, UserRound } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translate } from "@/lib/i18n/translate";
 import { supabase } from "@/lib/supabase/client";
 
 type Profile = {
@@ -13,6 +16,7 @@ type Profile = {
 };
 
 export default function AccountPage() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -51,7 +55,7 @@ export default function AccountPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Carregando conta...
+        {translate(t, "accountPageLoading", "Carregando conta...")}
       </main>
     );
   }
@@ -61,9 +65,9 @@ export default function AccountPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.16),transparent_35%)]" />
 
       <section className="relative z-10 mx-auto max-w-3xl">
-        <a href="/" className="text-sm text-cyan-200 hover:text-cyan-100">
-          ← Voltar para home
-        </a>
+        <Link href="/" className="text-sm text-cyan-200 hover:text-cyan-100">
+          ← {translate(t, "accountPageBackHome", "Voltar para home")}
+        </Link>
 
         <div className="mt-8 overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-8 backdrop-blur-xl">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -71,7 +75,7 @@ export default function AccountPage() {
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
-                  alt={profile.display_name || "Avatar"}
+                  alt={profile.display_name || translate(t, "avatar", "Avatar")}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -81,24 +85,24 @@ export default function AccountPage() {
 
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
-                Minha Conta
+                {translate(t, "myAccount", "Minha Conta")}
               </p>
 
               <h1 className="mt-2 text-3xl font-black">
-                {profile?.display_name || "Creator"}
+                {profile?.display_name || translate(t, "creator", "Criador")}
               </h1>
 
               <p className="mt-1 text-white/45">{email}</p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                  @{profile?.username || "sem_username"}
+                  @{profile?.username || translate(t, "noUsername", "sem_username")}
                 </span>
 
                 {profile?.is_admin && (
                   <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-sm text-yellow-100">
                     <ShieldCheck size={14} />
-                    Admin
+                    {translate(t, "admin", "Admin")}
                   </span>
                 )}
               </div>
@@ -107,28 +111,46 @@ export default function AccountPage() {
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <div className="rounded-3xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
-              <h2 className="font-bold">Solicitar perfil de criador</h2>
+              <h2 className="font-bold">
+                {translate(
+                  t,
+                  "requestCreatorProfile",
+                  "Solicitar perfil de criador",
+                )}
+              </h2>
 
               <p className="mt-2 text-sm text-white/55">
-                Envie seus dados, redes sociais e prova de posse do canal para
-                entrar na fila de aprovação.
+                {translate(
+                  t,
+                  "requestCreatorProfileDescription",
+                  "Envie seus dados, redes sociais e prova de posse do canal para entrar na fila de aprovação.",
+                )}
               </p>
 
               <button className="mt-5 rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-black transition hover:scale-105">
-                Começar solicitação
+                {translate(t, "startRequest", "Começar solicitação")}
               </button>
             </div>
 
             <div className="rounded-3xl border border-purple-300/15 bg-purple-300/[0.04] p-5">
-              <h2 className="font-bold">Coleção de criadores</h2>
+              <h2 className="font-bold">
+                {translate(
+                  t,
+                  "accountPageCreatorCollectionTitle",
+                  "Coleção de criadores",
+                )}
+              </h2>
 
               <p className="mt-2 text-sm text-white/55">
-                Em breve você poderá seguir, favoritar e colecionar cards de
-                creators.
+                {translate(
+                  t,
+                  "accountPageCreatorCollectionDescription",
+                  "Em breve você poderá seguir, favoritar e colecionar cards de creators.",
+                )}
               </p>
 
               <button className="mt-5 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-sm text-white/60">
-                Em breve
+                {translate(t, "soon", "Em breve")}
               </button>
             </div>
           </div>
@@ -138,7 +160,7 @@ export default function AccountPage() {
             className="mt-8 inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-red-300/10 px-5 py-3 text-sm text-red-100 transition hover:bg-red-300/20"
           >
             <LogOut size={18} />
-            Sair da conta
+            {translate(t, "logoutAccount", "Sair da conta")}
           </button>
         </div>
       </section>

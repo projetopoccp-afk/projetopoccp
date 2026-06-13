@@ -163,7 +163,13 @@ export function CreatorCardPanel({
             </div>
             <div className="rounded-2xl border border-yellow-300/15 bg-yellow-300/[0.07] px-2 py-3">
               <p className="truncate text-xl font-black text-white">
-                {highestCollectedRarity ? getRarityLabel(highestCollectedRarity) : "-"}
+                {highestCollectedRarity
+                  ? translate(
+                      t,
+                      highestCollectedRarity,
+                      getRarityLabel(highestCollectedRarity),
+                    )
+                  : "-"}
               </p>
               <p className="mt-1 text-[8px] font-black uppercase tracking-[0.14em] text-yellow-100/55">
                 {translate(t, "creatorProfileHighestRarity", "Maior")}
@@ -180,7 +186,11 @@ export function CreatorCardPanel({
               return (
                 <div key={item.rarity} className="grid grid-cols-[74px_1fr_42px] items-center gap-2">
                   <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
-                    {getRarityLabel(item.rarity as CreatorRarity)}
+                    {translate(
+                      t,
+                      item.rarity as CreatorRarity,
+                      getRarityLabel(item.rarity as CreatorRarity),
+                    )}
                   </span>
                   <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-cyan-300/60" style={{ width: `${percentage}%` }} />

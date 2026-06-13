@@ -154,7 +154,8 @@ function getMissionCategory(mission: Mission) {
     description.includes("siga")
   ) {
     return {
-      label: "Criadores",
+      labelKey: "missionsCategoryCreators",
+      fallback: "Criadores",
       className: "border-cyan-300/20 bg-cyan-300/10 text-cyan-100",
       Icon: Users,
     };
@@ -168,7 +169,8 @@ function getMissionCategory(mission: Mission) {
     description.includes("compartilhe")
   ) {
     return {
-      label: "Social",
+      labelKey: "missionsCategorySocial",
+      fallback: "Social",
       className: "border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-100",
       Icon: Share2,
     };
@@ -182,7 +184,8 @@ function getMissionCategory(mission: Mission) {
     description.includes("pack")
   ) {
     return {
-      label: "Packs",
+      labelKey: "missionsCategoryPacks",
+      fallback: "Packs",
       className: "border-violet-300/20 bg-violet-300/10 text-violet-100",
       Icon: Package,
     };
@@ -200,7 +203,8 @@ function getMissionCategory(mission: Mission) {
     title.includes("mito")
   ) {
     return {
-      label: "Raridades",
+      labelKey: "missionsCategoryRarities",
+      fallback: "Raridades",
       className: "border-yellow-300/20 bg-yellow-300/10 text-yellow-100",
       Icon: Sparkles,
     };
@@ -214,21 +218,23 @@ function getMissionCategory(mission: Mission) {
     description.includes("carta")
   ) {
     return {
-      label: "Coleção",
+      labelKey: "missionsCategoryCollection",
+      fallback: "Coleção",
       className: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
       Icon: Trophy,
     };
   }
 
   return {
-    label: "Iniciante",
+    labelKey: "missionsCategoryBeginner",
+    fallback: "Iniciante",
     className: "border-emerald-300/20 bg-emerald-300/10 text-emerald-100",
     Icon: Target,
   };
 }
 
 function getMissionSortWeight(mission: Mission) {
-  const category = getMissionCategory(mission).label;
+  const category = getMissionCategory(mission).fallback;
 
   const weights: Record<string, number> = {
     Iniciante: 0,
@@ -550,7 +556,11 @@ export function MissionsModal({ open, onClose }: MissionsModalProps) {
                               <span
                                 className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${category.className}`}
                               >
-                                {category.label}
+                                {translate(
+                                  t,
+                                  category.labelKey,
+                                  category.fallback,
+                                )}
                               </span>
                             </div>
                             <p className="mt-1 text-sm text-white/50">

@@ -65,8 +65,12 @@ export {
 } from "./creator-profile-constants";
 
 export function translateExisting(t: unknown, key: string, fallback: string) {
-  const value = (t as Record<string, string | undefined>)[key];
-  return typeof value === "string" && value.trim().length > 0
+  const value =
+    typeof t === "function"
+      ? (t as (translationKey: string) => string)(key)
+      : (t as Record<string, string | undefined>)[key];
+
+  return typeof value === "string" && value.trim().length > 0 && value !== key
     ? value
     : fallback;
 }
@@ -891,4 +895,3 @@ export function getSupportTypeLabel(
     ? translateExisting(t, item.labelKey, item.fallback)
     : translateExisting(t, "supportTypeOther", "Outro assunto");
 }
-

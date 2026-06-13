@@ -346,7 +346,7 @@ export default function AdminLogsTab({ ctx }: AdminLogsTabProps) {
                       {isExpanded && (
                         <div className="border-t border-white/10 bg-black/20 p-5">
                           <SmallInfo
-                            label="Target ID"
+                            label={translate(t, "adminTargetId", "Target ID")}
                             value={
                               log.target_id ||
                               translate(t, "noTarget", "sem target")

@@ -86,7 +86,11 @@ export function CreatorBattleModal({
       type="button"
       onClick={onClose}
       className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-2xl font-light text-white/70 transition hover:border-fuchsia-300/30 hover:text-white"
-      aria-label="Fechar batalha"
+      aria-label={translate(
+        t,
+        "creatorProfileBattleClose",
+        "Fechar batalha",
+      )}
     >
       ×
     </button>
@@ -141,6 +145,9 @@ export function CreatorBattleModal({
                   const candidateCard = Array.isArray(candidate.creator_cards)
                     ? candidate.creator_cards[0] || null
                     : candidate.creator_cards || null;
+                  const candidateRarity = normalizeCreatorRarity(
+                    candidateCard?.rarity || "common",
+                  );
 
                   return (
                     <button
@@ -174,7 +181,11 @@ export function CreatorBattleModal({
                         </span>
                       </span>
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
-                        {getRarityLabel(normalizeCreatorRarity(candidateCard?.rarity || "common"))}
+                        {translate(
+                          t,
+                          candidateRarity,
+                          getRarityLabel(candidateRarity),
+                        )}
                       </span>
                     </button>
                   );

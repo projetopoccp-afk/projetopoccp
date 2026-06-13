@@ -126,7 +126,11 @@ export function CreatorProfileHeroActions({
             <input
               value={editDraft.tagsText}
               onChange={(event) => onEditDraftChange("tagsText", event.target.value)}
-              placeholder="Streamer, MMORPG, Black Desert"
+              placeholder={translate(
+                t,
+                "creatorProfileEditTagsPlaceholder",
+                "Streamer, MMORPG, Black Desert",
+              )}
               className="mt-2 w-full rounded-[1.2rem] border border-cyan-300/20 bg-black/35 px-4 py-3 text-sm font-semibold text-cyan-100 outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
             />
           </label>

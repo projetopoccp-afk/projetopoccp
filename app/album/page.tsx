@@ -35,9 +35,11 @@ type AlbumFilter =
   | "incomplete"
   | "complete";
 
+type BaseAlbumRarity = "common" | "rare" | "epic" | "legendary";
+
 type AlbumCreator = CreatorWithMeta & {
-  ownedRarities: string[];
-  missingRarities: string[];
+  ownedRarities: BaseAlbumRarity[];
+  missingRarities: BaseAlbumRarity[];
   ownedRarityCount: number;
   isComplete: boolean;
   hasMythic: boolean;
@@ -549,13 +551,34 @@ export default function AlbumPage() {
   }, [albumCreators, albumFilter, albumSearch]);
 
   const filterOptions: Array<{ id: AlbumFilter; label: string }> = [
-    { id: "default", label: "Destaques" },
-    { id: "closest", label: "Mais próximos" },
-    { id: "mythics", label: "Míticas" },
-    { id: "ready", label: "Revelar" },
-    { id: "incomplete", label: "Incompletos" },
-    { id: "complete", label: "Completos" },
-    { id: "all", label: "Todos" },
+    {
+      id: "default",
+      label: translate(t, "albumPageFilterHighlights", "Destaques"),
+    },
+    {
+      id: "closest",
+      label: translate(t, "albumPageFilterClosest", "Mais próximos"),
+    },
+    {
+      id: "mythics",
+      label: translate(t, "albumPageFilterMythics", "Míticas"),
+    },
+    {
+      id: "ready",
+      label: translate(t, "albumPageFilterReady", "Revelar"),
+    },
+    {
+      id: "incomplete",
+      label: translate(t, "albumPageFilterIncomplete", "Incompletos"),
+    },
+    {
+      id: "complete",
+      label: translate(t, "albumPageFilterComplete", "Completos"),
+    },
+    {
+      id: "all",
+      label: translate(t, "albumPageFilterAll", "Todos"),
+    },
   ];
 
   async function revealMythic(creator: AlbumCreator) {
@@ -665,7 +688,11 @@ export default function AlbumPage() {
                 <input
                   value={albumSearch}
                   onChange={(event) => setAlbumSearch(event.target.value)}
-                  placeholder="Buscar dentro do álbum..."
+                  placeholder={translate(
+                    t,
+                    "albumPageSearchPlaceholder",
+                    "Buscar dentro do álbum...",
+                  )}
                   className="w-full rounded-2xl border border-white/10 bg-black/35 px-5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-cyan-200/35 focus:bg-black/45"
                 />
                 {albumSearch && (
@@ -674,7 +701,7 @@ export default function AlbumPage() {
                     onClick={() => setAlbumSearch("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 transition hover:text-white"
                   >
-                    Limpar
+                    {translate(t, "albumPageClearSearch", "Limpar")}
                   </button>
                 )}
               </div>
@@ -698,8 +725,13 @@ export default function AlbumPage() {
             </div>
 
             <p className="mt-3 text-xs font-semibold text-white/36">
-              Exibindo {visibleAlbumCreators.length} de {albumCreators.length}{" "}
-              slots do seu álbum.
+              {translate(
+                t,
+                "albumPageVisibleSlots",
+                "Exibindo {visible} de {total} slots do seu álbum.",
+              )
+                .replace("{visible}", String(visibleAlbumCreators.length))
+                .replace("{total}", String(albumCreators.length))}
             </p>
           </div>
         )}
@@ -717,7 +749,11 @@ export default function AlbumPage() {
 
             {visibleAlbumCreators.length === 0 ? (
               <div className="relative z-10 rounded-3xl border border-white/10 bg-black/35 px-8 py-10 text-center text-sm font-semibold text-white/45">
-                Nenhum slot encontrado com os filtros atuais.
+                {translate(
+                  t,
+                  "albumPageNoFilteredSlots",
+                  "Nenhum slot encontrado com os filtros atuais.",
+                )}
               </div>
             ) : (
               <div className="relative z-10 grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-10 gap-y-14">
@@ -869,6 +905,16 @@ function AlbumTile({
   const isRevealed =
     creator.isComplete && creator.hasMythic && Boolean(creator.mythicSeenAt);
   const mythicCreator = toMythicCreator(creator);
+  const revealMythicLabel = translate(
+    t,
+    "albumPageRevealMythicAria",
+    "Revelar carta mítica de {creator}",
+  ).replace("{creator}", creator.nickname);
+  const openCreatorLabel = translate(
+    t,
+    "albumPageOpenCreatorAria",
+    "Abrir criador {creator}",
+  ).replace("{creator}", creator.nickname);
 
   return (
     <motion.div
@@ -930,9 +976,7 @@ function AlbumTile({
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.28 }}
                   aria-label={
-                    isReadyToReveal
-                      ? `Revelar carta mítica de ${creator.nickname}`
-                      : `Abrir criador ${creator.nickname}`
+                    isReadyToReveal ? revealMythicLabel : openCreatorLabel
                   }
                 >
                   <LockedAlbumPack
@@ -952,7 +996,7 @@ function AlbumTile({
               </span>
               {isRevealed && (
                 <span className="shrink-0 rounded-full border border-pink-100/35 bg-pink-100/[0.08] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-pink-50">
-                  Mítica
+                  {translate(t, "albumPageMythicBadge", "Mítica")}
                 </span>
               )}
             </div>
@@ -967,7 +1011,7 @@ function AlbumTile({
                 {isRevealed
                   ? translate(t, "albumPageComplete", "Completa")
                   : isReadyToReveal
-                    ? "Pronta"
+                    ? translate(t, "albumPageReady", "Pronta")
                     : translate(t, "albumPageIncomplete", "Incompleta")}
               </span>
             </div>
@@ -987,7 +1031,10 @@ function LockedAlbumPack({
   progressPercentage: number;
   isReadyToReveal: boolean;
 }) {
-  const missingText = creator.missingRarities.map(getRarityLabel).join(", ");
+  const { t } = useLanguage();
+  const missingText = creator.missingRarities
+    .map((rarity) => translate(t, rarity, getRarityLabel(rarity)))
+    .join(", ");
 
   return (
     <span className="relative flex h-full w-full items-center justify-center rounded-[26px] border border-white/10 bg-black/48 px-5 py-5">
@@ -1014,16 +1061,24 @@ function LockedAlbumPack({
         {isReadyToReveal ? (
           <span className="flex flex-col items-center gap-2">
             <span className="text-xs font-black uppercase tracking-[0.2em] text-pink-50/85">
-              Mítica desbloqueada
+              {translate(
+                t,
+                "albumPageMythicUnlocked",
+                "Mítica desbloqueada",
+              )}
             </span>
             <span className="rounded-full border border-pink-100/25 bg-black/40 px-4 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-pink-50/80">
-              Clique para revelar
+              {translate(t, "albumPageClickToReveal", "Clique para revelar")}
             </span>
           </span>
         ) : (
           <span className="w-full rounded-3xl border border-white/10 bg-black/35 p-4 text-left">
             <span className="block text-center text-[10px] font-black uppercase tracking-[0.18em] text-white/36">
-              Progresso {creator.ownedRarityCount}/4
+              {translate(
+                t,
+                "albumPageTileProgress",
+                "Progresso {count}/4",
+              ).replace("{count}", String(creator.ownedRarityCount))}
             </span>
 
             <span className="mt-4 grid gap-2">
@@ -1039,7 +1094,9 @@ function LockedAlbumPack({
                         : "border-white/8 bg-white/[0.025] text-white/28"
                     }`}
                   >
-                    <span>{getRarityLabel(rarity)}</span>
+                    <span>
+                      {translate(t, rarity, getRarityLabel(rarity))}
+                    </span>
                     <span>{hasRarity ? "✓" : "—"}</span>
                   </span>
                 );
@@ -1048,8 +1105,16 @@ function LockedAlbumPack({
 
             <span className="mt-4 block text-center text-[10px] font-bold leading-5 text-white/42">
               {creator.ownedRarityCount === 0
-                ? "Você ainda não possui cartas deste criador."
-                : `Falta: ${missingText}`}
+                ? translate(
+                    t,
+                    "albumPageNoCreatorCards",
+                    "Você ainda não possui cartas deste criador.",
+                  )
+                : translate(
+                    t,
+                    "albumPageMissingRarities",
+                    "Falta: {rarities}",
+                  ).replace("{rarities}", missingText)}
             </span>
           </span>
         )}
