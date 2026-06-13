@@ -444,7 +444,7 @@ export default function AlbumPage() {
         );
       }
 
-      if (user) {
+      if (user && session?.access_token) {
         nextProgress = await ensureMythicAlbumRewards({
           accessToken: session.access_token,
           progressByCreator: nextProgress,
