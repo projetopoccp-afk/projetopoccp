@@ -128,6 +128,19 @@ function formatRemainingTime(totalSeconds: number) {
   )}`;
 }
 
+function isDropAwaitingWinners(drop: DropRecord, nowTime = Date.now()) {
+  const ended = getRemainingSeconds(drop, nowTime) <= 0;
+  const entriesCount = drop.entries?.length || 0;
+  const claimsCount = drop.claims?.length || 0;
+  const maxClaimCount = Number(drop.max_claims || 0);
+
+  return ended && entriesCount > 0 && maxClaimCount > 0 && claimsCount < maxClaimCount;
+}
+
+function didDropEndWithoutParticipants(drop: DropRecord, nowTime = Date.now()) {
+  return getRemainingSeconds(drop, nowTime) <= 0 && (drop.entries?.length || 0) === 0;
+}
+
 type TranslationFn = ReturnType<typeof useLanguage>["t"];
 
 function getRewardLabel(t: TranslationFn, rewardType: string) {
@@ -260,11 +273,18 @@ export function LiveDropsModal({
     [drops, nowTime],
   );
 
+  const pendingDrawDrops = useMemo(
+    () => historyDrops.filter((drop) => isDropAwaitingWinners(drop, nowTime)),
+    [historyDrops, nowTime],
+  );
+
   const featuredActiveDrop = activeDrops[0];
+  const featuredPendingDrawDrop = pendingDrawDrops[0];
+  const featuredDropForEntries = featuredActiveDrop || featuredPendingDrawDrop;
 
   const visibleFeaturedEntries = useMemo(
-    () => getVisibleEntries(featuredActiveDrop?.entries),
-    [featuredActiveDrop?.entries],
+    () => getVisibleEntries(featuredDropForEntries?.entries),
+    [featuredDropForEntries?.entries],
   );
 
   const canActivate =
@@ -886,6 +906,15 @@ export function LiveDropsModal({
                         getRemainingSeconds(featuredActiveDrop, nowTime),
                       )}
                     </p>
+                  ) : featuredPendingDrawDrop ? (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-amber-100">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {translate(
+                        t,
+                        "liveDropsAwaitingWinners" as any,
+                        "Sorteio em andamento",
+                      )}
+                    </p>
                   ) : null}
                 </div>
 
@@ -1034,6 +1063,44 @@ export function LiveDropsModal({
                         </div>
                       </article>
                     ))
+                  ) : pendingDrawDrops.length > 0 ? (
+                    pendingDrawDrops.slice(0, 1).map((drop) => (
+                      <article
+                        key={drop.id}
+                        className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-black text-amber-50">
+                              {getRewardLabel(t, drop.reward_type)}
+                            </p>
+                            <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-100/55">
+                              {drop.keyword}
+                            </p>
+                            <p className="mt-2 text-sm font-bold text-amber-50/80">
+                              {formatNumber(drop.entries?.length || 0)} {translate(t, "liveDropsParticipants", "Participantes")}
+                            </p>
+                          </div>
+
+                          <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            {translate(
+                              t,
+                              "liveDropsAwaitingWinners" as any,
+                              "Sorteio em andamento",
+                            )}
+                          </span>
+                        </div>
+
+                        <p className="mt-3 text-xs leading-5 text-amber-100/65">
+                          {translate(
+                            t,
+                            "liveDropsAwaitingWinnersDescription" as any,
+                            "O drop já acabou. O Cardpoc está aguardando o cron confirmar os vencedores.",
+                          )}
+                        </p>
+                      </article>
+                    ))
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
                       {translate(
@@ -1054,17 +1121,25 @@ export function LiveDropsModal({
 
                 <div className="mt-4 space-y-3">
                   {historyDrops.length > 0 ? (
-                    historyDrops.slice(0, 3).map((drop) => (
+                    historyDrops.slice(0, 3).map((drop) => {
+                      const awaitingWinners = isDropAwaitingWinners(drop, nowTime);
+                      const endedWithoutParticipants = didDropEndWithoutParticipants(drop, nowTime);
+
+                      return (
                       <article
                         key={drop.id}
-                        className="rounded-2xl border border-white/10 bg-black/20 p-4"
+                        className={
+                          awaitingWinners
+                            ? "rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
+                            : "rounded-2xl border border-white/10 bg-black/20 p-4"
+                        }
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-black text-white/80">
+                            <p className={awaitingWinners ? "font-black text-amber-50" : "font-black text-white/80"}>
                               {getRewardLabel(t, drop.reward_type)}
                             </p>
-                            <p className="mt-2 text-sm font-bold text-white/65">
+                            <p className={awaitingWinners ? "mt-2 text-sm font-bold text-amber-50/80" : "mt-2 text-sm font-bold text-white/65"}>
                               {formatNumber(drop.current_claims)} /{" "}
                               {formatNumber(drop.max_claims)}{" "}
                               {translate(
@@ -1074,35 +1149,85 @@ export function LiveDropsModal({
                               )}
                             </p>
                             <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
-                              {translate(t, "liveDropsCreatedAt", "Criado")}:{" "}
+                              {translate(t, "liveDropsCreatedAt", "Criado")}: {" "}
                               {formatDateTime(drop.created_at)}
                             </p>
+                            {awaitingWinners ? (
+                              <p className="mt-2 text-xs leading-5 text-amber-100/65">
+                                {translate(
+                                  t,
+                                  "liveDropsAwaitingWinnersDescription" as any,
+                                  "O drop já acabou. O Cardpoc está aguardando o cron confirmar os vencedores.",
+                                )}
+                              </p>
+                            ) : endedWithoutParticipants ? (
+                              <p className="mt-2 text-xs leading-5 text-white/40">
+                                {translate(
+                                  t,
+                                  "liveDropsEndedWithoutParticipants" as any,
+                                  "Drop encerrado sem participantes.",
+                                )}
+                              </p>
+                            ) : null}
                           </div>
 
                           <div className="flex shrink-0 flex-col items-end gap-2">
-                            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-100/70">
-                              {translate(
-                                t,
-                                "liveDropsCompletedStatus",
-                                "Concluído",
-                              )}
+                            <span
+                              className={
+                                awaitingWinners
+                                  ? "inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100"
+                                  : "rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-100/70"
+                              }
+                            >
+                              {awaitingWinners ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : null}
+                              {awaitingWinners
+                                ? translate(
+                                    t,
+                                    "liveDropsAwaitingWinners" as any,
+                                    "Sorteio em andamento",
+                                  )
+                                : translate(
+                                    t,
+                                    "liveDropsCompletedStatus",
+                                    "Concluído",
+                                  )}
                             </span>
 
                             <button
                               type="button"
-                              onClick={() => setSelectedWinnersDrop(drop)}
-                              className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/15"
+                              onClick={() => {
+                                if (awaitingWinners) {
+                                  void loadDrops();
+                                  return;
+                                }
+
+                                setSelectedWinnersDrop(drop);
+                              }}
+                              className={
+                                awaitingWinners
+                                  ? "rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-300/15"
+                                  : "rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100 transition hover:bg-cyan-300/15"
+                              }
                             >
-                              {translate(
-                                t,
-                                "liveDropsViewWinners",
-                                "Ver vencedores",
-                              )}
+                              {awaitingWinners
+                                ? translate(
+                                    t,
+                                    "liveDropsRefreshResult" as any,
+                                    "Atualizar resultado",
+                                  )
+                                : translate(
+                                    t,
+                                    "liveDropsViewWinners",
+                                    "Ver vencedores",
+                                  )}
                             </button>
                           </div>
                         </div>
                       </article>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/45">
                       {translate(
