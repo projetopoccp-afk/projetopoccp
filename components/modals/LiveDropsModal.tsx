@@ -345,7 +345,7 @@ export function LiveDropsModal({
 
     const dropsInterval = window.setInterval(() => {
       void loadDrops();
-    }, 3000);
+    }, 10000);
 
     return () => {
       window.clearInterval(timeInterval);
